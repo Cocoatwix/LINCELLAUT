@@ -1,0 +1,11 @@
+A .matrix file specifies a matrix for this program to use. The matrix is listed as you would on paper (i.e. column vectors are written as column vectors). The first line specifies the dimensions of the matrix. Subsequent rows represent row vectors in the matrix. Each row vector element is separated by a space. Each line is terminated with a newline. The last line in the file should be empty.
+
+The following would be a valid 4x3 matrix in a .matrix format:
+
+4 3
+1 2 3
+3 2 1
+2 2 2
+3 3 3
+
+lincellaut.c makes no attempt at filling in missing elements or interpreting wrongly-formatted files. It's the user's responsibility to make sure the .matrix file is formatted correctly.

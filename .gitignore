@@ -1,0 +1,5 @@
+#Don't track any object files
+objects/*.o
+
+#Keep the executable out of the repo
+lincellaut
