@@ -49,7 +49,12 @@ int mat_mul(const IntMatrixTP, const IntMatrixTP, IntMatrixTP);
     Returns 1 on success, 0 otherwise. */
 int modm(IntMatrixTP, int);
 
-/** Returns the determinant of a given matrix. */
+/** Returns the determinant of a given matrix. 
+    Returns zero if the matrix is nonzero. */
 int det(IntMatrixTP const);
+
+/** Returns the inverse of a given matrix, if it exists.
+    Returns NULL otherwise. */
+IntMatrixTP inverse(IntMatrixTP);
 
 #endif //LINALG_H

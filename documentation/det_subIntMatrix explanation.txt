@@ -1,0 +1,23 @@
+The function det_subIntMatrixT stores a submatrix. The submatrix is specified by x and y, the indices in the matrix where the matrix is sliced.
+
+For instance, consider the matrix:
+1 2 3
+3 2 1
+2 2 2
+
+Specifying (x, y) as (0, 0) will slice the matrix along row 0 and column 0:
+x x x
+x 2 1
+x 2 2
+
+So calling the function with the above matrix and setting (x, y) as (0, 0) will return a pointer to the matrix
+2 1
+2 2
+
+Similarly, specifying (x, y) as (2, 1) will return a pointer to the matrix
+1 3
+3 1
+
+If (x, y) is specified to be outside the valid indices of the given matrix, the function will return 0.
+
+Note that memory for these new matrices will be alloted everytime the function is called, so freeing that memory is the programmer's responsibility.

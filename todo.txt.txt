@@ -1,0 +1,1 @@
+Rewrite IntMatrixT allocation functions so that they return a pointer. I was scared of dangling reference problems, but calling malloc() inside a function isn't really an issue (it still allocates memory to the stack).

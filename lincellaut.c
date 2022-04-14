@@ -91,6 +91,9 @@ int main()
 	s_f = iterate(F, s_0, MODULUS, ITERATIONS);
 	printm(s_f); */
 	
+	//Testing the determinant function
+	printf("Determinant of update matrix: %d\n", det(F));
+	
 	printcycle(floyd(F, s_0, MODULUS));
 	
 	//Freeing memory

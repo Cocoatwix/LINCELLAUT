@@ -11,14 +11,18 @@ typedef struct cycleinfo
 {
 	int omega; //Cycle length
 	int tau; //Transient length
+	int stoppingTime;
 }
 CycleInfoT, *CycleInfoTP;
 
 
+//Not fully implemented yet
 void printcycle(CycleInfoTP c)
 /** Prints info about a cycle to the screen. */
 {
-	printf("Cycle length: %d\nTransient region length: ??\n", c->omega);
+	printf("Floyd's Algorithm stopping time: %d\n", c->stoppingTime);
+	printf("Cycle length: %d\n", c->omega);
+	printf("Transient region length: ??\n");
 }
 
 
@@ -105,6 +109,8 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 		stoppingTime += 1;
 	}
 	while (!compare_IntMatrixT(x_1, y_1));
+	
+	info->stoppingTime = stoppingTime;
 	
 	//Now we have a vector that's confirmed to be in a cycle
 	//Now, we determine the cycle length

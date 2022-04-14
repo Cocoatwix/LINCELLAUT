@@ -67,6 +67,7 @@ IntMatrixTP free_IntMatrixT(IntMatrixTP M)
 }
 
 
+//I should rewrite these as functions that return pointers
 int new_IntMatrixT(IntMatrixTP* M, int r, int c)
 /** Creates an empty m by n matrix.
     Returns 1 on success, 0 otherwise. */
@@ -177,6 +178,46 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 }
 
 
+/* private */ int det_subIntMatrixT(IntMatrixTP const M, IntMatrixTP* N, int x, int y)
+/** Stores a submatrix of M in N. x and y specify the
+    center of the "crosshairs" where the matrix is sliced. Returns 1
+		on success, 0 otherwise.
+		Freeing the memory created by this function is the programmer's 
+		responsibility.
+		See documentation for more details. */
+{
+	//If the given indices are out of the matrix's bounds
+	if ((x < 0) || (y < 0) || (x >= M->m) || (y >= M->n))
+		return 0;
+	
+	//A row and column will be sliced from M, so N's dimensions need to be smaller
+	new_IntMatrixT(N, M->m-1, M->n-1);
+	
+	//Extra indices to ensure we skip over the correct rows/cols in M
+	int Nrow = 0;
+	int Ncol = 0;
+	
+	for (int Mrow = 0; Mrow < M->m; Mrow += 1)
+	{
+		if (Mrow != x) //Skipping over sliced row
+		{
+			Ncol = 0;
+			for (int Mcol = 0; Mcol < M->n; Mcol += 1)
+			{
+				if (Mcol != y) //Skipping over sliced column
+				{
+					(*N)->matrix[Nrow][Ncol] = M->matrix[Mrow][Mcol];
+					Ncol += 1;
+				}
+			}
+			Nrow += 1;
+		}
+	}
+	
+	return 1;
+}
+
+
 //Maybe pad numbers with zeros in the future to make output easier to read?
 //This would require dividing each number by 10 numerous times to see
 // how many digits comprises it. (or take log base 10)
@@ -239,9 +280,47 @@ int modm(IntMatrixTP M, int mod)
 	return 1;
 }
 
-//UNFINISHED
+//It may be better to implement this non-recursively in the future for speed
+//This also hasn't been extensively tested yet.
 int det(IntMatrixTP M)
-/** Returns the determinant of a matrix. */
+/** Returns the determinant of a matrix. If the
+    matrix is nonsquare, returns zero. */
 {
-	return 1;
+	//If matrix is nonsquare, return zero
+	if (M->m != M->n)
+		return 0;
+	
+	//If the matrix is 1x1, return the only element
+	if (M->m == 1)
+		return M->matrix[0][0];
+	
+	
+	//Recursively find the determinant
+	else
+	{
+		int sum = 0;
+		IntMatrixTP tempMatrix; //Holds submatrices for determinant calculation
+		
+		for (int col = 0; col < M->n; col += 1)
+		{
+			det_subIntMatrixT(M, &tempMatrix, 0, col); //Preparing submatrix
+			
+			if (col % 2 == 0)
+				sum += M->matrix[0][col] * det(tempMatrix);
+			else
+				sum += (-1) * M->matrix[0][col] * det(tempMatrix);
+		}
+		
+		tempMatrix = free_IntMatrixT(tempMatrix);
+		return sum;
+	}
+}
+
+
+IntMatrixTP inverse(IntMatrixTP M)
+/** If the inverse of M exists, a pointer to M's inverse
+    is returned. Otherwise, returns NULL. */
+{
+	printf("Placeholder: %d\n", M->m);
+	return NULL;
 }
