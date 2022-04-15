@@ -67,32 +67,31 @@ IntMatrixTP free_IntMatrixT(IntMatrixTP M)
 }
 
 
-//I should rewrite these as functions that return pointers
-int new_IntMatrixT(IntMatrixTP* M, int r, int c)
+IntMatrixTP new_IntMatrixT(int r, int c)
 /** Creates an empty m by n matrix.
-    Returns 1 on success, 0 otherwise. */
+    Returns a pointer to the matrix on success, NULL otherwise. */
 {
 	//If given dimensions don't make sense
 	if ((r < 0) || (c < 0))
-		return 0;
+		return NULL;
 	
 	
-	*M = malloc(sizeof(IntMatrixT));
+	IntMatrixTP M = malloc(sizeof(IntMatrixT));
 	
-	(*M)->matrix = malloc(r*sizeof(int*));
+	M->matrix = malloc(r*sizeof(int*));
 	
 	for (int i = 0; i < r; i += 1)
-		(*M)->matrix[i] = malloc(c*sizeof(int));
+		M->matrix[i] = calloc(c, sizeof(int));
 	
 	//Don't forget to set the matrix's dimensions!
-	(*M)->m = r;
-	(*M)->n = c;
+	M->m = r;
+	M->n = c;
 	
-	return 1;
+	return M;
 }
 
 
-int read_IntMatrixT(char* const matFilePath, IntMatrixTP* M)
+IntMatrixTP read_IntMatrixT(char* const matFilePath)
 /** Initialises the given matrix M from the given .matrix file.
     This method assumes matFile points to the beginning of the file.
 		Returns 1 upon success, 0 otherwise. **/
@@ -102,42 +101,45 @@ int read_IntMatrixT(char* const matFilePath, IntMatrixTP* M)
 	if (matFile == NULL)
 	{
 		fprintf(stderr, "Unable to open matrix file.\n");
-		return 0;
+		return NULL;
 	}
 	
 	//Allocating memory for M
-	*M = malloc(sizeof(IntMatrixT));
+	IntMatrixTP M = malloc(sizeof(IntMatrixT));
 	
 	//Getting dimensions of the data
-	if (fscanf(matFile, "%d %d", &((*M)->m), &((*M)->n)) != 2)
+	if (fscanf(matFile, "%d %d", &(M->m), &(M->n)) != 2)
 	{
 		fprintf(stderr, "Unable to read matrix dimensions.\n");
-		return 0;
+		M = free_IntMatrixT(M);
+		return NULL;
 	}
 	
 	//Allocating memory for M
-	(*M)->matrix = malloc(((*M)->m)*sizeof(int*));
-	for (int i = 0; i < (*M)->m; i += 1)
-		(*M)->matrix[i] = malloc(((*M)->n)*sizeof(int));
+	M->matrix = malloc((M->m)*sizeof(int*));
+	for (int i = 0; i < M->m; i += 1)
+		M->matrix[i] = malloc((M->n)*sizeof(int));
 	
 	//Filling F with actual values
-	for (int row = 0; row < (*M)->m; row += 1)
-		for (int column = 0; column < (*M)->n; column += 1)
-			if (fscanf(matFile, "%d", &((*M)->matrix[row][column])) != 1)
+	for (int row = 0; row < M->m; row += 1)
+		for (int column = 0; column < M->n; column += 1)
+			if (fscanf(matFile, "%d", &(M->matrix[row][column])) != 1)
 			{
 				fprintf(stderr, "Unable to read matrix data.\n");
-				return 0;
+				M = free_IntMatrixT(M);
+				return NULL;
 			}
 			
 
 	if (fclose(matFile) == EOF)
 	{
 		fprintf(stderr, "Unable to close matrix file.\n");
-		return 0;
+		M = free_IntMatrixT(M);
+		return NULL;
 	}
 		
 	//Function read matrix's data properly
-	return 1;
+	return M;
 }
 
 
@@ -178,7 +180,7 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 }
 
 
-/* private */ int det_subIntMatrixT(IntMatrixTP const M, IntMatrixTP* N, int x, int y)
+/* private */ IntMatrixTP det_subIntMatrixT(IntMatrixTP const M, int x, int y)
 /** Stores a submatrix of M in N. x and y specify the
     center of the "crosshairs" where the matrix is sliced. Returns 1
 		on success, 0 otherwise.
@@ -188,10 +190,10 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 {
 	//If the given indices are out of the matrix's bounds
 	if ((x < 0) || (y < 0) || (x >= M->m) || (y >= M->n))
-		return 0;
+		return NULL;
 	
 	//A row and column will be sliced from M, so N's dimensions need to be smaller
-	new_IntMatrixT(N, M->m-1, M->n-1);
+	IntMatrixTP N = new_IntMatrixT(M->m-1, M->n-1);
 	
 	//Extra indices to ensure we skip over the correct rows/cols in M
 	int Nrow = 0;
@@ -206,7 +208,7 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 			{
 				if (Mcol != y) //Skipping over sliced column
 				{
-					(*N)->matrix[Nrow][Ncol] = M->matrix[Mrow][Mcol];
+					N->matrix[Nrow][Ncol] = M->matrix[Mrow][Mcol];
 					Ncol += 1;
 				}
 			}
@@ -214,7 +216,7 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 		}
 	}
 	
-	return 1;
+	return N;
 }
 
 
@@ -303,15 +305,17 @@ int det(IntMatrixTP M)
 		
 		for (int col = 0; col < M->n; col += 1)
 		{
-			det_subIntMatrixT(M, &tempMatrix, 0, col); //Preparing submatrix
+			tempMatrix = det_subIntMatrixT(M, 0, col); //Preparing submatrix
 			
 			if (col % 2 == 0)
 				sum += M->matrix[0][col] * det(tempMatrix);
 			else
 				sum += (-1) * M->matrix[0][col] * det(tempMatrix);
+			
+			free_IntMatrixT(tempMatrix);
 		}
 		
-		tempMatrix = free_IntMatrixT(tempMatrix);
+		tempMatrix = NULL;
 		return sum;
 	}
 }

@@ -78,14 +78,13 @@ int main()
 	//const int ITERATIONS = 12345;
 	const int MODULUS = 25;
 	
-	IntMatrixTP   F; //Update rule matrix
+	//Update rule matrix
+	IntMatrixTP   F = read_IntMatrixT(UPDATEFILEPATH);
 	
-	IntMatrixTP s_0; //Stores our initial vector
+	//Stores our initial vector
+	IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
+	
 	//IntMatrixTP s_f; //Stores our final vector
-	
-	//Initalising our matrices/vectors
-	read_IntMatrixT(UPDATEFILEPATH, &F);
-	read_IntMatrixT(INITIALFILEPATH, &s_0);
 	
 	/* Iterate s_0 a few times
 	s_f = iterate(F, s_0, MODULUS, ITERATIONS);

@@ -4,5 +4,9 @@ objects/*.o
 #Keep the executable out of the repo
 lincellaut
 
-#Don't share my TODO list with anyone :)
+#Don't share my TODO lists with anyone :)
 todo.txt
+havedone.txt
+
+#Don't show the world how little I know about Git
+howtogit.txt

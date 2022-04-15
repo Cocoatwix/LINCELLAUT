@@ -30,9 +30,9 @@ IntMatrixTP iterate(IntMatrixTP F, IntMatrixTP s_0, int modulus, int iterations)
 /** Iterates a given vector under some update rule n times.
     Returns a pointer to the result of the iteration. */
 {
-	IntMatrixTP s_o, s_e;
-	new_IntMatrixT(&s_o, rows(s_0), cols(s_0));
-	new_IntMatrixT(&s_e, rows(s_0), cols(s_0));
+	IntMatrixTP s_o = new_IntMatrixT(rows(s_0), cols(s_0));
+	IntMatrixTP s_e = new_IntMatrixT(rows(s_0), cols(s_0));
+	
 	copy_IntMatrixT(s_0, s_o);
 	
 	//The actual iteration
@@ -83,12 +83,10 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	
 	//Initalising x and y to be s_0
 	//We need to switch between the two versions to store data w/o overwriting
-	IntMatrixTP x_1, x_2, y_1, y_2;
-
-	new_IntMatrixT(&x_1, rows(s_0), cols(s_0));
-	new_IntMatrixT(&y_1, rows(s_0), cols(s_0));
-	new_IntMatrixT(&x_2, rows(s_0), cols(s_0));
-	new_IntMatrixT(&y_2, rows(s_0), cols(s_0));
+	IntMatrixTP x_1 = new_IntMatrixT(rows(s_0), cols(s_0));
+	IntMatrixTP x_2 = new_IntMatrixT(rows(s_0), cols(s_0));
+	IntMatrixTP y_1 = new_IntMatrixT(rows(s_0), cols(s_0)); 
+	IntMatrixTP y_2 = new_IntMatrixT(rows(s_0), cols(s_0));
 	
 	copy_IntMatrixT(s_0, x_1);
 	copy_IntMatrixT(s_0, y_1);

@@ -20,11 +20,13 @@ int element(IntMatrixTP, int, int);
 /** Frees the memory of an IntMatrix. Returns NULL. */
 IntMatrixTP free_IntMatrixT(IntMatrixTP);
 
-/** Reads in a matrix stored in a .matrix file and
-    stores it in a given IntMatrixT struct. This
-		function allocates space for M. Returns 1
-		on success, 0 otherwise. */
-int read_IntMatrixT(char* const, IntMatrixTP*);
+/** Creates a new empty IntMatrix of given size. 
+    Returns a pointer to the matrix on success, NULL otherwise. */
+IntMatrixTP new_IntMatrixT(int, int);
+
+/** Reads in a matrix stored in a .matrix file. 
+    Returns a pointer to the matrix on success, NULL otherwise. */
+IntMatrixTP read_IntMatrixT(char* const);
 
 /** Copies the values of the first matrix's matrix to the second. 
     Returns 1 on success, 0 otherwise. */
@@ -33,10 +35,6 @@ int copy_IntMatrixT(IntMatrixTP const, IntMatrixTP);
 /** Compares two matrices to see if they're equal.
     Returns 1 if they are, 0 otherwise. */
 int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
-
-/** Creates a new empty IntMatrix of given size, stores it at given pointer. 
-    Returns 1 on success, 0 otherwise. */
-int new_IntMatrixT(IntMatrixTP*, int, int);
 
 /** Prints a given matrix of given size to the console. */
 void printm(IntMatrixTP);
