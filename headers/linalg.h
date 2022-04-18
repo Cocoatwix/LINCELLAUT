@@ -24,6 +24,10 @@ IntMatrixTP free_IntMatrixT(IntMatrixTP);
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP new_IntMatrixT(int, int);
 
+/** Creates a new identity matrix of given size and
+    returns a pointer to the matrix. Returns NULL on error. */
+IntMatrixTP identity_IntMatrixT(int);
+
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP read_IntMatrixT(char* const);
@@ -41,7 +45,7 @@ void printm(IntMatrixTP);
 
 /** Multiples two matrices together, stores result in a third matrix. 
     Returns 1 on success, 0 otherwise. */
-int mat_mul(const IntMatrixTP, const IntMatrixTP, IntMatrixTP);
+int mat_mul(IntMatrixTP const, IntMatrixTP const, IntMatrixTP);
 
 /** Applies a modulus to every element of a given matrix. 
     Returns 1 on success, 0 otherwise. */
@@ -51,8 +55,8 @@ int modm(IntMatrixTP, int);
     Returns zero if the matrix is nonzero. */
 int det(IntMatrixTP const);
 
-/** Returns the inverse of a given matrix, if it exists.
+/** Returns the inverse of a given matrix with given modulus, if it exists.
     Returns NULL otherwise. */
-IntMatrixTP inverse(IntMatrixTP);
+IntMatrixTP inverse(IntMatrixTP const, int);
 
 #endif //LINALG_H

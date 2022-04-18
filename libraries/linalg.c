@@ -15,6 +15,8 @@
 //That way, if we wanted to switch to doubles, we could
 //Or maybe a simple void pointer will do
 
+typedef enum boolean {FALSE, TRUE} bool;
+
 typedef struct intmatrix
 /** Structure for holding matrix data and metadata (dimensions, e.g.). */
 {
@@ -88,6 +90,22 @@ IntMatrixTP new_IntMatrixT(int r, int c)
 	M->n = c;
 	
 	return M;
+}
+
+
+IntMatrixTP identity_IntMatrixT(int r)
+/** Creates an identity matrix of size r by r and returns
+    a pointer to it. Returns NULL on error. */
+{
+	if (r <= 0)
+		return NULL;
+	
+	IntMatrixTP I = new_IntMatrixT(r, r);
+	
+	for (int i = 0; i < r; i += 1)
+		I->matrix[i][i] = 1;
+	
+	return I;
 }
 
 
@@ -238,7 +256,7 @@ void printm(IntMatrixTP M)
 }
 
 
-int mat_mul(const IntMatrixTP A, const IntMatrixTP B, IntMatrixTP result)
+int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
 /** Computes AB, stores result in result. 
     This function DOES check to make sure result is the proper dimensions.
 		This function assumes all three matrices have been initialised.
@@ -307,6 +325,7 @@ int det(IntMatrixTP M)
 		{
 			tempMatrix = det_subIntMatrixT(M, 0, col); //Preparing submatrix
 			
+			//Alternate sign for terms to add
 			if (col % 2 == 0)
 				sum += M->matrix[0][col] * det(tempMatrix);
 			else
@@ -321,10 +340,102 @@ int det(IntMatrixTP M)
 }
 
 
-IntMatrixTP inverse(IntMatrixTP M)
+/* private */ int row_swap(IntMatrixTP M, int x, int y)
+/** Swaps the two given rows in the given matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	//If rows given are out of range for the given matrix
+	if ((x < 0) || (y < 0) ||
+	    (x >= M->m) || (y >= M->m))
+		return 0;
+		
+	//Swap row pointers
+	int* tempRow = M->matrix[x];
+	M->matrix[x] = M->matrix[y];
+	M->matrix[y] = tempRow;
+
+	return 1;
+}
+
+
+/* private */ int row_multiply(IntMatrixTP M, int row, int multiple, unsigned int modulus)
+/** Multiplies a row by the given multiple, then takes it mod modulus.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((row < 0) || (row >= M->m))
+		return 0;
+	
+	//Iterate over row, multiply, take mod
+	for (int i = 0; i < M->n; i += 1)
+		M->matrix[row][i] = (multiple * M->matrix[row][i]) % modulus;
+	
+	return 1;
+}
+
+
+/* private */ int row_add(IntMatrixTP M, int addTo, int addFrom, unsigned int modulus)
+/** Adds row addFrom to row addTo in the given matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((addTo < 0) || (addFrom < 0) ||
+	    (addTo >= M->m) || (addFrom >= M->m))
+		return 0;
+		
+	//Iterate over row, add relevant entries, take modulus
+	for (int i = 0; i < M->n; i += 1)
+		M->matrix[addTo][i] = (M->matrix[addFrom][i]) % modulus;
+	
+	return 1;
+}	
+
+
+IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 /** If the inverse of M exists, a pointer to M's inverse
     is returned. Otherwise, returns NULL. */
 {
-	printf("Placeholder: %d\n", M->m);
-	return NULL;
+	//If we're given a non-square matrix
+	//If our modulus isn't prime
+	if ((M->m != M->n))
+		return NULL;
+	
+	bool hasLeadEntry;
+	
+	IntMatrixTP toReduce = new_IntMatrixT(M->m, M->m);
+	IntMatrixTP inv      = identity_IntMatrixT(M->m);
+	copy_IntMatrixT(M, toReduce);
+	
+	//Converting toReduce to upper triangular (row echelon) form
+	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
+	{
+		hasLeadEntry = FALSE;
+		
+		//Find a row with a non-zero first entry
+		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
+		{
+			if (toReduce->matrix[nonzero][focusRow] != 0)
+			{
+				row_swap(toReduce, focusRow, nonzero);
+				row_swap(inv, focusRow, nonzero);
+				hasLeadEntry = TRUE;
+				break;
+			}
+		}
+		
+		//If we couldn't find a nonzero entry for our pivot column
+		if (!hasLeadEntry)
+		{
+			toReduce = free_IntMatrixT(toReduce);
+			inv = free_IntMatrixT(inv);
+			return NULL;
+		}
+		
+		//Now, make the leading entry a 1
+		
+	}
+	
+	//Converting toReduce to reduced row echelon form (the identity)
+	
+	
+	toReduce = free_IntMatrixT(toReduce);
+	return inv;
 }
