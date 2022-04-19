@@ -73,7 +73,7 @@ int main()
 {
 	//FIle paths to where matrices are stored
 	char* const UPDATEFILEPATH = "matrices/update.matrix";
-	char* const INITIALFILEPATH = "matrices/initial.matrix";
+	//char* const INITIALFILEPATH = "matrices/initial.matrix";
 	
 	//const int ITERATIONS = 12345;
 	const int MODULUS = 25;
@@ -82,7 +82,7 @@ int main()
 	IntMatrixTP   F = read_IntMatrixT(UPDATEFILEPATH);
 	
 	//Stores our initial vector
-	IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
+	//IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
 	
 	//IntMatrixTP s_f; //Stores our final vector
 	
@@ -93,11 +93,14 @@ int main()
 	//Testing the determinant function
 	printf("Determinant of update matrix: %d\n", det(F));
 	
-	printcycle(floyd(F, s_0, MODULUS));
+	//Testing the inverse function
+	inverse(F, MODULUS); 
+	
+	//printcycle(floyd(F, s_0, MODULUS));
 	
 	//Freeing memory
 	F   = free_IntMatrixT(F);
-	s_0 = free_IntMatrixT(s_0);
+	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
 	
 	return EXIT_SUCCESS;

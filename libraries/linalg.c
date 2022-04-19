@@ -238,18 +238,50 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 }
 
 
-//Maybe pad numbers with zeros in the future to make output easier to read?
-//This would require dividing each number by 10 numerous times to see
-// how many digits comprises it. (or take log base 10)
-//Maybe we could have a switch to turn zero padding on and off...
+/* private */ int numDigits(int num)
+/** Calculuates how many digits an integer has and returns
+    that number. The function assumes the number given is
+		positive. */
+{
+	int count = 0;
+	while (TRUE)
+	{
+		num /= 10;
+		count += 1;
+		
+		if (num == 0)
+			return count;
+	}
+}
+	
+
 //I'll probably make this more efficient later
-void printm(IntMatrixTP M)
-/** Prints an m by n matrix to stdout. */
-{	
+void printm(IntMatrixTP M, bool zeroPad)
+/** Prints an m by n matrix to stdout. 
+    If zeroPad == TRUE, numbers will have
+		zeros added to the left of them to align them on the console. */
+{
+	int maxDigits = 0;
+	
+	if (zeroPad)
+		for (int row = 0; row < M->m; row += 1)
+			for (int col = 0; col < M->n; col += 1)
+				if (numDigits(M->matrix[row][col]) > maxDigits)
+					maxDigits = numDigits(M->matrix[row][col]);
+	
 	for (int mIndex = 0; mIndex < M->m; mIndex += 1)
 	{
 		for (int nIndex = 0; nIndex < M->n-1; nIndex += 1)
+		{
+			for (int p = 0; p < maxDigits - numDigits(M->matrix[mIndex][nIndex]); p += 1)
+				printf("0");
+			
 			printf("%d, ", M->matrix[mIndex][nIndex]);
+		}
+		
+		for (int p = 0; p < maxDigits - numDigits(M->matrix[mIndex][M->n-1]); p += 1)
+				printf("0");
+
 		printf("%d", M->matrix[mIndex][M->n-1]);
 		printf("\n");
 	}
@@ -358,7 +390,7 @@ int det(IntMatrixTP M)
 }
 
 
-/* private */ int row_multiply(IntMatrixTP M, int row, int multiple, unsigned int modulus)
+/* private */ int row_multiply(IntMatrixTP M, int row, int multiple, int modulus)
 /** Multiplies a row by the given multiple, then takes it mod modulus.
     Returns 1 on success, 0 otherwise. */
 {
@@ -373,7 +405,7 @@ int det(IntMatrixTP M)
 }
 
 
-/* private */ int row_add(IntMatrixTP M, int addTo, int addFrom, unsigned int modulus)
+/* private */ int row_add(IntMatrixTP M, int addTo, int addFrom, int modulus)
 /** Adds row addFrom to row addTo in the given matrix.
     Returns 1 on success, 0 otherwise. */
 {
@@ -383,7 +415,11 @@ int det(IntMatrixTP M)
 		
 	//Iterate over row, add relevant entries, take modulus
 	for (int i = 0; i < M->n; i += 1)
-		M->matrix[addTo][i] = (M->matrix[addFrom][i]) % modulus;
+	{
+		M->matrix[addTo][i] += (M->matrix[addFrom][i]);
+		M->matrix[addTo][i] %= modulus;
+	}
+	
 	
 	return 1;
 }	
@@ -391,18 +427,25 @@ int det(IntMatrixTP M)
 
 IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 /** If the inverse of M exists, a pointer to M's inverse
-    is returned. Otherwise, returns NULL. */
+    is returned. Otherwise, returns NULL. 
+		
+		This function assumes the given matrix conforms to the 
+		given modulus (all entries are less than the modulus). */
 {
 	//If we're given a non-square matrix
-	//If our modulus isn't prime
 	if ((M->m != M->n))
 		return NULL;
 	
 	bool hasLeadEntry;
 	
+	int numTimesToAdd; //Tells how many times we add a row to another row
+	
 	IntMatrixTP toReduce = new_IntMatrixT(M->m, M->m);
 	IntMatrixTP inv      = identity_IntMatrixT(M->m);
 	copy_IntMatrixT(M, toReduce);
+	
+	printf("Matrix to reduce:\n");
+	printm(toReduce, TRUE);
 	
 	//Converting toReduce to upper triangular (row echelon) form
 	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
@@ -411,27 +454,87 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		
 		//Find a row with a non-zero first entry
 		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
-		{
 			if (toReduce->matrix[nonzero][focusRow] != 0)
 			{
+				hasLeadEntry = TRUE;
+				
+				//Don't need to swap if the row is already in place
+				if (nonzero == focusRow)
+					break;
+				
 				row_swap(toReduce, focusRow, nonzero);
 				row_swap(inv, focusRow, nonzero);
-				hasLeadEntry = TRUE;
+				
+				printf("Swapped row %d and %d.\n", focusRow, nonzero);
+				printm(toReduce, TRUE);
+
 				break;
 			}
-		}
 		
 		//If we couldn't find a nonzero entry for our pivot column
 		if (!hasLeadEntry)
 		{
 			toReduce = free_IntMatrixT(toReduce);
 			inv = free_IntMatrixT(inv);
+			
+			printf("No nonzero leading entry could be found.\n");
+			
 			return NULL;
 		}
 		
-		//Now, make the leading entry a 1
+		//Check to see if the given leading element actually has an inverse
+		//If the leading entry is a 1, we don't need to find an inverse
+		if (toReduce->matrix[focusRow][focusRow] != 1)
+		{
+			if ((toReduce->matrix[focusRow][focusRow] % modulus == 0) ||
+					(modulus % toReduce->matrix[focusRow][focusRow] == 0))
+			{
+				printf("No inverse for the leading entry \"%d\" exists mod %d.\n", 
+				toReduce->matrix[focusRow][focusRow], modulus);
+				
+				toReduce = free_IntMatrixT(toReduce);
+				inv = free_IntMatrixT(inv);
+				
+				return NULL;
+			}
+			
+			//Finding the inverse of our leading entry (i)
+			for (int i = 0; i < modulus; i += 1)
+			{
+				if (toReduce->matrix[focusRow][focusRow]*i % modulus == 1)
+				{
+					row_multiply(toReduce, focusRow, i, modulus);
+					row_multiply(inv, focusRow, i, modulus);
+					
+					printf("Multiplied row %d by %d.\n", focusRow, i);
+					printm(toReduce, TRUE);
+					
+					break;
+				}
+			}
+		}
 		
+		//Now, we clear out all nonzero entries in our current pivot column
+		for (int i = focusRow+1; i < M->m; i += 1)
+		{
+			numTimesToAdd = (modulus - toReduce->matrix[i][focusRow]) % modulus;
+			for (int v = 0; v < numTimesToAdd; v += 1)
+			{
+				row_add(toReduce, i, focusRow, modulus);
+				row_add(inv, i, focusRow, modulus);
+			}
+			
+			if (numTimesToAdd > 0)
+			{
+				printf("Added row %d to row %d a total of %d times.\n", focusRow, i, numTimesToAdd);
+				printm(toReduce, TRUE);
+			}
+		}
 	}
+	
+	//Checking to see if the matrix has been properly converted to row echelon form
+	printf("The matrix should now be in row echelon form.\n");
+	printm(toReduce, TRUE);
 	
 	//Converting toReduce to reduced row echelon form (the identity)
 	

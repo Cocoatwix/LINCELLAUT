@@ -2,6 +2,9 @@
 #ifndef LINALG_H
 #define LINALG_H //Header guard
 
+//Adding TRUE or FALSE values
+typedef enum boolean {FALSE, TRUE} bool;
+
 //Whenever you use this struct, there needs to be an interfacing function.
 // C can't see "inside" the struct; it needs a function to interface with it.
 typedef struct intmatrix *IntMatrixTP;
@@ -41,7 +44,7 @@ int copy_IntMatrixT(IntMatrixTP const, IntMatrixTP);
 int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
 
 /** Prints a given matrix of given size to the console. */
-void printm(IntMatrixTP);
+void printm(IntMatrixTP, bool);
 
 /** Multiples two matrices together, stores result in a third matrix. 
     Returns 1 on success, 0 otherwise. */
