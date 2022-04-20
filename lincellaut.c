@@ -1,7 +1,6 @@
 
 /* A simple program for calculating various things about linear
- *  cellular automaton. Coded for my research position with
- *  Prof Mendivil.
+ *  cellular automaton.
  *
  * Mar 27, 2022
  *
@@ -10,7 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "headers/linalg.h" //Homemade linear algebra library
+#include "headers/linalg.h" 
 #include "headers/cycles.h" //Allows us to use Floyd's Algorithm
 
 /* Floyd's Cycle Detection Algorithm
@@ -76,10 +75,12 @@ int main()
 	//char* const INITIALFILEPATH = "matrices/initial.matrix";
 	
 	//const int ITERATIONS = 12345;
-	const int MODULUS = 25;
+	const int MODULUS = 6;
 	
 	//Update rule matrix
-	IntMatrixTP   F = read_IntMatrixT(UPDATEFILEPATH);
+	IntMatrixTP F     = read_IntMatrixT(UPDATEFILEPATH);
+	IntMatrixTP Finv;
+	IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
 	//Stores our initial vector
 	//IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
@@ -91,15 +92,26 @@ int main()
 	printm(s_f); */
 	
 	//Testing the determinant function
-	printf("Determinant of update matrix: %d\n", det(F));
+	//printf("Determinant of update matrix: %d\n", det(F));
 	
 	//Testing the inverse function
-	inverse(F, MODULUS); 
+	printf("F:\n");
+	printm(F, TRUE);
+	
+	printf("The inverse of F is:\n");
+	Finv = inverse(F, MODULUS); 
+	printm(Finv, TRUE);
+	
+	//Testing both orders to see if the inverse really is the inverse
+	printf("F and Finv multipled together give:\n");
+	mat_mul(F, Finv, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
+	mat_mul(Finv, F, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
 	
 	//printcycle(floyd(F, s_0, MODULUS));
 	
 	//Freeing memory
-	F   = free_IntMatrixT(F);
+	F    = free_IntMatrixT(F);
+	Finv = free_IntMatrixT(Finv);
 	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
 	

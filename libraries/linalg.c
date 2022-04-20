@@ -1,13 +1,12 @@
 
-/* A simple linear algebra library to facilitate 
- *  research with Dr. Mendivil.
- *
- * Apr 7, 2022
+/* Apr 7, 2022
  *
  */
  
 #include <stdlib.h>
 #include <stdio.h>
+
+#include "../headers/factors.h"
 
 // https://stackoverflow.com/a/6317375
 
@@ -444,8 +443,10 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	IntMatrixTP inv      = identity_IntMatrixT(M->m);
 	copy_IntMatrixT(M, toReduce);
 	
+	#ifdef VERBOSE
 	printf("Matrix to reduce:\n");
 	printm(toReduce, TRUE);
+	#endif
 	
 	//Converting toReduce to upper triangular (row echelon) form
 	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
@@ -465,8 +466,10 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 				row_swap(toReduce, focusRow, nonzero);
 				row_swap(inv, focusRow, nonzero);
 				
+				#ifdef VERBOSE
 				printf("Swapped row %d and %d.\n", focusRow, nonzero);
 				printm(toReduce, TRUE);
+				#endif
 
 				break;
 			}
@@ -477,7 +480,9 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			toReduce = free_IntMatrixT(toReduce);
 			inv = free_IntMatrixT(inv);
 			
+			#ifdef VERBOSE
 			printf("No nonzero leading entry could be found.\n");
+			#endif
 			
 			return NULL;
 		}
@@ -486,11 +491,12 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		//If the leading entry is a 1, we don't need to find an inverse
 		if (toReduce->matrix[focusRow][focusRow] != 1)
 		{
-			if ((toReduce->matrix[focusRow][focusRow] % modulus == 0) ||
-					(modulus % toReduce->matrix[focusRow][focusRow] == 0))
+			if (GCD(toReduce->matrix[focusRow][focusRow], modulus) != 1)
 			{
+				#ifdef VERBOSE
 				printf("No inverse for the leading entry \"%d\" exists mod %d.\n", 
 				toReduce->matrix[focusRow][focusRow], modulus);
+				#endif
 				
 				toReduce = free_IntMatrixT(toReduce);
 				inv = free_IntMatrixT(inv);
@@ -506,8 +512,10 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 					row_multiply(toReduce, focusRow, i, modulus);
 					row_multiply(inv, focusRow, i, modulus);
 					
+					#ifdef VERBOSE
 					printf("Multiplied row %d by %d.\n", focusRow, i);
 					printm(toReduce, TRUE);
+					#endif
 					
 					break;
 				}
@@ -524,20 +532,42 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 				row_add(inv, i, focusRow, modulus);
 			}
 			
+			#ifdef VERBOSE
 			if (numTimesToAdd > 0)
 			{
 				printf("Added row %d to row %d a total of %d times.\n", focusRow, i, numTimesToAdd);
 				printm(toReduce, TRUE);
 			}
+			#endif
 		}
 	}
 	
-	//Checking to see if the matrix has been properly converted to row echelon form
-	printf("The matrix should now be in row echelon form.\n");
-	printm(toReduce, TRUE);
+	#ifdef VERBOSE
+	printf("The matrix should now be in row echelon form.\n\n");
+	#endif
 	
 	//Converting toReduce to reduced row echelon form (the identity)
-	
+	for (int i = M->m-1; i >= 0; i -= 1)
+	{
+		//Each element above our leading entry
+		for (int element = i-1; element >= 0; element -= 1)
+		{
+			numTimesToAdd = (modulus - toReduce->matrix[element][i]) % modulus;
+			for (int v = 0; v < numTimesToAdd; v += 1)
+			{
+				row_add(toReduce, element, i, modulus);
+				row_add(inv, element, i, modulus);
+			}
+			
+			#ifdef VERBOSE
+			if (numTimesToAdd > 0)
+			{
+				printf("Added row %d to row %d a total of %d times.\n", i, element, numTimesToAdd);
+				printm(toReduce, TRUE);
+			}
+			#endif
+		}
+	}
 	
 	toReduce = free_IntMatrixT(toReduce);
 	return inv;
