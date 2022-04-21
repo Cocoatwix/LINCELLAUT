@@ -10,7 +10,7 @@ typedef struct cycleinfo
 /** Struct to hold any important info about a structure. */
 {
 	int omega; //Cycle length
-	int tau; //Transient length
+	int tau;   //Transient length
 	int stoppingTime;
 }
 CycleInfoT, *CycleInfoTP;
@@ -22,7 +22,12 @@ void printcycle(CycleInfoTP c)
 {
 	printf("Floyd's Algorithm stopping time: %d\n", c->stoppingTime);
 	printf("Cycle length: %d\n", c->omega);
-	printf("Transient region length: ??\n");
+	
+	//-1 is used when we don't know tau
+	if (c->tau != -1)
+		printf("Transient region length: %d\n", c->tau);
+	else
+		printf("Transient region length: ??\n");
 }
 
 
@@ -76,10 +81,15 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 		about the cycle. */
 {
 	int stoppingTime = 0;
+	IntMatrixTP Finv = inverse(F, modulus);
 	
 	CycleInfoTP info = malloc(sizeof(CycleInfoT));
 	info->omega = 0;
-	info->tau = 0;
+	info->tau = -1;
+	
+	//If Finv exists, then no transient regions can exist
+	if (Finv != NULL)
+		info->tau = 0;
 	
 	//Initalising x and y to be s_0
 	//We need to switch between the two versions to store data w/o overwriting
@@ -112,6 +122,11 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	
 	//Now we have a vector that's confirmed to be in a cycle
 	//Now, we determine the cycle length
+	
+	//NOTE: since we now have an upper bound on the transient length
+	// (for non-powered primes), we can use the inequalities listed
+	// for Floyd's algorithm to deduce the cycle length without
+	// calculating all of this!
 	do
 	{
 		mat_mul(F, x_1, x_2);
@@ -122,12 +137,22 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	while (!compare_IntMatrixT(x_1, y_1));
 	
 	//I need a way to get tau from St and omega
+	//If we know omega == 1, then tau is just St - 1 (unless tau = 1)
+	
+	//We do know that, given an L by L update matrix and a square-free
+	// modulus, the maximum transient length is L.
+	
+	//pg 29 of LCA paper explains why prime powers are more complicated
+	//They believe the bound on prime powered systems should be kL, where
+	// k is the power of the prime
 	
 	//Freeing memory
 	x_1 = free_IntMatrixT(x_1);
 	x_2 = free_IntMatrixT(x_2);
 	y_1 = free_IntMatrixT(y_1);
 	y_2 = free_IntMatrixT(y_2);
+	
+	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	
 	return info;
 }

@@ -10,3 +10,6 @@ havedone.txt
 
 #Don't show the world how little I know about Git
 howtogit.txt
+
+#No need to put scrap thoughts in the repo
+scraps/*

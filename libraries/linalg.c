@@ -419,7 +419,6 @@ int det(IntMatrixTP M)
 		M->matrix[addTo][i] %= modulus;
 	}
 	
-	
 	return 1;
 }	
 
@@ -455,7 +454,12 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		
 		//Find a row with a non-zero first entry
 		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
-			if (toReduce->matrix[nonzero][focusRow] != 0)
+			//Checking to see whether the leading entry is one
+			//OR
+			//Checking to see whether the leading entry is nonzero and has an inverse
+			if ((toReduce->matrix[nonzero][focusRow] == 1) ||
+					((toReduce->matrix[nonzero][focusRow] != 0) &&
+					 (GCD(toReduce->matrix[nonzero][focusRow], modulus) == 1)))
 			{
 				hasLeadEntry = TRUE;
 				
@@ -481,29 +485,15 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			inv = free_IntMatrixT(inv);
 			
 			#ifdef VERBOSE
-			printf("No nonzero leading entry could be found.\n");
+			printf("No nonzero, inverstible leading entry could be found.\n");
 			#endif
 			
 			return NULL;
 		}
-		
-		//Check to see if the given leading element actually has an inverse
+
 		//If the leading entry is a 1, we don't need to find an inverse
 		if (toReduce->matrix[focusRow][focusRow] != 1)
 		{
-			if (GCD(toReduce->matrix[focusRow][focusRow], modulus) != 1)
-			{
-				#ifdef VERBOSE
-				printf("No inverse for the leading entry \"%d\" exists mod %d.\n", 
-				toReduce->matrix[focusRow][focusRow], modulus);
-				#endif
-				
-				toReduce = free_IntMatrixT(toReduce);
-				inv = free_IntMatrixT(inv);
-				
-				return NULL;
-			}
-			
 			//Finding the inverse of our leading entry (i)
 			for (int i = 0; i < modulus; i += 1)
 			{

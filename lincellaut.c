@@ -13,13 +13,6 @@
 #include "headers/cycles.h" //Allows us to use Floyd's Algorithm
 
 /* Floyd's Cycle Detection Algorithm
- *
- * - Set x_0 = y_0
- * - x_(n+1) = F(x_n)
- * - y_(n+1) = F(F(y_n))
- * - Repeat the above process until x_n == y_n
- *  - x_n will then be an element in a cycle.
- *
  * The algorithm will have a stopping time of:
  *  tau (transient length) if tau == 0 mod omega (cycle length)
  *  tau + (omega - (tau mod omega)) otherwise.
@@ -40,9 +33,6 @@
  maybe we run floyd's cycle algorithm again with different step sizes (+2 and +3?),
  figure out what the stopping time for the new setup is,
  and creating a system of equations to solve for omega and tau?
- 
- we could also check if the given matrix is invertible to see if transient regions
- even exist...
  
  *
  * If tau < omega, then stopping time = omega
@@ -70,12 +60,12 @@
 
 int main()
 {
-	//FIle paths to where matrices are stored
+	//File paths to where matrices are stored
 	char* const UPDATEFILEPATH = "matrices/update.matrix";
-	//char* const INITIALFILEPATH = "matrices/initial.matrix";
+	char* const INITIALFILEPATH = "matrices/initial.matrix";
 	
 	//const int ITERATIONS = 12345;
-	const int MODULUS = 6;
+	const int MODULUS = 8;
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(UPDATEFILEPATH);
@@ -83,7 +73,7 @@ int main()
 	IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
 	//Stores our initial vector
-	//IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
+	IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
 	
 	//IntMatrixTP s_f; //Stores our final vector
 	
@@ -98,74 +88,27 @@ int main()
 	printf("F:\n");
 	printm(F, TRUE);
 	
-	printf("The inverse of F is:\n");
 	Finv = inverse(F, MODULUS); 
-	printm(Finv, TRUE);
+	if (Finv != NULL)
+	{
+		printf("The inverse of F is:\n");
+		printm(Finv, TRUE);
+		
+		//Testing both orders to see if the inverse really is the inverse
+		printf("F and Finv multipled together give:\n");
+		mat_mul(F, Finv, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
+		mat_mul(Finv, F, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
+	}
+	else
+		printf("F is not invertible mod %d.\n", MODULUS);
 	
-	//Testing both orders to see if the inverse really is the inverse
-	printf("F and Finv multipled together give:\n");
-	mat_mul(F, Finv, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
-	mat_mul(Finv, F, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
-	
-	//printcycle(floyd(F, s_0, MODULUS));
+	printcycle(floyd(F, s_0, MODULUS));
 	
 	//Freeing memory
 	F    = free_IntMatrixT(F);
-	Finv = free_IntMatrixT(Finv);
-	//s_0 = free_IntMatrixT(s_0);
+	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
+	s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
 	
 	return EXIT_SUCCESS;
 }
-
-/*
-0 1 2 3 4 5
-0 2 4 0 2 4
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-even transient length w + 2n
-even cycle length w
-
-0 1 2 3 4 5 6 7 | x
-0 2 4 6 0 2 4 6 | y
-
-y's row will be shifted to the left n times
-0 1 2 3 4 5 6 7 | x
-2 4 6 0 2 4 6 0 | y
-
-number of steps = t + (w - 2n mod w)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-odd transient length w + 2n + 1
-even cycle length w
-
-0 1 2 3 4 5 6 7 | x
-1 3 5 7 1 3 5 7 | y
-
-y's row will be shifted to the left n times
-number of steps = t + (w - 2n+1 mod w) //The +1 accounts for the different starting position
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-even transient length w + 2n + 1
-odd cycle length w
-
-0 1 2 3 4 5 6 7 8 | x
-0 2 4 6 8 1 3 5 7 | y
-
-With odd cycle lengths, the starting number for y will always
-be 2n + 1 mod w:
-0 1 2 3 4 5 6 7 8 | x
-1 3 5 7 0 2 4 6 8 | y
-number of steps = t + (w - 2n + 1 mod w)
-
-odd transient length w + 2n
-odd cycle length w
-
-0 1 2 3 4 5 6 7 8 | x
-0 2 4 6 8 1 3 5 7 | y
-Starting number will always be 2n mod w:
-0 1 2 3 4 5 6 7 8 | x
-2 4 6 8 1 3 5 7 0 | y
-number of steps = t + (w - 2n mod w)
-
-This proves the claim in the paper.
-Just mess around with numbers and see that this works.
-
-*/
