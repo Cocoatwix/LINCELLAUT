@@ -104,6 +104,8 @@ int main()
 	
 	printcycle(floyd(F, s_0, MODULUS));
 	
+	write_orbits("orbittest.orbit", F, MODULUS);
+	
 	//Freeing memory
 	F    = free_IntMatrixT(F);
 	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;

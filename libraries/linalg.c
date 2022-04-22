@@ -108,6 +108,17 @@ IntMatrixTP identity_IntMatrixT(int r)
 }
 
 
+int set_column(IntMatrixTP v, int* const elements)
+/** Returns a pointer to a new IntMatrixTP vector that contains
+    the elements specified in elements. Returns NULL on error. */
+{
+	for (int i = 0; i < v->m; i += 1)
+		v->matrix[i][0] = elements[i];
+	
+	return 1;
+}
+
+
 IntMatrixTP read_IntMatrixT(char* const matFilePath)
 /** Initialises the given matrix M from the given .matrix file.
     This method assumes matFile points to the beginning of the file.

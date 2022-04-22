@@ -16,6 +16,10 @@ void printcycle(CycleInfoTP);
     the final vector. */
 IntMatrixTP iterate(IntMatrixTP, IntMatrixTP, int, int);
 
+/** Creates a .orbit file containing the orbits of
+    every vector under the given update matrix and modulus. */
+int write_orbits(const char*, IntMatrixTP, int);
+
 /** Performs Floyd's Cycle Detection Algorithm on the
     given setup, returns info about the cycle. */
 CycleInfoTP floyd(IntMatrixTP, IntMatrixTP, int);

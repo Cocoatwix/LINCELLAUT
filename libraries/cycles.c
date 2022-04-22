@@ -71,6 +71,92 @@ IntMatrixTP iterate(IntMatrixTP F, IntMatrixTP s_0, int modulus, int iterations)
 }
 
 
+int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
+/** Writes out a .orbit file containing every single orbit in the given
+    system. Returns 1 on success, 0 otherwise. */
+{
+	//F must be a square matrix
+	if (rows(F) != cols(F))
+		return 0;
+	
+	FILE* orbitFile = fopen(fileName, "w");
+	
+	if (orbitFile == NULL)
+		return 0;
+	
+	IntMatrixTP s = new_IntMatrixT(rows(F), 1);
+	IntMatrixTP s_temp = new_IntMatrixT(rows(F), 1);
+	
+	//This will hold all of our starting values for our vectors
+	int* vectors = calloc(rows(F), sizeof(int));
+	
+	//lineNumbers the line numbers where you can find information about
+	// specific vectors in the .orbit file.
+	// For example, element lineNumbers[1][1] would hold the line
+	// number where you can look up <1, 1>'s info.
+	// Of course, this can only really be done when F is 2x2.
+	int** lineNumbers;
+	
+	if (rows(F) == 2)
+	{
+		lineNumbers = malloc(modulus*sizeof(int*));
+		for (int i = 0; i < modulus; i += 1)
+			lineNumbers[i] = calloc(modulus, sizeof(int));
+	}
+	
+	bool allTested = FALSE;
+	
+	
+	//Loop until we've found the orbits of all vectors
+	while (!allTested)
+	{
+		//Now, I need a way to be able to tell how many
+		// matrix multiplications to do before going to the
+		// next vector. How do I know when we've reached a
+		// cycle?
+		set_column(s, vectors);
+		
+		//Increment our starting vector
+		allTested = TRUE;
+		for (int element = rows(F)-1; element >= 0; element -= 1)
+		{
+			//This logic counts through all possible vectors mod modulus
+			if (vectors[element] == modulus-1)
+				vectors[element] = 0;
+			
+			else
+			{
+				vectors[element] += 1;
+				allTested = FALSE;
+				break;
+			}
+		}
+	}
+	
+	
+	if (rows(F) == 2)
+	{
+		for (int i = 0; i < modulus; i += 1)
+		{
+			free(lineNumbers[i]);
+			lineNumbers[i] = NULL;
+		}
+		free(lineNumbers);
+		lineNumbers = NULL;
+	}
+	
+	s = free_IntMatrixT(s);
+	s_temp = free_IntMatrixT(s_temp);
+	free(vectors);
+	vectors = NULL;
+	
+	if (fclose(orbitFile) == EOF)
+		return 0;
+	
+	return 1;
+}
+
+
 //UNFINISHED
 CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 /** Uses Floyd's Cycle Detection Algorithm to calculate the 
@@ -123,18 +209,22 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	//Now we have a vector that's confirmed to be in a cycle
 	//Now, we determine the cycle length
 	
-	//NOTE: since we now have an upper bound on the transient length
-	// (for non-powered primes), we can use the inequalities listed
-	// for Floyd's algorithm to deduce the cycle length without
-	// calculating all of this!
-	do
+	//If St > 2*L, then w = St.
+	if (stoppingTime > 2*rows(F))
+		info->omega = stoppingTime;
+	
+	//If above inequality doesn't hold, calculate omega manually
+	else
 	{
-		mat_mul(F, x_1, x_2);
-		modm(x_2, modulus);
-		copy_IntMatrixT(x_2, x_1);
-		info->omega += 1;
+		do
+		{
+			mat_mul(F, x_1, x_2);
+			modm(x_2, modulus);
+			copy_IntMatrixT(x_2, x_1);
+			info->omega += 1;
+		}
+		while (!compare_IntMatrixT(x_1, y_1));
 	}
-	while (!compare_IntMatrixT(x_1, y_1));
 	
 	//I need a way to get tau from St and omega
 	//If we know omega == 1, then tau is just St - 1 (unless tau = 1)

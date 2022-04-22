@@ -31,6 +31,11 @@ IntMatrixTP new_IntMatrixT(int, int);
     returns a pointer to the matrix. Returns NULL on error. */
 IntMatrixTP identity_IntMatrixT(int);
 
+/** Sets the values of a column vector with elements specified
+    in the given int pointer. Returns 1 on success, 0
+    otherwise. */
+int set_column(IntMatrixTP, int* const);
+
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP read_IntMatrixT(char* const);
