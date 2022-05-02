@@ -65,7 +65,7 @@ int main()
 	//char* const INITIALFILEPATH = "matrices/initial.matrix";
 	
 	//const int ITERATIONS = 12345;
-	const int MODULUS = 20;
+	const int MODULUS = 99;
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(UPDATEFILEPATH);

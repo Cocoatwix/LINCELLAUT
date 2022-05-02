@@ -262,6 +262,7 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 				
 				//Setting char count so that we can find the orbit in the file later
 				charNumbers[element(repvect, 0, 0)][element(repvect, 1, 0)] = charCount;
+				lineNumbers[element(repvect, 0, 0)][element(repvect, 1, 0)] = currentLine;
 				
 				do
 				{
@@ -274,15 +275,18 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 					
 					charCount += num_digits(element(x_2, 0, 0)) + 
 					             num_digits(element(x_2, 1, 0)) + 2; //+2 for space, \n
+					currentLine += 1;
+									
+					//If we get to a vector we already have the orbit for, we can stop
+					if (lineNumbers[element(x_2, 0, 0)][element(x_2, 1, 0)] != -1)
+						break;
 				}
 				while (! compare_IntMatrixT(repvect, x_2));
 				
 				//Separating different vector orbits
 				fprintf(orbitsFile, "-\n");
 				charCount += 2;
-				
-				lineNumbers[element(repvect, 0, 0)][element(repvect, 1, 0)] = currentLine;
-				currentLine += currentCycle->omega + 1; //+1 accounts for extra space
+				currentLine += 1; //+1 accounts for extra space
 			}
 			
 			//At this point, our cycle rep's orbit has been added to the .orbits file
@@ -295,7 +299,8 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 				
 				//Generate orbit for s upto repvect
 				copy_IntMatrixT(s, x_1);
-				do
+				
+				while (TRUE)
 				{
 					mat_mul(F, x_1, x_2);
 					modm(x_2, modulus);
@@ -307,8 +312,13 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 					
 					charCount += num_digits(element(x_2, 0, 0)) + 
 					             num_digits(element(x_2, 1, 0)) + 2; //+2 for space, \n
+							
+					//If we get to a vector we already have the orbit for, we can stop
+					// It's up to the user to find that previous vector and recreate
+					// this vector's orbit faithfully.
+					if (lineNumbers[element(x_2, 0, 0)][element(x_2, 1, 0)] != -1)
+						break;
 				}
-				while (! compare_IntMatrixT(x_2, repvect));
 
 				fprintf(orbitsFile, "-\n");
 				charCount += 2;
@@ -337,6 +347,7 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 		}
 	}
 	
+	#ifdef VERBOSE
 	printf("Line numbers:\n");
 	for (int i = 0; i < modulus; i += 1)
 	{
@@ -344,6 +355,7 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 			printf("%d ", lineNumbers[i][j]);
 		printf("\n");
 	}
+	#endif //VERBOSE
 	
 	//Freeing memory
 	for (int i = 0; i < modulus; i += 1)
