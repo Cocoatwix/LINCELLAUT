@@ -248,7 +248,7 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 }
 
 
-/* private */ int numDigits(int num)
+int num_digits(int num)
 /** Calculuates how many digits an integer has and returns
     that number. The function assumes the number given is
 		positive. */
@@ -276,20 +276,20 @@ void printm(IntMatrixTP M, bool zeroPad)
 	if (zeroPad)
 		for (int row = 0; row < M->m; row += 1)
 			for (int col = 0; col < M->n; col += 1)
-				if (numDigits(M->matrix[row][col]) > maxDigits)
-					maxDigits = numDigits(M->matrix[row][col]);
+				if (num_digits(M->matrix[row][col]) > maxDigits)
+					maxDigits = num_digits(M->matrix[row][col]);
 	
 	for (int mIndex = 0; mIndex < M->m; mIndex += 1)
 	{
 		for (int nIndex = 0; nIndex < M->n-1; nIndex += 1)
 		{
-			for (int p = 0; p < maxDigits - numDigits(M->matrix[mIndex][nIndex]); p += 1)
+			for (int p = 0; p < maxDigits - num_digits(M->matrix[mIndex][nIndex]); p += 1)
 				printf("0");
 			
 			printf("%d, ", M->matrix[mIndex][nIndex]);
 		}
 		
-		for (int p = 0; p < maxDigits - numDigits(M->matrix[mIndex][M->n-1]); p += 1)
+		for (int p = 0; p < maxDigits - num_digits(M->matrix[mIndex][M->n-1]); p += 1)
 				printf("0");
 
 		printf("%d", M->matrix[mIndex][M->n-1]);

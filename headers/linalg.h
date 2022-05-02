@@ -51,6 +51,10 @@ int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
 /** Prints a given matrix of given size to the console. */
 void printm(IntMatrixTP, bool);
 
+/** Returns the number of digits a given
+    positive integer has. */
+int num_digits(int);
+
 /** Multiples two matrices together, stores result in a third matrix. 
     Returns 1 on success, 0 otherwise. */
 int mat_mul(IntMatrixTP const, IntMatrixTP const, IntMatrixTP);

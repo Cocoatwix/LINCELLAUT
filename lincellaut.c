@@ -62,18 +62,18 @@ int main()
 {
 	//File paths to where matrices are stored
 	char* const UPDATEFILEPATH = "matrices/update.matrix";
-	char* const INITIALFILEPATH = "matrices/initial.matrix";
+	//char* const INITIALFILEPATH = "matrices/initial.matrix";
 	
 	//const int ITERATIONS = 12345;
-	const int MODULUS = 8;
+	const int MODULUS = 20;
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(UPDATEFILEPATH);
-	IntMatrixTP Finv;
-	IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
+	//IntMatrixTP Finv;
+	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
 	//Stores our initial vector
-	IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
+	//IntMatrixTP s_0 = read_IntMatrixT(INITIALFILEPATH);
 	
 	//IntMatrixTP s_f; //Stores our final vector
 	
@@ -85,7 +85,7 @@ int main()
 	//printf("Determinant of update matrix: %d\n", det(F));
 	
 	//Testing the inverse function
-	printf("F:\n");
+	/* printf("F:\n");
 	printm(F, TRUE);
 	
 	Finv = inverse(F, MODULUS); 
@@ -102,14 +102,14 @@ int main()
 	else
 		printf("F is not invertible mod %d.\n", MODULUS);
 	
-	printcycle(floyd(F, s_0, MODULUS));
+	printcycle(floyd(F, s_0, MODULUS)); */
 	
-	write_orbits("orbittest.orbit", F, MODULUS);
+	write_orbits("orbittest.orbits", F, MODULUS);
 	
 	//Freeing memory
 	F    = free_IntMatrixT(F);
-	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
-	s_0 = free_IntMatrixT(s_0);
+	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
+	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
 	
 	return EXIT_SUCCESS;

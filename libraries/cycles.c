@@ -4,6 +4,8 @@
 
 #include "../headers/linalg.h" //Letting us use matrices
 
+#define FREE(v) free(v); v = NULL
+
 //Might need to write a "free" function later on
 //May want to store the vector that's in the cycle as well
 typedef struct cycleinfo
@@ -12,8 +14,19 @@ typedef struct cycleinfo
 	int omega; //Cycle length
 	int tau;   //Transient length
 	int stoppingTime;
+	
+	IntMatrixTP inCycle; //Stores a vector that's in the cycle
 }
 CycleInfoT, *CycleInfoTP;
+
+
+CycleInfoTP free_CycleInfoT(CycleInfoTP c)
+/** Frees memory used by the given CycleInfo struct.
+    Returns NULL. */
+{
+	free_IntMatrixT(c->inCycle);
+	return NULL;
+}
 
 
 //Not fully implemented yet
@@ -71,92 +84,6 @@ IntMatrixTP iterate(IntMatrixTP F, IntMatrixTP s_0, int modulus, int iterations)
 }
 
 
-int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
-/** Writes out a .orbit file containing every single orbit in the given
-    system. Returns 1 on success, 0 otherwise. */
-{
-	//F must be a square matrix
-	if (rows(F) != cols(F))
-		return 0;
-	
-	FILE* orbitFile = fopen(fileName, "w");
-	
-	if (orbitFile == NULL)
-		return 0;
-	
-	IntMatrixTP s = new_IntMatrixT(rows(F), 1);
-	IntMatrixTP s_temp = new_IntMatrixT(rows(F), 1);
-	
-	//This will hold all of our starting values for our vectors
-	int* vectors = calloc(rows(F), sizeof(int));
-	
-	//lineNumbers the line numbers where you can find information about
-	// specific vectors in the .orbit file.
-	// For example, element lineNumbers[1][1] would hold the line
-	// number where you can look up <1, 1>'s info.
-	// Of course, this can only really be done when F is 2x2.
-	int** lineNumbers;
-	
-	if (rows(F) == 2)
-	{
-		lineNumbers = malloc(modulus*sizeof(int*));
-		for (int i = 0; i < modulus; i += 1)
-			lineNumbers[i] = calloc(modulus, sizeof(int));
-	}
-	
-	bool allTested = FALSE;
-	
-	
-	//Loop until we've found the orbits of all vectors
-	while (!allTested)
-	{
-		//Now, I need a way to be able to tell how many
-		// matrix multiplications to do before going to the
-		// next vector. How do I know when we've reached a
-		// cycle?
-		set_column(s, vectors);
-		
-		//Increment our starting vector
-		allTested = TRUE;
-		for (int element = rows(F)-1; element >= 0; element -= 1)
-		{
-			//This logic counts through all possible vectors mod modulus
-			if (vectors[element] == modulus-1)
-				vectors[element] = 0;
-			
-			else
-			{
-				vectors[element] += 1;
-				allTested = FALSE;
-				break;
-			}
-		}
-	}
-	
-	
-	if (rows(F) == 2)
-	{
-		for (int i = 0; i < modulus; i += 1)
-		{
-			free(lineNumbers[i]);
-			lineNumbers[i] = NULL;
-		}
-		free(lineNumbers);
-		lineNumbers = NULL;
-	}
-	
-	s = free_IntMatrixT(s);
-	s_temp = free_IntMatrixT(s_temp);
-	free(vectors);
-	vectors = NULL;
-	
-	if (fclose(orbitFile) == EOF)
-		return 0;
-	
-	return 1;
-}
-
-
 //UNFINISHED
 CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 /** Uses Floyd's Cycle Detection Algorithm to calculate the 
@@ -164,14 +91,18 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 		s_0 is the starting vector. M is the update rule.
 		
 		Returns a CycleInfoTP that points to the data calculated
-		about the cycle. */
+		about the cycle. Returns NULL on error. */
 {
+	if (rows(F) != cols(F))
+		return NULL;
+	
 	int stoppingTime = 0;
 	IntMatrixTP Finv = inverse(F, modulus);
 	
 	CycleInfoTP info = malloc(sizeof(CycleInfoT));
 	info->omega = 0;
 	info->tau = -1;
+	info->inCycle = new_IntMatrixT(rows(F), 1);
 	
 	//If Finv exists, then no transient regions can exist
 	if (Finv != NULL)
@@ -205,6 +136,7 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	while (!compare_IntMatrixT(x_1, y_1));
 	
 	info->stoppingTime = stoppingTime;
+	copy_IntMatrixT(x_1, info->inCycle);
 	
 	//Now we have a vector that's confirmed to be in a cycle
 	//Now, we determine the cycle length
@@ -245,4 +177,195 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	
 	return info;
+}
+
+
+//UNFINISHED
+int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
+/** Writes out a .orbits file containing every single orbit in the given
+    system. Returns 1 on success, 0 otherwise. 
+		
+		Currently, this function only works with 2 by 2 matrices. */
+{
+	//F must be a square 2 by 2 matrix
+	if ((rows(F) != cols(F)) && (rows(F) != 2))
+		return 0;
+	
+	FILE* orbitsFile = fopen(fileName, "w");
+	
+	if (orbitsFile == NULL)
+		return 0;
+	
+	int currentLine = 0; //Where we are in orbitsFile
+	int charCount   = 0; //Instead of counting lines, we count chars.
+	
+	IntMatrixTP s   = new_IntMatrixT(rows(F), 1); //current vector to get orbit
+	IntMatrixTP x_1 = new_IntMatrixT(rows(s), 1); //Used for iterating F on s
+	IntMatrixTP x_2 = new_IntMatrixT(rows(s), 1);
+	
+	//Holds info about the current vector's cycle
+	CycleInfoTP currentCycle;
+	IntMatrixTP repvect;
+	
+	//This will hold all of our starting values for our vectors
+	int* vectors = calloc(rows(F), sizeof(int));
+	
+	//Holds the vector from the rep's cycle to copy
+	int* cycleVect = malloc(2*sizeof(int));
+	
+	//lineNumbers the line numbers where you can find information about
+	// specific vectors in the .orbit file.
+	// For example, element lineNumbers[1][1] would hold the line
+	// number where you can look up <1, 1>'s info.
+	// Of course, this can only really be done when F is 2x2.
+	int** lineNumbers = malloc(modulus*sizeof(int*));
+	for (int i = 0; i < modulus; i += 1)
+	{
+		lineNumbers[i] = calloc(modulus, sizeof(int));
+		for (int j = 0; j < modulus; j += 1)
+			lineNumbers[i][j] = -1;
+	}
+	
+	//Holds what character position each vector's orbit
+	// starts at.
+	int** charNumbers = malloc(modulus*sizeof(int*));
+	for (int i = 0; i < modulus; i += 1)
+		charNumbers[i] = malloc(modulus*sizeof(int));
+	
+	bool allTested = FALSE;
+	
+	
+	//Loop until we've found the orbits of all vectors
+	while (!allTested)
+	{
+		set_column(s, vectors);
+		
+		//Our plan for generating orbits
+		// 1. Check to see if the vector's orbit has already been generated
+		// 2. Find a rep vector that's in our vector's eventual cycle
+		// 3. Generate the rep vector's orbit, update line numbers
+		// 4. Generate the original vector's orbit up to the rep vector
+		// 5. Copy-paste rep vector's orbit to complete OG vector's orbit, update line numbers
+		// 6. Put line number array in a different file.
+		
+		//If this vector's orbit hasn't been generated yet
+		if (lineNumbers[element(s, 0, 0)][element(s, 1, 0)] == -1)
+		{
+			currentCycle = floyd(F, s, modulus);
+			repvect = currentCycle->inCycle;
+			
+			//If we need to generate repvect's orbit
+			if (lineNumbers[element(repvect, 0, 0)][element(repvect, 1, 0)] == -1)
+			{
+				//Iterate until we get back to repvect
+				copy_IntMatrixT(repvect, x_1);
+				
+				//Setting char count so that we can find the orbit in the file later
+				charNumbers[element(repvect, 0, 0)][element(repvect, 1, 0)] = charCount;
+				
+				do
+				{
+					mat_mul(F, x_1, x_2);
+					modm(x_2, modulus);
+					copy_IntMatrixT(x_2, x_1);
+					
+					fprintf(orbitsFile, "%d %d\n", 
+					element(x_2, 0, 0), element(x_2, 1, 0));
+					
+					charCount += num_digits(element(x_2, 0, 0)) + 
+					             num_digits(element(x_2, 1, 0)) + 2; //+2 for space, \n
+				}
+				while (! compare_IntMatrixT(repvect, x_2));
+				
+				//Separating different vector orbits
+				fprintf(orbitsFile, "-\n");
+				charCount += 2;
+				
+				lineNumbers[element(repvect, 0, 0)][element(repvect, 1, 0)] = currentLine;
+				currentLine += currentCycle->omega + 1; //+1 accounts for extra space
+			}
+			
+			//At this point, our cycle rep's orbit has been added to the .orbits file
+			
+			//Making sure that our rep is a different vector
+			if (! compare_IntMatrixT(s, repvect))
+			{
+				lineNumbers[element(s, 0, 0)][element(s, 1, 0)] = currentLine;
+				charNumbers[element(s, 0, 0)][element(s, 1, 0)] = charCount;
+				
+				//Generate orbit for s upto repvect
+				copy_IntMatrixT(s, x_1);
+				do
+				{
+					mat_mul(F, x_1, x_2);
+					modm(x_2, modulus);
+					copy_IntMatrixT(x_2, x_1);
+					
+					fprintf(orbitsFile, "%d %d\n", 
+					element(x_2, 0, 0), element(x_2, 1, 0));
+					currentLine += 1;
+					
+					charCount += num_digits(element(x_2, 0, 0)) + 
+					             num_digits(element(x_2, 1, 0)) + 2; //+2 for space, \n
+				}
+				while (! compare_IntMatrixT(x_2, repvect));
+
+				fprintf(orbitsFile, "-\n");
+				charCount += 2;
+				currentLine += 1;
+				
+				//Now that we ended the orbit at a vector we already have
+				// the orbit for, the user can just jump to that one via
+				// the line numbers file
+			}
+		}
+		
+		//Increment our starting vector
+		allTested = TRUE;
+		for (int element = rows(F)-1; element >= 0; element -= 1)
+		{
+			//This logic counts through all possible vectors mod modulus
+			if (vectors[element] == modulus-1)
+				vectors[element] = 0;
+			
+			else
+			{
+				vectors[element] += 1;
+				allTested = FALSE;
+				break;
+			}
+		}
+	}
+	
+	printf("Line numbers:\n");
+	for (int i = 0; i < modulus; i += 1)
+	{
+		for (int j = 0; j < modulus; j += 1)
+			printf("%d ", lineNumbers[i][j]);
+		printf("\n");
+	}
+	
+	//Freeing memory
+	for (int i = 0; i < modulus; i += 1)
+	{
+		FREE(lineNumbers[i]);
+		FREE(charNumbers[i]);
+	}
+	FREE(lineNumbers);
+	FREE(charNumbers);
+	
+	s   = free_IntMatrixT(s);
+	x_1 = free_IntMatrixT(x_1);
+	x_2 = free_IntMatrixT(x_2);
+	
+	//This also frees repvect
+	currentCycle = free_CycleInfoT(currentCycle);
+	
+	FREE(vectors);
+	FREE(cycleVect);
+	
+	if (fclose(orbitsFile) == EOF)
+		return 0;
+	
+	return 1;
 }

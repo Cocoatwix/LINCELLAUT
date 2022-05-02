@@ -8,6 +8,10 @@
     Floyd's Cycle Detection Algorithm. */
 typedef struct cycleinfo *CycleInfoTP;
 
+/** Frees the memory allocated to the given CycleInfo struct.
+    Returns NULL. */
+CycleInfoTP free_CycleInfoT(CycleInfoTP);
+
 /** Prints out the information contained in the
     CycleInfoT object pointed to. */
 void printcycle(CycleInfoTP);
@@ -16,12 +20,16 @@ void printcycle(CycleInfoTP);
     the final vector. */
 IntMatrixTP iterate(IntMatrixTP, IntMatrixTP, int, int);
 
-/** Creates a .orbit file containing the orbits of
-    every vector under the given update matrix and modulus. */
-int write_orbits(const char*, IntMatrixTP, int);
-
 /** Performs Floyd's Cycle Detection Algorithm on the
-    given setup, returns info about the cycle. */
+    given setup, returns info about the cycle. 
+		Returns NULL on error. */
 CycleInfoTP floyd(IntMatrixTP, IntMatrixTP, int);
+
+/** Creates a .orbits file containing the orbits of
+    every vector under the given update matrix and modulus. 
+		Returns 1 on success, 0 otherwise.
+		
+		Currently only works on 2 by 2 matrices. */
+int write_orbits(const char*, IntMatrixTP, int);
 
 #endif //CYCLES_H
