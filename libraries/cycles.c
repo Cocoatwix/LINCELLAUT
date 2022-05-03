@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <string.h>
+
 #include "../headers/linalg.h" //Letting us use matrices
 
 #define FREE(v) free(v); v = NULL
@@ -192,6 +194,11 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 		return 0;
 	
 	FILE* orbitsFile = fopen(fileName, "w");
+	FILE* linesFile; //Used for holding line numbers for orbits
+	
+	//Will hold the filename for the line number file
+	//The +4 accounts for the new extension and the null character
+	char* linesFileName = malloc((strlen(fileName)+4)*sizeof(char));
 	
 	if (orbitsFile == NULL)
 		return 0;
@@ -218,6 +225,8 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 	// For example, element lineNumbers[1][1] would hold the line
 	// number where you can look up <1, 1>'s info.
 	// Of course, this can only really be done when F is 2x2.
+	
+	//Line numbers start at 0
 	int** lineNumbers = malloc(modulus*sizeof(int*));
 	for (int i = 0; i < modulus; i += 1)
 	{
@@ -243,10 +252,9 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 		//Our plan for generating orbits
 		// 1. Check to see if the vector's orbit has already been generated
 		// 2. Find a rep vector that's in our vector's eventual cycle
-		// 3. Generate the rep vector's orbit, update line numbers
+		// 3. Generate the rep vector's orbit if needed, update line numbers
 		// 4. Generate the original vector's orbit up to the rep vector
-		// 5. Copy-paste rep vector's orbit to complete OG vector's orbit, update line numbers
-		// 6. Put line number array in a different file.
+		// 5. Put line number array in a different file.
 		
 		//If this vector's orbit hasn't been generated yet
 		if (lineNumbers[element(s, 0, 0)][element(s, 1, 0)] == -1)
@@ -347,6 +355,21 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 		}
 	}
 	
+	//Now that we've generated all the orbits, we should output
+	// a file containing the line numbers for all the vectors' orbits
+	strcpy(linesFileName, fileName);
+	strcat(linesFileName, "loc");
+	linesFile = fopen(linesFileName, "w");
+	if (linesFile == NULL)
+		return 0;
+	
+	for (int i = 0; i < modulus; i += 1)
+	{
+		for (int j = 0; j < modulus; j += 1)
+			fprintf(linesFile, "%d ", lineNumbers[i][j]);
+		fprintf(linesFile, "\n");
+	}
+	
 	#ifdef VERBOSE
 	printf("Line numbers:\n");
 	for (int i = 0; i < modulus; i += 1)
@@ -366,6 +389,8 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 	FREE(lineNumbers);
 	FREE(charNumbers);
 	
+	FREE(linesFileName);
+	
 	s   = free_IntMatrixT(s);
 	x_1 = free_IntMatrixT(x_1);
 	x_2 = free_IntMatrixT(x_2);
@@ -377,6 +402,9 @@ int write_orbits(const char* fileName, IntMatrixTP F, int modulus)
 	FREE(cycleVect);
 	
 	if (fclose(orbitsFile) == EOF)
+		return 0;
+	
+	if (fclose(linesFile) == EOF)
 		return 0;
 	
 	return 1;

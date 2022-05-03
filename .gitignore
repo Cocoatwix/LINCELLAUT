@@ -4,6 +4,7 @@ objects/*.o
 #Keep the executable out of the repo
 lincellaut
 *.orbits
+*.orbitsloc
 
 #Don't share my TODO lists with anyone :)
 todo.txt

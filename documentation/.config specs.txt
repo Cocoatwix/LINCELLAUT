@@ -1,0 +1,20 @@
+The .config file within the config folder is used to specify data which the user will likely want to change frequently. This allows data to be changed without having to recompile lincellaut.c.
+
+Data is specified in the .config file with a simple key-value syntax:
+
+key value
+
+An equal sign or any other such separator is not to be placed between the key and the value, only a space. Any number of spaces can be placed between the key and value, allowing for items to be aligned arbitrarily. Keys are case sensitive.
+
+By default, the maximum length for keys and values is 100 characters. This can be changed by altering the MAXSTRLEN constant at the top of main() in lincellaut.c.
+
+
+The following is a list of accepted keys and the data they expect:
+
+mod : This key specifies the modulus for lincellaut.c to feed into whatever functions it uses. This key expects an integer.
+
+update : This key specifies a file path where an update rule matrix can be found in .matrix format. The .matrix extension should be included in the filename. This key expects a string (no quotes around the string).
+
+initial : This key specifies a file path where a starting vector can be found in .matrix format. The .matrix extension should be included in the filename. This vector is primarily used with Floyd's Cycle Detecting Algorithm. This key expects a string (no quotes around the string).
+
+orbitsname : This key specifies a filename for creating a .orbits file. The .orbits extension should be included in the filename. This file is created when write_orbits() is called. This key expects a string (no quotes around the string).

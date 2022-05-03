@@ -8,9 +8,12 @@
  
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "headers/linalg.h" 
 #include "headers/cycles.h" //Allows us to use Floyd's Algorithm
+
+#define FREE(v) free(v); v = NULL
 
 /* Floyd's Cycle Detection Algorithm
  * The algorithm will have a stopping time of:
@@ -60,15 +63,82 @@
 
 int main()
 {
-	//File paths to where matrices are stored
-	char* const UPDATEFILEPATH = "matrices/update.matrix";
-	//char* const INITIALFILEPATH = "matrices/initial.matrix";
+	//The maximum length for a string in the .config file
+	const int MAXSTRLEN = 101;
 	
-	//const int ITERATIONS = 12345;
-	const int MODULUS = 99;
+	//Read .config file to get appropriate data loaded
+	FILE* system = fopen("config/system.config", "r");
+	
+	if (system == NULL)
+	{
+		fprintf(stderr, "Unable to open config file. Check the config folder.\n");
+		return EXIT_FAILURE;
+	}
+	
+	//int   iterations;
+	int   modulus;
+	char* updatefilepath  = malloc(MAXSTRLEN*sizeof(char));
+	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
+	char* orbitsfilepath  = malloc(MAXSTRLEN*sizeof(char));
+	
+	//Temporarily holds config data
+	char* systemData = malloc(MAXSTRLEN*sizeof(char));
+	
+	
+	while (fscanf(system, "%10s", systemData) == 1)
+	{
+		//printf("%s\n", systemData);
+		if (! strcmp(systemData, "mod"))
+		{
+			if (fscanf(system, "%d", &modulus) != 1)
+			{
+				fprintf(stderr, "Unable to read modulus from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+		
+		else if (! strcmp(systemData, "update"))
+		{
+			if (fscanf(system, "%s", updatefilepath) != 1)
+			{
+				fprintf(stderr, "Unable to read update matrix path from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+		
+		else if (! strcmp(systemData, "initial"))
+		{
+			if (fscanf(system, "%s", initialfilepath) != 1)
+			{
+				fprintf(stderr, "Unable to read initial vector path from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+		
+		else if (! strcmp(systemData, "orbitsname"))
+		{
+			if (fscanf(system, "%s", orbitsfilepath) != 1)
+			{
+				fprintf(stderr, "Unable to read orbits file path from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+	}
+	
+	
+	FREE(systemData);
+	if (fclose(system) == EOF)
+	{
+		fprintf(stderr, "Unable to close config file.\n");
+		return EXIT_FAILURE;
+	}
+	
+	printf("Modulus: %d\n", modulus);
+	printf("Update: %s\n", updatefilepath);
+	printf("Initial: %s\n", initialfilepath);
 	
 	//Update rule matrix
-	IntMatrixTP F     = read_IntMatrixT(UPDATEFILEPATH);
+	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
 	//IntMatrixTP Finv;
 	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
@@ -104,10 +174,14 @@ int main()
 	
 	printcycle(floyd(F, s_0, MODULUS)); */
 	
-	write_orbits("orbittest.orbits", F, MODULUS);
+	write_orbits(orbitsfilepath, F, modulus);
 	
 	//Freeing memory
-	F    = free_IntMatrixT(F);
+	FREE(updatefilepath);
+	FREE(initialfilepath);
+	FREE(orbitsfilepath);
+	
+	F = free_IntMatrixT(F);
 	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
