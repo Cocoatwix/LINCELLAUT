@@ -133,9 +133,11 @@ int main()
 		return EXIT_FAILURE;
 	}
 	
+	#ifdef VERBOSE
 	printf("Modulus: %d\n", modulus);
 	printf("Update: %s\n", updatefilepath);
 	printf("Initial: %s\n", initialfilepath);
+	#endif //VERBOSE
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
