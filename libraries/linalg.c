@@ -119,6 +119,20 @@ int set_column(IntMatrixTP v, int* const elements)
 }
 
 
+int set_matrix(IntMatrixTP A, int** const arr)
+/* Using the given array, sets the matrix of a given
+   initialised IntMatrixT. Returns 1 on success, 0 otherwise. 
+	 
+	 It is assumed arr will be the correct dimensions for A. */
+{
+	for (int row = 0; row < A->m; row += 1)
+		for (int col = 0; col < A->n; col += 1)
+			A->matrix[row][col] = arr[row][col];
+		
+	return 1;
+}
+
+
 IntMatrixTP read_IntMatrixT(char* const matFilePath)
 /** Initialises the given matrix M from the given .matrix file.
     This method assumes matFile points to the beginning of the file.

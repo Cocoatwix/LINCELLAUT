@@ -1,4 +1,7 @@
 
+#Compiling shared libraries must be done on Windows since Python is running on Windows
+#Use cc -fPIC -shared -o orbitvis.so orbitvis.c to compile shared library
+
 COMPILER = gcc
 FLAGS = -Wall -Wextra -pedantic
 TARGET = lincellaut
@@ -34,4 +37,7 @@ $(OBJPATH)/$(LIB3).o:	$(LIBPATH)/$(LIB3).c
 	
 clean:
 	rm $(OBJPATH)/*.o
+	rm $(OBJPATH)/*.so
+	rm *.orbits
+	rm *.orbitsloc
 	rm $(TARGET)

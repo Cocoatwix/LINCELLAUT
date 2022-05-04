@@ -17,7 +17,8 @@ CycleInfoTP free_CycleInfoT(CycleInfoTP);
 void printcycle(CycleInfoTP);
 
 /** Multiples a vector by a given matrix n times, returns
-    the final vector. */
+    the final vector. 
+		<update>, <initial>, <mod>, <iter>*/
 IntMatrixTP iterate(IntMatrixTP, IntMatrixTP, int, int);
 
 /** Performs Floyd's Cycle Detection Algorithm on the

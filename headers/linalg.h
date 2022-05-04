@@ -36,6 +36,11 @@ IntMatrixTP identity_IntMatrixT(int);
     otherwise. */
 int set_column(IntMatrixTP, int* const);
 
+/** Sets the values of an IntMatrixT's matrix to the
+    values supplied in the 2D array. Returns 1 on success,
+		0 otherwise. */
+int set_matrix(IntMatrixTP, int** const);
+
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP read_IntMatrixT(char* const);
