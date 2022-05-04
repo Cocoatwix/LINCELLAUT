@@ -1,0 +1,11 @@
+orbitvis.c contains one function: orbit_step(). This function was written to be used with ORBITVIS, allowing it to generate orbits on the fly using C (which drastically speeds up the program). 
+
+The function is currently written in a rather strange way due to the nature of interaction between C and Python. Firstly, the function returns a single integer representing its vector output instead of outputting said vector. This is to keep the return type simple enough for easy manipulation in Python. Not all datatypes can easily be translated between C and Python through ctypes; keeping the return type an integer keeps things simple. 
+Extracting the two vector components from the return value can be done as follows:
+ 1. The return value mod the modulus gives the y component.
+ 2. Subtracting the y component from the return value, then dividing by the modulus gives the x component.
+Essentially, the return value encodes each vector component as a digit in a base modulus number, with the higher place value digit representing the x component, while the other digit is the y component.
+
+Secondly, orbit_step takes in two integers as a vector instead of a single vector-like datatype. Creating a C array (to represent a vector) in Python isn't all that complicated, but keeping the components as separate integer parameters allows for every possible vector in the given system to be iterated over with a simple for-loop structure; no time is wasted constructing arrays (or any other vector-like datatype) to feed into the function.
+
+Thirdly, orbit_step takes in a pointer to a 2D integer array, and then immediately converts it to a double integer pointer. Creating 2D integer arrays is much easier (and clearer) than creating pure integer pointers in Python, so I opted to make the C mode messier to keep the Python code cleaner. 
