@@ -4,6 +4,9 @@ objects/*.so
 
 #Keep the executable out of the repo
 lincellaut
+
+#We don't need specific data in the repo, either
+*.matrix
 *.orbits
 *.orbitsloc
 
