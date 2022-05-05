@@ -26,11 +26,9 @@ IntMatrixTP iterate(IntMatrixTP, IntMatrixTP, int, int);
 		Returns NULL on error. */
 CycleInfoTP floyd(IntMatrixTP, IntMatrixTP, int);
 
-/** Creates a .orbits file containing the orbits of
+/** Creates a .iteration file containing a single iteration of
     every vector under the given update matrix and modulus. 
-		Returns 1 on success, 0 otherwise.
-		
-		Currently only works on 2 by 2 matrices. */
-int write_orbits(const char*, IntMatrixTP, int);
+		Returns 1 on success, 0 otherwise. */
+int write_iteration(const char*, IntMatrixTP, int);
 
 #endif //CYCLES_H

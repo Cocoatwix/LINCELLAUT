@@ -17,4 +17,4 @@ update : This key specifies a file path where an update rule matrix can be found
 
 initial : This key specifies a file path where a starting vector can be found in .matrix format. The .matrix extension should be included in the filename. This vector is primarily used with Floyd's Cycle Detecting Algorithm. This key expects a string (no quotes around the string).
 
-orbitsname : This key specifies a filename for creating a .orbits file. The .orbits extension should be included in the filename. This file is created when write_orbits() is called. This key expects a string (no quotes around the string).
+itername : This key specifies a filename for creating a .iteration file. The .iteration extension should be included in the filename. This file is created when write_iteration() is called. This key expects a string (no quotes around the string).

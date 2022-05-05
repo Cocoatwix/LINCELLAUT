@@ -79,7 +79,7 @@ int main()
 	int   modulus;
 	char* updatefilepath  = malloc(MAXSTRLEN*sizeof(char));
 	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
-	char* orbitsfilepath  = malloc(MAXSTRLEN*sizeof(char));
+	char* iterfilepath    = malloc(MAXSTRLEN*sizeof(char));
 	
 	//Temporarily holds config data
 	char* systemData = malloc(MAXSTRLEN*sizeof(char));
@@ -115,16 +115,15 @@ int main()
 			}
 		}
 		
-		else if (! strcmp(systemData, "orbitsname"))
+		else if (! strcmp(systemData, "itername"))
 		{
-			if (fscanf(system, "%s", orbitsfilepath) != 1)
+			if (fscanf(system, "%s", iterfilepath) != 1)
 			{
-				fprintf(stderr, "Unable to read orbits file path from config file.\n");
+				fprintf(stderr, "Unable to read iteration file path from config file.\n");
 				return EXIT_FAILURE;
 			}
 		}
 	}
-	
 	
 	FREE(systemData);
 	if (fclose(system) == EOF)
@@ -176,12 +175,12 @@ int main()
 	
 	printcycle(floyd(F, s_0, MODULUS)); */
 	
-	write_orbits(orbitsfilepath, F, modulus);
+	write_iteration(iterfilepath, F, modulus);
 	
 	//Freeing memory
 	FREE(updatefilepath);
 	FREE(initialfilepath);
-	FREE(orbitsfilepath);
+	FREE(iterfilepath);
 	
 	F = free_IntMatrixT(F);
 	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;

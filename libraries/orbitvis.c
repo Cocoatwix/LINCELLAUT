@@ -5,10 +5,6 @@ Shared library created for use with ORBITVIS
 May 4, 2022
 */
 
-/*
-The following resources were used as a reference:
-*/
-
 #include <stdlib.h>
 
 #include "../headers/linalg.h"
@@ -17,7 +13,7 @@ The following resources were used as a reference:
 
 //This function returns a single integer instead
 // of a vector to make Python usage easier
-int orbit_step(int x, int y, int (*arr)[2][2], int modulus, int t)
+int C_step(int x, int y, int (*arr)[2][2], int modulus, int t)
 /** This function iterates the vector <x, y> under an update matrix F
     mod modulus t times. Let <a, b> be the resulting 
 		vector. Then, this function returns modulus*a + b. */
