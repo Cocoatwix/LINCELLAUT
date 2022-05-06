@@ -94,17 +94,18 @@ int main()
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
+	IntMatrixTP F_2;
 	//IntMatrixTP Finv;
 	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
 	//Stores our initial vector
-	IntMatrixTP s_0 = read_IntMatrixT(initialfilepath);
+	//IntMatrixTP s_0 = read_IntMatrixT(initialfilepath);
 	
 	//IntMatrixTP s_f; //Stores our final vector
 	
-	/* Iterate s_0 a few times
-	s_f = iterate(F, s_0, MODULUS, ITERATIONS);
-	printm(s_f); */
+	//Iterate s_0 a few times
+	F_2 = iterate(F, F, modulus, 155);
+	printm(F_2, TRUE);
 	
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
@@ -127,9 +128,9 @@ int main()
 	else
 		printf("F is not invertible mod %d.\n", MODULUS); */
 	
-	CycleInfoTP theCycle = floyd(F, s_0, modulus);
+	/*CycleInfoTP theCycle = floyd(F, s_0, modulus);
 	printcycle(theCycle);
-	theCycle = free_CycleInfoT(theCycle);
+	theCycle = free_CycleInfoT(theCycle); */
 	
 	//write_iteration(iterfilepath, F, modulus);
 	
@@ -139,8 +140,9 @@ int main()
 	FREE(iterfilepath);
 	
 	F = free_IntMatrixT(F);
+	F_2 = free_IntMatrixT(F_2);
 	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
-	s_0 = free_IntMatrixT(s_0);
+	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
 	
 	return EXIT_SUCCESS;
