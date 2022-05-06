@@ -28,11 +28,6 @@ if (!(Test-Path to-orbitvis/objects))
 	New-Item -Path to-orbitvis/objects -ItemType directory
 }
 
-if (!(Test-Path to-orbitvis/headers))
-{
-	New-Item -Path to-orbitvis/headers -ItemType directory
-}
-
 if (!(Test-Path to-orbitvis/README.txt))
 {
 	New-Item to-orbitvis/README.txt
@@ -47,10 +42,5 @@ gcc -Wall -Wextra -pedantic -c -o to-orbitvis/objects/cycles.o libraries/cycles.
 gcc -Wall -Wextra -pedantic -c -o to-orbitvis/objects/factors.o libraries/factors.c
 
 gcc -fPIC -shared -o to-orbitvis/objects/orbitvis.so libraries/orbitvis.c to-orbitvis/objects/linalg.o to-orbitvis/objects/cycles.o to-orbitvis/objects/factors.o
-
-#Copy required header files
-Copy-Item "headers/linalg.h" -Destination "to-orbitvis/headers/linalg.h"
-Copy-Item "headers/cycles.h" -Destination "to-orbitvis/headers/cycles.h"
-Copy-Item "headers/factors.h" -Destination "to-orbitvis/headers/factors.h"
 
 Set-Content to-orbitvis/README.txt "This folder contains the .o and .so files needed to run ORBITVIS in CMODE 1 or CMODE 2. Simply drag this folder into your ORBITVIS directory, then specify where ORBITVIS can find the .o and .so files in the .config file. `r`n`r`nBy default, the files were placed in the objects subfolder, so the objects key in the .config file should probably have to-orbitvis/objects as its value."

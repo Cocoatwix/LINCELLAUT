@@ -2,9 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include <string.h>
-
-#include "../headers/linalg.h" //Letting us use matrices
+#include "../headers/linalg.h"  //Letting us use matrices
+#include "../headers/factors.h" //Letting us check for square-free moduli
 
 #define FREE(v) free(v); v = NULL
 
@@ -43,6 +42,23 @@ void printcycle(CycleInfoTP c)
 		printf("Transient region length: %d\n", c->tau);
 	else
 		printf("Transient region length: ??\n");
+	
+	printf("Representative:\n");
+	printm(c->inCycle, TRUE);
+}
+
+
+int omega(CycleInfoTP c)
+/** Returns the cycle length of a given CycleInfoT object. */
+{
+	return c->omega;
+}
+
+
+int tau(CycleInfoTP c)
+/** Returns the transient length of a given CycleInfoT object. */
+{
+	return c->tau;
 }
 
 
@@ -85,12 +101,56 @@ IntMatrixTP iterate(IntMatrixTP F, IntMatrixTP s_0, int modulus, int iterations)
 	}
 }
 
+/* Floyd's Cycle Detection Algorithm
+ * The algorithm will have a stopping time of:
+ *  tau (transient length) if tau == 0 mod omega (cycle length)
+ *  tau + (omega - (tau mod omega)) otherwise.
+ 
+ 
+ tau + omega - (tau mod omega) ~~ -omega
+ tau - (tau mod omega)
+ n*omega + N - N
+ n*omega ~~ /omega
+ n
+
+ however
+ 
+ n*omega ~~ -omega
+ (n-1)*omega ~~ /omega
+ (n-1)
+ 
+ maybe we run floyd's cycle algorithm again with different step sizes (+2 and +3?),
+ figure out what the stopping time for the new setup is,
+ and creating a system of equations to solve for omega and tau?
+ 
+ *
+ * If tau < omega, then stopping time = omega
+ * Every option for the stopping time is greater than or equal to omega,
+ *  so the stopping time gives an upper bound on omega (omega can be no greater than the stopping time).
+ *
+ * We can also say that if St > 2tau, then St = omega.
+ * 2tau < tau + (omega - (tau mod omega)) and rearrange inequality.
+ *  You'll find that tau must be less than omega in this case.
+ */
+ 
+/* Once we have x_n in the cycle, if we can't conclude omega,
+ *  then we can set y = x_n and keep iterating y until it equals
+ *  x_n again. The number of steps this takes will give us omega.
+ */
+ 
+/* We also know that if our update rule F doesn't have an inverse,
+ *  then our automaton has transient regions. This is because for finite sets
+ *  that map to themselves, being one-to-one is the same as onto (think about it!),
+ *  and if F isn't one-to-one, then there's some configuration that doesn't get mapped to,
+ *  hence it would be a transient configuration.
+ *
+ */
 
 //UNFINISHED
 CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 /** Uses Floyd's Cycle Detection Algorithm to calculate the 
     transient length and cycle length of some given set up.
-		s_0 is the starting vector. M is the update rule.
+		s_0 is the starting vector. F is the update rule.
 		
 		Returns a CycleInfoTP that points to the data calculated
 		about the cycle. Returns NULL on error. */
@@ -137,14 +197,22 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	}
 	while (!compare_IntMatrixT(x_1, y_1));
 	
+	//If, after iterating, we end up at the same vector,
+	// that means we started on a stationary point
+	if ((compare_IntMatrixT(s_0, x_1)) && (stoppingTime == 1))
+		info->tau = 0;
+	
 	info->stoppingTime = stoppingTime;
 	copy_IntMatrixT(x_1, info->inCycle);
 	
 	//Now we have a vector that's confirmed to be in a cycle
 	//Now, we determine the cycle length
 	
-	//If St > 2*L, then w = St.
-	if (stoppingTime > 2*rows(F))
+	if (info->tau == 0)
+		info->omega = stoppingTime;
+	
+	//If St > 2*L, and we have a square free modulus, then w = St.
+	else if ((stoppingTime > 2*rows(F)) && is_square_free(modulus))
 		info->omega = stoppingTime;
 	
 	//If above inequality doesn't hold, calculate omega manually
@@ -161,7 +229,14 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	}
 	
 	//I need a way to get tau from St and omega
-	//If we know omega == 1, then tau is just St - 1 (unless tau = 1)
+	if ((info->omega == 1) && (info->tau != 0))
+		info->tau = stoppingTime;
+	
+	//Maybe we can do casework here?
+	//For instance, if we know omega == 2, we can
+	// go through each possible case for the Stopping time
+	// (even or odd) and make a conclusion about tau that way?
+	// This may then extend to omega == 3, 4, etc.
 	
 	//We do know that, given an L by L update matrix and a square-free
 	// modulus, the maximum transient length is L.

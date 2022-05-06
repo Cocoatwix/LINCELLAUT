@@ -12,6 +12,12 @@ typedef struct cycleinfo *CycleInfoTP;
     Returns NULL. */
 CycleInfoTP free_CycleInfoT(CycleInfoTP);
 
+/** Returns the cycle length of a given CycleInfoT object. */
+int omega(CycleInfoTP);
+
+/** Returns the transient length of a given CycleInfoT object. */
+int tau(CycleInfoTP);
+
 /** Prints out the information contained in the
     CycleInfoT object pointed to. */
 void printcycle(CycleInfoTP);
