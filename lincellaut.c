@@ -29,7 +29,7 @@ int main()
 		return EXIT_FAILURE;
 	}
 	
-	//int   iterations;
+	int   iterations;
 	int   modulus;
 	char* updatefilepath  = malloc(MAXSTRLEN*sizeof(char));
 	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
@@ -47,6 +47,15 @@ int main()
 			if (fscanf(system, "%d", &modulus) != 1)
 			{
 				fprintf(stderr, "Unable to read modulus from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+		
+		else if (! strcmp(systemData, "iterations"))
+		{
+			if (fscanf(system, "%d", &iterations) != 1)
+			{
+				fprintf(stderr, "Unable to read number of iterations from config file.\n");
 				return EXIT_FAILURE;
 			}
 		}
@@ -104,7 +113,9 @@ int main()
 	//IntMatrixTP s_f; //Stores our final vector
 	
 	//Iterate s_0 a few times
-	F_2 = iterate(F, F, modulus, 155);
+	//The minus 1 is for easier conversion between ORBISVIS results
+	F_2 = iterate(F, F, modulus, iterations-1);
+	printf("Iterations: %d\n", iterations);
 	printm(F_2, TRUE);
 	
 	//Testing the determinant function

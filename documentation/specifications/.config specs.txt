@@ -13,6 +13,8 @@ The following is a list of accepted keys and the data they expect:
 
 mod : This key specifies the modulus for lincellaut.c to feed into whatever functions it uses. This key expects an integer.
 
+iterations : This key specifies how many iterations of a particular operation to perform. The specifics of how this value is used depend on how LINCELLAUT is being used. This key expects an integer as its value.
+
 update : This key specifies a file path where an update rule matrix can be found in .matrix format. The .matrix extension should be included in the filename. This key expects a string (no quotes around the string).
 
 initial : This key specifies a file path where a starting vector can be found in .matrix format. The .matrix extension should be included in the filename. This vector is primarily used with Floyd's Cycle Detecting Algorithm. This key expects a string (no quotes around the string).
