@@ -9,6 +9,7 @@ lincellaut
 *.matrix
 *.orbits
 *.orbitsloc
+*.iteration
 
 #Don't share my TODO lists with anyone :)
 todo.txt

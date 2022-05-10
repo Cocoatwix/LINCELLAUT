@@ -27,6 +27,10 @@ void printcycle(CycleInfoTP);
 		<update>, <initial>, <mod>, <iter>*/
 IntMatrixTP iterate(IntMatrixTP, IntMatrixTP, int, int);
 
+/** Sees what points F ends up at. Points are basically 
+    matrices of interest. */
+void visit_points(IntMatrixTP, int, int);
+
 /** Performs Floyd's Cycle Detection Algorithm on the
     given setup, returns info about the cycle. 
 		Returns NULL on error. */

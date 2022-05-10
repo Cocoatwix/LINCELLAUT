@@ -6,9 +6,14 @@
  *
  */
  
+/* The following resources were used as a reference:
+https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
+*/
+ 
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <limits.h> //So I can get the maximum integer
 
 #include "headers/linalg.h" 
 #include "headers/cycles.h" //Allows us to use Floyd's Algorithm
@@ -103,7 +108,7 @@ int main()
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
-	IntMatrixTP F_2;
+	//IntMatrixTP F_2;
 	//IntMatrixTP Finv;
 	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
@@ -114,9 +119,14 @@ int main()
 	
 	//Iterate s_0 a few times
 	//The minus 1 is for easier conversion between ORBISVIS results
-	F_2 = iterate(F, F, modulus, iterations-1);
+	/*F_2 = iterate(F, F, modulus, iterations-1);
 	printf("Iterations: %d\n", iterations);
-	printm(F_2, TRUE);
+	printm(F_2, TRUE); */
+	
+	//See which points F visits in its orbit
+	//INT_MAX
+	printf("Modulus: %d\n", modulus);
+	visit_points(F, modulus, iterations);
 	
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
@@ -151,7 +161,7 @@ int main()
 	FREE(iterfilepath);
 	
 	F = free_IntMatrixT(F);
-	F_2 = free_IntMatrixT(F_2);
+	//F_2 = free_IntMatrixT(F_2);
 	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);

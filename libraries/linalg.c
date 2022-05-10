@@ -203,6 +203,19 @@ int copy_IntMatrixT(IntMatrixTP const toCopy, IntMatrixTP copyTo)
 }
 
 
+int is_diagonal(IntMatrixTP A)
+/** Returns 1 if A is diagonal, 0 otherwise. */
+{
+	for (int row = 0; row < A->m; row += 1)
+		for (int col = 0; col < A->n; col += 1)
+			if (col != row)
+				if (A->matrix[row][col] != 0)
+					return 0;
+				
+	return 1;
+}
+
+
 int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 /** Compares two matrices to see if they're equal.
     Returns 1 if the two are equivalent, 0 otherwise. */

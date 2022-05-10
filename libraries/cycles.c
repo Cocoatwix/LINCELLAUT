@@ -4,6 +4,7 @@
 
 #include "../headers/linalg.h"  //Letting us use matrices
 #include "../headers/factors.h" //Letting us check for square-free moduli
+#include "../headers/modular.h" //For using modular arithmetic stuff
 
 #define FREE(v) free(v); v = NULL
 
@@ -145,6 +146,56 @@ IntMatrixTP iterate(IntMatrixTP F, IntMatrixTP s_0, int modulus, int iterations)
  *  hence it would be a transient configuration.
  *
  */
+ 
+ 
+void visit_points(IntMatrixTP F, int modulus, int iterations)
+/** Prints out the different "points" that F travels to.
+    For example, the matrix [[2 0][0 2]] goes to the identity
+		after 3 iterations for mod 7. The identity could be a point.
+		
+		If iterations is set to -1, this function iterates until
+		F reaches the identity. */
+{
+	//Making sure F is square
+	if (rows(F) == cols(F))
+	{
+		IntMatrixTP iteratedF = identity_IntMatrixT(rows(F));
+		IntMatrixTP I         = identity_IntMatrixT(rows(F));
+		IntMatrixTP copyF     = new_IntMatrixT(rows(F), rows(F));
+		
+		int scale; //Used for determining what kind of scale matrix we have
+		int elem;  //Used to hold an element from the matrix
+		
+		printf("0: I\n");
+		
+		for (int i = 0; i < iterations; i += 1)
+		{
+			//Perform an iteration
+			mat_mul(F, iteratedF, copyF);
+			modm(copyF, modulus);
+			copy_IntMatrixT(copyF, iteratedF);
+			
+			//If we know our matrix is a scale matrix
+			//This check will need to be more complicated in the future
+			if (is_diagonal(iteratedF))
+			{
+				elem = element(iteratedF, 0, 0);
+				printf("%d: %dI or %dI; ", i+1, elem, elem - modulus);
+				scale = num_inverse(elem, modulus);
+				if (scale > 0)
+					printf("Acts as %d^-1 or %d^-1", scale, scale-modulus);
+				printf("\n");
+			}
+			
+			//If we get back to the identity, stop
+			if (compare_IntMatrixT(I, iteratedF))
+				break;
+		}
+		
+		iteratedF = free_IntMatrixT(iteratedF);
+		copyF     = free_IntMatrixT(copyF);
+	}
+}
 
 //UNFINISHED
 CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)

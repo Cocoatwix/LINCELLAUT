@@ -49,6 +49,9 @@ IntMatrixTP read_IntMatrixT(char* const);
     Returns 1 on success, 0 otherwise. */
 int copy_IntMatrixT(IntMatrixTP const, IntMatrixTP);
 
+/** Returns 1 if the given matrix is diagonal, 0 otherwise. */
+int is_diagonal(IntMatrixTP);
+
 /** Compares two matrices to see if they're equal.
     Returns 1 if they are, 0 otherwise. */
 int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
