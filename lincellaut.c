@@ -126,7 +126,32 @@ int main()
 	//See which points F visits in its orbit
 	//INT_MAX
 	printf("Modulus: %d\n", modulus);
-	visit_points(F, modulus, iterations);
+	//visit_points(F, modulus, iterations);
+	
+	//Testing our ability to find eigenvalues
+	int* values = eigenvalues(F, modulus);
+	if (values == NULL)
+		printf("No eigenvalues exist for the given system.\n");
+	
+	else
+	{
+		printf("Eigenvalues: ");
+		for (int i = 1; i <= values[0]; i += 1)
+		{
+			if (i == values[0])
+				printf("%d\n", values[i]);
+			else
+				printf("%d, ", values[i]);
+		}
+	}
+	
+	//Now testing our ability to create eigenvectors
+	printm(F, TRUE);
+	printf("Using eigenvalue %d:\n", values[1]);
+	IntMatrixTP E = eigenvector(F, values[1], modulus);
+	printm(E, TRUE);
+	
+	FREE(values);
 	
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
@@ -161,6 +186,7 @@ int main()
 	FREE(iterfilepath);
 	
 	F = free_IntMatrixT(F);
+	E = free_IntMatrixT(E);
 	//F_2 = free_IntMatrixT(F_2);
 	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	//s_0 = free_IntMatrixT(s_0);

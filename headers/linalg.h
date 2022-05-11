@@ -79,4 +79,18 @@ int det(IntMatrixTP const);
     Returns NULL otherwise. */
 IntMatrixTP inverse(IntMatrixTP const, int);
 
+/** Returns the eigenvalues of a given matrix, mod some
+    modulus, as an int pointer. Returns NULL if no eigenvalues
+		exist. 
+		
+		This currently only works for 2x2 matrices. */
+int* eigenvalues(IntMatrixTP const, int);
+
+/** Returns an eigenvector of the given matrix, eigenvalue, and
+    modulus. It is assumed the given eigenvalue is valid for the
+		given system. 
+		
+		Currently only works for 2x2 matrices. */
+IntMatrixTP eigenvector(IntMatrixTP const, int, int);
+
 #endif //LINALG_H

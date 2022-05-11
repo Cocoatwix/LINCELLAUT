@@ -24,3 +24,28 @@ int num_inverse(int a, int modulus)
 		
 	return inv;
 }
+
+
+int square_root(int a, int modulus)
+/** Returns the square root of a mod modulus.
+    Returns -1 if the square root DNE. 
+		
+		According to Wikipedia, there's a more
+		efficient way to write this, but I can't
+		be bothered to look it up at the moment. */
+{
+	if (a == 0)
+		return 0;
+	
+	else if (a == 1)
+		return 1;
+	
+	else
+	{
+		for (int i = 2; i < modulus; i += 1)
+			if ((i*i) % modulus == a)
+				return i;
+			
+		return -1;
+	}
+}

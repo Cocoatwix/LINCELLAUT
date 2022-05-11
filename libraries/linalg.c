@@ -7,8 +7,11 @@
 #include <stdio.h>
 
 #include "../headers/factors.h"
+#include "../headers/modular.h" //Allows for taking modular square roots
 
-// https://stackoverflow.com/a/6317375
+/* The following resources were used as a reference:
+https://stackoverflow.com/a/6317375
+*/
 
 //Maybe I could make a generic struct that has a union as its matrix
 //That way, if we wanted to switch to doubles, we could
@@ -599,4 +602,193 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	
 	toReduce = free_IntMatrixT(toReduce);
 	return inv;
+}
+
+
+//This function currently only works with 2 by 2 matrices
+int* eigenvalues(IntMatrixTP const F, int modulus)
+/** Returns the found eigenvalues of the given matrix,
+    mod the given modulus. The number of values returned
+		with the pointer will always be the first number in
+		the pointer. 
+		
+		Returns NULL if no eigenvalues exist or if the
+    given matrix isn't square. */
+{
+	if ((F->m != 2) || (F->m != F->n))
+		return NULL;
+	
+	//The quadratic formula doesn't really work here due
+	// to the system being modulated, so the best we can do
+	// is guess and check for solutions. There's probably some
+	// more efficient way to do this, but I can't be bothered
+	// right now.
+	int* values = malloc((modulus + 1)*sizeof(int));
+	values[0] = 0;
+	
+	int coefficient = F->matrix[0][0] + F->matrix[1][1];
+	int constant    = F->matrix[0][0]*F->matrix[1][1] - F->matrix[0][1]*F->matrix[1][0];
+	
+	for (int i = 0; i < modulus; i += 1)
+		if ((i*i - coefficient*i + constant) % modulus == 0)
+		{
+			values[0] += 1;
+			values[values[0]] = i;
+		}
+	
+	return values;
+}
+
+
+//Currently only works with 2x2 matrices
+IntMatrixTP eigenvector(IntMatrixTP const F, int eigenvalue, int modulus)
+/** Returns an eigenvector of the given matrix and eigenvalue, under the
+    given modulus. It is assumed that the given eigenvalue is valid for
+		the given matrix and modulus. */
+{
+	const bool SIMPLE = FALSE;
+	
+	if ((F->m != 2) || (F->m != F->n))
+		return NULL;
+	
+	IntMatrixTP toReduce = new_IntMatrixT(F->m, F->n);
+	IntMatrixTP eigen    = new_IntMatrixT(F->m, 1);
+	copy_IntMatrixT(F, toReduce);
+	toReduce->matrix[0][0] -= eigenvalue;
+	toReduce->matrix[1][1] -= eigenvalue;
+	
+	//Making sure the entries in our matrix are positive
+	if (toReduce->matrix[0][0] < 0)
+		toReduce->matrix[0][0] += modulus;
+	if (toReduce->matrix[1][1] < 0)
+		toReduce->matrix[1][1] += modulus;
+	
+	int currentRow;         //Holds the current row we're reducing
+	int entryInverse = -1;  //Holds a number inverse for reducing
+	int numTimesToAdd;      //Holds how many times we add one row to another
+	
+	int offset = 0; //Used for finding information in the reduced matrix that may not be along the diagonal
+	
+	bool isEmpty = FALSE;        //Says whether the row we're checking is all zeros
+	bool singleCriteria = FALSE; //Says whether the row of the reduced matrix has one number representing that element's value
+	
+	//Now, we reduce the matrix
+	//We don't need to worry about not getting leading entries 
+	// since we're assuming the given parameters will work
+	
+	for (currentRow = 0; currentRow < F->m; currentRow += 1)
+	{
+		//Make sure the currentRow has a leading entry
+		for (int row = currentRow; row < F->m; row += 1)
+		{
+			//If we found a row with a leading entry
+			if (toReduce->matrix[row][row] != 0)
+			{
+				//Check to see if the leading entry is invertible
+				entryInverse = num_inverse(toReduce->matrix[row][row], modulus);
+				if (entryInverse != -1)
+				{
+					//Swap rows if needed
+					if (row != currentRow)
+						row_swap(toReduce, currentRow, row);
+					
+					break;
+				}
+			}
+		}
+		
+		//Reduce currentRow's leading entry to 1, if needed
+		if (entryInverse != -1)
+			row_multiply(toReduce, currentRow, entryInverse, modulus);
+		
+		//Now, get rid of all other entries in the current pivot column
+		for (int row = currentRow + 1; row < F->m; row += 1)
+		{
+			//Checking to see if next entry in pivot column is nonzero
+			if (toReduce->matrix[row][currentRow] != 0)
+			{
+				numTimesToAdd = (modulus - toReduce->matrix[row][currentRow]) % modulus;
+				for (int t = 0; t < numTimesToAdd; t += 1)
+					row_add(toReduce, currentRow, row, modulus);
+			}
+		}
+		//Pivot column should now be cleared out
+	}
+	
+	//Now, we convert to reduced row echelon form
+	for (int currentRow = F->m - 1; currentRow > 0; currentRow -= 1)
+	{
+		//If the leading entry in our currentRow isn't zero
+		if (toReduce->matrix[currentRow][currentRow] != 0)
+		{
+			for (int row = currentRow - 1; row >= 0; row -= 1)
+			{
+				numTimesToAdd = (modulus - toReduce->matrix[row][currentRow]) % modulus;
+				for (int t = 0; t < numTimesToAdd; t += 1)
+					row_add(toReduce, currentRow, row, modulus);
+			}
+		}
+	}
+	//Now, we need to go through the matrix to see what form
+	// the eigenvector needs to take
+	for (int row = 0; row < F->m; row += 1)
+	{
+		//If there's no more rows of interest
+		if (row + offset >= F->m)
+			break;
+		
+		//If there isn't a row specifically for this element we're looking at,
+		// shift our attention down the row to a new column
+		while (TRUE)
+		{
+			if (toReduce->matrix[row][row+offset] == 0)
+			{
+				eigen->matrix[row+offset][0] = 1;
+				offset += 1;
+				if (row + offset >= F->m)
+					break;
+			}
+			
+			else
+				break;
+		}
+		
+		//If there's no more rows of interest
+		if (row + offset >= F->m)
+			break;
+		
+		isEmpty        = TRUE;
+		singleCriteria = TRUE;
+		
+		for (int col = 0; col < F->m-offset; col += 1)
+		{
+			if (toReduce->matrix[row][col + offset] != 0)
+			{
+				isEmpty = FALSE;
+				if (row != col)
+					singleCriteria = FALSE;
+			}
+		}
+		
+		if (isEmpty)
+			eigen->matrix[row+offset][0] = 1;
+		
+		else if (singleCriteria)
+		{
+			if ((GCD(toReduce->matrix[row][row+offset], modulus) == 1) ||
+			    (SIMPLE))
+				eigen->matrix[row+offset][0] = 0;
+
+			else
+				eigen->matrix[row+offset][0] = modulus/toReduce->matrix[row][row+offset];
+
+		}
+		
+		//If we've encountered a situation we haven't coded a solution to
+		else
+			eigen->matrix[row+offset][0] = -1;
+	}
+	
+	toReduce = free_IntMatrixT(toReduce);
+	return eigen;
 }
