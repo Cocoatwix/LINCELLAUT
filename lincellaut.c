@@ -108,7 +108,7 @@ int main()
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
-	//IntMatrixTP F_2;
+	IntMatrixTP F_2;
 	//IntMatrixTP Finv;
 	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
@@ -119,9 +119,9 @@ int main()
 	
 	//Iterate s_0 a few times
 	//The minus 1 is for easier conversion between ORBISVIS results
-	/*F_2 = iterate(F, F, modulus, iterations-1);
+	F_2 = iterate(F, F, modulus, iterations-1);
 	printf("Iterations: %d\n", iterations);
-	printm(F_2, TRUE); */
+	printm(F_2, TRUE);
 	
 	//See which points F visits in its orbit
 	//INT_MAX
@@ -129,7 +129,7 @@ int main()
 	//visit_points(F, modulus, iterations);
 	
 	//Testing our ability to find eigenvalues
-	int* values = eigenvalues(F, modulus);
+	/*int* values = eigenvalues(F, modulus);
 	if (values == NULL)
 		printf("No eigenvalues exist for the given system.\n");
 	
@@ -151,7 +151,7 @@ int main()
 	IntMatrixTP E = eigenvector(F, values[1], modulus);
 	printm(E, TRUE);
 	
-	FREE(values);
+	FREE(values); */
 	
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
@@ -186,8 +186,8 @@ int main()
 	FREE(iterfilepath);
 	
 	F = free_IntMatrixT(F);
-	E = free_IntMatrixT(E);
-	//F_2 = free_IntMatrixT(F_2);
+	//E = free_IntMatrixT(E);
+	F_2 = free_IntMatrixT(F_2);
 	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
