@@ -108,8 +108,10 @@ int main()
 	
 	//Update rule matrix
 	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
-	IntMatrixTP F_2;
-	//IntMatrixTP Finv;
+	IntMatrixTP F_2   = new_IntMatrixT(2, 2);
+	IntMatrixTP F_3   = new_IntMatrixT(2, 2);
+	IntMatrixTP Finv;
+	IntMatrixTP I     = identity_IntMatrixT(2);
 	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
 	
 	//Stores our initial vector
@@ -119,17 +121,52 @@ int main()
 	
 	//Iterate s_0 a few times
 	//The minus 1 is for easier conversion between ORBISVIS results
-	F_2 = iterate(F, F, modulus, iterations-1);
+	/*F_2 = iterate(F, F, modulus, iterations-1);
 	printf("Iterations: %d\n", iterations);
+	printm(F_2, TRUE); */
+	
+	//Iterate until we get to the identity or run out of iterations
+	/*Finv = inverse(F, modulus);
+	copy_IntMatrixT(I, F_2);
+	
+	if (Finv != NULL)
+	{
+		iterations = 0;
+		
+		do
+		{
+			mat_mul(F, F_2, F_3);
+			modm(F_3, modulus);
+			copy_IntMatrixT(F_3, F_2);
+			
+			iterations += 1;
+		}
+		while (! compare_IntMatrixT(F_2, I));
+	}
+	
+	else
+	{
+		for (int i = 0; i < iterations; i += 1)
+		{
+			mat_mul(F, F_2, F_3);
+			modm(F_3, modulus);
+			copy_IntMatrixT(F_3, F_2);
+		}
+	}
+	printf("Modulus: %d\n", modulus);
+	printf("Matrix:\n");
+	printm(F, TRUE);
+	printf("Iterated matrix:\n");
 	printm(F_2, TRUE);
+	printf("Iterations: %d\n", iterations); */
 	
 	//See which points F visits in its orbit
 	//INT_MAX
-	printf("Modulus: %d\n", modulus);
+	//printf("Modulus: %d\n", modulus);
 	//visit_points(F, modulus, iterations);
 	
 	//Testing our ability to find eigenvalues
-	/*int* values = eigenvalues(F, modulus);
+	int* values = eigenvalues(F, modulus);
 	if (values == NULL)
 		printf("No eigenvalues exist for the given system.\n");
 	
@@ -146,12 +183,14 @@ int main()
 	}
 	
 	//Now testing our ability to create eigenvectors
+	printf("Matrix:\n");
 	printm(F, TRUE);
 	printf("Using eigenvalue %d:\n", values[1]);
 	IntMatrixTP E = eigenvector(F, values[1], modulus);
-	printm(E, TRUE);
+	//printm(E, TRUE);
 	
-	FREE(values); */
+	FREE(values);
+	//E = free_IntMatrixT(E);
 	
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
@@ -178,17 +217,16 @@ int main()
 	printcycle(theCycle);
 	theCycle = free_CycleInfoT(theCycle); */
 	
-	//write_iteration(iterfilepath, F, modulus);
-	
 	//Freeing memory
 	FREE(updatefilepath);
 	FREE(initialfilepath);
 	FREE(iterfilepath);
 	
 	F = free_IntMatrixT(F);
-	//E = free_IntMatrixT(E);
-	F_2 = free_IntMatrixT(F_2);
-	//Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
+	/*F_2 = free_IntMatrixT(F_2);
+	F_3 = free_IntMatrixT(F_3);
+	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
+	I = free_IntMatrixT(I); */
 	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);
 	

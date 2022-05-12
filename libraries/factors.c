@@ -1,25 +1,41 @@
 
 #include <stdlib.h>
+#include <stdio.h>
 //#include <math.h>
 
 int GCD(int a, int b)
 /** Returns the GCD of the given integers.
-    This is a rudimentary implementation that'll
-		be improved later (maybe). */
+    If both integers given are zero, returns -1. */
 {
-	int bound;
-	int gcd = 1;
+	if ((a == 0) && (b == 0))
+		return -1;
 	
-	if (a > b)
-		bound = a;
-	else
-		bound = b;
+	else if (a == 0)
+		return b;
 	
-	for (int i = 2; i <= bound; i += 1)
-		if ((a % i == 0) && (b % i == 0))
-			gcd = i;
-		
-	return gcd;
+	else if (b == 0)
+		return a;
+	
+	int greater = a;
+	int lesser  = b;
+	int r;
+	
+	if (b > a)
+	{
+		greater = b;
+		lesser  = a;
+	}
+	
+	r = greater % lesser; //Holds the current remainder
+	
+	while (r != 0)
+	{
+		greater = lesser;
+		lesser = r;
+		r = greater % lesser;
+	}
+	
+	return lesser;
 }
 
 

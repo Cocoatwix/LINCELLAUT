@@ -348,7 +348,8 @@ int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
 			for (int nIndex = 0; nIndex < A->n; nIndex += 1) //Each multiplication
 			{
 				/*printf("m: %d, n: %d, r: %d, A[m][n]: %d, B[n][r]: %d\n",
-				mIndex, nIndex, rIndex, A[mIndex][nIndex], B[nIndex][rIndex]); */
+				mIndex, nIndex, rIndex, A->matrix[mIndex][nIndex], B->matrix[nIndex][rIndex]);
+				printf("Mini-mult: %d\n", A->matrix[mIndex][nIndex] * B->matrix[nIndex][rIndex]); */
 				result->matrix[mIndex][rIndex] += (A->matrix[mIndex][nIndex]) * (B->matrix[nIndex][rIndex]);
 			}
 		}
@@ -495,6 +496,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		
 		//Find a row with a non-zero first entry
 		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
+		{
 			//Checking to see whether the leading entry is one
 			//OR
 			//Checking to see whether the leading entry is nonzero and has an inverse
@@ -518,6 +520,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 
 				break;
 			}
+		}
 		
 		//If we couldn't find a nonzero entry for our pivot column
 		if (!hasLeadEntry)
@@ -526,7 +529,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			inv = free_IntMatrixT(inv);
 			
 			#ifdef VERBOSE
-			printf("No nonzero, inverstible leading entry could be found.\n");
+			printf("No nonzero, invertible leading entry could be found.\n");
 			#endif
 			
 			return NULL;
@@ -646,13 +649,10 @@ IntMatrixTP eigenvector(IntMatrixTP const F, int eigenvalue, int modulus)
     given modulus. It is assumed that the given eigenvalue is valid for
 		the given matrix and modulus. */
 {
-	const bool SIMPLE = FALSE;
-	
 	if ((F->m != 2) || (F->m != F->n))
 		return NULL;
 	
 	IntMatrixTP toReduce = new_IntMatrixT(F->m, F->n);
-	IntMatrixTP eigen    = new_IntMatrixT(F->m, 1);
 	copy_IntMatrixT(F, toReduce);
 	toReduce->matrix[0][0] -= eigenvalue;
 	toReduce->matrix[1][1] -= eigenvalue;
@@ -667,11 +667,6 @@ IntMatrixTP eigenvector(IntMatrixTP const F, int eigenvalue, int modulus)
 	int entryInverse = -1;  //Holds a number inverse for reducing
 	int numTimesToAdd;      //Holds how many times we add one row to another
 	
-	int offset = 0; //Used for finding information in the reduced matrix that may not be along the diagonal
-	
-	bool isEmpty = FALSE;        //Says whether the row we're checking is all zeros
-	bool singleCriteria = FALSE; //Says whether the row of the reduced matrix has one number representing that element's value
-	
 	//Now, we reduce the matrix
 	//We don't need to worry about not getting leading entries 
 	// since we're assuming the given parameters will work
@@ -682,7 +677,7 @@ IntMatrixTP eigenvector(IntMatrixTP const F, int eigenvalue, int modulus)
 		for (int row = currentRow; row < F->m; row += 1)
 		{
 			//If we found a row with a leading entry
-			if (toReduce->matrix[row][row] != 0)
+			if (toReduce->matrix[row][currentRow] != 0)
 			{
 				//Check to see if the leading entry is invertible
 				entryInverse = num_inverse(toReduce->matrix[row][row], modulus);
@@ -729,66 +724,15 @@ IntMatrixTP eigenvector(IntMatrixTP const F, int eigenvalue, int modulus)
 			}
 		}
 	}
+	
+	printm(toReduce, TRUE);
+	
 	//Now, we need to go through the matrix to see what form
 	// the eigenvector needs to take
-	for (int row = 0; row < F->m; row += 1)
-	{
-		//If there's no more rows of interest
-		if (row + offset >= F->m)
-			break;
-		
-		//If there isn't a row specifically for this element we're looking at,
-		// shift our attention down the row to a new column
-		while (TRUE)
-		{
-			if (toReduce->matrix[row][row+offset] == 0)
-			{
-				eigen->matrix[row+offset][0] = 1;
-				offset += 1;
-				if (row + offset >= F->m)
-					break;
-			}
-			
-			else
-				break;
-		}
-		
-		//If there's no more rows of interest
-		if (row + offset >= F->m)
-			break;
-		
-		isEmpty        = TRUE;
-		singleCriteria = TRUE;
-		
-		for (int col = 0; col < F->m-offset; col += 1)
-		{
-			if (toReduce->matrix[row][col + offset] != 0)
-			{
-				isEmpty = FALSE;
-				if (row != col)
-					singleCriteria = FALSE;
-			}
-		}
-		
-		if (isEmpty)
-			eigen->matrix[row+offset][0] = 1;
-		
-		else if (singleCriteria)
-		{
-			if ((GCD(toReduce->matrix[row][row+offset], modulus) == 1) ||
-			    (SIMPLE))
-				eigen->matrix[row+offset][0] = 0;
-
-			else
-				eigen->matrix[row+offset][0] = modulus/toReduce->matrix[row][row+offset];
-
-		}
-		
-		//If we've encountered a situation we haven't coded a solution to
-		else
-			eigen->matrix[row+offset][0] = -1;
-	}
+	
+	//Have some form of matrix that keeps track of which variables can
+	// be substituted, and go through the reduced matrix and get values.
 	
 	toReduce = free_IntMatrixT(toReduce);
-	return eigen;
+	return NULL;
 }
