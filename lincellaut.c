@@ -16,7 +16,8 @@ https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
 #include <limits.h> //So I can get the maximum integer
 
 #include "headers/linalg.h" 
-#include "headers/cycles.h" //Allows us to use Floyd's Algorithm
+#include "headers/cycles.h"  //Allows us to use Floyd's Algorithm
+#include "headers/modular.h" //Modular square roots and inverses
 
 #define FREE(v) free(v); v = NULL
 
@@ -107,12 +108,12 @@ int main()
 	#endif //VERBOSE
 	
 	//Update rule matrix
-	IntMatrixTP F     = read_IntMatrixT(updatefilepath);
+	/*IntMatrixTP F     = read_IntMatrixT(updatefilepath);
 	IntMatrixTP F_2   = new_IntMatrixT(2, 2);
 	IntMatrixTP F_3   = new_IntMatrixT(2, 2);
 	IntMatrixTP Finv;
 	IntMatrixTP I     = identity_IntMatrixT(2);
-	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F));
+	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F)); */
 	
 	//Stores our initial vector
 	//IntMatrixTP s_0 = read_IntMatrixT(initialfilepath);
@@ -166,7 +167,7 @@ int main()
 	//visit_points(F, modulus, iterations);
 	
 	//Testing our ability to find eigenvalues
-	int* values = eigenvalues(F, modulus);
+	/*int* values = eigenvalues(F, modulus);
 	if (values == NULL)
 		printf("No eigenvalues exist for the given system.\n");
 	
@@ -190,7 +191,7 @@ int main()
 	//printm(E, TRUE);
 	
 	FREE(values);
-	//E = free_IntMatrixT(E);
+	//E = free_IntMatrixT(E); */
 	
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
@@ -217,12 +218,25 @@ int main()
 	printcycle(theCycle);
 	theCycle = free_CycleInfoT(theCycle); */
 	
+	//Generating numbers for rotation matrices
+	/* printf("2^-1 = %d\n", num_inverse(2, modulus));
+	printf("sqrt(3) = %d\n", square_root(3, modulus));
+	printf("(2^-1) * sqrt(3) = %d\n", (num_inverse(2, modulus)*square_root(3, modulus)) % modulus);
+	printf("-(2^-1) = %d\n", (modulus - num_inverse(2, modulus)) % modulus); */
+	
+	printf("%d %d\n", 
+	(num_inverse(2, modulus)*square_root(3, modulus)) % modulus,
+	(modulus - num_inverse(2, modulus)) % modulus);
+	printf("%d %d\n",
+	num_inverse(2, modulus),
+	(num_inverse(2, modulus)*square_root(3, modulus)) % modulus);
+	
 	//Freeing memory
 	FREE(updatefilepath);
 	FREE(initialfilepath);
 	FREE(iterfilepath);
 	
-	F = free_IntMatrixT(F);
+	//F = free_IntMatrixT(F);
 	/*F_2 = free_IntMatrixT(F_2);
 	F_3 = free_IntMatrixT(F_3);
 	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
