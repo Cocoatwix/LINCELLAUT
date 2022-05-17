@@ -22,9 +22,9 @@ int tau(CycleInfoTP);
     CycleInfoT object pointed to. */
 void printcycle(CycleInfoTP);
 
-/** Multiples a vector by a given matrix n times, returns
-    the final vector. 
-		<update>, <initial>, <mod>, <iter>*/
+/** Multiples a matrix by a given matrix some times, returns
+    the final iterated matrix. Returns NULL if F isn't square. 
+		<update>, <initial>, <modulus>, <iterations>*/
 IntMatrixTP iterate(IntMatrixTP, IntMatrixTP, int, int);
 
 /** Sees what points F ends up at. Points are basically 

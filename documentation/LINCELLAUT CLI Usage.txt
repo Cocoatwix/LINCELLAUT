@@ -1,0 +1,6 @@
+To make certain tasks easier, LINCELLAUT comes with lincellaut.c, which compiles to a program which can be run from the command line. Common linear algebra and LCA tasks were put into this program so that an entire program doesn't need to be created just to do some simple task. To see how to use lincellaut on the CLI, just run lincellaut on the CLI with no arguments. 
+
+The following is a list of all the currently available tasks within lincellaut.c.
+
+iterate [iterations] : This task allows you to take an update matrix and iterate it by itself multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file (see .config file specs for more information). 
+ - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. 

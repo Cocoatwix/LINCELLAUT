@@ -21,7 +21,7 @@ https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
 
 #define FREE(v) free(v); v = NULL
 
-int main()
+int main(int argc, char* argv[])
 {
 	//The maximum length for a string in the .config file
 	const int MAXSTRLEN = 101;
@@ -101,15 +101,85 @@ int main()
 		return EXIT_FAILURE;
 	}
 	
-	#ifdef VERBOSE
-	printf("Modulus: %d\n", modulus);
-	printf("Update: %s\n", updatefilepath);
-	printf("Initial: %s\n", initialfilepath);
-	#endif //VERBOSE
+	//If we have command line arguments
+	if (argc > 1)
+	{
+		//If we want to iterate the given update matrix
+		if (! strcmp(argv[1], "iterate"))
+		{
+			//If the user provided a custom number of iterations
+			if (argc > 2)
+			{
+				char* tempStr;
+				
+				iterations = (int)strtol(argv[2], &tempStr, 10);
+				
+				//If we didn't read any digits for iterations
+				if (tempStr == argv[2])
+				{
+					fprintf(stderr, "Invalid number of iterations provided at command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			IntMatrixTP F   = read_IntMatrixT(updatefilepath);
+			IntMatrixTP F_2 = identity_IntMatrixT(rows(F));
+			
+			//Iterate F a few times
+			//The minus 1 is for easier conversion between ORBITVIS results
+			if (iterations > 0)
+			{
+				F_2 = iterate(F, F, modulus, iterations-1);
+				printf("Iterations: %d\n", iterations);
+			}
+			printm(F_2, TRUE);
+
+			F   = free_IntMatrixT(F);
+			F_2 = free_IntMatrixT(F_2);
+		}
+	}
 	
-	//Update rule matrix
-	/*IntMatrixTP F     = read_IntMatrixT(updatefilepath);
-	IntMatrixTP F_2   = new_IntMatrixT(2, 2);
+	else
+	{
+		printf("Usage: lincellaut <tool> [options]\n\n");
+		printf("Tools:\n");
+		printf(" - iterate [iterations]: Iterate the update matrix a given number of times.\n");
+		printf("   - iterations: Overrides the number of iterations provided in the .config file.\n\n");
+		
+		printf("For a more complete description of LINCELLAUT's usage, refer to the included documentation.\n");
+	}
+	
+	/*
+	//Seeing if we can find a relationship between the moduli 
+	// that have specific rotation matrices
+	
+	printf("45deg\t30deg\t15deg\n");
+	for (int x = 3; x < 1000; x += 2)
+	{
+		//45degrot
+		if (square_root(2, x) != -1)
+			printf("%2d\t", x);
+		else
+			printf("..\t");
+		
+		//30degrot
+		if (square_root(3, x) != -1)
+			printf("%2d\t", x);
+		else
+			printf("..\t");
+		
+		//15degrot
+		if ((square_root(3, x) != -1) &&
+		    (square_root(2, x) != -1))
+			printf("%2d\t", x);
+		else
+			printf("..\t");
+		
+		printf("\n");
+	}
+	*/
+
+	/*
 	IntMatrixTP F_3   = new_IntMatrixT(2, 2);
 	IntMatrixTP Finv;
 	IntMatrixTP I     = identity_IntMatrixT(2);
@@ -119,12 +189,6 @@ int main()
 	//IntMatrixTP s_0 = read_IntMatrixT(initialfilepath);
 	
 	//IntMatrixTP s_f; //Stores our final vector
-	
-	//Iterate s_0 a few times
-	//The minus 1 is for easier conversion between ORBISVIS results
-	/*F_2 = iterate(F, F, modulus, iterations-1);
-	printf("Iterations: %d\n", iterations);
-	printm(F_2, TRUE); */
 	
 	//Iterate until we get to the identity or run out of iterations
 	/*Finv = inverse(F, modulus);
@@ -218,26 +282,38 @@ int main()
 	printcycle(theCycle);
 	theCycle = free_CycleInfoT(theCycle); */
 	
+	/*
 	//Generating numbers for rotation matrices
-	/* printf("2^-1 = %d\n", num_inverse(2, modulus));
+	int numInv = (modulus - num_inverse(2, modulus)) % modulus;
+	int sqrt   = square_root(3, modulus);
+	printf("2^-1 = %d\n", num_inverse(2, modulus));
 	printf("sqrt(3) = %d\n", square_root(3, modulus));
 	printf("(2^-1) * sqrt(3) = %d\n", (num_inverse(2, modulus)*square_root(3, modulus)) % modulus);
-	printf("-(2^-1) = %d\n", (modulus - num_inverse(2, modulus)) % modulus); */
+	printf("-(2^-1) = %d\n", (modulus - num_inverse(2, modulus)) % modulus);
 	
+	//30degrot
 	printf("%d %d\n", 
-	(num_inverse(2, modulus)*square_root(3, modulus)) % modulus,
-	(modulus - num_inverse(2, modulus)) % modulus);
+	(numInv*sqrt) % modulus,
+	((modulus - numInv) % modulus));
 	printf("%d %d\n",
-	num_inverse(2, modulus),
-	(num_inverse(2, modulus)*square_root(3, modulus)) % modulus);
+	numInv,
+	(numInv*sqrt) % modulus);
 	
+	//45degrot
+	printf("%d %d\n", 
+	(num_inverse(2, modulus)*square_root(2, modulus)) % modulus,
+	modulus - ((num_inverse(2, modulus)*square_root(2, modulus)) % modulus));
+	printf("%d %d\n",
+	(num_inverse(2, modulus)*square_root(2, modulus)) % modulus,
+	(num_inverse(2, modulus)*square_root(2, modulus)) % modulus);
+	
+	*/	
 	//Freeing memory
 	FREE(updatefilepath);
 	FREE(initialfilepath);
 	FREE(iterfilepath);
 	
-	//F = free_IntMatrixT(F);
-	/*F_2 = free_IntMatrixT(F_2);
+	/*
 	F_3 = free_IntMatrixT(F_3);
 	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	I = free_IntMatrixT(I); */

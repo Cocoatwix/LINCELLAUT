@@ -64,13 +64,21 @@ int tau(CycleInfoTP c)
 
 
 IntMatrixTP iterate(IntMatrixTP F, IntMatrixTP s_0, int modulus, int iterations)
-/** Iterates a given vector under some update rule n times.
+/** Iterates a given vector under some update rule iterations times.
     Returns a pointer to the result of the iteration. */
 {
-	IntMatrixTP s_o = new_IntMatrixT(rows(s_0), cols(s_0));
-	IntMatrixTP s_e = new_IntMatrixT(rows(s_0), cols(s_0));
+	//Making sure F is square
+	if (rows(F) != cols(F))
+		return NULL;
 	
+	IntMatrixTP s_o = new_IntMatrixT(rows(s_0), cols(s_0));
+	IntMatrixTP s_e;
 	copy_IntMatrixT(s_0, s_o);
+	
+	if (iterations <= 0)
+		return s_o;
+	
+	s_e = new_IntMatrixT(rows(s_0), cols(s_0));
 	
 	//The actual iteration
 	for (int i = 0; i < iterations; i += 1)
