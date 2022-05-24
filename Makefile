@@ -11,12 +11,16 @@ LIB1 = linalg
 LIB2 = cycles
 LIB3 = factors
 LIB4 = modular
+LIB5 = fibonacci
+LIB6 = bigint
 
 OBJPATH = objects
 ALLOBJS = $(OBJPATH)/$(LIB1).o 
 ALLOBJS += $(OBJPATH)/$(LIB2).o 
 ALLOBJS += $(OBJPATH)/$(LIB3).o
 ALLOBJS += $(OBJPATH)/$(LIB4).o
+ALLOBJS += $(OBJPATH)/$(LIB5).o
+ALLOBJS += $(OBJPATH)/$(LIB6).o
 
 all:	$(TARGET)
 
@@ -40,10 +44,16 @@ $(OBJPATH)/$(LIB3).o:	$(LIBPATH)/$(LIB3).c
 $(OBJPATH)/$(LIB4).o:	$(LIBPATH)/$(LIB4).c
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB4).o $(LIBPATH)/$(LIB4).c
 	
+$(OBJPATH)/$(LIB5).o:	$(LIBPATH)/$(LIB5).c
+	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB5).o $(LIBPATH)/$(LIB5).c
+	
+$(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c
+	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB6).o $(LIBPATH)/$(LIB6).c
+	
 clean:
+	rm $(TARGET)
 	rm $(OBJPATH)/*.o
 	rm $(OBJPATH)/*.so
 	rm *.orbits
 	rm *.orbitsloc
 	rm *.iteration
-	rm $(TARGET)

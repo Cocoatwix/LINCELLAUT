@@ -15,9 +15,12 @@ https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
 #include <string.h>
 #include <limits.h> //So I can get the maximum integer
 
+#include "headers/bigint.h" //Arbitrary precision
+
 #include "headers/linalg.h" 
 #include "headers/cycles.h"  //Allows us to use Floyd's Algorithm
 #include "headers/modular.h" //Modular square roots and inverses
+#include "headers/fibonacci.h"
 
 #define FREE(v) free(v); v = NULL
 
@@ -137,6 +140,53 @@ int main(int argc, char* argv[])
 			F   = free_IntMatrixT(F);
 			F_2 = free_IntMatrixT(F_2);
 		}
+		
+		//If we want to generate a Fibonacci cycle for
+		// the given initial vector
+		else if (! strcmp(argv[1], "fibcycle"))
+		{
+			int* initVect = malloc(2*sizeof(int));
+			
+			FILE* initVectFile = fopen(initialfilepath, "r");
+			
+			if (initVectFile == NULL)
+			{
+				fprintf(stderr, "Unable to read file %s.\n", initialfilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//Read dimensions of provided vector
+			if (fscanf(initVectFile, "%d %d", &initVect[0], &initVect[1]) != 2)
+			{
+				fprintf(stderr, "Unable to read data from %s.\n", initialfilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//If dimensions are incorrect
+			if ((initVect[0] != 2) || (initVect[1] != 1))
+			{
+				fprintf(stderr, "Vector in %s must be a 2 by 1 vector.\n", initialfilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//Get actual vector data from file
+			if (fscanf(initVectFile, "%d %d", &initVect[0], &initVect[1]) != 2)
+			{
+				fprintf(stderr, "Unable to read data from %s.\n", initialfilepath);
+				return EXIT_FAILURE;
+			}
+			
+			if (fclose(initVectFile) == EOF)
+			{
+				fprintf(stderr, "Unable to close file %s.\n", initialfilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//Print cycle and get cycle length
+			printf("Length of cycle: %d\n", generate_orbit(initVect, modulus, TRUE));
+			
+			FREE(initVect);
+		}
 	}
 	
 	else
@@ -146,8 +196,23 @@ int main(int argc, char* argv[])
 		printf(" - iterate [iterations]: Iterate the update matrix a given number of times.\n");
 		printf("   - iterations: Overrides the number of iterations provided in the .config file.\n\n");
 		
+		printf(" - fibcycle: Generate the Fibonacci cycle that contains the initial vector.\n\n");
+		
 		printf("For a more complete description of LINCELLAUT's usage, refer to the included documentation.\n");
 	}
+	
+	//Testing arbitrary precision stuff
+	int bunch1[] = {789, 456, 123};
+	int bunch2[] = {4, 9653, 23, 45};
+	BigIntTP num1 = new_BigIntT(bunch1, 3);
+	BigIntTP num2 = new_BigIntT(bunch2, 4);
+	printi(num1);
+	printf("\n");
+	printi(num2);
+	printf("\n");
+	
+	num1 = free_BigIntT(num1);
+	num2 = free_BigIntT(num2);
 	
 	/*
 	//Seeing if we can find a relationship between the moduli 
