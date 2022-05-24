@@ -30,6 +30,10 @@ void printi(BigIntTP);
 		Returns 1 on success, 0 otherwise. */
 int reduce_BigIntT(BigIntTP);
 
+/** Resets a BigIntT number to 0.
+    Returns 1 on success, 0 otherwise. */
+int clear_BigIntT(BigIntTP);
+
 /** Copies the const BigIntT to the other BigIntT. 
     This function assumes both BigIntT structs are
 		initialised.
@@ -40,6 +44,14 @@ int copy_BigIntT(BigIntTP const, BigIntTP);
     second, 0 if they're equal, 1 otherwise. This function
 		assumes both BigIntT structs are initialised. */
 int compare_BigIntT(BigIntTP const, BigIntTP const);
+
+/** Adds the first two BigIntT structs together and
+    stores the result in the third BigIntT. This function
+		assumes the third BigIntT has been initialised and
+		is big enough to hold the needed sum.
+		
+		Returns 1 on success, 0 otherwise. */
+int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
 /** Subtracts the second BigIntT from the first BigIntT,
     stores result in the third BigIntT. Note that

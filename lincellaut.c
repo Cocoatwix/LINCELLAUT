@@ -187,6 +187,56 @@ int main(int argc, char* argv[])
 			
 			FREE(initVect);
 		}
+		
+		//If we want to see all possible cycle lengths for a particular modulus
+		else if (! strcmp(argv[1], "fibcyclelens"))
+		{
+			if (argc == 3)
+			{
+				int modulusLength = strlen(argv[2]);
+				int substrstart; //Holds the start of the substring in the for-loop below
+				int substrlen;   //Holds how long each substring should be
+				
+				int*  modulusBunches; //Holds the BigIntT representation of our modulus
+				char* substr = malloc(5*sizeof(char)); //Holds the substring for each bunch
+				char* tempStr; //Holds info about whether the modulus was read correctly
+				
+				modulusBunches = malloc((modulusLength/4 + 1)*sizeof(int));
+				
+				//Now that we have the modulus length, we can
+				// break it up into bunches
+				for (int bunch = modulusLength; 
+				bunch >= (modulusLength % 4 == 0) ? 1 : 0; //This prevents an extra bunch from being read
+				bunch -= 4)
+				{
+					substrstart = (bunch-4 >= 0) ? bunch - 4 : 0;
+					substrlen   = (bunch-4 >= 0) ? 4 : modulusLength % 4;
+					
+					strncpy(substr, argv[2]+substrstart, substrlen);
+					substr[substrlen] = '\0'; //Adding null byte manually
+					
+					printf("substr: %s\n", substr);
+					printf("Converted number: %ld\n", strtol(substr, &tempStr, 10));
+					//modulusBunches[bunch] = (int)
+					
+					//If we read an invalid character
+					if (strncmp(tempStr, "\0", 1) != 0)
+					{
+						printf("String: %s\n", tempStr);
+						fprintf(stderr, "Invalid modulus provided.\n");
+						return EXIT_FAILURE;
+					}
+				}
+				
+				//Test to see whether we read the numbers in correctly
+				/*for (int x = 0; x < modulusLength/4 + 1; x += 1)
+					printf("%d, ", modulusBunches[x]); */
+				
+				FREE(modulusBunches);
+				FREE(substr);
+			}
+			
+		}
 	}
 	
 	else
@@ -198,21 +248,67 @@ int main(int argc, char* argv[])
 		
 		printf(" - fibcycle: Generate the Fibonacci cycle that contains the initial vector.\n\n");
 		
+		printf(" - fibcyclelens: WIP\n\n")
+		
 		printf("For a more complete description of LINCELLAUT's usage, refer to the included documentation.\n");
 	}
 	
 	//Testing arbitrary precision stuff
-	int bunch1[] = {789, 456, 123};
-	int bunch2[] = {4, 9653, 23, 45};
-	BigIntTP num1 = new_BigIntT(bunch1, 3);
-	BigIntTP num2 = new_BigIntT(bunch2, 4);
+	/*int test1[] = {2, 8, 1};
+	int test2[] = {5, 8};
+	BigIntTP tp1 = new_BigIntT(test1, 3);
+	BigIntTP tp2 = new_BigIntT(test2, 2);
+	BigIntTP tp3 = empty_BigIntT(3);
+	subtract_BigIntT(tp1, tp2, tp3);
+	printi(tp3);
+	printf("\n");
+	
+	tp1 = free_BigIntT(tp1);
+	tp2 = free_BigIntT(tp2);
+	tp3 = free_BigIntT(tp3); */
+	
+	/*int bunch1[]   = {789, 456, 3};
+	int bunch2[]   = {4, 9653, 23, 45};
+	int modBunch[] = {4237, 44};
+
+	BigIntTP num1     = new_BigIntT(bunch1, 3);
+	BigIntTP num2     = new_BigIntT(bunch2, 4);
+	BigIntTP tempNum  = empty_BigIntT(4);
+	BigIntTP tempNum2 = empty_BigIntT(4);
+	BigIntTP modNum   = new_BigIntT(modBunch, 2);
+	
 	printi(num1);
 	printf("\n");
 	printi(num2);
 	printf("\n");
+	printi(modNum);
+	printf("\n");
+	
+	printf("num2 - num1 = ");
+	subtract_BigIntT(num2, num1, tempNum);
+	printi(tempNum);
+	printf("\n");
+	
+	printf("num2 + num1 = ");
+	add_BigIntT(num2, num1, tempNum);
+	printi(tempNum);
+	printf("\n");
+	
+	printf("num1 mod modNum = ");
+	mod_BigIntT(num1, modNum, tempNum);
+	printi(tempNum);
+	printf("\n");
+	
+	printf("num2 mod modNum = ");
+	mod_BigIntT(num2, modNum, tempNum2);
+	printi(tempNum2);
+	printf("\n");
 	
 	num1 = free_BigIntT(num1);
 	num2 = free_BigIntT(num2);
+	modNum = free_BigIntT(modNum);
+	tempNum = free_BigIntT(tempNum);
+	tempNum2 = free_BigIntT(tempNum2); */
 	
 	/*
 	//Seeing if we can find a relationship between the moduli 
