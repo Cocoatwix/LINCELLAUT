@@ -68,7 +68,7 @@ BigIntTP empty_BigIntT(int zeros)
     which has been filled with zeros and has
 		size zeros. */
 {
-	BigIntTP newBigInt = malloc(sizeof(BigIntTP));;
+	BigIntTP newBigInt = malloc(sizeof(BigIntTP));
 	newBigInt->size    = zeros;
 	newBigInt->theInt  = calloc(zeros, sizeof(int));
 	
@@ -113,6 +113,9 @@ int reduce_BigIntT(BigIntTP toReduce)
 	
 	//Get rid of extra bunches, update size
 	toReduce->size -= counter;
+	if (toReduce->size <= 0)
+		toReduce->size = 1;
+	
 	toReduce->theInt = realloc(toReduce->theInt, (toReduce->size)*sizeof(int));
 	
 	return 1;
@@ -125,6 +128,18 @@ int clear_BigIntT(BigIntTP toClear)
 {
 	for (int i = 0; i < toClear->size; i += 1)
 		toClear->theInt[i] = 0;
+	
+	return 1;
+}
+
+
+int resize_BigIntT(BigIntTP toResize, int newSize)
+/** Changes the size of the provided BigIntT and
+    reallocates its memory appropriately. 
+		Returns 1 on success, 0 otherwise. */
+{
+	toResize->size = newSize;
+	toResize->theInt = realloc(toResize->theInt, (toResize->size)*sizeof(int));
 	
 	return 1;
 }
@@ -202,7 +217,7 @@ int add_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
 
 int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
 /** Computes A + B and stores the result in sum. This function assumes
-    sum has been properly initialised (big enough to store A+B).
+    sum has been declared.
 		Returns 1 on success, 0 otherwise. */
 {
 	BigIntTP smol; //Pointer to smaller of the two arguments
@@ -219,6 +234,8 @@ int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
 		big  = A;
 	}
 	
+	//Properly initialise sum
+	resize_BigIntT(sum, (big->size) + 1);
 	clear_BigIntT(sum);
 	
 	for (int i = 0; i < smol->size; i += 1)
@@ -309,14 +326,12 @@ int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 	int modCounter = 0;
 	copy_BigIntT(modulus, tempModulus);
 	
-	copy_BigIntT(toMod, residue);
-	BigIntTP temp;
+	if (residue->size != toMod->size)
+		resize_BigIntT(residue, toMod->size);
 	
-	//Making sure temp is the right size to hold result of subtraction
-	if (modulus->size > toMod->size)
-		temp = empty_BigIntT(modulus->size);
-	else
-		temp = empty_BigIntT(toMod->size);
+	copy_BigIntT(toMod, residue);
+	
+	BigIntTP temp = empty_BigIntT(toMod->size); 
 	
 	//If toMod >> modulus, it'll be very inefficient to
 	// subtract singular multiples of modulus.

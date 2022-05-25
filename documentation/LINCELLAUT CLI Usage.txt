@@ -3,7 +3,7 @@ To make certain tasks easier, LINCELLAUT comes with lincellaut.c, which compiles
 The following is a list of all the currently available tasks within lincellaut.c.
 
 iterate [iterations] : This tool allows you to take an update matrix and iterate it by itself multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file (see .config file specs for more information). 
- - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. 
+ - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects a positive integer. 
 
 fibcycle : This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
 
@@ -12,3 +12,6 @@ fibcycle : This tool allows you to generate the Fibonacci cycle which contains t
 1 0
 
 in .matrix format. This specific update matrix has its own tool since each iteration can be computed more efficiently than by using general matrix multiplication.
+
+fibcyclelens [modulus] : This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
+ - The option argument "modulus" allows you to override the modulus provided in the .config file. This argument expects a positive integer (tehcnically, it expects a BigIntT, but for all intents and purposes the user can treat this like an arbitrarily large integer).

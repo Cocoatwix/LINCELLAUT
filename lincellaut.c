@@ -8,6 +8,7 @@
  
 /* The following resources were used as a reference:
 https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
+https://stackoverflow.com/questions/3219393
 */
  
 #include <stdlib.h>
@@ -23,6 +24,72 @@ https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
 #include "headers/fibonacci.h"
 
 #define FREE(v) free(v); v = NULL
+
+#define ANSI_COLOR_RED     "\x1b[31m"
+#define ANSI_COLOR_GREEN   "\x1b[32m"
+#define ANSI_COLOR_YELLOW  "\x1b[33m"
+#define ANSI_COLOR_BLUE    "\x1b[34m"
+#define ANSI_COLOR_MAGENTA "\x1b[35m"
+#define ANSI_COLOR_CYAN    "\x1b[36m"
+#define ANSI_COLOR_RESET   "\x1b[0m"
+
+
+int strtoBIT(char* numStr, BigIntTP* theBig)
+/** Takes a numerical string and creates a BigIntT
+    struct using it, storing it in theBig. 
+		
+		This function assumes theBig has been declared.
+		
+		Returns 1 on success, 0 otherwise. */
+{
+	int substrstart;      //Holds the start of the substring in the for-loop below
+	int substrlen;        //Holds how long each substring should be
+	int bunchCounter = 0; //For properly storing bunches
+	int numStrLength = strlen(numStr);
+	
+	int*  bunches; //Holds the BigIntT bunches of our number
+	char* tempStr; //Holds info about whether the number was read correctly
+	char* substr = malloc(5*sizeof(char)); //Holds the substring for each bunch
+	
+	bunches = malloc((numStrLength/4 + 1)*sizeof(int));
+	
+	//Note that the constants used in this loop would
+	// need to change if we ever change the bunch size for
+	// BigIntT structs. We use 4 because the bunch size is
+	// currently 9999, or 4 base 10 digits.
+	for (int bunch = numStrLength; 
+	bunch >= (numStrLength % 4 == 0) ? 1 : 0; //This prevents an extra bunch from being read
+	bunch -= 4)
+	{
+		//Getting the correct substring for the next bunch
+		substrstart = (bunch-4 >= 0) ? bunch - 4 : 0;
+		substrlen   = (bunch-4 >= 0) ? 4 : numStrLength % 4;
+		
+		strncpy(substr, numStr+substrstart, substrlen);
+		substr[substrlen] = '\0'; //Adding null byte manually
+		
+		//Store bunches
+		bunches[bunchCounter] = (int)strtol(substr, &tempStr, 10);
+		bunchCounter += 1;
+		
+		//If we read an invalid character
+		if (strncmp(tempStr, "\0", 1) != 0)
+		{
+			FREE(bunches);
+			FREE(substr);
+			return 0;
+		}
+	}
+	
+	//Now, we actually create the BigIntT
+	*theBig = new_BigIntT(bunches, bunchCounter);
+	
+	FREE(bunches);
+	FREE(substr);
+	
+	return 1;
+}
+
 
 int main(int argc, char* argv[])
 {
@@ -40,6 +107,10 @@ int main(int argc, char* argv[])
 	
 	int   iterations;
 	int   modulus;
+	
+	//For holding str representation of mod, used for BigIntT number (if needed)
+	char* bigintmodstring = malloc(MAXSTRLEN*sizeof(char));
+	
 	char* updatefilepath  = malloc(MAXSTRLEN*sizeof(char));
 	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
 	char* iterfilepath    = malloc(MAXSTRLEN*sizeof(char));
@@ -47,16 +118,29 @@ int main(int argc, char* argv[])
 	//Temporarily holds config data
 	char* systemData = malloc(MAXSTRLEN*sizeof(char));
 	
+	char* tempStr; //Holds temporary info when using string functions
+	
 	
 	while (fscanf(system, "%10s", systemData) == 1)
 	{
 		//printf("%s\n", systemData);
 		if (! strcmp(systemData, "mod"))
 		{
-			if (fscanf(system, "%d", &modulus) != 1)
+			//Getting modulus as string first in case we need to convert to BigIntT
+			if (fscanf(system, "%101s", bigintmodstring) != 1)
 			{
 				fprintf(stderr, "Unable to read modulus from config file.\n");
 				return EXIT_FAILURE;
+			}
+			
+			if (strlen(bigintmodstring) < 10)
+			{
+				modulus = (int)strtol(bigintmodstring, &tempStr, 10);
+				if (*tempStr != '\0')
+				{
+					fprintf(stderr, "Invalid modulus provided in config file.\n");
+					return EXIT_FAILURE;
+				}
 			}
 		}
 		
@@ -113,8 +197,6 @@ int main(int argc, char* argv[])
 			//If the user provided a custom number of iterations
 			if (argc > 2)
 			{
-				char* tempStr;
-				
 				iterations = (int)strtol(argv[2], &tempStr, 10);
 				
 				//If we didn't read any digits for iterations
@@ -191,51 +273,123 @@ int main(int argc, char* argv[])
 		//If we want to see all possible cycle lengths for a particular modulus
 		else if (! strcmp(argv[1], "fibcyclelens"))
 		{
+			int justOne[] = {1};
+			BigIntTP bigModulus;
+			
+			int* cycleLengths = malloc(30*sizeof(int));
+			int  indexCounter = 0;
+			int  counter;
+			
+			//Fix hardcoding later
+			BigIntTP startingX = empty_BigIntT(1);
+			BigIntTP startingY = empty_BigIntT(1);
+			
+			BigIntTP currX = empty_BigIntT(1);
+			BigIntTP currY = empty_BigIntT(1);
+			
+			BigIntTP tempInt = empty_BigIntT(1);
+			BigIntTP one     = new_BigIntT(justOne, 1);
+			BigIntTP zero    = empty_BigIntT(1);
+			
+			int ok;
+			
+			//Use modulus provided on CLI
 			if (argc == 3)
+				ok = strtoBIT(argv[2], &bigModulus);
+			
+			//Use config modulus instead
+			else
+				ok = strtoBIT(bigintmodstring, &bigModulus);
+			
+			//If we read the modulus alright
+			if (ok)
 			{
-				int modulusLength = strlen(argv[2]);
-				int substrstart; //Holds the start of the substring in the for-loop below
-				int substrlen;   //Holds how long each substring should be
+				printf("Modulus: ");
+				printi(bigModulus);
+				printf("\n");
 				
-				int*  modulusBunches; //Holds the BigIntT representation of our modulus
-				char* substr = malloc(5*sizeof(char)); //Holds the substring for each bunch
-				char* tempStr; //Holds info about whether the modulus was read correctly
-				
-				modulusBunches = malloc((modulusLength/4 + 1)*sizeof(int));
-				
-				//Now that we have the modulus length, we can
-				// break it up into bunches
-				for (int bunch = modulusLength; 
-				bunch >= (modulusLength % 4 == 0) ? 1 : 0; //This prevents an extra bunch from being read
-				bunch -= 4)
+				//Iterate through all possible starting vectors
+				while (compare_BigIntT(startingX, bigModulus) < 0)
 				{
-					substrstart = (bunch-4 >= 0) ? bunch - 4 : 0;
-					substrlen   = (bunch-4 >= 0) ? 4 : modulusLength % 4;
-					
-					strncpy(substr, argv[2]+substrstart, substrlen);
-					substr[substrlen] = '\0'; //Adding null byte manually
-					
-					printf("substr: %s\n", substr);
-					printf("Converted number: %ld\n", strtol(substr, &tempStr, 10));
-					//modulusBunches[bunch] = (int)
-					
-					//If we read an invalid character
-					if (strncmp(tempStr, "\0", 1) != 0)
+					while (compare_BigIntT(startingY, bigModulus) < 0)
 					{
-						printf("String: %s\n", tempStr);
-						fprintf(stderr, "Invalid modulus provided.\n");
-						return EXIT_FAILURE;
+						//Prepping our starting vector
+						copy_BigIntT(startingX, currX);
+						copy_BigIntT(startingY, currY);
+						counter = 0;
+						
+						//Increment until we get back to the start
+						do
+						{
+							//Perform the iteration
+							add_BigIntT(currX, currY, tempInt);
+							mod_BigIntT(tempInt, bigModulus, currY);
+							copy_BigIntT(currX, tempInt);
+							copy_BigIntT(currY, currX);
+							copy_BigIntT(tempInt, currY);
+							
+							counter += 1;
+						}
+						while ((compare_BigIntT(currX, startingX) != 0) ||
+						       (compare_BigIntT(currY, startingY) != 0));
+									 
+						//Now, check to see if we've already gotten this cycle length
+						ok = 1;
+						for (int x = 0; x < indexCounter; x += 1)
+						{
+							if (cycleLengths[x] == counter)
+							{
+								ok = 0;
+								break;
+							}
+						}
+							
+						//If we didn't find it, add the new cycle length
+						if (ok)
+						{
+							cycleLengths[indexCounter] = counter;
+							indexCounter += 1;
+							printf("Cycle length: %d\n", counter);
+							printf("Starting vector: [");
+							printi(startingX);
+							printf(", ");
+							printi(startingY);
+							printf("]\n");
+						}
+						
+						
+						//Incrementing Y
+						add_BigIntT(startingY, one, tempInt);
+						copy_BigIntT(tempInt, startingY);
 					}
+					//Incrementing X, resetting Y
+					copy_BigIntT(zero, startingY);
+					add_BigIntT(startingX, one, tempInt);
+					copy_BigIntT(tempInt, startingX);
 				}
-				
-				//Test to see whether we read the numbers in correctly
-				/*for (int x = 0; x < modulusLength/4 + 1; x += 1)
-					printf("%d, ", modulusBunches[x]); */
-				
-				FREE(modulusBunches);
-				FREE(substr);
 			}
 			
+			else
+			{
+				fprintf(stderr, "Unable to use provided modulus.\n");
+				return EXIT_FAILURE;
+			}
+			
+			bigModulus = (bigModulus == NULL) ? NULL : free_BigIntT(bigModulus);
+			startingX = free_BigIntT(startingX);
+			startingY = free_BigIntT(startingY);
+			currX     = free_BigIntT(currX);
+			currY     = free_BigIntT(currY);
+			
+			tempInt  = free_BigIntT(tempInt);
+			one      = free_BigIntT(one);
+			zero     = free_BigIntT(zero);
+			
+			/*for (int x = 0; x < indexCounter; x += 1)
+				printf("%d, ", cycleLengths[x]);
+			printf("\n"); */
+			
+			FREE(cycleLengths);
 		}
 	}
 	
@@ -243,12 +397,15 @@ int main(int argc, char* argv[])
 	{
 		printf("Usage: lincellaut <tool> [options]\n\n");
 		printf("Tools:\n");
-		printf(" - iterate [iterations]: Iterate the update matrix a given number of times.\n");
+		printf(ANSI_COLOR_YELLOW " - iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
+		": Iterate the update matrix a given number of times.\n");
+		
 		printf("   - iterations: Overrides the number of iterations provided in the .config file.\n\n");
 		
 		printf(" - fibcycle: Generate the Fibonacci cycle that contains the initial vector.\n\n");
 		
-		printf(" - fibcyclelens: WIP\n\n")
+		printf(" - fibcyclelens [modulus]: Calculate all possible Fibonacci cycle lengths.\n");
+		printf("   - modulus: Overrides the modulus provided in the .config file.\n\n");
 		
 		printf("For a more complete description of LINCELLAUT's usage, refer to the included documentation.\n");
 	}

@@ -34,6 +34,11 @@ int reduce_BigIntT(BigIntTP);
     Returns 1 on success, 0 otherwise. */
 int clear_BigIntT(BigIntTP);
 
+/** Changes the size of the provided BigIntT and
+    reallocates its memory appropriately. 
+		Returns 1 on success, 0 otherwise. */
+int resize_BigIntT(BigIntTP, int);
+
 /** Copies the const BigIntT to the other BigIntT. 
     This function assumes both BigIntT structs are
 		initialised.
@@ -47,9 +52,7 @@ int compare_BigIntT(BigIntTP const, BigIntTP const);
 
 /** Adds the first two BigIntT structs together and
     stores the result in the third BigIntT. This function
-		assumes the third BigIntT has been initialised and
-		is big enough to hold the needed sum.
-		
+		assumes the third BigIntT has been initialised.
 		Returns 1 on success, 0 otherwise. */
 int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
@@ -65,8 +68,8 @@ int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 int subtract_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
 /** Computes first BigIntT mod second BigIntT, stores
-    result in third BigIntT, which should be big enough
-		to store the two other structs if needed.
+    result in third BigIntT, which assumes the third
+		BigInt has been initialised.
 		Returns 1 on success, 0 otherwise. */
 int mod_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
