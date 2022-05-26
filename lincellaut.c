@@ -73,7 +73,7 @@ int strtoBIT(char* numStr, BigIntTP* theBig)
 		bunchCounter += 1;
 		
 		//If we read an invalid character
-		if (strncmp(tempStr, "\0", 1) != 0)
+		if (tempStr[0] != '\0')
 		{
 			FREE(bunches);
 			FREE(substr);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 			if (strlen(bigintmodstring) < 10)
 			{
 				modulus = (int)strtol(bigintmodstring, &tempStr, 10);
-				if (*tempStr != '\0')
+				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Invalid modulus provided in config file.\n");
 					return EXIT_FAILURE;
@@ -357,7 +357,6 @@ int main(int argc, char* argv[])
 							printf("]\n");
 						}
 						
-						
 						//Incrementing Y
 						add_BigIntT(startingY, one, tempInt);
 						copy_BigIntT(tempInt, startingY);
@@ -385,19 +384,103 @@ int main(int argc, char* argv[])
 			one      = free_BigIntT(one);
 			zero     = free_BigIntT(zero);
 			
-			/*for (int x = 0; x < indexCounter; x += 1)
-				printf("%d, ", cycleLengths[x]);
-			printf("\n"); */
-			
 			FREE(cycleLengths);
+		}
+		
+		//If we want to check the Fibonacci numbers to see if multiples of numbers
+		// appear before multiples of powers of those numbers
+		else if (! strcmp(argv[1], "fibmultsearch"))
+		{
+			int hundred[] = {100};
+			int oneArr[]  = {001};
+			int zeroArr[] = {000};
+			BigIntTP upperbound;
+			BigIntTP currNum = new_BigIntT(oneArr, 1);
+			BigIntTP counter = new_BigIntT(oneArr, 1);
+			
+			BigIntTP zero    = new_BigIntT(zeroArr, 1);
+			BigIntTP one     = new_BigIntT(oneArr, 1);
+			
+			BigIntTP fibA    = new_BigIntT(oneArr, 1);
+			BigIntTP fibB    = empty_BigIntT(1);
+			BigIntTP fibTemp = empty_BigIntT(1);
+			
+			if (argc > 2)
+			{
+				if (! strtoBIT(argv[2], &upperbound))
+				{
+					fprintf(stderr, "Invalid upper bound passed.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			else
+				upperbound = new_BigIntT(hundred, 1);
+			
+			printf("pos\tnum\t\tfib\n");
+			while (compare_BigIntT(upperbound, currNum) >= 0)
+			{
+				//Testing to see if our current Fib number is a multiple of currNum
+				mod_BigIntT(fibA, currNum, fibTemp);
+				if (compare_BigIntT(zero, fibTemp) == 0)
+				{
+					printi(counter);
+					printf("\t");
+					
+					printi(currNum);
+					printf("\tdivides\t");
+					printi(fibA);
+					
+					//Now we check to see if it's a nultiple of some power of currNum
+					divide_BigIntT(fibA, currNum, fibTemp);
+					copy_BigIntT(fibTemp, fibA);
+					mod_BigIntT(fibA, currNum, fibTemp);
+					
+					if (compare_BigIntT(zero, fibTemp) == 0)
+					{
+						printf(", along with ");
+						printi(currNum);
+						printf("^2");
+					}
+					
+					printf("\n");
+					
+					//Prepare for the next number to check
+					add_BigIntT(currNum, one, fibTemp);
+					copy_BigIntT(fibTemp, currNum);
+					copy_BigIntT(one, fibA);
+					copy_BigIntT(zero, fibB);
+					copy_BigIntT(one, counter);
+				}
+				
+				else
+				{
+					//Calculate next Fibonacci number
+					add_BigIntT(fibA, fibB, fibTemp);
+					copy_BigIntT(fibA, fibB);
+					copy_BigIntT(fibTemp, fibA);
+					
+					add_BigIntT(one, counter, fibTemp);
+					copy_BigIntT(fibTemp, counter);
+				}
+			}
+			
+			upperbound = free_BigIntT(upperbound);
+			currNum    = free_BigIntT(currNum);
+			counter    = free_BigIntT(counter); 
+			zero       = free_BigIntT(zero);
+			one        = free_BigIntT(one);
+			fibA       = free_BigIntT(fibA);
+			fibB       = free_BigIntT(fibB);
+			fibTemp    = free_BigIntT(fibTemp);
 		}
 	}
 	
 	else
 	{
+		printf(ANSI_COLOR_GREEN "LINCELLAUT by Zach Strong.\n" ANSI_COLOR_RESET);
 		printf("Usage: lincellaut <tool> [options]\n\n");
 		printf("Tools:\n");
-		printf(ANSI_COLOR_YELLOW " - iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
+		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
 		": Iterate the update matrix a given number of times.\n");
 		
 		printf("   - iterations: Overrides the number of iterations provided in the .config file.\n\n");
@@ -407,7 +490,12 @@ int main(int argc, char* argv[])
 		printf(" - fibcyclelens [modulus]: Calculate all possible Fibonacci cycle lengths.\n");
 		printf("   - modulus: Overrides the modulus provided in the .config file.\n\n");
 		
-		printf("For a more complete description of LINCELLAUT's usage, refer to the included documentation.\n");
+		printf(" - fibmultsearch [bound]: Searches the Fibonacci numbers, checking whether a " \
+		"multiple of each number up to the bound appears before a multiple of a power of the number.\n");
+		printf("   - bound: Override the default upper bound of 100.\n\n");
+		
+		printf("For a more complete description of LINCELLAUT's usage, " \
+		"refer to the included documentation.\n");
 	}
 	
 	//Testing arbitrary precision stuff

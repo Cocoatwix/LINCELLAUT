@@ -103,7 +103,7 @@ int reduce_BigIntT(BigIntTP toReduce)
 	
 	//Iterate backwards through the number, seeing
 	// if there's any bunches we can remove
-	for (int i = toReduce->size-1; i >= 0; i -= 1)
+	for (int i = (toReduce->size)-1; i >= 0; i -= 1)
 	{
 		if (toReduce->theInt[i] != 0)
 			break;
@@ -149,51 +149,67 @@ int copy_BigIntT(BigIntTP const setTo, BigIntTP toSet)
 /** Copies setTo to toSet and returns 1 on completion.
     Returns 0 on error. */
 {
+	//Reallocate toSet's memory appropriately
+	if (toSet->size != setTo->size)
+	{
+		toSet->size = setTo->size;
+		toSet->theInt = realloc(toSet->theInt, (toSet->size)*sizeof(int));
+	}
+	
 	//Clear out toSet before doing anything
 	for (int i = 0; i < toSet->size; i += 1)
 		toSet->theInt[i] = 0;
-	
-	//Reallocate toSet's memory appropriately
-	if (toSet->size != setTo->size)
-		toSet->theInt = realloc(toSet->theInt, (setTo->size)*sizeof(int));
 	
 	//Copy contents
 	for (int i = 0; i < setTo->size; i += 1)
 		toSet->theInt[i] = setTo->theInt[i];
 	
-	toSet->size = setTo->size;
-	
 	return 1;
 }
 
 
-int compare_BigIntT(BigIntTP const A, BigIntTP const B)
+int compare_BigIntT(BigIntTP const AA, BigIntTP const BB)
 /** Returns -1 if A < B, 0 if A == B, 1 if A > B */
 {
+	//Making sure no weirdness occurs with size comparisons
+	BigIntTP A = empty_BigIntT(1);
+	BigIntTP B = empty_BigIntT(1);
+	copy_BigIntT(AA, A);
+	copy_BigIntT(BB, B);
+	reduce_BigIntT(A);
+	reduce_BigIntT(B);
+	
+	int returnVal;
+	
 	//Easy cases where the sizes are different
 	if ((A->size) < (B->size))
-		return -1;
+		returnVal = -1;
 	
 	else if ((A->size) > (B->size))
-		return 1;
+		returnVal = 1;
 	
 	//Compare most significant bunches
 	else
 	{
 		if ((A->theInt[A->size-1]) < (B->theInt[B->size-1]))
-			return -1;
+			returnVal = -1;
 		
 		else if ((A->theInt[A->size-1]) == (B->theInt[B->size-1]))
-			return 0;
+			returnVal = 0;
 		
 		else
-			return 1;
+			returnVal = 1;
 	}
+	
+	A = free_BigIntT(A);
+	B = free_BigIntT(B);
+	
+	return returnVal;
 }
 
 
 int add_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
-/** Add numOfBunches bunch to n and store the result in result.
+/** Add numOfBunches bunches to n and store the result in result.
     This function assumes result has been initialised.
 		
 		Returns 1 on success, 0 otherwise. */
@@ -215,11 +231,37 @@ int add_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
 }
 
 
-int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
-/** Computes A + B and stores the result in sum. This function assumes
-    sum has been declared.
+int subtract_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
+/** Subtracts numOfBunches bunches to n and stores the result in result.
+    This function assumes result has been initialised.
+		
 		Returns 1 on success, 0 otherwise. */
 {
+	//Can't subtract more bunches than what's already in n
+	if (numOfBunches > n->size)
+		return 0;
+	
+	//Preparing result to store what it needs to
+	clear_BigIntT(result);
+	result->size = (n->size) - numOfBunches;
+	if (result->size == 0)
+		result->size = 1;
+	result->theInt = realloc(result->theInt, (result->size)*sizeof(int));
+	
+	//Copy bunches from n to result
+	for (int bunch = numOfBunches; bunch < n->size; bunch += 1)
+		result->theInt[bunch-numOfBunches] = n->theInt[bunch];
+	
+	return 1;
+}
+
+
+int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
+/** Computes A + B and stores the result in sum. This function assumes
+    sum has been initialised.
+		Returns 1 on success, 0 otherwise. */
+{
+	//Just pointers, so we don't need to free them
 	BigIntTP smol; //Pointer to smaller of the two arguments
 	BigIntTP big;  //        ... bigger of the two arguments
 	
@@ -235,19 +277,17 @@ int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
 	}
 	
 	//Properly initialise sum
-	resize_BigIntT(sum, (big->size) + 1);
+	if (sum->size < (big->size) + 1)
+		resize_BigIntT(sum, (big->size) + 1);
+	
 	clear_BigIntT(sum);
 	
 	for (int i = 0; i < smol->size; i += 1)
 	{
 		if (A->theInt[i] + B->theInt[i] + sum->theInt[i] > MAXBUNCH-1)
-		{
 			sum->theInt[i+1] += 1;
-			sum->theInt[i] += A->theInt[i] + B->theInt[i] - MAXBUNCH; 
-		}
 		
-		else
-			sum->theInt[i] += A->theInt[i] + B->theInt[i];
+		sum->theInt[i] += (A->theInt[i] + B->theInt[i]) % MAXBUNCH; 
 	}
 	
 	//Add extra bunches that weren't added above
@@ -255,16 +295,16 @@ int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
 	{
 		//If we get another carry
 		if (sum->theInt[i] + big->theInt[i] > MAXBUNCH-1)
-		{
 			sum->theInt[i+1] += 1;
-			sum->theInt[i]   += big->theInt[i] - MAXBUNCH;
-		}
 		
-		else
-			sum->theInt[i] += big->theInt[i];
+		sum->theInt[i] += big->theInt[i] % MAXBUNCH;
 	}
 	
+	/* printf("Result of sum: ");
+	printi(sum);
+	printf("\n"); */
 	reduce_BigIntT(sum);
+	
 	
 	return 1;
 }
@@ -274,12 +314,16 @@ int subtract_BigIntT(BigIntTP const subFrom, BigIntTP const toSub, BigIntTP diff
 /** Calculates subFrom - toSub, stores result in difference. 
     Returns 1 on success, 0 on error. 
 		
-		This function assumes difference has been properly initialised to 0. */
+		This function assumes difference has been initialised. */
 {
 	//Only positive BigIntT structs can be handled currently, so
 	// if toSub > subFrom, then return 0.
 	if (compare_BigIntT(subFrom, toSub) < 0)
 		return 0;
+	
+	//Make sure difference is the correct size to hold result
+	if (difference->size < subFrom->size)
+		resize_BigIntT(difference, subFrom->size);
 	
 	clear_BigIntT(difference);
 	
@@ -317,17 +361,117 @@ int subtract_BigIntT(BigIntTP const subFrom, BigIntTP const toSub, BigIntTP diff
 }
 
 
+int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP quotient)
+/** Divides the first BigIntT by the second, and stores the
+    result in the third BigIntT. This function assumes
+		all BigIntT structs have been initialised.
+		
+		This function discards any remainder.
+		
+		Returns 1 on success, 0 otherwise. */
+{
+	int one[] = {1};
+	
+	//Can't divide by zero in this context
+	BigIntTP zero = empty_BigIntT(1);
+	if (compare_BigIntT(divideBy, zero) == 0)
+	{
+		zero = free_BigIntT(zero);
+		return 0;
+	}
+	
+	//Holds a divisor of reasonable size so that we
+	// aren't subtracting a baby number all day
+	BigIntTP tempDivisor = empty_BigIntT(1);
+	copy_BigIntT(divideBy, tempDivisor);
+	
+	//Holds the size of our tempDivisor, to properly
+	// keep track of how many times we've subtracted it
+	// from toDivide
+	BigIntTP divisorMagnitude = new_BigIntT(one, 1);
+	
+	//For any miscellaneous operations we need this for
+	BigIntTP temp  = empty_BigIntT(1);
+	BigIntTP temp2 = empty_BigIntT(1);
+	
+	//Don;t worry about the size of quotient,
+	// it sorts itself out once it gets chucked into a function
+	clear_BigIntT(quotient);
+	quotient->size = 1;
+	
+	//If there's actually some meaningful division to do
+	// (if toDivide > divideBy)
+	if (compare_BigIntT(toDivide, divideBy) >= 0)
+	{
+		//Find a reasonable divisor to start with
+		add_bunches(tempDivisor, 1, temp);
+		copy_BigIntT(temp, tempDivisor);
+			
+		while (compare_BigIntT(toDivide, tempDivisor) > 0)
+		{
+			add_bunches(divisorMagnitude, 1, temp);
+			copy_BigIntT(temp, divisorMagnitude); 
+			
+			add_bunches(tempDivisor, 1, temp);
+			copy_BigIntT(temp, tempDivisor);
+		}
+		
+		//We'll now have a tempDivisor which is one bunch too big
+		//Make sure to subtract it!
+		
+		//If you truly want arbitrary precision here, you can't directly
+		// use divisorMagnitude's size, as that'll max out at 2147483647.
+		// Rather, you need to manually subtract through divisorMagnitude with
+		// a for-loop to add the correct number of bunches here.
+		add_bunches(divideBy, (divisorMagnitude->size)-1, tempDivisor);
+		
+		//Now, we can perform the actual division (which is just repeated
+		// subtraction here).
+		copy_BigIntT(toDivide, temp);
+		
+		while (compare_BigIntT(temp, divideBy) >= 0)
+		{
+			subtract_BigIntT(temp, tempDivisor, temp2);
+			copy_BigIntT(temp2, temp);
+			
+			//Keep track of how many times we've subtracted divideBy
+			add_BigIntT(quotient, divisorMagnitude, temp2);
+			copy_BigIntT(temp2, quotient);
+			
+			//Reduce tempDivisor by one bunch
+			if (compare_BigIntT(temp, tempDivisor) < 0)
+			{
+				subtract_bunches(tempDivisor, 1, temp2);
+				copy_BigIntT(temp2, tempDivisor);
+				
+				subtract_bunches(divisorMagnitude, 1, temp2);
+				copy_BigIntT(temp2, divisorMagnitude);
+			}
+		}
+	}
+	
+	tempDivisor      = free_BigIntT(tempDivisor);
+	divisorMagnitude = free_BigIntT(divisorMagnitude);
+	temp             = free_BigIntT(temp);
+	temp2            = free_BigIntT(temp2);
+	zero             = free_BigIntT(zero);
+	
+	reduce_BigIntT(quotient);
+	return 1;
+}
+
+
 int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 /** Calculates toMod % modulus and stores it in residue.
     Returns 1 on success, 0 otherwise. */
 {
 	//This implementation is terrible. I apologise.
 	BigIntTP tempModulus = empty_BigIntT(modulus->size);
-	int modCounter = 0;
-	copy_BigIntT(modulus, tempModulus);
 	
-	if (residue->size != toMod->size)
-		resize_BigIntT(residue, toMod->size);
+	//This should be rewritten to use a BigIntT here
+	int modCounter = 0;
+	
+	copy_BigIntT(modulus, tempModulus);
 	
 	copy_BigIntT(toMod, residue);
 	

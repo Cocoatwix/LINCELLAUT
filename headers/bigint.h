@@ -61,11 +61,20 @@ int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 		negative BigIntT structs aren't supported yet, so
 		a bigger number can't be subtracted from a smaller
 		number.
-		This function assumes all BigIntT structs are initialised
-		appropriately (third BigIntT should be big enough to
-		store both other structs).
+		This function assumes all BigIntT structs are initialised.
 		Returns 1 on success, 0 otherwise. */
 int subtract_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+
+/** Divides the first BigIntT by the second, and stores the
+    result in the third BigIntT. This function assumes
+		all BigIntT structs have been initialised.
+		
+		Note that this function performs floor division, so any
+		remainder after division will be discarded. Use
+		mod_BigIntT to obtain the remainder.
+		
+		Returns 1 on success, 0 otherwise. */
+int divide_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
 /** Computes first BigIntT mod second BigIntT, stores
     result in third BigIntT, which assumes the third
