@@ -15,6 +15,8 @@ May 24, 2022
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../headers/linalg.h" //For getting digit counts
+
 int generate_orbit(int* v, int modulus, int toPrint)
 /** Generates/prints the orbit of the given vector (not in
     IntMatrixT form) under the given modulus and returns
@@ -26,6 +28,7 @@ int generate_orbit(int* v, int modulus, int toPrint)
 		Else, it is. */
 {
 	int orbitLength = 0;
+	int modDigits   = num_digits(modulus);
 	
 	int* initial = malloc(2*sizeof(int));
 	initial[0] = v[0];
@@ -41,7 +44,17 @@ int generate_orbit(int* v, int modulus, int toPrint)
 		orbitLength += 1;
 		
 		if (toPrint)
-			printf("[%d, %d] ", v[0], v[1]);
+		{
+			printf("[");
+			
+			for (int x = 0; x < modDigits-num_digits(v[0]); x += 1)
+				printf("0");
+			printf("%d, ", v[0]);
+			
+			for (int x = 0; x < modDigits-num_digits(v[1]); x += 1)
+				printf("0");
+			printf("%d] ", v[1]);
+		}
 	}
 	while ((v[0] != initial[0]) || (v[1] != initial[1]));
 	printf("\n");

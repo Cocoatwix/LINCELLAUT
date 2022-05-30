@@ -231,6 +231,18 @@ int main(int argc, char* argv[])
 			
 			FILE* initVectFile = fopen(initialfilepath, "r");
 			
+			//If the user specified a specific modulus to use
+			if (argc > 2)
+			{
+				modulus = (int)strtol(argv[2], &tempStr, 10);
+				
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Invalid modulus passed at command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
 			if (initVectFile == NULL)
 			{
 				fprintf(stderr, "Unable to read file %s.\n", initialfilepath);
@@ -391,11 +403,15 @@ int main(int argc, char* argv[])
 		// appear before multiples of powers of those numbers
 		else if (! strcmp(argv[1], "fibmultsearch"))
 		{
+			printf("Note: for testing purposes this tool currently sets" \
+			" its starting value at a value other than 1.\n");
+			
 			int hundred[] = {100};
 			int oneArr[]  = {001};
 			int zeroArr[] = {000};
+			int start[] = {862};
 			BigIntTP upperbound;
-			BigIntTP currNum = new_BigIntT(oneArr, 1);
+			BigIntTP currNum = new_BigIntT(start, 1);
 			BigIntTP counter = new_BigIntT(oneArr, 1);
 			
 			BigIntTP zero    = new_BigIntT(zeroArr, 1);
@@ -421,6 +437,7 @@ int main(int argc, char* argv[])
 			{
 				//Testing to see if our current Fib number is a multiple of currNum
 				mod_BigIntT(fibA, currNum, fibTemp);
+				
 				if (compare_BigIntT(zero, fibTemp) == 0)
 				{
 					printi(counter);
@@ -483,16 +500,24 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
 		": Iterate the update matrix a given number of times.\n");
 		
-		printf("   - iterations: Overrides the number of iterations provided in the .config file.\n\n");
+		printf("   - " ANSI_COLOR_CYAN "iterations" ANSI_COLOR_RESET \
+		": Overrides the number of iterations provided in the .config file.\n\n");
 		
-		printf(" - fibcycle: Generate the Fibonacci cycle that contains the initial vector.\n\n");
+		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
+		": Generate the Fibonacci cycle that contains the initial vector.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
 		
-		printf(" - fibcyclelens [modulus]: Calculate all possible Fibonacci cycle lengths.\n");
-		printf("   - modulus: Overrides the modulus provided in the .config file.\n\n");
+		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
+		": Calculate all possible Fibonacci cycle lengths.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
 		
-		printf(" - fibmultsearch [bound]: Searches the Fibonacci numbers, checking whether a " \
+		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET \
+		": Searches the Fibonacci numbers, checking whether a " \
 		"multiple of each number up to the bound appears before a multiple of a power of the number.\n");
-		printf("   - bound: Override the default upper bound of 100.\n\n");
+		printf("   - " ANSI_COLOR_CYAN "bound" ANSI_COLOR_RESET \
+		": Override the default upper bound of 100.\n\n");
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

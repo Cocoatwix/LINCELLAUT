@@ -76,6 +76,13 @@ BigIntTP empty_BigIntT(int zeros)
 }
 
 
+int size(BigIntTP n)
+/** Returns the size of the BigIntT passed. */
+{
+	return n->size;
+}
+
+
 void printi(BigIntTP n)
 /** Prints a BigIntT struct to the screen as a normal int would. */
 {

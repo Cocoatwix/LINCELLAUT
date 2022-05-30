@@ -20,6 +20,9 @@ BigIntTP new_BigIntT(int* const, int);
 		size of the struct to create. */
 BigIntTP empty_BigIntT(int);
 
+/** Returns the size of the BigIntT passed. */
+int size(BigIntTP);
+
 /** Prints a BigIntT struct as an integer would be printed.
     This function does not print a newline or spaces
 		around the number. */
