@@ -59,6 +59,9 @@ int element(IntMatrixTP M, int row, int col)
 IntMatrixTP free_IntMatrixT(IntMatrixTP M)
 /** Frees memory taken by M. Returns NULL. */
 {
+	if (M == NULL)
+		return NULL;
+	
 	//Freeing each row of the matrix
 	for (int i = 0; i < M->m; i += 1)
 		free(M->matrix[i]);

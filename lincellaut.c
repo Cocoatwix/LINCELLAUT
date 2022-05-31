@@ -207,21 +207,90 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			IntMatrixTP F   = read_IntMatrixT(updatefilepath);
-			IntMatrixTP F_2 = identity_IntMatrixT(rows(F));
+			IntMatrixTP F;
+			IntMatrixTP F_2;
+			
+			if (iterations < 0)
+			{
+				F_2 = read_IntMatrixT(updatefilepath);
+				F   = inverse(F_2, modulus);
+				
+				if (F == NULL)
+					printf("An inverse for the update matrix mod %d does not exist.\n", modulus);
+				
+				else
+				{
+					iterations *= -1;
+					F_2 = free_IntMatrixT(F_2);
+					F_2 = identity_IntMatrixT(rows(F));
+				}
+			}
+			
+			else
+			{
+				F   = read_IntMatrixT(updatefilepath);
+				F_2 = identity_IntMatrixT(rows(F));
+				
+				if (F == NULL)
+					return EXIT_FAILURE;
+			}
 			
 			//Iterate F a few times
 			//The minus 1 is for easier conversion between ORBITVIS results
+			printf("Iterations: %d\n", iterations);
 			if (iterations > 0)
-			{
 				F_2 = iterate(F, F, modulus, iterations-1);
-				printf("Iterations: %d\n", iterations);
-			}
-			printm(F_2, TRUE);
+			
+			//Prevents the matrix from being printed when
+			// an inverse doesn't exist and the iterations
+			// provided was negative
+			if (iterations >= 0)
+				printm(F_2, TRUE);
 
 			F   = free_IntMatrixT(F);
 			F_2 = free_IntMatrixT(F_2);
 		}
+		
+		
+		//Find the inverse of the update matrix
+		else if (!strcmp(argv[1], "inverse"))
+		{
+			IntMatrixTP F = read_IntMatrixT(updatefilepath);
+			IntMatrixTP Finv;
+			
+			if (F == NULL)
+				return EXIT_FAILURE;
+			
+			printf("Update matrix:\n");
+			printm(F, TRUE);
+			
+			//If the user specified a modulus at the command line
+			if (argc > 2)
+			{
+				modulus = (int)strtol(argv[2], &tempStr, 10);
+				
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Invalid modulus passed at command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			Finv = inverse(F, modulus);
+			
+			if (Finv == NULL)
+				printf("An inverse for the update matrix mod %d does not exist.\n", modulus);
+			
+			else
+			{
+				printf("Inverse mod %d:\n", modulus);
+				printm(Finv, TRUE);
+			}
+			
+			F    = free_IntMatrixT(F);
+			Finv = free_IntMatrixT(Finv);
+		}
+		
 		
 		//If we want to generate a Fibonacci cycle for
 		// the given initial vector
@@ -281,6 +350,7 @@ int main(int argc, char* argv[])
 			
 			FREE(initVect);
 		}
+		
 		
 		//If we want to see all possible cycle lengths for a particular modulus
 		else if (! strcmp(argv[1], "fibcyclelens"))
@@ -399,6 +469,7 @@ int main(int argc, char* argv[])
 			FREE(cycleLengths);
 		}
 		
+		
 		//If we want to check the Fibonacci numbers to see if multiples of numbers
 		// appear before multiples of powers of those numbers
 		else if (! strcmp(argv[1], "fibmultsearch"))
@@ -490,6 +561,7 @@ int main(int argc, char* argv[])
 			fibB       = free_BigIntT(fibB);
 			fibTemp    = free_BigIntT(fibTemp);
 		}
+		
 	}
 	
 	else
@@ -497,11 +569,16 @@ int main(int argc, char* argv[])
 		printf(ANSI_COLOR_GREEN "LINCELLAUT by Zach Strong.\n" ANSI_COLOR_RESET);
 		printf("Usage: lincellaut <tool> [options]\n\n");
 		printf("Tools:\n");
+		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
 		": Iterate the update matrix a given number of times.\n");
-		
 		printf("   - " ANSI_COLOR_CYAN "iterations" ANSI_COLOR_RESET \
 		": Overrides the number of iterations provided in the .config file.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Find the inverse of an update matrix under some modulus.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
 		": Generate the Fibonacci cycle that contains the initial vector.\n");
@@ -612,7 +689,6 @@ int main(int argc, char* argv[])
 
 	/*
 	IntMatrixTP F_3   = new_IntMatrixT(2, 2);
-	IntMatrixTP Finv;
 	IntMatrixTP I     = identity_IntMatrixT(2);
 	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F)); */
 	
@@ -691,24 +767,6 @@ int main(int argc, char* argv[])
 	//Testing the determinant function
 	//printf("Determinant of update matrix: %d\n", det(F));
 	
-	//Testing the inverse function
-	/* printf("F:\n");
-	printm(F, TRUE);
-	
-	Finv = inverse(F, MODULUS); 
-	if (Finv != NULL)
-	{
-		printf("The inverse of F is:\n");
-		printm(Finv, TRUE);
-		
-		//Testing both orders to see if the inverse really is the inverse
-		printf("F and Finv multipled together give:\n");
-		mat_mul(F, Finv, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
-		mat_mul(Finv, F, Fmult); modm(Fmult, MODULUS); printm(Fmult, TRUE);
-	}
-	else
-		printf("F is not invertible mod %d.\n", MODULUS); */
-	
 	/*CycleInfoTP theCycle = floyd(F, s_0, modulus);
 	printcycle(theCycle);
 	theCycle = free_CycleInfoT(theCycle); */
@@ -746,7 +804,6 @@ int main(int argc, char* argv[])
 	
 	/*
 	F_3 = free_IntMatrixT(F_3);
-	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
 	I = free_IntMatrixT(I); */
 	//s_0 = free_IntMatrixT(s_0);
 	//s_f = free_IntMatrixT(s_f);

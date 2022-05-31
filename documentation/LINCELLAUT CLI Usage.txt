@@ -2,8 +2,11 @@ To make certain tasks easier, LINCELLAUT comes with lincellaut.c, which compiles
 
 The following is a list of all the currently available tasks within lincellaut.c.
 
-iterate [iterations] : This tool allows you to take an update matrix and iterate it by itself multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file (see .config file specs for more information). 
- - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects a positive integer. 
+iterate [iterations]: This tool allows you to take an update matrix and iterate it by itself multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
+ - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. Using a negative integer will get LINCELLAUT to compute the inverse of the update matrix and iterate that the specified number of times (e.g. an iteration count of -3 will iterate the inverse matrix 3 times, if it exists).
+
+inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
+ - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
 
@@ -14,7 +17,7 @@ fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which c
 in .matrix format. This specific update matrix has its own tools since each iteration can be computed more efficiently than by using general matrix multiplication.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
 
-fibcyclelens [modulus] : This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
+fibcyclelens [modulus]: This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
  - The option argument "modulus" allows you to override the modulus provided in the .config file. This argument expects a positive integer (tehcnically, it expects a BigIntT, but for all intents and purposes the user can treat this like an arbitrarily large integer).
 
 fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.

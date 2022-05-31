@@ -20,7 +20,8 @@ int cols(IntMatrixTP);
 int element(IntMatrixTP, int, int);
 
 
-/** Frees the memory of an IntMatrix. Returns NULL. */
+/** Frees the memory of an IntMatrix. Returns NULL. 
+    Also returns NULL if the argument is NULL. */
 IntMatrixTP free_IntMatrixT(IntMatrixTP);
 
 /** Creates a new empty IntMatrix of given size. 
