@@ -14,7 +14,7 @@ May 24, 2022
 #include "../headers/linalg.h" //num_digits()
 
 //Using == 10000 allows for proper printing + above
-const int MAXBUNCH = 1000000000;
+const int MAXBUNCH = 100000000;
 
 /*
 BigIntT structs hold numbers in little endian style,
@@ -195,21 +195,24 @@ int compare_BigIntT(BigIntTP const AA, BigIntTP const BB)
 	//Check to see if AA and BB are reduced. If so,
 	// no need to allocate new BigIntTPs to reduce!
 	
-	//ALSO CHECK IF YOUR NUMBER IS ZERO
-	if ((AA->theInt[AA->size-1] != 0) && (BB->theInt[BB->size-1]) != 0)
-	{
+	//The == 1 on each expression prevents zeros from being reallocated
+	if ((AA->theInt[AA->size-1] != 0) || (AA->size == 1))
 		A = AA;
-		B = BB;
-	}
 	
-	//Allocate new pointers if needed
 	else
 	{
 		A = empty_BigIntT(1);
-		B = empty_BigIntT(1);
 		copy_BigIntT(AA, A);
-		copy_BigIntT(BB, B);
 		reduce_BigIntT(A);
+	}
+		
+	if ((BB->theInt[BB->size-1] != 0) || (BB->size == 1))
+		B = BB;
+	
+	else
+	{
+		B = empty_BigIntT(1);
+		copy_BigIntT(BB, B);
 		reduce_BigIntT(B);
 	}
 	
@@ -237,12 +240,12 @@ int compare_BigIntT(BigIntTP const AA, BigIntTP const BB)
 		}
 	}
 	
-	//If we allocated new pointers
+	//Freeing created pointers, if needed
 	if (A != AA)
-	{
 		A = free_BigIntT(A);
+	
+	if (B != BB)
 		B = free_BigIntT(B);
-	}
 	
 	return returnVal;
 }
@@ -290,6 +293,58 @@ int subtract_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
 	//Copy bunches from n to result
 	for (int bunch = numOfBunches; bunch < n->size; bunch += 1)
 		result->theInt[bunch-numOfBunches] = n->theInt[bunch];
+	
+	return 1;
+}
+
+
+int multiply_by_ten(BigIntTP n)
+/** Multiplies n by 10. Returns 1.
+
+    This function only works when MAXBUNCH is a power of ten. */
+{
+	int digitToCarry = 0;
+	int lastDigitToCarry;
+	
+	//If we need to give n an extra bunch to hold itself multiplied by 10
+	if (n->theInt[n->size-1] >= MAXBUNCH/10)
+	{
+		resize_BigIntT(n, n->size+1);
+		n->theInt[n->size-1] = 0; //Initialising new bunch
+	}
+	
+	for (int bunch = 0; bunch < n->size; bunch += 1)
+	{
+		lastDigitToCarry = digitToCarry;
+		digitToCarry = 10*n->theInt[bunch] / MAXBUNCH;
+		n->theInt[bunch] %= MAXBUNCH/10;
+		n->theInt[bunch] *= 10;
+		n->theInt[bunch] += lastDigitToCarry;
+	}
+	
+	return 1;
+}
+
+
+int divide_by_ten(BigIntTP n)
+/** Divides the given n by ten. If n < 10, n becomes 0.
+    Returns 1. 
+		
+		This function only works if MAXBUNCH is a power of 10. */
+{
+	//Digit that gets dragged to the next most significant bunch
+	int digitToCarry = 0;
+	int lastDigitToCarry;
+	
+	for (int bunch = n->size-1; bunch >= 0; bunch -= 1)
+	{
+		lastDigitToCarry = digitToCarry;
+		digitToCarry = n->theInt[bunch] % 10;
+		n->theInt[bunch] /= 10;
+		n->theInt[bunch] += (MAXBUNCH/10) * lastDigitToCarry;
+	}
+	
+	reduce_BigIntT(n);
 	
 	return 1;
 }
@@ -407,7 +462,8 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 		Returns 1 on success, 0 otherwise. */
 {
 	int comparison; //Holds comparison values so we don't have to keep recomputing them
-	int one[] = {1};
+	int one[]    = {1};
+	int tenArr[] = {10};
 	
 	//Can't divide by zero in this context
 	BigIntTP zero = empty_BigIntT(1);
@@ -416,6 +472,8 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 		zero = free_BigIntT(zero);
 		return 0;
 	}
+	
+	BigIntTP ten = new_BigIntT(tenArr, 1);
 	
 	//Holds a divisor of reasonable size so that we
 	// aren't subtracting a baby number all day
@@ -444,18 +502,28 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 		comparison = compare_BigIntT(toDivide, tempDivisor);
 		if (comparison > 0)
 		{
-			add_bunches(divisorMagnitude, comparison, temp);
+			add_bunches(divisorMagnitude, comparison-1, temp);
 			copy_BigIntT(temp, divisorMagnitude); 
 			
-			add_bunches(tempDivisor, comparison, temp);
+			add_bunches(tempDivisor, comparison-1, temp);
 			copy_BigIntT(temp, tempDivisor);
 		}
 		
-		//If you truly want arbitrary precision here, you can't directly
+		//Get tempDivisor as close to toDivide as possible
+		while (compare_BigIntT(tempDivisor, toDivide) <= 0)
+		{
+			multiply_by_ten(tempDivisor);
+			multiply_by_ten(divisorMagnitude);
+		}
+		
+		divide_by_ten(tempDivisor);
+		divide_by_ten(divisorMagnitude);
+		
+		// If you truly want arbitrary precision here, you can't directly
 		// use divisorMagnitude's size, as that'll max out at 2147483647.
 		// Rather, you need to manually subtract through divisorMagnitude with
 		// a for-loop to add the correct number of bunches here.
-		add_bunches(divideBy, (divisorMagnitude->size)-1, tempDivisor);
+		// add_bunches(divideBy, (divisorMagnitude->size)-1, tempDivisor);
 		
 		//Now, we can perform the actual division (which is just repeated
 		// subtraction here).
@@ -472,17 +540,28 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 				add_BigIntT(quotient, divisorMagnitude, temp2);
 				copy_BigIntT(temp2, quotient);
 			}
-
-			//Reduce tempDivisor by as many bunches as needed
-			comparison = compare_BigIntT(tempDivisor, temp);
-			if ((comparison > 0) && (compare_BigIntT(zero, temp) != 0))
+			
+			else
 			{
-				//Subtract off bunches
-				subtract_bunches(tempDivisor, comparison, temp2);
-				copy_BigIntT(temp2, tempDivisor);
+				//Reduce tempDivisor by as many bunches as needed
+				comparison = compare_BigIntT(tempDivisor, temp);
+				if ((comparison > 0) && (compare_BigIntT(zero, temp) != 0))
+				{
+					//Subtract off bunches
+					subtract_bunches(tempDivisor, comparison-1, temp2);
+					copy_BigIntT(temp2, tempDivisor);
+					
+					subtract_bunches(divisorMagnitude, comparison-1, temp2);
+					copy_BigIntT(temp2, divisorMagnitude);
+					
+					//Now, just divide by ten until your tempDivisor is small enough
+					while (compare_BigIntT(tempDivisor, temp) > 0)
+					{
+						divide_by_ten(tempDivisor);
+						divide_by_ten(divisorMagnitude);
+					}
+				}
 				
-				subtract_bunches(divisorMagnitude, comparison, temp2);
-				copy_BigIntT(temp2, divisorMagnitude);
 			}
 		}
 	}
@@ -492,6 +571,7 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 	temp             = free_BigIntT(temp);
 	temp2            = free_BigIntT(temp2);
 	zero             = free_BigIntT(zero);
+	ten              = free_BigIntT(ten);
 	
 	reduce_BigIntT(quotient);
 	return 1;
@@ -526,10 +606,12 @@ int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 	
 	if (comparison > 0)
 	{
-		add_bunches(modulus, comparison, tempModulus);
-	
-		if (compare_BigIntT(toMod, tempModulus) < 0)
-			add_bunches(modulus, comparison-1, tempModulus);
+		add_bunches(modulus, comparison-1, tempModulus);
+		
+		while (compare_BigIntT(tempModulus, toMod) <= 0)
+			multiply_by_ten(tempModulus);
+
+		divide_by_ten(tempModulus);
 	}
 	
 	while (compare_BigIntT(modulus, residue) <= 0)
@@ -538,14 +620,9 @@ int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 		copy_BigIntT(temp, residue);
 		
 		//If our residue is less than the modulus,
-		// shrink the modulus to the next power of MAXBUNCH down.
-		comparison = compare_BigIntT(tempModulus, residue);
-		
-		if (comparison > 0)
-		{
-			subtract_bunches(tempModulus, comparison, temp);
-			copy_BigIntT(temp, tempModulus);
-		}
+		// shrink the modulus until it's less than residue again.
+		while (compare_BigIntT(tempModulus, residue) > 0)
+			divide_by_ten(tempModulus);
 	}
 	
 	temp        = free_BigIntT(temp);

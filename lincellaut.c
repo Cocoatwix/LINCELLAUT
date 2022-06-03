@@ -552,6 +552,7 @@ int main(int argc, char* argv[])
 			int oneArr[]  = {001};
 			int zeroArr[] = {000};
 			int start[]   = {001}; //Where the program starts counting
+			//int debugCounter = 0; //For debugging
 			BigIntTP upperbound;
 			BigIntTP currNum = new_BigIntT(start, 1);
 			BigIntTP counter = new_BigIntT(oneArr, 1);
@@ -576,7 +577,7 @@ int main(int argc, char* argv[])
 			
 			printf("pos\tnum\t\tfib\n");
 			while (compare_BigIntT(upperbound, currNum) >= 0)
-			{
+			{	
 				//Testing to see if our current Fib number is a multiple of currNum
 				mod_BigIntT(fibA, currNum, fibTemp);
 				
@@ -621,11 +622,11 @@ int main(int argc, char* argv[])
 					add_BigIntT(one, counter, fibTemp);
 					copy_BigIntT(fibTemp, counter);
 					
-					printf("\n");
+					/*printf("\n");
 					printi(fibA);
 					printf(" ");
 					printi(fibB);
-					printf("\n");
+					printf("\n");*/
 				}
 			}
 			
