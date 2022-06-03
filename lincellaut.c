@@ -292,6 +292,80 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//Generate some basic rotation matrices for the given modulus
+		else if (! strcmp(argv[1], "rots"))
+		{
+			bool has30 = TRUE;
+			bool has45 = TRUE;
+			
+			int inv2;
+			int sqrt3;
+			
+			//If user provided modulus on CLI
+			if (argc > 2)
+			{
+				modulus = (int)strtol(argv[2], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			if ((num_inverse(2, modulus) == -1))
+			{
+				printf("45degrot and 30degrot don't exist mod %d.\n", modulus);
+				has45 = FALSE;
+				has30 = FALSE;
+			}
+			
+			else
+			{
+				if (square_root(2, modulus) == -1)
+				{
+					printf("45degrot doesn't exist mod %d.\n", modulus);
+					has45 = FALSE;
+				}
+				
+				if (square_root(3, modulus) == -1)
+				{
+					printf("30degrot does not exist mod %d.\n", modulus);
+					has30 = FALSE;
+				}
+			}
+			
+			
+			if (has45)
+			{
+				printf("45degrot mod %d:\n", modulus);
+				
+				printf("%2d %2d\n",
+				(num_inverse(2, modulus)*square_root(2, modulus)) % modulus,
+				modulus - ((num_inverse(2, modulus)*square_root(2, modulus)) % modulus));
+				
+				printf("%2d %2d\n",
+				(num_inverse(2, modulus)*square_root(2, modulus)) % modulus,
+				(num_inverse(2, modulus)*square_root(2, modulus)) % modulus);
+			}
+			
+			if (has30)
+			{
+				inv2  = (modulus - num_inverse(2, modulus)) % modulus;
+				sqrt3 = square_root(3, modulus);
+				
+				printf("30degrot mod %d:\n", modulus);
+				
+				printf("%2d %2d\n",
+				(inv2*sqrt3) % modulus,
+				((modulus - inv2) % modulus));
+				
+				printf("%2d %2d\n",
+				inv2, 
+				(inv2*sqrt3) % modulus);
+			}
+		}
+		
+		
 		//If we want to generate a Fibonacci cycle for
 		// the given initial vector
 		else if (! strcmp(argv[1], "fibcycle"))
@@ -474,13 +548,10 @@ int main(int argc, char* argv[])
 		// appear before multiples of powers of those numbers
 		else if (! strcmp(argv[1], "fibmultsearch"))
 		{
-			printf("Note: for testing purposes this tool currently sets" \
-			" its starting value at a value other than 1.\n");
-			
 			int hundred[] = {100};
 			int oneArr[]  = {001};
 			int zeroArr[] = {000};
-			int start[] = {862};
+			int start[]   = {001}; //Where the program starts counting
 			BigIntTP upperbound;
 			BigIntTP currNum = new_BigIntT(start, 1);
 			BigIntTP counter = new_BigIntT(oneArr, 1);
@@ -549,6 +620,12 @@ int main(int argc, char* argv[])
 					
 					add_BigIntT(one, counter, fibTemp);
 					copy_BigIntT(fibTemp, counter);
+					
+					printf("\n");
+					printi(fibA);
+					printf(" ");
+					printi(fibB);
+					printf("\n");
 				}
 			}
 			
@@ -580,6 +657,11 @@ int main(int argc, char* argv[])
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Overrides the modulus provided in the .config file.\n\n");
 		
+		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Finds and outputs some basic rotation matrices for the given modulus.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
+		
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
 		": Generate the Fibonacci cycle that contains the initial vector.\n");
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
@@ -599,93 +681,6 @@ int main(int argc, char* argv[])
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 	}
-	
-	//Testing arbitrary precision stuff
-	/*int test1[] = {2, 8, 1};
-	int test2[] = {5, 8};
-	BigIntTP tp1 = new_BigIntT(test1, 3);
-	BigIntTP tp2 = new_BigIntT(test2, 2);
-	BigIntTP tp3 = empty_BigIntT(3);
-	subtract_BigIntT(tp1, tp2, tp3);
-	printi(tp3);
-	printf("\n");
-	
-	tp1 = free_BigIntT(tp1);
-	tp2 = free_BigIntT(tp2);
-	tp3 = free_BigIntT(tp3); */
-	
-	/*int bunch1[]   = {789, 456, 3};
-	int bunch2[]   = {4, 9653, 23, 45};
-	int modBunch[] = {4237, 44};
-
-	BigIntTP num1     = new_BigIntT(bunch1, 3);
-	BigIntTP num2     = new_BigIntT(bunch2, 4);
-	BigIntTP tempNum  = empty_BigIntT(4);
-	BigIntTP tempNum2 = empty_BigIntT(4);
-	BigIntTP modNum   = new_BigIntT(modBunch, 2);
-	
-	printi(num1);
-	printf("\n");
-	printi(num2);
-	printf("\n");
-	printi(modNum);
-	printf("\n");
-	
-	printf("num2 - num1 = ");
-	subtract_BigIntT(num2, num1, tempNum);
-	printi(tempNum);
-	printf("\n");
-	
-	printf("num2 + num1 = ");
-	add_BigIntT(num2, num1, tempNum);
-	printi(tempNum);
-	printf("\n");
-	
-	printf("num1 mod modNum = ");
-	mod_BigIntT(num1, modNum, tempNum);
-	printi(tempNum);
-	printf("\n");
-	
-	printf("num2 mod modNum = ");
-	mod_BigIntT(num2, modNum, tempNum2);
-	printi(tempNum2);
-	printf("\n");
-	
-	num1 = free_BigIntT(num1);
-	num2 = free_BigIntT(num2);
-	modNum = free_BigIntT(modNum);
-	tempNum = free_BigIntT(tempNum);
-	tempNum2 = free_BigIntT(tempNum2); */
-	
-	/*
-	//Seeing if we can find a relationship between the moduli 
-	// that have specific rotation matrices
-	
-	printf("45deg\t30deg\t15deg\n");
-	for (int x = 3; x < 1000; x += 2)
-	{
-		//45degrot
-		if (square_root(2, x) != -1)
-			printf("%2d\t", x);
-		else
-			printf("..\t");
-		
-		//30degrot
-		if (square_root(3, x) != -1)
-			printf("%2d\t", x);
-		else
-			printf("..\t");
-		
-		//15degrot
-		if ((square_root(3, x) != -1) &&
-		    (square_root(2, x) != -1))
-			printf("%2d\t", x);
-		else
-			printf("..\t");
-		
-		printf("\n");
-	}
-	*/
 
 	/*
 	IntMatrixTP F_3   = new_IntMatrixT(2, 2);
@@ -696,41 +691,6 @@ int main(int argc, char* argv[])
 	//IntMatrixTP s_0 = read_IntMatrixT(initialfilepath);
 	
 	//IntMatrixTP s_f; //Stores our final vector
-	
-	//Iterate until we get to the identity or run out of iterations
-	/*Finv = inverse(F, modulus);
-	copy_IntMatrixT(I, F_2);
-	
-	if (Finv != NULL)
-	{
-		iterations = 0;
-		
-		do
-		{
-			mat_mul(F, F_2, F_3);
-			modm(F_3, modulus);
-			copy_IntMatrixT(F_3, F_2);
-			
-			iterations += 1;
-		}
-		while (! compare_IntMatrixT(F_2, I));
-	}
-	
-	else
-	{
-		for (int i = 0; i < iterations; i += 1)
-		{
-			mat_mul(F, F_2, F_3);
-			modm(F_3, modulus);
-			copy_IntMatrixT(F_3, F_2);
-		}
-	}
-	printf("Modulus: %d\n", modulus);
-	printf("Matrix:\n");
-	printm(F, TRUE);
-	printf("Iterated matrix:\n");
-	printm(F_2, TRUE);
-	printf("Iterations: %d\n", iterations); */
 	
 	//See which points F visits in its orbit
 	//INT_MAX
@@ -771,42 +731,10 @@ int main(int argc, char* argv[])
 	printcycle(theCycle);
 	theCycle = free_CycleInfoT(theCycle); */
 	
-	/*
-	//Generating numbers for rotation matrices
-	int numInv = (modulus - num_inverse(2, modulus)) % modulus;
-	int sqrt   = square_root(3, modulus);
-	printf("2^-1 = %d\n", num_inverse(2, modulus));
-	printf("sqrt(3) = %d\n", square_root(3, modulus));
-	printf("(2^-1) * sqrt(3) = %d\n", (num_inverse(2, modulus)*square_root(3, modulus)) % modulus);
-	printf("-(2^-1) = %d\n", (modulus - num_inverse(2, modulus)) % modulus);
-	
-	//30degrot
-	printf("%d %d\n", 
-	(numInv*sqrt) % modulus,
-	((modulus - numInv) % modulus));
-	printf("%d %d\n",
-	numInv,
-	(numInv*sqrt) % modulus);
-	
-	//45degrot
-	printf("%d %d\n", 
-	(num_inverse(2, modulus)*square_root(2, modulus)) % modulus,
-	modulus - ((num_inverse(2, modulus)*square_root(2, modulus)) % modulus));
-	printf("%d %d\n",
-	(num_inverse(2, modulus)*square_root(2, modulus)) % modulus,
-	(num_inverse(2, modulus)*square_root(2, modulus)) % modulus);
-	
-	*/	
 	//Freeing memory
 	FREE(updatefilepath);
 	FREE(initialfilepath);
 	FREE(iterfilepath);
-	
-	/*
-	F_3 = free_IntMatrixT(F_3);
-	I = free_IntMatrixT(I); */
-	//s_0 = free_IntMatrixT(s_0);
-	//s_f = free_IntMatrixT(s_f);
 	
 	return EXIT_SUCCESS;
 }

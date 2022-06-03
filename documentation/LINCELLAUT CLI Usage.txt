@@ -8,6 +8,9 @@ iterate [iterations]: This tool allows you to take an update matrix and iterate 
 inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
+rots [modulus]: This tool allows you to output basic rotation matrices for the given modulus to the screen. Currently, this tool outputs the 45 degree and 30 degree rotation matrices.
+ - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
+
 fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
 
 2 2

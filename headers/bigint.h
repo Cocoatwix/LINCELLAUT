@@ -48,8 +48,8 @@ int resize_BigIntT(BigIntTP, int);
     Returns 1 on success, 0 otherwise. */
 int copy_BigIntT(BigIntTP const, BigIntTP);
 
-/** Returns -1 if the first BigIntT is smaller than the
-    second, 0 if they're equal, 1 otherwise. This function
+/** Returns negative if the first BigIntT is smaller than the
+    second, 0 if they're equal, positive otherwise. This function
 		assumes both BigIntT structs are initialised. */
 int compare_BigIntT(BigIntTP const, BigIntTP const);
 
