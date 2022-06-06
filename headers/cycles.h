@@ -34,7 +34,7 @@ void visit_points(IntMatrixTP, int, int);
 /** Performs Floyd's Cycle Detection Algorithm on the
     given setup, returns info about the cycle. 
 		Returns NULL on error. */
-CycleInfoTP floyd(IntMatrixTP, IntMatrixTP, int);
+CycleInfoTP floyd(IntMatrixTP const, IntMatrixTP const, int);
 
 /** Creates a .iteration file containing a single iteration of
     every vector under the given update matrix and modulus. 

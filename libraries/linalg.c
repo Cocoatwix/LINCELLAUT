@@ -147,10 +147,7 @@ IntMatrixTP read_IntMatrixT(char* const matFilePath)
 	FILE* matFile = fopen(matFilePath, "r");
 	
 	if (matFile == NULL)
-	{
-		fprintf(stderr, "Unable to open matrix file.\n");
 		return NULL;
-	}
 	
 	//Allocating memory for M
 	IntMatrixTP M = malloc(sizeof(IntMatrixT));
@@ -158,7 +155,6 @@ IntMatrixTP read_IntMatrixT(char* const matFilePath)
 	//Getting dimensions of the data
 	if (fscanf(matFile, "%d %d", &(M->m), &(M->n)) != 2)
 	{
-		fprintf(stderr, "Unable to read matrix dimensions.\n");
 		M = free_IntMatrixT(M);
 		return NULL;
 	}
@@ -173,7 +169,6 @@ IntMatrixTP read_IntMatrixT(char* const matFilePath)
 		for (int column = 0; column < M->n; column += 1)
 			if (fscanf(matFile, "%d", &(M->matrix[row][column])) != 1)
 			{
-				fprintf(stderr, "Unable to read matrix data.\n");
 				M = free_IntMatrixT(M);
 				return NULL;
 			}
@@ -181,7 +176,6 @@ IntMatrixTP read_IntMatrixT(char* const matFilePath)
 
 	if (fclose(matFile) == EOF)
 	{
-		fprintf(stderr, "Unable to close matrix file.\n");
 		M = free_IntMatrixT(M);
 		return NULL;
 	}

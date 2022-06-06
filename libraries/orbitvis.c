@@ -9,6 +9,7 @@ May 4, 2022
 
 #include "../headers/linalg.h"
 #include "../headers/cycles.h"
+#include "../headers/modular.h"
 
 
 int** array_to_pointer(int (*arr)[2][2])
@@ -19,8 +20,8 @@ int** array_to_pointer(int (*arr)[2][2])
 	//This may be one of the worst things I've ever written
 	//This is proof of my incompetency regarding Python's ctypes
 	int** betterArr = malloc(2*sizeof(int*));
-	betterArr[0] = malloc(2*sizeof(int*));
-	betterArr[1] = malloc(2*sizeof(int*));
+	betterArr[0]    = malloc(2*sizeof(int*));
+	betterArr[1]    = malloc(2*sizeof(int*));
 	betterArr[0][0] = (*arr)[0][0];
 	betterArr[0][1] = (*arr)[0][1];
 	betterArr[1][0] = (*arr)[1][0];
@@ -103,4 +104,32 @@ int get_orbit_info(int (*v)[2], int (*arr)[2][2], int modulus)
 	
 	//In the future, this should also return tau in some way
 	return omegaNum;
+}
+
+
+int get_orbit_info_array(int (*update)[2][2], int modulus)
+/** This function gets the cycle length and transient length of
+    the given matrix and returns it as a
+		single integer: tau + modulus*omega */
+{
+	//Initialise update matrix then iterate.
+	IntMatrixTP F = new_IntMatrixT(2, 2);
+	CycleInfoTP c;
+	
+	int** betterArr = array_to_pointer(update);
+	int   omegaNum, tauNum;
+	int   k = 2; //Needed for ensuring our encoding method for multiple numbers doesn't break
+	
+	set_matrix(F, betterArr);
+	c = floyd(F, F, modulus);
+	
+	omegaNum = omega(c);
+	tauNum   = tau(c);
+	
+	free_double_pointer(&betterArr);
+	F = free_IntMatrixT(F);
+	c = free_CycleInfoT(c);
+	
+	//In the future, this should also return tau in some way
+	return tauNum + modulus*k*omegaNum;
 }

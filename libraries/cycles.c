@@ -26,12 +26,13 @@ CycleInfoTP free_CycleInfoT(CycleInfoTP c)
 /** Frees memory used by the given CycleInfo struct.
     Returns NULL. */
 {
-	free_IntMatrixT(c->inCycle);
+	if (c != NULL)
+		c->inCycle = free_IntMatrixT(c->inCycle);
+
 	return NULL;
 }
 
 
-//Not fully implemented yet
 void printcycle(CycleInfoTP c)
 /** Prints info about a cycle to the screen. */
 {
@@ -205,8 +206,9 @@ void visit_points(IntMatrixTP F, int modulus, int iterations)
 	}
 }
 
-//UNFINISHED
-CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
+
+//Moderately finished
+CycleInfoTP floyd(IntMatrixTP const F, IntMatrixTP const s_0, int modulus)
 /** Uses Floyd's Cycle Detection Algorithm to calculate the 
     transient length and cycle length of some given set up.
 		s_0 is the starting vector. F is the update rule.
@@ -223,7 +225,7 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	CycleInfoTP info = malloc(sizeof(CycleInfoT));
 	info->omega = 0;
 	info->tau = -1;
-	info->inCycle = new_IntMatrixT(rows(F), 1);
+	info->inCycle = new_IntMatrixT(rows(s_0), cols(s_0));
 	
 	//If Finv exists, then no transient regions can exist
 	if (Finv != NULL)
@@ -235,6 +237,7 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	IntMatrixTP x_2 = new_IntMatrixT(rows(s_0), cols(s_0));
 	IntMatrixTP y_1 = new_IntMatrixT(rows(s_0), cols(s_0)); 
 	IntMatrixTP y_2 = new_IntMatrixT(rows(s_0), cols(s_0));
+	//IntMatrixTP I   = identity_IntMatrixT(rows(F)); //Used for calculating matrix transient lengths
 	
 	copy_IntMatrixT(s_0, x_1);
 	copy_IntMatrixT(s_0, y_1);
@@ -287,11 +290,49 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 		while (!compare_IntMatrixT(x_1, y_1));
 	}
 	
-	//I need a way to get tau from St and omega
+	//I need a better way to get tau from St and omega
 	if ((info->omega == 1) && (info->tau != 0))
 		info->tau = stoppingTime;
 	
-	//Maybe we can do casework here?
+	//Find tau manually if all else fails
+	else if (info->tau == -1)
+	{
+		info->tau = 0;
+		
+		copy_IntMatrixT(s_0, x_1);
+		
+		//Iterate y_1 around the full cycle, see if
+		// x_1 is in it. If not, iterate x_1 once and repeat
+		// until it is.
+		while (TRUE)
+		{
+			copy_IntMatrixT(info->inCycle, y_1);
+			
+			do
+			{
+				mat_mul(F, y_1, y_2);
+				modm(y_2, modulus);
+				copy_IntMatrixT(y_2, y_1);
+			}
+			while ((compare_IntMatrixT(y_1, info->inCycle) == 0) &&
+			       (compare_IntMatrixT(x_1, y_1) == 0));
+						 
+			//If x_1 is in the cycle
+			if (compare_IntMatrixT(x_1, y_1) == 1)
+				break;
+			
+			//If x_1 isn't in the cycle, iterate x_1 and try again
+			else
+			{
+				info->tau += 1;
+				mat_mul(F, x_1, x_2);
+				modm(x_2, modulus);
+				copy_IntMatrixT(x_2, x_1);
+			}
+		}
+	}
+	
+	//Maybe we can do casework here? to find tau?
 	//For instance, if we know omega == 2, we can
 	// go through each possible case for the Stopping time
 	// (even or odd) and make a conclusion about tau that way?
@@ -305,12 +346,12 @@ CycleInfoTP floyd(IntMatrixTP F, IntMatrixTP s_0, int modulus)
 	// k is the power of the prime
 	
 	//Freeing memory
-	x_1 = free_IntMatrixT(x_1);
-	x_2 = free_IntMatrixT(x_2);
-	y_1 = free_IntMatrixT(y_1);
-	y_2 = free_IntMatrixT(y_2);
-	
-	Finv = Finv != NULL ? free_IntMatrixT(Finv) : NULL;
+	x_1  = free_IntMatrixT(x_1);
+	x_2  = free_IntMatrixT(x_2);
+	y_1  = free_IntMatrixT(y_1);
+	y_2  = free_IntMatrixT(y_2);
+	//I    = free_IntMatrixT(I);
+	Finv = free_IntMatrixT(Finv);
 	
 	return info;
 }

@@ -14,7 +14,10 @@ https://docs.microsoft.com/en-us/powershell/scripting/learn/deep-dives/everythin
 https://docs.microsoft.com/en-us/previous-versions/windows/it-pro/windows-powershell-1.0/ee177015(v=technet.10)
 https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.management/copy-item?view=powershell-7.2
 https://devblogs.microsoft.com/scripting/learn-four-ways-to-use-powershell-to-create-folders/
+https://docs.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_variables?view=powershell-7.2
 #>
+
+$OBJPATH = "to-orbitvis/objects"
 
 #Create required directories and files
 if (!(Test-Path to-orbitvis))
@@ -25,7 +28,7 @@ if (!(Test-Path to-orbitvis))
 
 if (!(Test-Path to-orbitvis/objects))
 {
-	New-Item -Path to-orbitvis/objects -ItemType directory
+	New-Item -Path $OBJPATH -ItemType directory
 }
 
 if (!(Test-Path to-orbitvis/README.txt))
@@ -37,10 +40,11 @@ if (!(Test-Path to-orbitvis/README.txt))
 #I should also add a way to check whether these files need to be created
 # (so we only compile them if needed)
 #Compile required object files
-gcc -Wall -Wextra -pedantic -c -o to-orbitvis/objects/linalg.o libraries/linalg.c
-gcc -Wall -Wextra -pedantic -c -o to-orbitvis/objects/cycles.o libraries/cycles.c
-gcc -Wall -Wextra -pedantic -c -o to-orbitvis/objects/factors.o libraries/factors.c
+gcc -Wall -Wextra -pedantic -c -o $OBJPATH/modular.o libraries/modular.c
+gcc -Wall -Wextra -pedantic -c -o $OBJPATH/linalg.o libraries/linalg.c
+gcc -Wall -Wextra -pedantic -c -o $OBJPATH/cycles.o libraries/cycles.c
+gcc -Wall -Wextra -pedantic -c -o $OBJPATH/factors.o libraries/factors.c
 
-gcc -fPIC -shared -o to-orbitvis/objects/orbitvis.so libraries/orbitvis.c to-orbitvis/objects/linalg.o to-orbitvis/objects/cycles.o to-orbitvis/objects/factors.o
+gcc -fPIC -shared -o $OBJPATH/orbitvis.so libraries/orbitvis.c $OBJPATH/modular.o $OBJPATH/linalg.o $OBJPATH/cycles.o $OBJPATH/factors.o
 
-Set-Content to-orbitvis/README.txt "This folder contains the .o and .so files needed to run ORBITVIS in CMODE 1 or CMODE 2. Simply drag this folder into your ORBITVIS directory, then specify where ORBITVIS can find the .o and .so files in the .config file. `r`n`r`nBy default, the files were placed in the objects subfolder, so the objects key in the .config file should probably have to-orbitvis/objects as its value."
+Set-Content to-orbitvis/README.txt "This folder contains the .o and .so files needed to run ORBITVIS. Simply drag this folder into your ORBITVIS directory, then specify where ORBITVIS can find the .o and .so files in the .config file. `r`n`r`nBy default, the files were placed in the objects subfolder, so the objects key in the .config file should probably have to-orbitvis/objects as its value."

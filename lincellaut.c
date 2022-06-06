@@ -292,6 +292,54 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to use Floyd's Cycle Detection Algorithm
+		else if (!strcmp(argv[1], "floyd"))
+		{
+			//If the user provided a custom modulus
+			if (argc > 2)
+			{
+				modulus = (int)strtol(argv[2], &tempStr, 10);
+				if (tempStr[0] == '\0')
+				{
+					fprintf(stderr, "Invalid modulus passed at command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			IntMatrixTP initial = read_IntMatrixT(initialfilepath);
+			IntMatrixTP update  = read_IntMatrixT(updatefilepath);
+			CycleInfoTP coolCycle;
+			
+			if (initial == NULL)
+			{
+				fprintf(stderr, "Unable to read matrix in %s.\n", initialfilepath);
+				return EXIT_FAILURE;
+			}
+			
+			else if (update == NULL)
+			{
+				fprintf(stderr, "Unable to read matrix in %s.\n", updatefilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//If we actually get all the data we need
+			else
+			{
+				coolCycle = floyd(update, initial, modulus);
+				
+				if (coolCycle == NULL)
+					printf("Update matrix provided is not a square matrix.\n");
+				
+				else
+					printcycle(coolCycle);
+			}
+			
+			initial   = free_IntMatrixT(initial);
+			update    = free_IntMatrixT(update);
+			coolCycle = free_CycleInfoT(coolCycle);
+		}
+		
+		
 		//Generate some basic rotation matrices for the given modulus
 		else if (! strcmp(argv[1], "rots"))
 		{
@@ -621,12 +669,6 @@ int main(int argc, char* argv[])
 					
 					add_BigIntT(one, counter, fibTemp);
 					copy_BigIntT(fibTemp, counter);
-					
-					/*printf("\n");
-					printi(fibA);
-					printf(" ");
-					printi(fibB);
-					printf("\n");*/
 				}
 			}
 			
@@ -639,7 +681,6 @@ int main(int argc, char* argv[])
 			fibB       = free_BigIntT(fibB);
 			fibTemp    = free_BigIntT(fibTemp);
 		}
-		
 	}
 	
 	else
@@ -655,6 +696,11 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Find the inverse of an update matrix under some modulus.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n");
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Overrides the modulus provided in the .config file.\n\n");
 		
@@ -693,28 +739,7 @@ int main(int argc, char* argv[])
 	
 	//IntMatrixTP s_f; //Stores our final vector
 	
-	//See which points F visits in its orbit
-	//INT_MAX
-	//printf("Modulus: %d\n", modulus);
-	//visit_points(F, modulus, iterations);
-	
-	//Testing our ability to find eigenvalues
-	/*int* values = eigenvalues(F, modulus);
-	if (values == NULL)
-		printf("No eigenvalues exist for the given system.\n");
-	
-	else
-	{
-		printf("Eigenvalues: ");
-		for (int i = 1; i <= values[0]; i += 1)
-		{
-			if (i == values[0])
-				printf("%d\n", values[i]);
-			else
-				printf("%d, ", values[i]);
-		}
-	}
-	
+	/*
 	//Now testing our ability to create eigenvectors
 	printf("Matrix:\n");
 	printm(F, TRUE);
@@ -724,13 +749,6 @@ int main(int argc, char* argv[])
 	
 	FREE(values);
 	//E = free_IntMatrixT(E); */
-	
-	//Testing the determinant function
-	//printf("Determinant of update matrix: %d\n", det(F));
-	
-	/*CycleInfoTP theCycle = floyd(F, s_0, modulus);
-	printcycle(theCycle);
-	theCycle = free_CycleInfoT(theCycle); */
 	
 	//Freeing memory
 	FREE(updatefilepath);
