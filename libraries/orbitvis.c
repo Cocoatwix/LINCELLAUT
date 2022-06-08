@@ -114,6 +114,7 @@ int get_orbit_info_array(int (*update)[2][2], int modulus)
 {
 	//Initialise update matrix then iterate.
 	IntMatrixTP F = new_IntMatrixT(2, 2);
+	IntMatrixTP I = identity_IntMatrixT(2);
 	CycleInfoTP c;
 	
 	int** betterArr = array_to_pointer(update);
@@ -121,13 +122,14 @@ int get_orbit_info_array(int (*update)[2][2], int modulus)
 	int   k = 2; //Needed for ensuring our encoding method for multiple numbers doesn't break
 	
 	set_matrix(F, betterArr);
-	c = floyd(F, F, modulus);
+	c = floyd(F, I, modulus);
 	
 	omegaNum = omega(c);
 	tauNum   = tau(c);
 	
 	free_double_pointer(&betterArr);
 	F = free_IntMatrixT(F);
+	I = free_IntMatrixT(I);
 	c = free_CycleInfoT(c);
 	
 	//In the future, this should also return tau in some way

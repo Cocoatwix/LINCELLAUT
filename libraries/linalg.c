@@ -8,14 +8,18 @@
 
 #include "../headers/factors.h"
 #include "../headers/modular.h" //Allows for taking modular square roots
+#include "../headers/bigint.h"  //For BigIntMatrixT
 
 /* The following resources were used as a reference:
 https://stackoverflow.com/a/6317375
+https://www.c-programming-simple-steps.com/c-extern.html
 */
 
 //Maybe I could make a generic struct that has a union as its matrix
 //That way, if we wanted to switch to doubles, we could
 //Or maybe a simple void pointer will do
+
+extern const int MAXBUNCH; 
 
 typedef enum boolean {FALSE, TRUE} bool;
 
@@ -28,6 +32,15 @@ typedef struct intmatrix
 }
 IntMatrixT, *IntMatrixTP;
 
+typedef struct bigintmatrix
+/** IntMatrixT struct, but for BigIntT numbers. */
+{
+	BigIntTP** matrix;
+	int m;
+	int n; //Should really make these BigIntTs as well, but oh well
+} 
+BigIntMatrixT, *BigIntMatrixTP;
+
 
 int rows(IntMatrixTP M)
 /** Returns the number of rows in a given matrix. */
@@ -36,8 +49,22 @@ int rows(IntMatrixTP M)
 }
 
 
+int big_rows(BigIntMatrixTP M)
+/** Returns the number of rows in the given matrix. */
+{
+	return M->m;
+}
+
+
 int cols(IntMatrixTP M)
 /** Returns the number of columns in a given matrix. */
+{
+	return M->n;
+}
+
+
+int big_cols(BigIntMatrixTP M)
+/** Returns the number of columns in the given matrix. */
 {
 	return M->n;
 }
@@ -74,6 +101,27 @@ IntMatrixTP free_IntMatrixT(IntMatrixTP M)
 }
 
 
+BigIntMatrixTP free_BigIntMatrixT(BigIntMatrixTP M)
+/** Frees memory used by the given matrix. Returns NULL. */
+{
+	if (M == NULL)
+		return NULL;
+	
+	for (int x = 0; x < M->m; x += 1)
+	{
+		for (int y = 0; y < M->n; y += 1)
+			M->matrix[x][y] = free_BigIntT(M->matrix[x][y]);
+		
+		free(M->matrix[x]);
+	}
+	
+	free(M->matrix);
+	free(M);
+
+	return NULL;
+}
+
+
 IntMatrixTP new_IntMatrixT(int r, int c)
 /** Creates an empty m by n matrix.
     Returns a pointer to the matrix on success, NULL otherwise. */
@@ -95,6 +143,30 @@ IntMatrixTP new_IntMatrixT(int r, int c)
 	M->n = c;
 	
 	return M;
+}
+
+
+BigIntMatrixTP new_BigIntMatrixT(int r, int c)
+/** Creates an empty r by c matrix. Returns a pointer to
+    the newly created matrix. Returns NULL on error. */
+{
+	if ((r <= 0) || (c <= 0))
+		return NULL;
+	
+	BigIntMatrixTP newMat = malloc(sizeof(BigIntMatrixT));
+	newMat->matrix = malloc(r*sizeof(BigIntTP*));
+	
+	for (int x = 0; x < r; x += 1)
+	{
+		newMat->matrix[x] = malloc(c*sizeof(BigIntTP));
+		for (int y = 0; y < c; y += 1)
+			newMat->matrix[x][y] = empty_BigIntT(1);
+	}
+	
+	newMat->m = r;
+	newMat->n = c;
+	
+	return newMat;
 }
 
 
@@ -134,6 +206,20 @@ int set_matrix(IntMatrixTP A, int** const arr)
 	for (int row = 0; row < A->m; row += 1)
 		for (int col = 0; col < A->n; col += 1)
 			A->matrix[row][col] = arr[row][col];
+		
+	return 1;
+}
+
+
+int set_big_matrix(BigIntMatrixTP A, BigIntTP** const arr)
+/** Sets the elements of the matrix using the array of BigIntTP
+    values. Returns 1 on success, 0 otherwise. 
+		
+		It's assumed arr will be the correct dimensions for A. */
+{
+	for (int x = 0; x < A->m; x += 1)
+		for (int y = 0; y < A->n; y += 1)
+			copy_BigIntT(arr[x][y], A->matrix[x][y]);
 		
 	return 1;
 }
@@ -235,6 +321,24 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 }
 
 
+int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2, int c)
+/** Compares the given column of the two matrices to see if they're equal.
+    Returns 1 if they're equal, 0 otherwise. */
+{
+	//If one of the matrices isn't big enough for the given column,
+	// or if the row dimensions aren't equal
+	if ((M1->n <= c) || (M2->n <= c) ||
+	    (M1->m != M2->m))
+		return 0;
+	
+	for (int row = 0; row < M1->m; row += 1)
+		if (M1->matrix[row][c] != M2->matrix[row][c])
+			return 0;
+		
+	return 1;
+}
+
+
 /* private */ IntMatrixTP det_subIntMatrixT(IntMatrixTP const M, int x, int y)
 /** Stores a submatrix of M in N. x and y specify the
     center of the "crosshairs" where the matrix is sliced. Returns 1
@@ -293,18 +397,17 @@ int num_digits(int num)
 	
 
 //I'll probably make this more efficient later
-void printm(IntMatrixTP M, bool zeroPad)
+void printm(IntMatrixTP M)
 /** Prints an m by n matrix to stdout. 
     If zeroPad == TRUE, numbers will have
 		zeros added to the left of them to align them on the console. */
 {
 	int maxDigits = 0;
 	
-	if (zeroPad)
-		for (int row = 0; row < M->m; row += 1)
-			for (int col = 0; col < M->n; col += 1)
-				if (num_digits(M->matrix[row][col]) > maxDigits)
-					maxDigits = num_digits(M->matrix[row][col]);
+	for (int row = 0; row < M->m; row += 1)
+		for (int col = 0; col < M->n; col += 1)
+			if (num_digits(M->matrix[row][col]) > maxDigits)
+				maxDigits = num_digits(M->matrix[row][col]);
 	
 	for (int mIndex = 0; mIndex < M->m; mIndex += 1)
 	{
@@ -325,6 +428,35 @@ void printm(IntMatrixTP M, bool zeroPad)
 }
 
 
+void printbm(BigIntMatrixTP M)
+/** Prints out a BigIntMatrixT matrix to the console. */
+{
+	int maxBunches = 0;
+	
+	//Search for the highest amount of bunches in the matrix
+	for (int x = 0; x < M->m; x += 1)
+		for (int y = 0; y < M->n; y += 1)
+			if (maxBunches < size(M->matrix[x][y]))
+				maxBunches = size(M->matrix[x][y]);
+			
+	//Actually print out the entries
+	for (int row = 0; row < M->m; row += 1)
+	{
+		for (int col = 0; col < M->n; col += 1)
+		{
+			//Zero padding
+			for (int i = 0; i < maxBunches - size(M->matrix[row][col]); i += 1)
+				for (int z = 1; z < MAXBUNCH; z *= 10)
+					printf("0");
+				
+			printi(M->matrix[row][col]);
+			printf(" ");
+		}
+		printf("\n");
+	}
+}
+
+
 int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
 /** Computes AB, stores result in result. 
     This function DOES check to make sure result is the proper dimensions.
@@ -332,7 +464,8 @@ int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
     Returns 1 upon success, 0 otherwise. */ 
 {	
 	//Checking to see if result has the appropriate dimensions
-	if ((result->m != A->m) || (result->n != B->n))
+	if ((result->m != A->m) || (result->n != B->n) ||
+	    (A->n != B->m))
 		return 0;
 	
 	
@@ -354,10 +487,40 @@ int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
 	return 1;
 }
 
-//Dr. Mendivil told me the modulus has the potential to be negative.
-// I tested it with some positive ints, and it always seems to give
-// positive numbers. This may be something to consider in the future,
-// but not right now.
+
+int big_mat_mul(BigIntMatrixTP const A, BigIntMatrixTP const B, BigIntMatrixTP result)
+/** Computes AB, stores the result in result.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((A->n != B->m) || (result->m != A->m) || (result->n != B->n))
+		return 0;
+	
+	BigIntTP temp  = empty_BigIntT(1);
+	BigIntTP temp2 = empty_BigIntT(1);
+	
+	for (int row = 0; row < A->m; row += 1)
+	{
+		for (int col = 0; col < B->n; col += 1)
+		{
+			//Clear out each row before adding anything
+			clear_BigIntT(result->matrix[row][col]);
+			
+			for (int elem = 0; elem < A->n; elem += 1)
+			{
+				//This is gonna be super resource heavy
+				multiply_BigIntT(A->matrix[row][elem], B->matrix[elem][col], temp);
+				add_BigIntT(temp, result->matrix[row][col], temp2);
+				copy_BigIntT(temp2, result->matrix[row][col]);
+			}
+		}
+	}
+	
+	temp  = free_BigIntT(temp);
+	temp2 = free_BigIntT(temp2);
+	
+	return 1;
+}
+
 
 int modm(IntMatrixTP M, int mod)
 /** Applies a modulus to every element of a given matrix. 
@@ -367,6 +530,26 @@ int modm(IntMatrixTP M, int mod)
 		for (int col = 0; col < M->n; col += 1)
 			M->matrix[row][col] %= mod;
 		
+	return 1;
+}
+
+
+int modbm(BigIntMatrixTP M, BigIntTP modulus)
+/** Reduces a BigIntMatrixTP by the given modulus.
+    Returns 1 on success, 0 otherwise. */
+{
+	BigIntTP temp = empty_BigIntT(1);
+	
+	for (int row = 0; row < M->m; row += 1)
+	{
+		for (int col = 0; col < M->n; col += 1)
+		{
+			mod_BigIntT(M->matrix[row][col], modulus, temp);
+			copy_BigIntT(temp, M->matrix[row][col]);
+		}
+	}
+	
+	temp = free_BigIntT(temp);
 	return 1;
 }
 
@@ -483,7 +666,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	
 	#ifdef VERBOSE
 	printf("Matrix to reduce:\n");
-	printm(toReduce, TRUE);
+	printm(toReduce);
 	#endif
 	
 	//Converting toReduce to upper triangular (row echelon) form
@@ -512,7 +695,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 				
 				#ifdef VERBOSE
 				printf("Swapped row %d and %d.\n", focusRow, nonzero);
-				printm(toReduce, TRUE);
+				printm(toReduce);
 				#endif
 
 				break;
@@ -545,7 +728,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 					
 					#ifdef VERBOSE
 					printf("Multiplied row %d by %d.\n", focusRow, i);
-					printm(toReduce, TRUE);
+					printm(toReduce);
 					#endif
 					
 					break;
@@ -567,7 +750,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			if (numTimesToAdd > 0)
 			{
 				printf("Added row %d to row %d a total of %d times.\n", focusRow, i, numTimesToAdd);
-				printm(toReduce, TRUE);
+				printm(toReduce);
 			}
 			#endif
 		}
@@ -594,7 +777,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			if (numTimesToAdd > 0)
 			{
 				printf("Added row %d to row %d a total of %d times.\n", i, element, numTimesToAdd);
-				printm(toReduce, TRUE);
+				printm(toReduce);
 			}
 			#endif
 		}
@@ -722,7 +905,7 @@ IntMatrixTP eigenvector(IntMatrixTP const F, int eigenvalue, int modulus)
 		}
 	}
 	
-	printm(toReduce, TRUE);
+	printm(toReduce);
 	
 	//Now, we need to go through the matrix to see what form
 	// the eigenvector needs to take

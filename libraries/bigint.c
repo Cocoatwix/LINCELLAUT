@@ -13,7 +13,7 @@ May 24, 2022
 
 #include "../headers/linalg.h" //num_digits()
 
-//Using == 10000 allows for proper printing + above
+//How big each bunch in a BigIntT can be
 const int MAXBUNCH = 100000000;
 
 /*
@@ -100,9 +100,8 @@ void printi(BigIntTP n)
 		for (int i = n->size-1; i >= 0; i -= 1)
 		{
 			//Zero padding
-			if (i != n->size-1)
-				for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
-					printf("0");
+			for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
+				printf("0");
 			
 			printf("%d", n->theInt[i]);
 		}
@@ -447,6 +446,81 @@ int subtract_BigIntT(BigIntTP const subFrom, BigIntTP const toSub, BigIntTP diff
 	}
 	
 	reduce_BigIntT(difference);
+	
+	return 1;
+}
+
+
+int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
+/** Multiples A and B, stores the product in product.
+    Returns 1 on success, 0 otherwise. */
+{
+	BigIntTP zero    = empty_BigIntT(1);
+	BigIntTP tempLot = empty_BigIntT(1); //Used for holding how much we add at a time
+	BigIntTP temp    = empty_BigIntT(1);
+	
+	int bunchMagnitude;
+	int bunchValue;
+	
+	//If either A or B is zero
+	if ((compare_BigIntT(A, zero) == 0) || (compare_BigIntT(B, zero) == 0))
+	{
+		copy_BigIntT(zero, product);
+		return 1;
+	}
+	
+	//Prepare our variables for the multiplication
+	clear_BigIntT(product);
+	copy_BigIntT(B, tempLot);
+	
+	//Prepare to add B a bunch of times
+	if (A->size > 1)
+	{
+		add_bunches(tempLot, A->size - 1, temp);
+		copy_BigIntT(temp, tempLot);
+	}
+	
+	//Multiply by ten a few times to get the size perfect
+	for (int i = 0; i < num_digits(A->theInt[A->size-1]) - 1; i += 1)
+		multiply_by_ten(tempLot);
+	
+	//tempLot should now be the correct magnitude for adding
+	//Now, we can actually start the multiplication (repeated addition)
+	for (int bunchCounter = A->size - 1; bunchCounter >= 0; bunchCounter -= 1)
+	{
+		bunchValue = A->theInt[bunchCounter];
+		
+		//If we need to calculate bunchMagnitude
+		if (bunchCounter == A->size - 1)
+		{
+			bunchMagnitude = 1;
+			
+			for (int i = 0; i < num_digits(bunchValue) - 1; i += 1)
+				bunchMagnitude *= 10;
+		}
+		
+		//Bunches past the first, so we know their size
+		else
+			bunchMagnitude = MAXBUNCH / 10;
+		
+		//Now, extract the digits from the bunchValue, use them to add tempLot
+		while (bunchValue != 0)
+		{
+			for (int i = 0; i < bunchValue / bunchMagnitude; i += 1)
+			{
+				add_BigIntT(tempLot, product, temp);
+				copy_BigIntT(temp, product);
+			}
+			
+			bunchValue %= bunchMagnitude;
+			bunchMagnitude /= 10;
+			divide_by_ten(tempLot);
+		}
+	}
+	
+	zero    = free_BigIntT(zero);
+	tempLot = free_BigIntT(tempLot);
+	temp    = free_BigIntT(temp);
 	
 	return 1;
 }

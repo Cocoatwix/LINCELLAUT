@@ -2,6 +2,8 @@
 #ifndef BIGINT_H //Header guard
 #define BIGINT_H
 
+const int MAXBUNCH;
+
 /** Struct for holding arbitrary precision number. */
 /** BigIntT structs store bunches little endian style. */
 typedef struct bigint *BigIntTP;
@@ -67,6 +69,12 @@ int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 		This function assumes all BigIntT structs are initialised.
 		Returns 1 on success, 0 otherwise. */
 int subtract_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+
+/** Multiples the first BigIntTP but the second, and stores the
+    product in the third. This function assumes all three 
+		BigIntTP structs have been initialised.
+		Returns 1 on success, 0 otherwise. */
+int multiply_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
 /** Divides the first BigIntT by the second, and stores the
     result in the third BigIntT. This function assumes

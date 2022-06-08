@@ -245,7 +245,7 @@ int main(int argc, char* argv[])
 			// an inverse doesn't exist and the iterations
 			// provided was negative
 			if (iterations >= 0)
-				printm(F_2, TRUE);
+				printm(F_2);
 
 			F   = free_IntMatrixT(F);
 			F_2 = free_IntMatrixT(F_2);
@@ -262,7 +262,7 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			
 			printf("Update matrix:\n");
-			printm(F, TRUE);
+			printm(F);
 			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
@@ -284,7 +284,7 @@ int main(int argc, char* argv[])
 			else
 			{
 				printf("Inverse mod %d:\n", modulus);
-				printm(Finv, TRUE);
+				printm(Finv);
 			}
 			
 			F    = free_IntMatrixT(F);
@@ -727,6 +727,105 @@ int main(int argc, char* argv[])
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
+		
+		/*
+		printf("\n\n\n");
+		
+		int a[] = {80162984, 97337589, 78534648};
+		int b[] = {47565795, 58508592, 1796146};
+		
+		BigIntTP A = new_BigIntT(a, 3);
+		BigIntTP B = new_BigIntT(b, 3);
+		BigIntTP C = empty_BigIntT(1);
+		
+		multiply_BigIntT(A, B, C);
+		printi(A);
+		printf(" * ");
+		printi(B);
+		printf(" = ");
+		printi(C);
+		printf("\n");
+		
+		A = free_BigIntT(A);
+		B = free_BigIntT(B);
+		C = free_BigIntT(C);
+		*/
+		
+		int a11[] = {25807962, 95735574};
+		BigIntTP A11 = new_BigIntT(a11, 2);
+		int a12[] = {34356792, 1510014};
+		BigIntTP A12 = new_BigIntT(a12, 2);
+		int a21[] = {88156509, 25413232};
+		BigIntTP A21 = new_BigIntT(a21, 2);
+		int a22[] = {87029814, 76108034};
+		BigIntTP A22 = new_BigIntT(a22, 2);
+		int b11[] = {9224407, 4965146};
+		BigIntTP B11 = new_BigIntT(b11, 2);
+		int b12[] = {18880572, 54166990};
+		BigIntTP B12 = new_BigIntT(b12, 2);
+		int b21[] = {75487505, 84273811};
+		BigIntTP B21 = new_BigIntT(b21, 2);
+		int b22[] = {54462723, 10778472};
+		BigIntTP B22 = new_BigIntT(b22, 2);
+	
+		BigIntTP* Amat1 = malloc(2*sizeof(BigIntTP));
+		BigIntTP* Amat2 = malloc(2*sizeof(BigIntTP));
+		BigIntTP* Bmat1 = malloc(2*sizeof(BigIntTP));
+		BigIntTP* Bmat2 = malloc(2*sizeof(BigIntTP));
+		
+		Amat1[0] = A11;
+		Amat1[1] = A12;
+		Amat2[0] = A21;
+		Amat2[1] = A22;
+		
+		Bmat1[0] = B11;
+		Bmat1[1] = B12;
+		Bmat2[0] = B21;
+		Bmat2[1] = B22;
+		
+		BigIntTP** Amat = malloc(2*sizeof(BigIntTP*));
+		BigIntTP** Bmat = malloc(2*sizeof(BigIntTP*));
+		
+		Amat[0] = Amat1;
+		Amat[1] = Amat2;
+		Bmat[0] = Bmat1;
+		Bmat[1] = Bmat2;
+
+		BigIntMatrixTP A = new_BigIntMatrixT(2, 2);
+		BigIntMatrixTP B = new_BigIntMatrixT(2, 2);
+		BigIntMatrixTP C = new_BigIntMatrixT(2, 2);
+		set_big_matrix(A, Amat);
+		set_big_matrix(B, Bmat);
+		
+		printf("A:\n");
+		printbm(A);
+		printf("B:\n");
+		printbm(B);
+		
+		printf("AB = \n");
+		big_mat_mul(A, B, C);
+		printbm(C);
+		
+		A11 = free_BigIntT(A11);
+		A12 = free_BigIntT(A12);
+		A21 = free_BigIntT(A21);
+		A22 = free_BigIntT(A22);
+		B11 = free_BigIntT(B11);
+		B12 = free_BigIntT(B12);
+		B21 = free_BigIntT(B21);
+		B22 = free_BigIntT(B22);
+		
+		FREE(Amat1);
+		FREE(Amat2);
+		FREE(Bmat1);
+		FREE(Bmat2);
+		
+		FREE(Amat);
+		FREE(Bmat);
+		
+		A = free_BigIntMatrixT(A);
+		B = free_BigIntMatrixT(B);
+		C = free_BigIntMatrixT(C);
 	}
 
 	/*

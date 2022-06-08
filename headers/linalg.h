@@ -2,6 +2,8 @@
 #ifndef LINALG_H
 #define LINALG_H //Header guard
 
+#include "bigint.h" //For using BigIntTP type
+
 //Adding TRUE or FALSE values
 typedef enum boolean {FALSE, TRUE} bool;
 
@@ -9,24 +11,31 @@ typedef enum boolean {FALSE, TRUE} bool;
 // C can't see "inside" the struct; it needs a function to interface with it.
 typedef struct intmatrix *IntMatrixTP;
 
+//IntMatrixT, but for BigIntT numbers
+typedef struct bigintmatrix *BigIntMatrixTP;
+
 
 /** How many rows are in the given matrix? */
 int rows(IntMatrixTP);
+int big_rows(BigIntMatrixTP);
 
 /** How mnay columns are in the given matrix? */
 int cols(IntMatrixTP);
+int big_cols(BigIntMatrixTP);
 
 /** What's the element at the given indices in the matrix? */
 int element(IntMatrixTP, int, int);
 
 
-/** Frees the memory of an IntMatrix. Returns NULL. 
+/** Frees the memory of a matrix. Returns NULL. 
     Also returns NULL if the argument is NULL. */
 IntMatrixTP free_IntMatrixT(IntMatrixTP);
+BigIntMatrixTP free_BigIntMatrixT(BigIntMatrixTP);
 
-/** Creates a new empty IntMatrix of given size. 
+/** Creates a new empty matrix of given size. 
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP new_IntMatrixT(int, int);
+BigIntMatrixTP new_BigIntMatrixT(int, int);
 
 /** Creates a new identity matrix of given size and
     returns a pointer to the matrix. Returns NULL on error. */
@@ -37,10 +46,11 @@ IntMatrixTP identity_IntMatrixT(int);
     otherwise. */
 int set_column(IntMatrixTP, int* const);
 
-/** Sets the values of an IntMatrixT's matrix to the
+/** Sets the values of a matrix to the
     values supplied in the 2D array. Returns 1 on success,
 		0 otherwise. */
 int set_matrix(IntMatrixTP, int** const);
+int set_big_matrix(BigIntMatrixTP, BigIntTP** const);
 
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
@@ -57,8 +67,13 @@ int is_diagonal(IntMatrixTP);
     Returns 1 if they are, 0 otherwise. */
 int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
 
-/** Prints a given matrix of given size to the console. */
-void printm(IntMatrixTP, bool);
+/** Compares the given column of the two matrices, returns 1 if they're 
+    equal. Returns 0 otherwise. */
+int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2, int);
+
+/** Prints a given matrix to the console. */
+void printm(IntMatrixTP);
+void printbm(BigIntMatrixTP);
 
 /** Returns the number of digits a given
     positive integer has. */
@@ -67,10 +82,12 @@ int num_digits(int);
 /** Multiples two matrices together, stores result in a third matrix. 
     Returns 1 on success, 0 otherwise. */
 int mat_mul(IntMatrixTP const, IntMatrixTP const, IntMatrixTP);
+int big_mat_mul(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
 
 /** Applies a modulus to every element of a given matrix. 
     Returns 1 on success, 0 otherwise. */
 int modm(IntMatrixTP, int);
+int modbm(BigIntMatrixTP, BigIntTP);
 
 /** Returns the determinant of a given matrix. 
     Returns zero if the matrix is nonzero. */
