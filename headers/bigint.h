@@ -22,6 +22,12 @@ BigIntTP new_BigIntT(int* const, int);
 		size of the struct to create. */
 BigIntTP empty_BigIntT(int);
 
+/** Reads in a string and stores its numerical value
+    in the given BigIntTP. The BigIntTP is assumed NOT
+		to have been initialised, only declared.
+		Returns 1 on success, 0 otherwise. */
+int strtoBIT(char* const, BigIntTP*);
+
 /** Returns the size of the BigIntT passed. */
 int size(BigIntTP);
 

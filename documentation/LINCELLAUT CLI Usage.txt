@@ -11,9 +11,17 @@ inverse [modulus]: This tool allows you to find the inverse of the matrix specif
 floyd [modulus]: This tool allows the user to calculate specific info about an LCA system , such as the matrix's cycle length and the transient length, using Floyd's Cycle Detection Algorithm. The tool makes use of the initial and update matrices specified in the .config file as its parameters.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
+bigfloyd [modulus]: This tool is the same as floyd, except it makes use of BigIntMatrixT structs instead of IntMatrixT structs, allowing for bigger examples to be calculated.
+ - The optional argument "modulus" overrides the modulus found in the .config file. This argument expects a positive integer.
 
 rots [modulus]: This tool allows you to output basic rotation matrices for the given modulus to the screen. Currently, this tool outputs the 45 degree and 30 degree rotation matrices.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
+
+//Currently unimplemented
+cycmatsearch size maxmod cycles...: This tool allows the user to search for a matrix of a given size where the column vectors all have specified cycle lengths.
+ - "size" specifies how big of a matrix should be used. For instance, if 3 is input, then matrices of size 3x3 will be searched. This argument expects a positive integer.
+ - "maxmod" specifies the upper bound for the moduli to search. Searching will always begin at mod 2. This argument expects a positive integer.
+ - "cycles..." is a list of cycle lengths for the first column vector, the second, and so on. These arguments expect positive integers.
 
 fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
 

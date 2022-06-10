@@ -22,6 +22,7 @@ https://stackoverflow.com/questions/3219393
 #include "headers/cycles.h"  //Allows us to use Floyd's Algorithm
 #include "headers/modular.h" //Modular square roots and inverses
 #include "headers/fibonacci.h"
+#include "headers/factors.h" //For LCM()
 
 #define FREE(v) free(v); v = NULL
 
@@ -34,65 +35,19 @@ https://stackoverflow.com/questions/3219393
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
 
-int strtoBIT(char* numStr, BigIntTP* theBig)
-/** Takes a numerical string and creates a BigIntT
-    struct using it, storing it in theBig. 
-		
-		This function assumes theBig has been declared.
-		
-		Returns 1 on success, 0 otherwise. */
-{
-	int substrstart;      //Holds the start of the substring in the for-loop below
-	int substrlen;        //Holds how long each substring should be
-	int bunchCounter = 0; //For properly storing bunches
-	int numStrLength = strlen(numStr);
-	
-	int*  bunches; //Holds the BigIntT bunches of our number
-	char* tempStr; //Holds info about whether the number was read correctly
-	char* substr = malloc(5*sizeof(char)); //Holds the substring for each bunch
-	
-	bunches = malloc((numStrLength/4 + 1)*sizeof(int));
-	
-	//Note that the constants used in this loop would
-	// need to change if we ever change the bunch size for
-	// BigIntT structs. We use 4 because the bunch size is
-	// currently 9999, or 4 base 10 digits.
-	for (int bunch = numStrLength; 
-	bunch >= (numStrLength % 4 == 0) ? 1 : 0; //This prevents an extra bunch from being read
-	bunch -= 4)
-	{
-		//Getting the correct substring for the next bunch
-		substrstart = (bunch-4 >= 0) ? bunch - 4 : 0;
-		substrlen   = (bunch-4 >= 0) ? 4 : numStrLength % 4;
-		
-		strncpy(substr, numStr+substrstart, substrlen);
-		substr[substrlen] = '\0'; //Adding null byte manually
-		
-		//Store bunches
-		bunches[bunchCounter] = (int)strtol(substr, &tempStr, 10);
-		bunchCounter += 1;
-		
-		//If we read an invalid character
-		if (tempStr[0] != '\0')
-		{
-			FREE(bunches);
-			FREE(substr);
-			return 0;
-		}
-	}
-	
-	//Now, we actually create the BigIntT
-	*theBig = new_BigIntT(bunches, bunchCounter);
-	
-	FREE(bunches);
-	FREE(substr);
-	
-	return 1;
-}
-
-
 int main(int argc, char* argv[])
 {
+	//Check to see if MAXBUNCH for BigIntT structs is a power of ten
+	//If it isn't, warn the user
+	for (int i = 10; i < MAXBUNCH; i *= 10)
+		if (MAXBUNCH % i != 0)
+		{
+			printf("MAXBUNCH is not a power of ten. Some functionality involving the use" \
+			" of BigIntT structs may not work correctly. Change the MAXBUNCH constant within" \
+			" bigint.c to fix this issue.\n");
+			break;
+		}
+	
 	//The maximum length for a string in the .config file
 	const int MAXSTRLEN = 101;
 	
@@ -340,6 +295,62 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//Same as floyd, but uses big datatypes
+		else if (! strcmp(argv[1], "bigfloyd"))
+		{
+			BigIntTP bigModulus;
+			BigIntMatrixTP initial;
+			BigIntMatrixTP update;
+			CycleInfoTP coolCycle = NULL;
+			
+			//If the user specified a custom modulus
+			if (argc > 2)
+			{
+				if (strtoBIT(argv[2], &bigModulus) == 0)
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//Use the modulus provided in the .config file
+			else
+			{
+				if (strtoBIT(bigintmodstring, &bigModulus) == 0)
+				{
+					fprintf(stderr, "Unable to read modulus from .config file. It's possible the modulus" \
+					" is too big, in which case it must be provided at the command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//Now, get the matrices from the provided files
+			initial = read_BigIntMatrixT(initialfilepath);
+			update  = read_BigIntMatrixT(updatefilepath);
+			
+			if ((initial == NULL) || (update == NULL))
+			{
+				fprintf(stderr, "Unable to read .matrix files.\n");
+				return EXIT_FAILURE;
+			}
+			
+			//Get cycle info
+			big_floyd(update, initial, bigModulus, &coolCycle);
+			
+			if (coolCycle == NULL)
+				printf("Update matrix is not a square matrix.\n");
+			
+			else
+				printcycle(coolCycle);
+			
+			
+			bigModulus = free_BigIntT(bigModulus);
+			initial    = free_BigIntMatrixT(initial);
+			update     = free_BigIntMatrixT(update);
+			coolCycle  = free_CycleInfoT(coolCycle);
+		}
+		
+		
 		//Generate some basic rotation matrices for the given modulus
 		else if (! strcmp(argv[1], "rots"))
 		{
@@ -411,6 +422,245 @@ int main(int argc, char* argv[])
 				inv2, 
 				(inv2*sqrt3) % modulus);
 			}
+		}
+		
+		
+		//If we want to look for matrices that have column vectors
+		// that cycle with a cycle length less than the matrix itself
+		else if (! strcmp(argv[1], "cycmatsearch"))
+		{
+			//If user didn't provide enough arguments for the tool, explain how to use it
+			if (argc < 5)
+			{
+				printf(ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "size maxmod cycles..." ANSI_COLOR_RESET \
+				": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n");
+				printf(" - " ANSI_COLOR_CYAN "size" ANSI_COLOR_RESET \
+				": Tells what size matrix to use.\n");
+				printf(" - " ANSI_COLOR_CYAN "maxmod" ANSI_COLOR_RESET \
+				": Tells which modulus to stop searching at.\n");
+				printf(" - " ANSI_COLOR_CYAN "cycles..." ANSI_COLOR_RESET \
+				": A list of cycle lengths for their respective vectors.\n\n");
+				
+				return EXIT_SUCCESS;
+			}
+			
+			BigIntTP maxMod;  //What's the largest modulus we should search to?
+			BigIntTP currMod; //What modulus are we currently checking?
+			BigIntTP one;
+			BigIntTP zero;
+			BigIntTP temp;    //For holding temporary results of calculations
+			
+			BigIntTP** currMatElements; //Holds matrix numbers so we can set the matrix easily
+			
+			CycleInfoTP theCycle; //Used to get matrices in a cycle
+			
+			BigIntMatrixTP zeroMat; //The zero matrix
+			BigIntMatrixTP currMat; //Holds the matrix we're currently testing for cyclic vectors
+			BigIntMatrixTP tempMat; //Holds results of matrix multiplication
+			BigIntMatrixTP tempMat2;
+			
+			bool checkedAllMatrices; //Says whether we've exhaused all matrices under a given modulus
+			bool matrixIsCyclic;     //Says whether the matrix we tested has cyclic column vectors or not
+			int i, j; //Used for for-loops so we don't have to keep declaring new variables
+			int size; //The size of our matrix to use
+			int currIteration;
+			int nextIteration; //Used to keep track of which iteration of the matrix to check next
+			int cycleLCM = 1;
+			
+			int oneArr[] = {1};
+			int twoArr[] = {2};
+			
+			int* colVectCycles; //Holds the different cycle lengths 
+			
+			size = (int)strtol(argv[2], &tempStr, 10);
+			
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read matrix size from command line.\n");
+				return EXIT_FAILURE;
+			}
+			
+			//If we couldn't read the modulus
+			if (strtoBIT(argv[3], &maxMod) == 0)
+			{
+				fprintf(stderr, "Unable to read modulus from command line.\n");
+			}
+			
+			//Get column vector cycles
+			colVectCycles = malloc(size*sizeof(int));
+			for (i = 0; i < size; i += 1)
+			{
+				colVectCycles[i] = (int)strtol(argv[4+i], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read cycle lengths from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//Start looking for matrices at mod 2
+			currMod = new_BigIntT(twoArr, 1);
+			one     = new_BigIntT(oneArr, 1);
+			zero    = empty_BigIntT(1);
+			temp    = empty_BigIntT(1);
+			
+			//Initialise our matrix elements
+			currMatElements = malloc(size*sizeof(BigIntTP*));
+			for (i = 0; i < size; i += 1)
+			{
+				currMatElements[i] = malloc(size*sizeof(BigIntTP));
+				for (j = 0; j < size; j += 1)
+					currMatElements[i][j] = empty_BigIntT(1);
+			}
+			
+			//Find the LCM of our cycles
+			for (i = 0; i < size; i += 1)
+				cycleLCM = LCM(cycleLCM, colVectCycles[i]);
+			
+			zeroMat  = new_BigIntMatrixT(size, size);
+			currMat  = new_BigIntMatrixT(size, size);
+			tempMat  = new_BigIntMatrixT(size, size);
+			tempMat2 = new_BigIntMatrixT(size, size);
+			
+			//Initialising a reusable CycleInfoTP to save time on
+			// memory allocations.
+			theCycle = new_CycleInfoT();
+			
+			//Search all moduli until we get to the specified limit
+			while (compare_BigIntT(currMod, maxMod) <= 0)
+			{
+				printf("Currently searching mod ");
+				printi(currMod);
+				printf("...\n");
+				
+				//Search throuh all matrices under the current modulus
+				checkedAllMatrices = FALSE;
+				while (!checkedAllMatrices)
+				{
+					//Getting all the relevant information we need to check for vector cycles
+					set_big_matrix(currMat, currMatElements);
+					big_floyd(currMat, currMat, currMod, &theCycle);
+					copy_BigIntMatrixT(rep(theCycle), tempMat);
+					
+					currIteration = 0;
+				
+					//Check to see if the vectors actually cycle how we want them to
+					//The matrix's cycle must be the LCM of the cycle lengths if
+					// the vectors are to behave how we want them to.
+					while ((omega(theCycle) == cycleLCM))
+					{
+						//Assume the matrix is cyclic until proven otherwise
+						matrixIsCyclic = TRUE;
+						
+						//Get a value of nextIteration that's greater than before,
+						// then work from there
+						for (i = 0; i < size; i += 1)
+							if (colVectCycles[i] > currIteration)
+							{
+								nextIteration = colVectCycles[i];
+								break;
+							}
+						
+						//Looking for the next smallest iteration we need to check
+						for (i = 1; i < size; i += 1)
+							if ((colVectCycles[i] < nextIteration) && (colVectCycles[i] > currIteration))
+								nextIteration = colVectCycles[i];
+							
+						//If we've checked all the iterations we need to check
+						if (nextIteration == currIteration)
+							break;
+								
+						//Iterate matrix to the correct iteration
+						for (i = 0; i < nextIteration - currIteration; i += 1)
+						{
+							big_mat_mul(currMat, tempMat, tempMat2);
+							modbm(tempMat2, currMod);
+							copy_BigIntMatrixT(tempMat2, tempMat);
+						}
+						
+						//Check for repeated vectors
+						for (i = 0; i < size; i += 1)
+							if (colVectCycles[i] == nextIteration)
+								if (compare_BigIntMatrixT_cols(tempMat, rep(theCycle), i) != 1)
+								{
+									matrixIsCyclic = FALSE;
+									break;
+								}
+								
+							
+						currIteration = nextIteration;
+						
+						//If we've determined the matrix doesn't work
+						if (!matrixIsCyclic)
+							break;
+					}
+					
+					//If we found a matrix that cycles how we want, print it
+					if ((matrixIsCyclic))
+					{
+						printf("Mod ");
+						printi(currMod);
+						printf("\n");
+						printbm(currMat);
+						printf("\n");
+					}
+					
+					
+					//Iterate to the next matrix
+					checkedAllMatrices = TRUE;
+					for (i = 0; i < size; i += 1)
+					{
+						for (j = 0; j < size; j += 1)
+						{
+							//Increment specific element; check if it overflows
+							add_BigIntT(one, currMatElements[i][j], temp);
+							
+							if (compare_BigIntT(temp, currMod) >= 0)
+								copy_BigIntT(zero, currMatElements[i][j]);
+							
+							//No overflow
+							else
+							{
+								checkedAllMatrices = FALSE;
+								copy_BigIntT(temp, currMatElements[i][j]);
+								i = size;
+								j = size;
+							}
+						}
+					}
+				}
+				
+				//Increment modulus
+				add_BigIntT(one, currMod, temp);
+				copy_BigIntT(temp, currMod);
+			}
+			
+			//Freeing memory
+			maxMod  = free_BigIntT(maxMod);
+			currMod = free_BigIntT(currMod);
+			one     = free_BigIntT(one);
+			zero    = free_BigIntT(zero);
+			temp    = free_BigIntT(temp);
+			
+			currMat  = free_BigIntMatrixT(currMat);
+			zeroMat  = free_BigIntMatrixT(zeroMat);
+			tempMat  = free_BigIntMatrixT(tempMat);
+			tempMat2 = free_BigIntMatrixT(tempMat2);
+			
+			theCycle = free_CycleInfoT(theCycle);
+			
+			FREE(colVectCycles);
+			
+			for (i = 0; i < size; i += 1)
+			{
+				for (j = 0; j < size; j += 1)
+					currMatElements[i][j] = free_BigIntT(currMatElements[i][j]);
+				
+				free(currMatElements[i]);
+			}
+			FREE(currMatElements);
+			
+			printf("Finished searching.\n");
 		}
 		
 		
@@ -704,10 +954,24 @@ int main(int argc, char* argv[])
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Overrides the modulus provided in the .config file.\n\n");
 		
+		printf(" - " ANSI_COLOR_YELLOW "bigfloyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Same as floyd, but uses BigIntMatrixT and BigIntT structs instead of IntMatrixT and ints.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
+		
 		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Finds and outputs some basic rotation matrices for the given modulus.\n");
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Overrides the modulus provided in the .config file.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "size maxmod cycles..." ANSI_COLOR_RESET \
+		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n");
+		printf("   - " ANSI_COLOR_CYAN "size" ANSI_COLOR_RESET \
+		": Tells what size matrix to use.\n");
+		printf("   - " ANSI_COLOR_CYAN "maxmod" ANSI_COLOR_RESET \
+		": Tells which modulus to stop searching at.\n");
+		printf("   - " ANSI_COLOR_CYAN "cycles..." ANSI_COLOR_RESET \
+		": A list of cycle lengths for their respective vectors.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
 		": Generate the Fibonacci cycle that contains the initial vector.\n");
@@ -749,7 +1013,7 @@ int main(int argc, char* argv[])
 		A = free_BigIntT(A);
 		B = free_BigIntT(B);
 		C = free_BigIntT(C);
-		*/
+		
 		
 		int a11[] = {25807962, 95735574};
 		BigIntTP A11 = new_BigIntT(a11, 2);
@@ -825,18 +1089,8 @@ int main(int argc, char* argv[])
 		
 		A = free_BigIntMatrixT(A);
 		B = free_BigIntMatrixT(B);
-		C = free_BigIntMatrixT(C);
+		C = free_BigIntMatrixT(C); */
 	}
-
-	/*
-	IntMatrixTP F_3   = new_IntMatrixT(2, 2);
-	IntMatrixTP I     = identity_IntMatrixT(2);
-	//IntMatrixTP Fmult = new_IntMatrixT(rows(F), cols(F)); */
-	
-	//Stores our initial vector
-	//IntMatrixTP s_0 = read_IntMatrixT(initialfilepath);
-	
-	//IntMatrixTP s_f; //Stores our final vector
 	
 	/*
 	//Now testing our ability to create eigenvectors
@@ -853,6 +1107,7 @@ int main(int argc, char* argv[])
 	FREE(updatefilepath);
 	FREE(initialfilepath);
 	FREE(iterfilepath);
+	FREE(bigintmodstring);
 	
 	return EXIT_SUCCESS;
 }

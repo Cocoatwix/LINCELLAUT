@@ -228,7 +228,7 @@ int set_big_matrix(BigIntMatrixTP A, BigIntTP** const arr)
 IntMatrixTP read_IntMatrixT(char* const matFilePath)
 /** Initialises the given matrix M from the given .matrix file.
     This method assumes matFile points to the beginning of the file.
-		Returns 1 upon success, 0 otherwise. **/
+		Returns a pointer to the matrix upon success, NULL otherwise. */
 {
 	FILE* matFile = fopen(matFilePath, "r");
 	
@@ -241,7 +241,8 @@ IntMatrixTP read_IntMatrixT(char* const matFilePath)
 	//Getting dimensions of the data
 	if (fscanf(matFile, "%d %d", &(M->m), &(M->n)) != 2)
 	{
-		M = free_IntMatrixT(M);
+		fclose(matFile);
+		free(M);
 		return NULL;
 	}
 	
@@ -271,6 +272,66 @@ IntMatrixTP read_IntMatrixT(char* const matFilePath)
 }
 
 
+BigIntMatrixTP read_BigIntMatrixT(char* const matFilePath)
+/** Same as read_IntMatrixT(), but for BigIntMatrixT structs.
+    Returns a pointer to the new matrix on success, NULL
+		otherwise. */
+{
+	BigIntMatrixTP M;
+	char* tempStr;
+	
+	FILE* matFile = fopen(matFilePath, "r");
+	
+	if (matFile == NULL)
+		return NULL;
+	
+	M = malloc(sizeof(BigIntMatrixT));
+	
+	//Get dimensions of the matrix
+	if (fscanf(matFile, "%d %d", &(M->m), &(M->n)) != 2)
+	{
+		fclose(matFile);
+		free(M);
+		return NULL;
+	}
+	
+	//Make space for the actual matrix data
+	M->matrix = malloc((M->m)*sizeof(BigIntTP*));
+	for (int row = 0; row < M->m; row+= 1)
+		M->matrix[row] = malloc((M->n)*sizeof(BigIntTP));
+	
+	tempStr = malloc(100*sizeof(char));
+	
+	//Now, read the data
+	for (int row = 0; row < M->m; row += 1)
+	{
+		for (int col = 0; col < M->n; col += 1)
+		{
+			if (fscanf(matFile, "%100s", tempStr) != 1)
+			{
+				free(tempStr);
+				fclose(matFile);
+				free_BigIntMatrixT(M);
+				return NULL;
+			}
+			
+			//Actually store our value in the matrix
+			strtoBIT(tempStr, &(M->matrix[row][col]));
+		}
+	}
+	
+	if (fclose(matFile) == EOF)
+	{
+		free(tempStr);
+		free_BigIntMatrixT(M);
+		return NULL;
+	}
+	
+	free(tempStr);
+	return M;
+}
+
+
 int copy_IntMatrixT(IntMatrixTP const toCopy, IntMatrixTP copyTo)
 /** Copies toCopy to copyTo. This function assumes copyTo has
     already been initialised. Returns 1 on success, 0 otherwise. */
@@ -284,6 +345,22 @@ int copy_IntMatrixT(IntMatrixTP const toCopy, IntMatrixTP copyTo)
 	for (int row = 0; row < toCopy->m; row += 1)
 		for (int col = 0; col < toCopy->n; col += 1)
 			copyTo->matrix[row][col] = toCopy->matrix[row][col];
+		
+	return 1;
+}
+
+
+int copy_BigIntMatrixT(BigIntMatrixTP const toCopy, BigIntMatrixTP copyTo)
+/** Same as copy_IntMatrixT(), but for BigImtMatrixT structs.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((toCopy->m != copyTo->m) ||
+	    (toCopy->n != copyTo->n))
+		return 0;
+		
+	for (int row = 0; row < copyTo->m; row += 1)
+		for (int col = 0; col < copyTo->n; col += 1)
+			copy_BigIntT(toCopy->matrix[row][col], copyTo->matrix[row][col]);
 		
 	return 1;
 }
@@ -315,6 +392,22 @@ int compare_IntMatrixT(IntMatrixTP const M1, IntMatrixTP const M2)
 	for (int row = 0; row < M1->m; row += 1)
 		for (int col = 0; col < M1->n; col += 1)
 			if (M1->matrix[row][col] != M2->matrix[row][col])
+				return 0;
+			
+	return 1;
+}
+
+
+int compare_BigIntMatrixT(BigIntMatrixTP const M1, BigIntMatrixTP const M2)
+/** Same as compare_IntMatrixT(), but with BigIntMatrixT structs.
+    Returns 1 if the two matrices are equal, zero otherwise. */
+{
+	if ((M1->m != M2->m) || (M1->n != M2->n))
+		return 0;
+	
+	for (int row = 0; row < M1->m; row += 1)
+		for (int col = 0; col < M1->n; col += 1)
+			if (compare_BigIntT(M1->matrix[row][col], M2->matrix[row][col]) != 0)
 				return 0;
 			
 	return 1;
@@ -538,6 +631,10 @@ int modbm(BigIntMatrixTP M, BigIntTP modulus)
 /** Reduces a BigIntMatrixTP by the given modulus.
     Returns 1 on success, 0 otherwise. */
 {
+	//May rewrite in the future to require a third argument
+	// instead of allocating a new matrix.
+	//Dependency injection !!!
+	
 	BigIntTP temp = empty_BigIntT(1);
 	
 	for (int row = 0; row < M->m; row += 1)
@@ -545,6 +642,7 @@ int modbm(BigIntMatrixTP M, BigIntTP modulus)
 		for (int col = 0; col < M->n; col += 1)
 		{
 			mod_BigIntT(M->matrix[row][col], modulus, temp);
+			reduce_BigIntT(temp);
 			copy_BigIntT(temp, M->matrix[row][col]);
 		}
 	}

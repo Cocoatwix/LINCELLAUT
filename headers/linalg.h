@@ -55,10 +55,12 @@ int set_big_matrix(BigIntMatrixTP, BigIntTP** const);
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP read_IntMatrixT(char* const);
+BigIntMatrixTP read_BigIntMatrixT(char* const);
 
 /** Copies the values of the first matrix's matrix to the second. 
     Returns 1 on success, 0 otherwise. */
 int copy_IntMatrixT(IntMatrixTP const, IntMatrixTP);
+int copy_BigIntMatrixT(BigIntMatrixTP const, BigIntMatrixTP);
 
 /** Returns 1 if the given matrix is diagonal, 0 otherwise. */
 int is_diagonal(IntMatrixTP);
@@ -66,6 +68,7 @@ int is_diagonal(IntMatrixTP);
 /** Compares two matrices to see if they're equal.
     Returns 1 if they are, 0 otherwise. */
 int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
+int compare_BigIntMatrixT(BigIntMatrixTP const, BigIntMatrixTP const);
 
 /** Compares the given column of the two matrices, returns 1 if they're 
     equal. Returns 0 otherwise. */

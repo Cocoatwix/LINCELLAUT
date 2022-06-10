@@ -12,11 +12,18 @@ typedef struct cycleinfo *CycleInfoTP;
     Returns NULL. */
 CycleInfoTP free_CycleInfoT(CycleInfoTP);
 
+/** Returns a pointer to a new CycleInfoT struct. */
+CycleInfoTP new_CycleInfoT();
+
 /** Returns the cycle length of a given CycleInfoT object. */
 int omega(CycleInfoTP);
 
 /** Returns the transient length of a given CycleInfoT object. */
 int tau(CycleInfoTP);
+
+/** Returns a pointer to a cycle's inCycle matrix/vector, if it
+    has one. Returns NULL otherwise. */
+void* rep(CycleInfoTP);
 
 /** Prints out the information contained in the
     CycleInfoT object pointed to. */
@@ -35,6 +42,13 @@ void visit_points(IntMatrixTP, int, int);
     given setup, returns info about the cycle. 
 		Returns NULL on error. */
 CycleInfoTP floyd(IntMatrixTP const, IntMatrixTP const, int);
+
+/** Same as floyd(), except with BigIntMatrixT structs.
+    Returns 1 on success, 0 otherwise. */
+int big_floyd(BigIntMatrixTP const, 
+              BigIntMatrixTP const, 
+							BigIntTP const,
+							CycleInfoTP*);
 
 /** Creates a .iteration file containing a single iteration of
     every vector under the given update matrix and modulus. 

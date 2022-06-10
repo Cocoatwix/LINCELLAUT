@@ -9,6 +9,7 @@ May 24, 2022
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h> //For strtoBIT()
 #include <math.h>
 
 #include "../headers/linalg.h" //num_digits()
@@ -72,6 +73,66 @@ BigIntTP empty_BigIntT(int zeros)
 	newBigInt->theInt  = calloc(zeros, sizeof(int));
 	
 	return newBigInt;
+}
+
+
+int strtoBIT(char* const numStr, BigIntTP* theBig)
+/** Takes a numerical string and creates a BigIntT
+    struct using it, storing it in theBig. 
+		
+		This function assumes theBig has been declared, and
+		that MAXBUNCH is a power of ten.
+		
+		Returns 1 on success, 0 otherwise. */
+{
+	const int bunchLength = num_digits(MAXBUNCH) - 1;
+	
+	int substrstart;      //Holds the start of the substring in the for-loop below
+	int substrlen;        //Holds how long each substring should be
+	int bunchCounter = 0; //For properly storing bunches
+	int numStrLength = strlen(numStr);
+	
+	int*  bunches; //Holds the BigIntT bunches of our number
+	char* tempStr; //Holds info about whether the number was read correctly
+	char* substr = malloc((bunchLength+1)*sizeof(char)); //Holds the substring for each bunch
+	
+	bunches = malloc((numStrLength/bunchLength + 1)*sizeof(int));
+	
+	//Note that the constants used in this loop would
+	// need to change if we ever change the bunch size for
+	// BigIntT structs. We use 4 because the bunch size is
+	// currently 9999, or 4 base 10 digits.
+	for (int bunch = numStrLength; 
+	bunch >= (numStrLength % bunchLength == 0) ? 1 : 0; //This prevents an extra bunch from being read
+	bunch -= bunchLength)
+	{
+		//Getting the correct substring for the next bunch
+		substrstart = (bunch-bunchLength >= 0) ? bunch - bunchLength : 0;
+		substrlen   = (bunch-bunchLength >= 0) ? bunchLength : numStrLength % bunchLength;
+		
+		strncpy(substr, numStr+substrstart, substrlen);
+		substr[substrlen] = '\0'; //Adding null byte manually
+		
+		//Store bunches
+		bunches[bunchCounter] = (int)strtol(substr, &tempStr, 10);
+		bunchCounter += 1;
+		
+		//If we read an invalid character
+		if (tempStr[0] != '\0')
+		{
+			free(bunches);
+			free(substr);
+			return 0;
+		}
+	}
+	
+	//Now, we actually create the BigIntT
+	*theBig = new_BigIntT(bunches, bunchCounter);
+	
+	free(bunches);
+	free(substr);
+	
+	return 1;
 }
 
 
@@ -466,6 +527,9 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	if ((compare_BigIntT(A, zero) == 0) || (compare_BigIntT(B, zero) == 0))
 	{
 		copy_BigIntT(zero, product);
+		zero    = free_BigIntT(zero);
+		tempLot = free_BigIntT(tempLot);
+		temp    = free_BigIntT(temp);
 		return 1;
 	}
 	

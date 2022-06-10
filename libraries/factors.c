@@ -39,6 +39,33 @@ int GCD(int a, int b)
 }
 
 
+int LCM(int a, int b)
+/** Returns the least common multiple of the two given integers. */
+{
+	if ((a == 0) || (b == 0))
+		return 0;
+	
+	int newA = a;
+	int newB = b;
+	
+	while (1)
+	{
+		if (newA < newB)
+		{
+			newA += a;
+		}
+		
+		else if (newB < newA)
+		{
+			newB += b;
+		}
+		
+		else
+			return newA;
+	}
+}
+
+
 int is_square_free(int n)
 /** Returns 1 if n is a square-free number (each factor
     only appears only once in n's factorisation), 0
