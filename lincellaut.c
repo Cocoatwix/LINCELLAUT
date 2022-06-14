@@ -164,6 +164,7 @@ int main(int argc, char* argv[])
 			
 			IntMatrixTP F;
 			IntMatrixTP F_2;
+			IntMatrixTP F_result;
 			
 			if (iterations < 0)
 			{
@@ -177,33 +178,37 @@ int main(int argc, char* argv[])
 				{
 					iterations *= -1;
 					F_2 = free_IntMatrixT(F_2);
-					F_2 = identity_IntMatrixT(rows(F));
+					F_2 = read_IntMatrixT(initialfilepath);
 				}
 			}
 			
 			else
 			{
 				F   = read_IntMatrixT(updatefilepath);
-				F_2 = identity_IntMatrixT(rows(F));
-				
-				if (F == NULL)
-					return EXIT_FAILURE;
+				F_2 = read_IntMatrixT(initialfilepath);
 			}
+			
+			if ((F == NULL) || (F_2 == NULL))
+				return EXIT_FAILURE;
 			
 			//Iterate F a few times
 			//The minus 1 is for easier conversion between ORBITVIS results
 			printf("Iterations: %d\n", iterations);
 			if (iterations > 0)
-				F_2 = iterate(F, F, modulus, iterations-1);
+				F_result = iterate(F, F_2, modulus, iterations-1);
 			
 			//Prevents the matrix from being printed when
 			// an inverse doesn't exist and the iterations
 			// provided was negative
-			if (iterations >= 0)
-				printm(F_2);
+			if (iterations > 0)
+				printm(F_result);
+			
+			else if (iterations == 0)
+				printf("I\n");
 
-			F   = free_IntMatrixT(F);
-			F_2 = free_IntMatrixT(F_2);
+			F        = free_IntMatrixT(F);
+			F_2      = free_IntMatrixT(F_2);
+			F_result = free_IntMatrixT(F_result);
 		}
 		
 		
@@ -467,8 +472,15 @@ int main(int argc, char* argv[])
 			int nextIteration; //Used to keep track of which iteration of the matrix to check next
 			int cycleLCM = 1;
 			
+			/*
+			Searched so far:
+			Cycles 2, 3, 5 with 3x3 matrices up to and including mod 5
+			*/
+			
 			int oneArr[] = {1};
-			int twoArr[] = {2};
+			int start[] = {2};
+			
+			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
@@ -486,6 +498,13 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Unable to read modulus from command line.\n");
 			}
 			
+			//If the user didn't provide enough cycles for the given matrix size
+			if (argc < 4 + size)
+			{
+				printf("Too few cycles passed for given matrix size.\n");
+				return EXIT_FAILURE;
+			}
+			
 			//Get column vector cycles
 			colVectCycles = malloc(size*sizeof(int));
 			for (i = 0; i < size; i += 1)
@@ -499,7 +518,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//Start looking for matrices at mod 2
-			currMod = new_BigIntT(twoArr, 1);
+			currMod = new_BigIntT(start, 1);
 			one     = new_BigIntT(oneArr, 1);
 			zero    = empty_BigIntT(1);
 			temp    = empty_BigIntT(1);
@@ -512,6 +531,18 @@ int main(int argc, char* argv[])
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
 			}
+			
+			/*
+			//TESTING A SPECIFIC CASE. DELETE THIS LATER
+			currMatElements[0][0] = free_BigIntT(currMatElements[0][0]);
+			currMatElements[1][1] = free_BigIntT(currMatElements[1][1]);
+			
+			int scale1[] = {2};
+			int scale2[] = {3};
+			
+			currMatElements[0][0] = new_BigIntT(scale1, 1);
+			currMatElements[1][1] = new_BigIntT(scale2, 1);
+			*/
 			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
@@ -543,6 +574,10 @@ int main(int argc, char* argv[])
 					copy_BigIntMatrixT(rep(theCycle), tempMat);
 					
 					currIteration = 0;
+					
+					//Prevent matrices that don't have the correct cycle length
+					// from being printed
+					matrixIsCyclic = FALSE; 
 				
 					//Check to see if the vectors actually cycle how we want them to
 					//The matrix's cycle must be the LCM of the cycle lengths if
@@ -940,7 +975,7 @@ int main(int argc, char* argv[])
 		printf("Tools:\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
-		": Iterate the update matrix a given number of times.\n");
+		": Iterate the initial matrix by the update matrix a given number of times.\n");
 		printf("   - " ANSI_COLOR_CYAN "iterations" ANSI_COLOR_RESET \
 		": Overrides the number of iterations provided in the .config file.\n\n");
 		

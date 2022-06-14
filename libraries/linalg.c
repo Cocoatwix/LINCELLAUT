@@ -425,7 +425,7 @@ int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2,
 		return 0;
 	
 	for (int row = 0; row < M1->m; row += 1)
-		if (M1->matrix[row][c] != M2->matrix[row][c])
+		if (compare_BigIntT(M1->matrix[row][c], M2->matrix[row][c]) != 0)
 			return 0;
 		
 	return 1;
