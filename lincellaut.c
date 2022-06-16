@@ -475,10 +475,11 @@ int main(int argc, char* argv[])
 			/*
 			Searched so far:
 			Cycles 2, 3, 5 with 3x3 matrices up to and including mod 5
+			 - Tried mod 6, didn't finish. I'll need a lot of time for this one...
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {2};
+			int start[] = {6};
 			
 			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
@@ -966,6 +967,147 @@ int main(int argc, char* argv[])
 			fibB       = free_BigIntT(fibB);
 			fibTemp    = free_BigIntT(fibTemp);
 		}
+		
+		
+		//If we want to iterate each vector in a space and record their cycle 
+		// and transient lengths, then repeat for a higher-powered modulus.
+		else if (! strcmp(argv[1], "dynamics"))
+		{
+			int  power = 2; //Holds the power of the modulus to check
+			int  highmod = 1;   //Holds the modulus raised to the correct power
+			int* currVectElements;
+			int* currVectElementsMult; //Holds multiples of the current vector's elements
+			
+			bool checkedAllVects = FALSE;
+			
+			IntMatrixTP A; //Holds our update matrix
+			IntMatrixTP currVect;
+			
+			CycleInfoTP theCycle;
+			
+			//If user provided a power for us
+			if (argc > 2)
+			{
+				power = (int)strtol(argv[2], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read power from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//If user provided a modulus for us
+			if (argc > 3)
+			{
+				modulus = (int)strtol(argv[3], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			A = read_IntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read .matrix file at %s.\n", updatefilepath);
+				return EXIT_FAILURE;
+			}
+			
+			else if (rows(A) != cols(A))
+			{
+				printf("Update matrix provided is not square.\n");
+				return EXIT_SUCCESS;
+			}
+			
+			//Calculate modulus raised to the given power
+			//It's the uer's responsibility to prevent this from overflowing
+			for (int i = 0; i < power; i += 1, highmod *= modulus);
+			
+			currVectElements = calloc(rows(A), sizeof(int));
+			currVectElementsMult = malloc(rows(A)*sizeof(int));
+			currVect = new_IntMatrixT(rows(A), 1);
+			
+			//Iterate until we've tested every vector
+			while (!checkedAllVects)
+			{
+				printf("---\n");
+				set_column(currVect, currVectElements);
+				theCycle = floyd(A, currVect, modulus);
+				
+				//Print out vector in an easier-to-look-at way for stdout
+				printf("<");
+				for (int i = 0; i < rows(A)-1; i += 1)
+					printf("%d ", currVectElements[i]);
+				printf("%d>\t:\t", currVectElements[rows(A)-1]);
+				printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle));
+				printf("---\n");
+				
+				free_CycleInfoT(theCycle);
+				
+				//Now that we've looked at the base vector's stats, let's go to % highmod
+				for (int i = 0; i < rows(A); i += 1) 
+					currVectElementsMult[i] = currVectElements[i];
+				
+				//Check all vectors which differ from our current vector by
+				// multiples of our modulus
+				while (!checkedAllVects)
+				{
+					set_column(currVect, currVectElementsMult);
+					theCycle = floyd(A, currVect, highmod);
+					
+					//Print out vector in an easier-to-look-at way for stdout
+					printf("<");
+					for (int i = 0; i < rows(A)-1; i += 1)
+						printf("%d ", currVectElementsMult[i]);
+					printf("%d>\t:\t", currVectElementsMult[rows(A)-1]);
+					printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle));
+					
+					free_CycleInfoT(theCycle);
+					
+					//Now, iterate to the next vector which reduces to currVectElements
+					checkedAllVects = TRUE;
+					for (int i = rows(A)-1; i >= 0; i -= 1)
+					{
+						if (currVectElementsMult[i] != highmod - modulus + currVectElements[i])
+						{
+							checkedAllVects = FALSE;
+							currVectElementsMult[i] += modulus;
+							i = -1;
+						}
+						
+						//Carry to next vect component
+						else
+							currVectElementsMult[i] = currVectElements[i];
+					}
+				}
+				
+				//Increment through all possible vectors (% modulus)
+				checkedAllVects = TRUE;
+				for (int i = rows(A)-1; i >= 0; i -= 1)
+				{
+					if (currVectElements[i] != modulus - 1)
+					{
+						checkedAllVects = FALSE;
+						currVectElements[i] += 1;
+						i = -1;
+					}
+					
+					//Carry to next vector component
+					else
+						currVectElements[i] = 0;
+				}
+			}
+			
+			A        = free_IntMatrixT(A);
+			currVect = free_IntMatrixT(currVect);
+			
+			//Don't need to free theCycle since it gets freed above
+			theCycle = NULL;
+			
+			FREE(currVectElements);
+			FREE(currVectElementsMult);
+		}
 	}
 	
 	else
@@ -1024,107 +1166,16 @@ int main(int argc, char* argv[])
 		printf("   - " ANSI_COLOR_CYAN "bound" ANSI_COLOR_RESET \
 		": Override the default upper bound of 100.\n\n");
 		
+		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[power] [modulus]" ANSI_COLOR_RESET \
+		": Iterates every vector in a space, recording their transient lengths and cycle lengths. " \
+		"It then computes the same numbers for a higher-powered modulus.\n");
+		printf("   - " ANSI_COLOR_CYAN "power" ANSI_COLOR_RESET \
+		": Defines the power of modulus to check. Default is 2.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Override the modulus provided in the .config file.\n\n");
+		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
-		
-		/*
-		printf("\n\n\n");
-		
-		int a[] = {80162984, 97337589, 78534648};
-		int b[] = {47565795, 58508592, 1796146};
-		
-		BigIntTP A = new_BigIntT(a, 3);
-		BigIntTP B = new_BigIntT(b, 3);
-		BigIntTP C = empty_BigIntT(1);
-		
-		multiply_BigIntT(A, B, C);
-		printi(A);
-		printf(" * ");
-		printi(B);
-		printf(" = ");
-		printi(C);
-		printf("\n");
-		
-		A = free_BigIntT(A);
-		B = free_BigIntT(B);
-		C = free_BigIntT(C);
-		
-		
-		int a11[] = {25807962, 95735574};
-		BigIntTP A11 = new_BigIntT(a11, 2);
-		int a12[] = {34356792, 1510014};
-		BigIntTP A12 = new_BigIntT(a12, 2);
-		int a21[] = {88156509, 25413232};
-		BigIntTP A21 = new_BigIntT(a21, 2);
-		int a22[] = {87029814, 76108034};
-		BigIntTP A22 = new_BigIntT(a22, 2);
-		int b11[] = {9224407, 4965146};
-		BigIntTP B11 = new_BigIntT(b11, 2);
-		int b12[] = {18880572, 54166990};
-		BigIntTP B12 = new_BigIntT(b12, 2);
-		int b21[] = {75487505, 84273811};
-		BigIntTP B21 = new_BigIntT(b21, 2);
-		int b22[] = {54462723, 10778472};
-		BigIntTP B22 = new_BigIntT(b22, 2);
-	
-		BigIntTP* Amat1 = malloc(2*sizeof(BigIntTP));
-		BigIntTP* Amat2 = malloc(2*sizeof(BigIntTP));
-		BigIntTP* Bmat1 = malloc(2*sizeof(BigIntTP));
-		BigIntTP* Bmat2 = malloc(2*sizeof(BigIntTP));
-		
-		Amat1[0] = A11;
-		Amat1[1] = A12;
-		Amat2[0] = A21;
-		Amat2[1] = A22;
-		
-		Bmat1[0] = B11;
-		Bmat1[1] = B12;
-		Bmat2[0] = B21;
-		Bmat2[1] = B22;
-		
-		BigIntTP** Amat = malloc(2*sizeof(BigIntTP*));
-		BigIntTP** Bmat = malloc(2*sizeof(BigIntTP*));
-		
-		Amat[0] = Amat1;
-		Amat[1] = Amat2;
-		Bmat[0] = Bmat1;
-		Bmat[1] = Bmat2;
-
-		BigIntMatrixTP A = new_BigIntMatrixT(2, 2);
-		BigIntMatrixTP B = new_BigIntMatrixT(2, 2);
-		BigIntMatrixTP C = new_BigIntMatrixT(2, 2);
-		set_big_matrix(A, Amat);
-		set_big_matrix(B, Bmat);
-		
-		printf("A:\n");
-		printbm(A);
-		printf("B:\n");
-		printbm(B);
-		
-		printf("AB = \n");
-		big_mat_mul(A, B, C);
-		printbm(C);
-		
-		A11 = free_BigIntT(A11);
-		A12 = free_BigIntT(A12);
-		A21 = free_BigIntT(A21);
-		A22 = free_BigIntT(A22);
-		B11 = free_BigIntT(B11);
-		B12 = free_BigIntT(B12);
-		B21 = free_BigIntT(B21);
-		B22 = free_BigIntT(B22);
-		
-		FREE(Amat1);
-		FREE(Amat2);
-		FREE(Bmat1);
-		FREE(Bmat2);
-		
-		FREE(Amat);
-		FREE(Bmat);
-		
-		A = free_BigIntMatrixT(A);
-		B = free_BigIntMatrixT(B);
-		C = free_BigIntMatrixT(C); */
 	}
 	
 	/*
