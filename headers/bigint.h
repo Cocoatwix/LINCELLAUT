@@ -36,6 +36,9 @@ int size(BigIntTP);
 		around the number. */
 void printi(BigIntTP);
 
+/** Same as printi, but outputs to a file stream. */
+void fprinti(FILE*, BigIntTP);
+
 /** Gets rid of unused bunches in the given BigIntT
     and changes the size accordingly. 
 		Returns 1 on success, 0 otherwise. */

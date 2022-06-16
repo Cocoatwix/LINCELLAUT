@@ -170,6 +170,33 @@ void printi(BigIntTP n)
 }
 
 
+void fprinti(FILE* file, BigIntTP n)
+/** Same as printi, but outputs to a file stream. */
+{
+	int power = 0;
+	int tempMaxBunch = MAXBUNCH;
+	
+	if (MAXBUNCH % 10 == 0)
+	{
+		//Getting what power of 10 our MAXBUNCH is
+		while (tempMaxBunch > 1)
+		{
+			tempMaxBunch /= 10;
+			power += 1;
+		}
+		
+		for (int i = n->size-1; i >= 0; i -= 1)
+		{
+			//Zero padding
+			for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
+				fprintf(file, "0");
+			
+			fprintf(file, "%d", n->theInt[i]);
+		}
+	}
+}
+
+
 int reduce_BigIntT(BigIntTP toReduce)
 /** Removes any unnecessary bunches from toReduce
     and sets its size accordingly. Returns 1 on success,

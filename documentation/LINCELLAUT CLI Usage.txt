@@ -17,7 +17,7 @@ bigfloyd [modulus]: This tool is the same as floyd, except it makes use of BigIn
 rots [modulus]: This tool allows you to output basic rotation matrices for the given modulus to the screen. Currently, this tool outputs the 45 degree and 30 degree rotation matrices.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
-//Currently unimplemented
+//Write about how an output file is created
 cycmatsearch size maxmod cycles...: This tool allows the user to search for a matrix of a given size where the column vectors all have specified cycle lengths.
  - "size" specifies how big of a matrix should be used. For instance, if 3 is input, then matrices of size 3x3 will be searched. This argument expects a positive integer.
  - "maxmod" specifies the upper bound for the moduli to search. Searching will always begin at mod 2. This argument expects a positive integer.

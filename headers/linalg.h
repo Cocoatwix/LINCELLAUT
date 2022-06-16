@@ -78,6 +78,10 @@ int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2,
 void printm(IntMatrixTP);
 void printbm(BigIntMatrixTP);
 
+/** Same as functions above, but they print to a file stream. */
+void fprintm(FILE*, IntMatrixTP);
+void fprintbm(FILE*, BigIntMatrixTP);
+
 /** Returns the number of digits a given
     positive integer has. */
 int num_digits(int);

@@ -521,6 +521,35 @@ void printm(IntMatrixTP M)
 }
 
 
+void fprintm(FILE* file, IntMatrixTP M)
+/** Same as printm, except it prints to a file stream. */
+{
+	int maxDigits = 0;
+	
+	for (int row = 0; row < M->m; row += 1)
+		for (int col = 0; col < M->n; col += 1)
+			if (num_digits(M->matrix[row][col]) > maxDigits)
+				maxDigits = num_digits(M->matrix[row][col]);
+	
+	for (int mIndex = 0; mIndex < M->m; mIndex += 1)
+	{
+		for (int nIndex = 0; nIndex < M->n-1; nIndex += 1)
+		{
+			for (int p = 0; p < maxDigits - num_digits(M->matrix[mIndex][nIndex]); p += 1)
+				fprintf(file, "0");
+			
+			fprintf(file, "%d, ", M->matrix[mIndex][nIndex]);
+		}
+		
+		for (int p = 0; p < maxDigits - num_digits(M->matrix[mIndex][M->n-1]); p += 1)
+				fprintf(file, "0");
+
+		fprintf(file, "%d", M->matrix[mIndex][M->n-1]);
+		fprintf(file, "\n");
+	}
+}
+
+
 void printbm(BigIntMatrixTP M)
 /** Prints out a BigIntMatrixT matrix to the console. */
 {
@@ -546,6 +575,35 @@ void printbm(BigIntMatrixTP M)
 			printf(" ");
 		}
 		printf("\n");
+	}
+}
+
+
+void fprintbm(FILE* file, BigIntMatrixTP M)
+/** Prints out a BigIntMatrixT matrix to the console. */
+{
+	int maxBunches = 0;
+	
+	//Search for the highest amount of bunches in the matrix
+	for (int x = 0; x < M->m; x += 1)
+		for (int y = 0; y < M->n; y += 1)
+			if (maxBunches < size(M->matrix[x][y]))
+				maxBunches = size(M->matrix[x][y]);
+			
+	//Actually print out the entries
+	for (int row = 0; row < M->m; row += 1)
+	{
+		for (int col = 0; col < M->n; col += 1)
+		{
+			//Zero padding
+			for (int i = 0; i < maxBunches - size(M->matrix[row][col]); i += 1)
+				for (int z = 1; z < MAXBUNCH; z *= 10)
+					fprintf(file, "0");
+				
+			fprinti(file, M->matrix[row][col]);
+			fprintf(file, " ");
+		}
+		fprintf(file, "\n");
 	}
 }
 

@@ -449,6 +449,9 @@ int main(int argc, char* argv[])
 				return EXIT_SUCCESS;
 			}
 			
+			FILE* textOutput; 
+			char* textOutputName;
+			
 			BigIntTP maxMod;  //What's the largest modulus we should search to?
 			BigIntTP currMod; //What modulus are we currently checking?
 			BigIntTP one;
@@ -479,7 +482,7 @@ int main(int argc, char* argv[])
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {6};
+			int start[] = {2};
 			
 			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
@@ -558,13 +561,38 @@ int main(int argc, char* argv[])
 			// memory allocations.
 			theCycle = new_CycleInfoT();
 			
+			//Forming name for text file output.
+			textOutputName = malloc(MAXSTRLEN*sizeof(char));
+			textOutputName[0] = '\0';
+			strcat(textOutputName, argv[1]);
+			strcat(textOutputName, " ");
+			strcat(textOutputName, argv[2]);
+			strcat(textOutputName, " ");
+			strcat(textOutputName, argv[3]);
+			strcat(textOutputName, " ");
+			for (i = 0; i < size-1; i += 1)
+			{
+				strcat(textOutputName, argv[4+i]);
+				strcat(textOutputName, " ");
+			}
+			strcat(textOutputName, argv[size+3]);
+			strcat(textOutputName, ".txt");
+			//printf("%s\n", textOutputName);
+			
+			textOutput = fopen(textOutputName, "w");
+			if (textOutput == NULL)
+			{
+				fprintf(stderr, "Unable to create/open %s for writing.\n", textOutputName);
+				return EXIT_FAILURE;
+			}
+			
 			//Search all moduli until we get to the specified limit
 			while (compare_BigIntT(currMod, maxMod) <= 0)
 			{
 				printf("Currently searching mod ");
 				printi(currMod);
 				printf("...\n");
-				
+
 				//Search throuh all matrices under the current modulus
 				checkedAllMatrices = FALSE;
 				while (!checkedAllMatrices)
@@ -639,6 +667,12 @@ int main(int argc, char* argv[])
 						printf("\n");
 						printbm(currMat);
 						printf("\n");
+						
+						fprintf(textOutput, "Mod ");
+						fprinti(textOutput, currMod);
+						fprintf(textOutput, "\n");
+						fprintbm(textOutput, currMat);
+						fprintf(textOutput, "\n");
 					}
 					
 					
@@ -652,7 +686,19 @@ int main(int argc, char* argv[])
 							add_BigIntT(one, currMatElements[i][j], temp);
 							
 							if (compare_BigIntT(temp, currMod) >= 0)
+							{
 								copy_BigIntT(zero, currMatElements[i][j]);
+								
+								//Print a progress update to the console
+								if ((i == size-1) && (j == size-2))
+								{
+									printi(currMatElements[i][j+1]);
+									printf(" / ");
+									printi(currMod);
+									printf(" checked...\n");
+								}
+								
+							}
 							
 							//No overflow
 							else
@@ -670,6 +716,9 @@ int main(int argc, char* argv[])
 				add_BigIntT(one, currMod, temp);
 				copy_BigIntT(temp, currMod);
 			}
+			
+			if (fclose(textOutput) == EOF)
+				fprintf(stderr, "Unable to close %s.\n", textOutputName);
 			
 			//Freeing memory
 			maxMod  = free_BigIntT(maxMod);
@@ -695,6 +744,7 @@ int main(int argc, char* argv[])
 				free(currMatElements[i]);
 			}
 			FREE(currMatElements);
+			FREE(textOutputName);
 			
 			printf("Finished searching.\n");
 		}
