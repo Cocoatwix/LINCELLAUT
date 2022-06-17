@@ -1023,10 +1023,22 @@ int main(int argc, char* argv[])
 		// and transient lengths, then repeat for a higher-powered modulus.
 		else if (! strcmp(argv[1], "dynamics"))
 		{
-			int  power = 2; //Holds the power of the modulus to check
+			int  lowpower = 1; //Holds the higher power of the modulus to check
+			int  highpower = 2;
 			int  highmod = 1;   //Holds the modulus raised to the correct power
+			int  OGmod ;
+
+			int* possibleCycleLengths;
 			int* currVectElements;
 			int* currVectElementsMult; //Holds multiples of the current vector's elements
+			
+			int firstIndex; //Used to help create our lookup table for cycle lengths
+			
+			//Holds counts for all possible cycle length pairs
+			//For instance, if a vector % highmod has a cycle length
+			// of 20, while % modulus it has a cycle length of 2,
+			// then cycleTable[2][20] += 1;
+			int** cycleTable;
 			
 			bool checkedAllVects = FALSE;
 			
@@ -1035,21 +1047,32 @@ int main(int argc, char* argv[])
 			
 			CycleInfoTP theCycle;
 			
-			//If user provided a power for us
+			//User-provided lower power
 			if (argc > 2)
 			{
-				power = (int)strtol(argv[2], &tempStr, 10);
+				lowpower = (int)strtol(argv[2], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
-					fprintf(stderr, "Unable to read power from command line.\n");
+					fprintf(stderr, "Unable to read lower power from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//User-provided higher power
+			if (argc > 3)
+			{
+				highpower = (int)strtol(argv[3], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read higher power from command line.\n");
 					return EXIT_FAILURE;
 				}
 			}
 			
 			//If user provided a modulus for us
-			if (argc > 3)
+			if (argc > 4)
 			{
-				modulus = (int)strtol(argv[3], &tempStr, 10);
+				modulus = (int)strtol(argv[4], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read modulus from command line.\n");
@@ -1070,9 +1093,54 @@ int main(int argc, char* argv[])
 				return EXIT_SUCCESS;
 			}
 			
-			//Calculate modulus raised to the given power
-			//It's the uer's responsibility to prevent this from overflowing
-			for (int i = 0; i < power; i += 1, highmod *= modulus);
+			//Calculate moduli raised to the given power
+			//It's the uer's responsibility to prevent these from overflowing
+			OGmod = modulus;
+			for (int i = 0; i < highpower; i += 1, highmod *= modulus);
+			for (int i = 1; i < lowpower; i += 1, modulus *= OGmod);
+			
+			printf("Moduli: %d, %d\n", modulus, highmod);
+			
+			
+			//Now that we have the matrix, calculate the cycle length
+			// and use it to reason all possible cycle lengths
+			// for alloting memory
+			theCycle = floyd(A, A, highmod);
+			printf("Matrix's multiplicative order mod %d: %d\n", highmod, omega(theCycle));
+			
+			printf("(highmod, lowmod)\n\n");
+			
+			//First number in the pointer says how many cycle lengths
+			// are stored in the vector
+			possibleCycleLengths = malloc(2*sizeof(int));
+			possibleCycleLengths[0] = 0;
+			
+			for (int i = 1; i <= omega(theCycle)/2; i += 1)
+				if (omega(theCycle) % i == 0)
+				{
+					possibleCycleLengths[0] += 1;
+					possibleCycleLengths[possibleCycleLengths[0]] = omega(theCycle) / i;
+					possibleCycleLengths = realloc(possibleCycleLengths, 
+					                               (possibleCycleLengths[0]+2)*sizeof(int));
+				}
+				
+			//Add 1 as a cycle length
+			possibleCycleLengths[0] += 1;
+			possibleCycleLengths[possibleCycleLengths[0]] = 1;
+			
+			free_CycleInfoT(theCycle);
+			
+			/*printf("Possible vector cycle lengths: ");
+			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
+				printf("%d ", possibleCycleLengths[i]);
+			printf("\n\n"); */
+			
+			//Now, construct our cycleTable to hold cycle counts
+			//Only allocating half the table since that's all we need
+			cycleTable = malloc(possibleCycleLengths[0]*sizeof(int*));
+			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
+				cycleTable[i] = calloc(i+1, sizeof(int));
+			
 			
 			currVectElements = calloc(rows(A), sizeof(int));
 			currVectElementsMult = malloc(rows(A)*sizeof(int));
@@ -1081,17 +1149,27 @@ int main(int argc, char* argv[])
 			//Iterate until we've tested every vector
 			while (!checkedAllVects)
 			{
-				printf("---\n");
+				//printf("---\n");
 				set_column(currVect, currVectElements);
 				theCycle = floyd(A, currVect, modulus);
 				
 				//Print out vector in an easier-to-look-at way for stdout
-				printf("<");
+				/*printf("<");
 				for (int i = 0; i < rows(A)-1; i += 1)
 					printf("%d ", currVectElements[i]);
 				printf("%d>\t:\t", currVectElements[rows(A)-1]);
 				printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle));
-				printf("---\n");
+				printf("---\n");  */
+				
+				//Finding the first index for our table
+				firstIndex = omega(theCycle);
+				
+				for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
+					if (firstIndex == possibleCycleLengths[i])
+					{
+						firstIndex = i-1;
+						break;
+					}
 				
 				free_CycleInfoT(theCycle);
 				
@@ -1107,11 +1185,22 @@ int main(int argc, char* argv[])
 					theCycle = floyd(A, currVect, highmod);
 					
 					//Print out vector in an easier-to-look-at way for stdout
-					printf("<");
+					/*printf("<");
 					for (int i = 0; i < rows(A)-1; i += 1)
 						printf("%d ", currVectElementsMult[i]);
 					printf("%d>\t:\t", currVectElementsMult[rows(A)-1]);
-					printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle));
+					printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle)); */
+					
+					//Adding a count to our cycle table
+					for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
+						if (omega(theCycle) == possibleCycleLengths[i])
+						{
+							if (i-1 > firstIndex)
+								printf("This message appearing means a vector's cycle was added to an element outside the printed table.\n");
+
+							cycleTable[firstIndex][i-1] += 1;
+							break;
+						}
 					
 					free_CycleInfoT(theCycle);
 					
@@ -1149,11 +1238,36 @@ int main(int argc, char* argv[])
 				}
 			}
 			
+			//Now, we print all the numbers we've collected
+			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
+			{
+				printf("%d\t|", possibleCycleLengths[i+1]);
+				for (int j = 0; j < i+1; j += 1)
+					printf("%d\t", cycleTable[i][j]);
+				printf("\n");
+			}
+			
+			//Axis at bottom of table
+			printf("\t ");
+			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
+				printf("-\t");
+			printf("\n\t ");
+			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
+				printf("%d\t", possibleCycleLengths[i]);
+			printf("\n");
+			
 			A        = free_IntMatrixT(A);
 			currVect = free_IntMatrixT(currVect);
 			
 			//Don't need to free theCycle since it gets freed above
 			theCycle = NULL;
+			
+			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
+			{
+				FREE(cycleTable[i]);
+			}
+			FREE(cycleTable);
+			FREE(possibleCycleLengths);
 			
 			FREE(currVectElements);
 			FREE(currVectElementsMult);
@@ -1216,11 +1330,13 @@ int main(int argc, char* argv[])
 		printf("   - " ANSI_COLOR_CYAN "bound" ANSI_COLOR_RESET \
 		": Override the default upper bound of 100.\n\n");
 		
-		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[power] [modulus]" ANSI_COLOR_RESET \
+		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[power1] [power2] [modulus]" ANSI_COLOR_RESET \
 		": Iterates every vector in a space, recording their transient lengths and cycle lengths. " \
 		"It then computes the same numbers for a higher-powered modulus.\n");
-		printf("   - " ANSI_COLOR_CYAN "power" ANSI_COLOR_RESET \
-		": Defines the power of modulus to check. Default is 2.\n");
+		printf("   - " ANSI_COLOR_CYAN "power1" ANSI_COLOR_RESET \
+		": Defines the lower power of modulus to check. Default is 1.\n");
+		printf("   - " ANSI_COLOR_CYAN "power2" ANSI_COLOR_RESET \
+		": Defines the higher power of modulus to check. Default is 2.\n");
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Override the modulus provided in the .config file.\n\n");
 		

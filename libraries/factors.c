@@ -66,6 +66,42 @@ int LCM(int a, int b)
 }
 
 
+int* prime_factors(int n)
+/** Returns a pointer of n's prime factors.
+    It's the caller's job to free the pointer
+		when they're done with it. 
+		
+		The first number in the pointer says
+		how many prime factors were found. */
+{
+	int* factors = malloc(2*sizeof(int));
+	int factorsCount = 0;
+	
+	//Yes, there are more efficient ways to do this.
+	//Leave me alone.
+	for (int i = 2; i <= n/i; i += 1)
+	{
+		//If we found a factor
+		if (n % i == 0)
+		{
+			//printf("New upper bound: %d\n", matCycle/i);
+			factors[factorsCount+1] = i;
+			factorsCount += 1;
+			n /= i;
+			factors = realloc(factors, (factorsCount+2)*sizeof(int));
+			i = 1; //Start looking for prime factors at 2 again
+		}
+	}
+	
+	//Adding the last prime factor which will always be left out
+	factors[factorsCount+1] = n;
+	factorsCount += 1;
+	factors[0] = factorsCount;
+	
+	return factors;
+}
+
+
 int is_square_free(int n)
 /** Returns 1 if n is a square-free number (each factor
     only appears only once in n's factorisation), 0
