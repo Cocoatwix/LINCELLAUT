@@ -252,6 +252,35 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to calculate the determinant of our matrix
+		else if (!strcmp(argv[1], "det"))
+		{
+			//If the user specified a custom modulus
+			if (argc > 2)
+			{
+				modulus = (int)strtol(argv[2], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to reasd modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			IntMatrixTP A = read_IntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read .matrix file at %s.\n", updatefilepath);
+				return EXIT_FAILURE;
+			}
+			
+			printf("Matrix:\n");
+			printm(A);
+			printf("Determinant: %d\n", det(A) % modulus);
+			
+			A = free_IntMatrixT(A);
+		}
+		
+		
 		//If we want to use Floyd's Cycle Detection Algorithm
 		else if (!strcmp(argv[1], "floyd"))
 		{

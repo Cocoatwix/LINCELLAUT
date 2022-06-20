@@ -97,7 +97,7 @@ int modm(IntMatrixTP, int);
 int modbm(BigIntMatrixTP, BigIntTP);
 
 /** Returns the determinant of a given matrix. 
-    Returns zero if the matrix is nonzero. */
+    Returns zero if the matrix is nonsquare. */
 int det(IntMatrixTP const);
 
 /** Returns the inverse of a given matrix with given modulus, if it exists.
