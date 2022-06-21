@@ -24,6 +24,8 @@ https://stackoverflow.com/questions/3219393
 #include "headers/fibonacci.h"
 #include "headers/factors.h" //For LCM()
 
+#include "headers/algebra.h"
+
 #define FREE(v) free(v); v = NULL
 
 #define ANSI_COLOR_RED     "\x1b[31m"
@@ -261,7 +263,7 @@ int main(int argc, char* argv[])
 				modulus = (int)strtol(argv[2], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
-					fprintf(stderr, "Unable to reasd modulus from command line.\n");
+					fprintf(stderr, "Unable to read modulus from command line.\n");
 					return EXIT_FAILURE;
 				}
 			}
@@ -506,14 +508,14 @@ int main(int argc, char* argv[])
 			
 			/*
 			Searched so far:
-			Cycles 2, 3, 5 with 3x3 matrices up to and including mod 5
-			 - Tried mod 6, didn't finish. I'll need a lot of time for this one...
+			cycmatsearch 3 5 2 3 5
+			cycmatsearch 3 6 2 3 5 . . . 4/6
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {2};
+			int start[] = {6};
 			
-			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
+			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
@@ -556,6 +558,7 @@ int main(int argc, char* argv[])
 			zero    = empty_BigIntT(1);
 			temp    = empty_BigIntT(1);
 			
+			/*
 			//Initialise our matrix elements
 			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
@@ -564,18 +567,24 @@ int main(int argc, char* argv[])
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
 			}
-			
-			/*
-			//TESTING A SPECIFIC CASE. DELETE THIS LATER
-			currMatElements[0][0] = free_BigIntT(currMatElements[0][0]);
-			currMatElements[1][1] = free_BigIntT(currMatElements[1][1]);
-			
-			int scale1[] = {2};
-			int scale2[] = {3};
-			
-			currMatElements[0][0] = new_BigIntT(scale1, 1);
-			currMatElements[1][1] = new_BigIntT(scale2, 1);
 			*/
+			
+			//TESTING A SPECIFIC CASE. DELETE THIS LATER
+			int theModValue[] = {5};
+			int theResumeValue[] = {4};
+			
+			currMatElements = malloc(size*sizeof(BigIntTP*));
+			for (i = 0; i < size; i += 1)
+			{
+				currMatElements[i] = malloc(size*sizeof(BigIntTP));
+				for (j = 0; j < size; j += 1)
+				{
+					if ((i == size-1) && (j == size-1))
+						currMatElements[i][j] = new_BigIntT(theResumeValue, 1);
+					else
+						currMatElements[i][j] = new_BigIntT(theModValue, 1);
+				}
+			}
 			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
@@ -1137,7 +1146,7 @@ int main(int argc, char* argv[])
 			theCycle = floyd(A, A, highmod);
 			printf("Matrix's multiplicative order mod %d: %d\n", highmod, omega(theCycle));
 			
-			printf("(highmod, lowmod)\n\n");
+			printf("(lowmod, highmod)\n\n");
 			
 			//First number in the pointer says how many cycle lengths
 			// are stored in the vector
@@ -1268,6 +1277,21 @@ int main(int argc, char* argv[])
 			}
 			
 			//Now, we print all the numbers we've collected
+			printf("Cycle pairs:\n");
+			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
+				for (int j = 0; j <= i; j += 1)
+					//Only print out info is vectors have that pair of cycle lengths
+					if (cycleTable[i][j] != 0)
+					{
+						printf("(%d, %d): %d\n", 
+						possibleCycleLengths[i+1],
+						possibleCycleLengths[j+1],
+						cycleTable[i][j]);
+					}
+			
+			
+			//OLD PRINTING METHOD - TRIANGULAR TABLE
+			/*
 			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
 			{
 				printf("%d\t|", possibleCycleLengths[i+1]);
@@ -1284,6 +1308,7 @@ int main(int argc, char* argv[])
 			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
 				printf("%d\t", possibleCycleLengths[i]);
 			printf("\n");
+			*/
 			
 			A        = free_IntMatrixT(A);
 			currVect = free_IntMatrixT(currVect);
@@ -1316,6 +1341,11 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Find the inverse of an update matrix under some modulus.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Find the determinant of an update matrix under some modulus.\n");
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Overrides the modulus provided in the .config file.\n\n");
 		
@@ -1371,18 +1401,34 @@ int main(int argc, char* argv[])
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
+		
+		int one[] = {1};
+		int two[] = {2};
+		
+		BigIntTP* list = malloc(3*sizeof(BigIntTP));
+		list[0] = empty_BigIntT(1);
+		list[1] = new_BigIntT(one, 1);
+		list[2] = new_BigIntT(two, 1);
+		
+		BigPolyTP useless = new_BigPolyT(list, 3);
+		BigPolyTP uselessProd = empty_BigPolyT();
+		printp(useless);
+		printf("\n");
+		multiply_BigPolyT(useless, useless, uselessProd);
+		printf("(");
+		printp(useless);
+		printf(")^2 = ");
+		printp(uselessProd);
+		printf("\n");
+		
+		list[0] = free_BigIntT(list[0]);
+		list[1] = free_BigIntT(list[1]);
+		list[2] = free_BigIntT(list[2]);
+		FREE(list);
+		
+		useless = free_BigPolyT(useless);
+		uselessProd = free_BigPolyT(uselessProd);
 	}
-	
-	/*
-	//Now testing our ability to create eigenvectors
-	printf("Matrix:\n");
-	printm(F, TRUE);
-	printf("Using eigenvalue %d:\n", values[1]);
-	IntMatrixTP E = eigenvector(F, values[1], modulus);
-	//printm(E, TRUE);
-	
-	FREE(values);
-	//E = free_IntMatrixT(E); */
 	
 	//Freeing memory
 	FREE(updatefilepath);

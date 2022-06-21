@@ -2,16 +2,18 @@
 #ifndef LINALG_H
 #define LINALG_H //Header guard
 
-#include "bigint.h" //For using BigIntTP type
+#include "bigint.h"  //For using BigIntTP type
+#include "algebra.h" //For polynomials
 
-//Adding TRUE or FALSE values
+/** Adding TRUE or FALSE values. */
 typedef enum boolean {FALSE, TRUE} bool;
 
 //Whenever you use this struct, there needs to be an interfacing function.
 // C can't see "inside" the struct; it needs a function to interface with it.
+/** For holding matrices. */
 typedef struct intmatrix *IntMatrixTP;
 
-//IntMatrixT, but for BigIntT numbers
+/** IntMatrixT, but for BigIntT numbers. */
 typedef struct bigintmatrix *BigIntMatrixTP;
 
 
@@ -104,18 +106,25 @@ int det(IntMatrixTP const);
     Returns NULL otherwise. */
 IntMatrixTP inverse(IntMatrixTP const, int);
 
+/** Prints a matrix's characteristic equation to the
+    screen mod some modulus. */
+void chara_eqn(IntMatrixTP const, int);
+
+/* These two functions are badly tested and specific in their
+    use cases. Only use them if you know what you're doing. */
+
 /** Returns the eigenvalues of a given matrix, mod some
     modulus, as an int pointer. Returns NULL if no eigenvalues
 		exist. 
 		
 		This currently only works for 2x2 matrices. */
-int* eigenvalues(IntMatrixTP const, int);
+//int* eigenvalues(IntMatrixTP const, int);
 
 /** Returns an eigenvector of the given matrix, eigenvalue, and
     modulus. It is assumed the given eigenvalue is valid for the
 		given system. 
 		
 		Currently only works for 2x2 matrices. */
-IntMatrixTP eigenvector(IntMatrixTP const, int, int);
+//IntMatrixTP eigenvector(IntMatrixTP const, int, int);
 
 #endif //LINALG_H

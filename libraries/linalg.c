@@ -9,6 +9,7 @@
 #include "../headers/factors.h"
 #include "../headers/modular.h" //Allows for taking modular square roots
 #include "../headers/bigint.h"  //For BigIntMatrixT
+#include "../headers/algebra.h" //For polynomials
 
 /* The following resources were used as a reference:
 https://stackoverflow.com/a/6317375
@@ -941,6 +942,21 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	
 	toReduce = free_IntMatrixT(toReduce);
 	return inv;
+}
+
+
+//det_subIntMatrixT(IntMatrixTP const M, int x, int y)
+void chara_eqn(IntMatrixTP const A, int mod)
+/** Spits a matrix's characteristic equation to the
+    screen mod some modulus. A must be a square matrix. */
+{
+	if (A->m != A->n)
+		printf("Matrix given is not a square matrix.\n");
+	
+	else
+	{
+		printf("Testing...\n");
+	}
 }
 
 

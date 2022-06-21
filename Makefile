@@ -13,6 +13,7 @@ LIB3 = factors
 LIB4 = modular
 LIB5 = fibonacci
 LIB6 = bigint
+LIB7 = algebra
 
 OBJPATH = objects
 ALLOBJS = $(OBJPATH)/$(LIB1).o 
@@ -21,6 +22,7 @@ ALLOBJS += $(OBJPATH)/$(LIB3).o
 ALLOBJS += $(OBJPATH)/$(LIB4).o
 ALLOBJS += $(OBJPATH)/$(LIB5).o
 ALLOBJS += $(OBJPATH)/$(LIB6).o
+ALLOBJS += $(OBJPATH)/$(LIB7).o
 
 all:	$(TARGET)
 
@@ -49,6 +51,9 @@ $(OBJPATH)/$(LIB5).o:	$(LIBPATH)/$(LIB5).c
 	
 $(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB6).o $(LIBPATH)/$(LIB6).c
+	
+$(OBJPATH)/$(LIB7).o:	$(LIBPATH)/$(LIB7).c
+	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB7).o $(LIBPATH)/$(LIB7).c
 	
 clean:
 	rm $(TARGET)

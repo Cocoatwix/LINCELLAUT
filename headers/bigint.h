@@ -2,6 +2,8 @@
 #ifndef BIGINT_H //Header guard
 #define BIGINT_H
 
+#include <stdio.h> //Prevents compiler from complaining about FILE*
+
 const int MAXBUNCH;
 
 /** Struct for holding arbitrary precision number. */
