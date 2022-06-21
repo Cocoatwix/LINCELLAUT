@@ -107,8 +107,12 @@ int det(IntMatrixTP const);
 IntMatrixTP inverse(IntMatrixTP const, int);
 
 /** Prints a matrix's characteristic equation to the
-    screen mod some modulus. */
-void chara_eqn(IntMatrixTP const, int);
+    screen mod some modulus. Returns a BigPolyTP
+		representing the characteristic equation on success,
+		NULL otherwise. */
+BigPolyTP chara_eqn(BigIntMatrixTP const, BigIntTP const);
+
+
 
 /* These two functions are badly tested and specific in their
     use cases. Only use them if you know what you're doing. */

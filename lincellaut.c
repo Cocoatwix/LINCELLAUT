@@ -283,6 +283,135 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//Find the characteristic equation of the update matrix
+		else if (! strcmp(argv[1], "chara"))
+		{
+			BigIntTP bigMod;
+			BigIntMatrixTP bigMatrix;
+			
+			BigPolyTP bigEqn;
+			
+			//If the user provided a custom modulus
+			if (argc > 2)
+			{
+				if (strtoBIT(argv[2], &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//Extract the modulus in the .config file otherwise
+			else
+			{
+				if (strtoBIT(bigintmodstring, &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			//Now, read the update matrix
+			bigMatrix = read_BigIntMatrixT(updatefilepath);
+			
+			if (bigMatrix == NULL)
+			{
+				fprintf(stderr, "Unable to read matrix from %s.\n", updatefilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//Actually calculate the characteristic equation here
+			bigEqn = chara_eqn(bigMatrix, bigMod);
+			printp(bigEqn);
+			printf("\n");
+			
+			//Testing code; delete later
+			/*int one[] = {1};
+			int two[] = {2};
+			int three[] = {3};
+			int seven[] = {7};
+			
+			BigIntTP* list = malloc(3*sizeof(BigIntTP));
+			list[0] = empty_BigIntT(1);
+			list[1] = new_BigIntT(one, 1);
+			list[2] = new_BigIntT(two, 1);
+			
+			BigIntTP* list2 = malloc(4*sizeof(BigIntTP));
+			list2[0] = new_BigIntT(two, 1);
+			list2[1] = new_BigIntT(two, 1);
+			list2[2] = new_BigIntT(seven, 1);
+			list2[3] = new_BigIntT(seven, 1);
+			
+			BigIntTP theThree = new_BigIntT(three, 1);
+			
+			BigPolyTP useless = new_BigPolyT(list, 3);
+			BigPolyTP useless2 = new_BigPolyT(list2, 4);
+			BigPolyTP uselessProd = empty_BigPolyT();
+			
+			printf("Useless: ");
+			printp(useless);
+			printf("\n");
+			
+			printf("Useless2: ");
+			printp(useless2);
+			printf("\n");
+			
+			multiply_BigPolyT(useless, useless, uselessProd);
+			printf("(");
+			printp(useless);
+			printf(")^2 = ");
+			printp(uselessProd);
+			printf("\n");
+			
+			multiply_BigPolyT(useless, useless2, uselessProd);
+			printf("(");
+			printp(useless);
+			printf(")(");
+			printp(useless2);
+			printf(") = ");
+			printp(uselessProd);
+			printf("\n\n\n");
+			
+			printp(useless2);
+			printf(" mod ");
+			printi(theThree);
+			printf(" = ");
+			mod_BigPolyT(useless2,  theThree, uselessProd);
+			printp(uselessProd);
+			printf("\n\n");
+			
+			printp(useless);
+			printf(" + ");
+			printp(useless2); 
+			printf(" === ");
+			add_BigPolyT(useless, useless2, uselessProd);
+			printp(uselessProd);
+			printf("\n");
+			
+			
+			list[0] = free_BigIntT(list[0]);
+			list[1] = free_BigIntT(list[1]);
+			list[2] = free_BigIntT(list[2]);
+			FREE(list);
+			
+			list2[0] = free_BigIntT(list2[0]);
+			list2[1] = free_BigIntT(list2[1]);
+			list2[2] = free_BigIntT(list2[2]);
+			list2[3] = free_BigIntT(list2[3]);
+			FREE(list2);
+			
+			theThree = free_BigIntT(theThree);
+			
+			useless = free_BigPolyT(useless);
+			useless2 = free_BigPolyT(useless2);
+			uselessProd = free_BigPolyT(uselessProd); */
+			
+			bigMod = free_BigIntT(bigMod);
+			bigMatrix = free_BigIntMatrixT(bigMatrix);
+			bigEqn = free_BigPolyT(bigEqn);
+		}
+		
+		
 		//If we want to use Floyd's Cycle Detection Algorithm
 		else if (!strcmp(argv[1], "floyd"))
 		{
@@ -508,8 +637,8 @@ int main(int argc, char* argv[])
 			
 			/*
 			Searched so far:
-			cycmatsearch 3 5 2 3 5
-			cycmatsearch 3 6 2 3 5 . . . 4/6
+			cycmatsearch 2 20 2 3
+			cycmatsearch 3 6 2 3 5
 			*/
 			
 			int oneArr[] = {1};
@@ -558,7 +687,6 @@ int main(int argc, char* argv[])
 			zero    = empty_BigIntT(1);
 			temp    = empty_BigIntT(1);
 			
-			/*
 			//Initialise our matrix elements
 			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
@@ -567,9 +695,9 @@ int main(int argc, char* argv[])
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
 			}
-			*/
 			
 			//TESTING A SPECIFIC CASE. DELETE THIS LATER
+			/*
 			int theModValue[] = {5};
 			int theResumeValue[] = {4};
 			
@@ -585,6 +713,7 @@ int main(int argc, char* argv[])
 						currMatElements[i][j] = new_BigIntT(theModValue, 1);
 				}
 			}
+			*/
 			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
@@ -1349,6 +1478,11 @@ int main(int argc, char* argv[])
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
 		": Overrides the modulus provided in the .config file.\n\n");
 		
+		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Find the characteristic equation of an update matrix under some modulus.\n");
+		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
+		": Overrides the modulus provided in the .config file.\n\n");
+		
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n");
 		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
@@ -1401,33 +1535,6 @@ int main(int argc, char* argv[])
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
-		
-		int one[] = {1};
-		int two[] = {2};
-		
-		BigIntTP* list = malloc(3*sizeof(BigIntTP));
-		list[0] = empty_BigIntT(1);
-		list[1] = new_BigIntT(one, 1);
-		list[2] = new_BigIntT(two, 1);
-		
-		BigPolyTP useless = new_BigPolyT(list, 3);
-		BigPolyTP uselessProd = empty_BigPolyT();
-		printp(useless);
-		printf("\n");
-		multiply_BigPolyT(useless, useless, uselessProd);
-		printf("(");
-		printp(useless);
-		printf(")^2 = ");
-		printp(uselessProd);
-		printf("\n");
-		
-		list[0] = free_BigIntT(list[0]);
-		list[1] = free_BigIntT(list[1]);
-		list[2] = free_BigIntT(list[2]);
-		FREE(list);
-		
-		useless = free_BigPolyT(useless);
-		uselessProd = free_BigPolyT(uselessProd);
 	}
 	
 	//Freeing memory

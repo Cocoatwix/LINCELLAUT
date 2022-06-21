@@ -945,18 +945,151 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 }
 
 
-//det_subIntMatrixT(IntMatrixTP const M, int x, int y)
-void chara_eqn(IntMatrixTP const A, int mod)
-/** Spits a matrix's characteristic equation to the
-    screen mod some modulus. A must be a square matrix. */
+/* private */ BigPolyTP chara_eqn_recurse(BigPolyTP** const A, BigIntTP mod, int size)
+/** Helper function for chara_eqn(). Returns the characteristic
+    equation for a sub matrix. */
 {
-	if (A->m != A->n)
-		printf("Matrix given is not a square matrix.\n");
+	BigPolyTP result = empty_BigPolyT();
+	BigPolyTP temp   = empty_BigPolyT();
+	BigPolyTP temp2  = empty_BigPolyT();
 	
+	int oneArr[] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	BigIntTP minusOne = empty_BigIntT(1);
+	subtract_BigIntT(mod, one, minusOne);
+	
+	BigPolyTP minusOneConst = constant_BigPolyT(minusOne);
+	
+	//Base case
+	if (size == 2)
+	{
+		//2x2 determinant, basically
+		multiply_BigPolyT(A[0][1], A[1][0], temp2);
+		multiply_BigPolyT(temp2, minusOneConst, temp);
+		multiply_BigPolyT(A[0][0], A[1][1], temp2);
+		add_BigPolyT(temp, temp2, result);
+	}
+	
+	//Recursive case
 	else
 	{
-		printf("Testing...\n");
+		for (int i = 0; i < size; i += 1)
+		{
+			;
+		}
 	}
+	
+	temp = free_BigPolyT(temp);
+	temp2 = free_BigPolyT(temp2);
+	minusOneConst = free_BigPolyT(minusOneConst);
+	
+	one = free_BigIntT(one);
+	minusOne = free_BigIntT(minusOne);
+	
+	return result;
+}
+
+
+//det_subIntMatrixT(IntMatrixTP const M, int x, int y)
+BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
+/** Spits a matrix's characteristic equation to the
+    screen mod some modulus. A must be a square matrix. 
+		Returns the characteristic equation of the passed
+		matrix. Returns NULL on error. */
+{
+	BigPolyTP chara = NULL;
+	BigPolyTP moddedChara; //Holds chara eqn % mod
+	BigPolyTP** algMat;
+	
+	//For creating the BigPolyTP 2D array below
+	BigIntTP* term;
+	
+	BigIntTP one;
+	BigIntTP minusOne;
+	int oneArr[] = {1};
+	
+	if (A->m != A->n)
+		return NULL;
+	
+	//Special case, will program later
+	if (A->m == 1)
+		return NULL;
+	
+	algMat = malloc((A->m)*sizeof(BigPolyTP*));
+	term = malloc(2*sizeof(BigIntTP));
+	term[0] = empty_BigIntT(1);
+	term[1] = empty_BigIntT(1);
+	
+	one = new_BigIntT(oneArr, 1);
+	minusOne = empty_BigIntT(1);
+	
+	subtract_BigIntT(mod, one, minusOne);
+	
+	//Creating a 2D array of polynomials
+	//Super, SUPER inefficient but I can't be bothered
+	// to write anything better.
+	for (int row = 0; row < A->m; row += 1)
+	{
+		algMat[row] = malloc((A->m)*sizeof(BigPolyTP));
+		for (int col = 0; col < A->m; col += 1)
+		{
+			//Diagonal entry, element minus lambda
+			if (row == col)
+			{
+				copy_BigIntT(A->matrix[row][col], term[0]);
+				copy_BigIntT(minusOne, term[1]);
+				algMat[row][col] = new_BigPolyT(term, 2);
+			}
+			
+			//Just copy the number from the matrix if not a diagonal
+			else
+				algMat[row][col] = new_BigPolyT(&(A->matrix[row][col]), 1);
+		}
+	}
+	
+	//Now, let's test and see if this function actually works
+	/*
+	for (int i = 0; i < A->m; i += 1)
+	{
+		for (int j = 0; j < A->m; j += 1)
+		{
+			printp(algMat[i][j]);
+			printf(" ");
+		}
+		printf("\n");
+	}
+	*/
+	
+	//Ok, so we have our algebraic matrix
+	//Now, use it to get our characteristic equation
+	chara = chara_eqn_recurse(algMat, mod, A->m);
+	moddedChara = empty_BigPolyT();
+	mod_BigPolyT(chara, mod, moddedChara);
+	
+	//Now, free the horrible matrix we created
+	for (int row = 0; row < A->m; row += 1)
+	{
+		for (int col = 0; col < A->m; col += 1)
+			algMat[row][col] = free_BigPolyT(algMat[row][col]);
+		
+		free(algMat[row]);
+		algMat[row] = NULL;
+	}
+	free(algMat);
+	algMat = NULL;
+	
+	term[0] = free_BigIntT(term[0]);
+	term[1] = free_BigIntT(term[1]);
+	free(term);
+	term = NULL;
+	
+	one = free_BigIntT(one);
+	minusOne = free_BigIntT(minusOne);
+	
+	chara = free_BigPolyT(chara);
+	
+	return moddedChara;
 }
 
 
@@ -990,7 +1123,7 @@ int* eigenvalues(IntMatrixTP const F, int modulus)
 			values[0] += 1;
 			values[values[0]] = i;
 		}
-	
+
 	return values;
 }
 

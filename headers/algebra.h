@@ -14,6 +14,11 @@ BigPolyTP free_BigPolyT(BigPolyTP);
     returns a pointer to it. */
 BigPolyTP new_BigPolyT(BigIntTP* const, int);
 
+/** Creates a constant polynomial with the given BigIntTP
+    as the constant term. Returns a pointer to the new
+		constant. */
+BigPolyTP constant_BigPolyT(BigIntTP const);
+
 /** Creates an empty polynomial, returns a pointer to it. */
 BigPolyTP empty_BigPolyT();
 
@@ -23,8 +28,22 @@ int degree(BigPolyTP const);
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(BigPolyTP const);
 
+/** Adds the first two polynomials, stores the sum in the third.
+    This function assumes all polynomials passed have been
+		initialised.
+    Returns 1 on success, 0 otherwise. */
+int add_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
+
 /** Multiples the first two polynomials given, stores the
-    product in the third BigPolyTP. Returns 1 on success, 0 otherwise. */
+    product in the third BigPolyTP. This function assumes all 
+		polynomials passed have been initialised.
+		Returns 1 on success, 0 otherwise. */
 int multiply_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
+
+/** Reduces a given polynomial by a modulus, stores the result in
+    another passed polynomial. This function assumes all arguments
+		have been properly initialised.
+		Returns 1 on success, 0 oterwise. */
+int mod_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
 
 #endif //ALGEBRA_H
