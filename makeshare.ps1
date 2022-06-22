@@ -23,7 +23,7 @@ https://www.itechguides.com/powershell-array-and-add-to-array-applications-and-e
 $OBJPATH = "to-orbitvis/objects"
 
 $LIBS = "modular", 
-        "linalg", 
+				"linalg", 
 				"bigint", 
 				"algebra",
 				"cycles",

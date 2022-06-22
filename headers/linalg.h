@@ -5,9 +5,6 @@
 #include "bigint.h"  //For using BigIntTP type
 #include "algebra.h" //For polynomials
 
-/** Adding TRUE or FALSE values. */
-typedef enum boolean {FALSE, TRUE} bool;
-
 //Whenever you use this struct, there needs to be an interfacing function.
 // C can't see "inside" the struct; it needs a function to interface with it.
 /** For holding matrices. */

@@ -25,6 +25,11 @@ BigPolyTP empty_BigPolyT();
 /** Returns the degree of the given polynomial. */
 int degree(BigPolyTP const);
 
+/** Copies a polynomial into another. This function assumes
+    all arguments have been properly initialised.
+		Returns 1 on success, 0 otherwise. */
+int copy_BigPolyT(BigPolyTP const, BigPolyTP);
+
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(BigPolyTP const);
 
@@ -46,4 +51,18 @@ int multiply_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
 		Returns 1 on success, 0 oterwise. */
 int mod_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
 
+/** Factors the given BigPolyT under the given modulus.
+    Returns a pointer to all the polynomial's factors.
+		The first element is a BigPolyT constant which says
+		how many factors are in the pointer. */
+BigPolyTP* factor_BigPolyT(BigPolyTP const, BigIntTP);
+
+/*
+int find_factors(BigIntTP const,
+                 BigIntTP const,
+								 BigIntTP const,
+								 BigIntTP const,
+			  				 BigIntTP*);
+*/
+								 
 #endif //ALGEBRA_H

@@ -16,6 +16,7 @@ https://stackoverflow.com/questions/3219393
 #include <string.h>
 #include <limits.h> //So I can get the maximum integer
 
+#include "headers/helper.h"
 #include "headers/bigint.h" //Arbitrary precision
 
 #include "headers/linalg.h" 
@@ -290,6 +291,7 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP bigMatrix;
 			
 			BigPolyTP bigEqn;
+			BigPolyTP* bigEqnFactors;
 			
 			//If the user provided a custom modulus
 			if (argc > 2)
@@ -306,7 +308,7 @@ int main(int argc, char* argv[])
 			{
 				if (strtoBIT(bigintmodstring, &bigMod) != 1)
 				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
+					fprintf(stderr, "Unable to read modulus from config file.\n");
 					return EXIT_FAILURE;
 				}
 			}
@@ -322,89 +324,25 @@ int main(int argc, char* argv[])
 			
 			//Actually calculate the characteristic equation here
 			bigEqn = chara_eqn(bigMatrix, bigMod);
+			printf("Matrix:\n");
+			printbm(bigMatrix);
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\nCharacteristic equation: ");
 			printp(bigEqn);
-			printf("\n");
-			
-			//Testing code; delete later
-			/*int one[] = {1};
-			int two[] = {2};
-			int three[] = {3};
-			int seven[] = {7};
-			
-			BigIntTP* list = malloc(3*sizeof(BigIntTP));
-			list[0] = empty_BigIntT(1);
-			list[1] = new_BigIntT(one, 1);
-			list[2] = new_BigIntT(two, 1);
-			
-			BigIntTP* list2 = malloc(4*sizeof(BigIntTP));
-			list2[0] = new_BigIntT(two, 1);
-			list2[1] = new_BigIntT(two, 1);
-			list2[2] = new_BigIntT(seven, 1);
-			list2[3] = new_BigIntT(seven, 1);
-			
-			BigIntTP theThree = new_BigIntT(three, 1);
-			
-			BigPolyTP useless = new_BigPolyT(list, 3);
-			BigPolyTP useless2 = new_BigPolyT(list2, 4);
-			BigPolyTP uselessProd = empty_BigPolyT();
-			
-			printf("Useless: ");
-			printp(useless);
-			printf("\n");
-			
-			printf("Useless2: ");
-			printp(useless2);
-			printf("\n");
-			
-			multiply_BigPolyT(useless, useless, uselessProd);
-			printf("(");
-			printp(useless);
-			printf(")^2 = ");
-			printp(uselessProd);
-			printf("\n");
-			
-			multiply_BigPolyT(useless, useless2, uselessProd);
-			printf("(");
-			printp(useless);
-			printf(")(");
-			printp(useless2);
-			printf(") = ");
-			printp(uselessProd);
-			printf("\n\n\n");
-			
-			printp(useless2);
-			printf(" mod ");
-			printi(theThree);
-			printf(" = ");
-			mod_BigPolyT(useless2,  theThree, uselessProd);
-			printp(uselessProd);
 			printf("\n\n");
 			
-			printp(useless);
-			printf(" + ");
-			printp(useless2); 
-			printf(" === ");
-			add_BigPolyT(useless, useless2, uselessProd);
-			printp(uselessProd);
+			printf("Factored characteristic equation:\n");
+			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
+			
+			for (int i = 0; i < degree(bigEqn); i += 1)
+			{
+				printp(bigEqnFactors[i]);
+				printf(" ");
+				bigEqnFactors[i] = free_BigPolyT(bigEqnFactors[i]);
+			}
+			FREE(bigEqnFactors);
 			printf("\n");
-			
-			
-			list[0] = free_BigIntT(list[0]);
-			list[1] = free_BigIntT(list[1]);
-			list[2] = free_BigIntT(list[2]);
-			FREE(list);
-			
-			list2[0] = free_BigIntT(list2[0]);
-			list2[1] = free_BigIntT(list2[1]);
-			list2[2] = free_BigIntT(list2[2]);
-			list2[3] = free_BigIntT(list2[3]);
-			FREE(list2);
-			
-			theThree = free_BigIntT(theThree);
-			
-			useless = free_BigPolyT(useless);
-			useless2 = free_BigPolyT(useless2);
-			uselessProd = free_BigPolyT(uselessProd); */
 			
 			bigMod = free_BigIntT(bigMod);
 			bigMatrix = free_BigIntMatrixT(bigMatrix);
@@ -1417,28 +1355,7 @@ int main(int argc, char* argv[])
 						possibleCycleLengths[j+1],
 						cycleTable[i][j]);
 					}
-			
-			
-			//OLD PRINTING METHOD - TRIANGULAR TABLE
-			/*
-			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
-			{
-				printf("%d\t|", possibleCycleLengths[i+1]);
-				for (int j = 0; j < i+1; j += 1)
-					printf("%d\t", cycleTable[i][j]);
-				printf("\n");
-			}
-			
-			//Axis at bottom of table
-			printf("\t ");
-			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
-				printf("-\t");
-			printf("\n\t ");
-			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
-				printf("%d\t", possibleCycleLengths[i]);
-			printf("\n");
-			*/
-			
+
 			A        = free_IntMatrixT(A);
 			currVect = free_IntMatrixT(currVect);
 			
@@ -1464,77 +1381,80 @@ int main(int argc, char* argv[])
 		printf("Tools:\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
-		": Iterate the initial matrix by the update matrix a given number of times.\n");
-		printf("   - " ANSI_COLOR_CYAN "iterations" ANSI_COLOR_RESET \
-		": Overrides the number of iterations provided in the .config file.\n\n");
+		": Iterate the initial matrix by the update matrix a given number of times.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Find the inverse of an update matrix under some modulus.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Find the inverse of an update matrix under some modulus.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Find the determinant of an update matrix under some modulus.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Find the determinant of an update matrix under some modulus.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Find the characteristic equation of an update matrix under some modulus.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Find the characteristic equation of an update matrix under some modulus.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "bigfloyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Same as floyd, but uses BigIntMatrixT and BigIntT structs instead of IntMatrixT and ints.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Same as floyd, but uses BigIntMatrixT and BigIntT structs instead of IntMatrixT and ints.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Finds and outputs some basic rotation matrices for the given modulus.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Finds and outputs some basic rotation matrices for the given modulus.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "size maxmod cycles..." ANSI_COLOR_RESET \
-		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n");
-		printf("   - " ANSI_COLOR_CYAN "size" ANSI_COLOR_RESET \
-		": Tells what size matrix to use.\n");
-		printf("   - " ANSI_COLOR_CYAN "maxmod" ANSI_COLOR_RESET \
-		": Tells which modulus to stop searching at.\n");
-		printf("   - " ANSI_COLOR_CYAN "cycles..." ANSI_COLOR_RESET \
-		": A list of cycle lengths for their respective vectors.\n\n");
+		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
-		": Generate the Fibonacci cycle that contains the initial vector.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Generate the Fibonacci cycle that contains the initial vector.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
-		": Calculate all possible Fibonacci cycle lengths.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Overrides the modulus provided in the .config file.\n\n");
+		": Calculate all possible Fibonacci cycle lengths.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET \
 		": Searches the Fibonacci numbers, checking whether a " \
-		"multiple of each number up to the bound appears before a multiple of a power of the number.\n");
-		printf("   - " ANSI_COLOR_CYAN "bound" ANSI_COLOR_RESET \
-		": Override the default upper bound of 100.\n\n");
+		"multiple of each number up to the bound appears before a multiple of a power of the number.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[power1] [power2] [modulus]" ANSI_COLOR_RESET \
 		": Iterates every vector in a space, recording their transient lengths and cycle lengths. " \
-		"It then computes the same numbers for a higher-powered modulus.\n");
-		printf("   - " ANSI_COLOR_CYAN "power1" ANSI_COLOR_RESET \
-		": Defines the lower power of modulus to check. Default is 1.\n");
-		printf("   - " ANSI_COLOR_CYAN "power2" ANSI_COLOR_RESET \
-		": Defines the higher power of modulus to check. Default is 2.\n");
-		printf("   - " ANSI_COLOR_CYAN "modulus" ANSI_COLOR_RESET \
-		": Override the modulus provided in the .config file.\n\n");
+		"It then computes the same numbers for a higher-powered modulus.\n\n");
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
+		
+		//Testing find_factors()
+		/*
+		int factorArr[1]  = {0};
+		int targetArr[1]  = {1};
+		int carryArr[1]   = {1};
+		int modulusArr[1] = {49};
+		
+		BigIntTP target  = new_BigIntT(targetArr, 1);
+		BigIntTP factor  = new_BigIntT(factorArr, 1);
+		BigIntTP carry   = new_BigIntT(carryArr, 1);
+		BigIntTP modulus = new_BigIntT(modulusArr, 1);
+		
+		BigIntTP* possibilities = malloc(sizeof(BigIntTP));
+		possibilities[0] = empty_BigIntT(1);
+		int possibilityCount = 0;
+		
+		possibilityCount = find_factors(target, factor, carry, modulus, &possibilities);
+		printf("Possibilities found: %d\n", possibilityCount);
+		for (int i = 0; i < possibilityCount; i += 1)
+		{
+			printi(possibilities[i]);
+			printf(" ");
+		}
+		printf("\n");
+		
+		target  = free_BigIntT(target);
+		factor  = free_BigIntT(factor);
+		carry   = free_BigIntT(carry);
+		modulus = free_BigIntT(modulus);
+		
+		for (int i = 0; i < possibilityCount+1; i += 1)
+			possibilities[i] = free_BigIntT(possibilities[i]);
+		FREE(possibilities);
+		*/
 	}
 	
 	//Freeing memory

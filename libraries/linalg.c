@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../headers/helper.h"
+
 #include "../headers/factors.h"
 #include "../headers/modular.h" //Allows for taking modular square roots
 #include "../headers/bigint.h"  //For BigIntMatrixT
@@ -21,8 +23,6 @@ https://www.c-programming-simple-steps.com/c-extern.html
 //Or maybe a simple void pointer will do
 
 extern const int MAXBUNCH; 
-
-typedef enum boolean {FALSE, TRUE} bool;
 
 typedef struct intmatrix
 /** Structure for holding matrix data and metadata (dimensions, e.g.). */
@@ -945,13 +945,55 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 }
 
 
+/* private */ int chara_eqn_sub_matrix(BigPolyTP** const A, int size, int x, int y, BigPolyTP** new)
+/** Calculates the submatrices required for chara_eqn_recurse(), stores
+    result in new. This function assumes new is the correct size.
+		Returns 1 on success, 0 otherwise. */
+{
+	//These two variables facilitate taking the correct rows and columns
+	// out of A
+	int xSkip = 0;
+	int ySkip = 0;
+	
+	for (int row = 0; row < size; row += 1)
+	{
+		if (row == x)
+		{
+			xSkip = -1;
+			continue;
+		}
+		
+		for (int col = 0; col < size; col += 1)
+		{
+			if (col == y)
+			{
+				ySkip = -1;
+				continue;
+			}
+			
+			//We can get away with just copying addresses here
+			new[row + xSkip][col + ySkip] = A[row][col];
+		}
+	}
+	
+	return 1;
+}
+
+
 /* private */ BigPolyTP chara_eqn_recurse(BigPolyTP** const A, BigIntTP mod, int size)
 /** Helper function for chara_eqn(). Returns the characteristic
     equation for a sub matrix. */
 {
+	//It might be nice to rewrite this function to pass
+	// along constant data instead of recalculating it each time...
+	
 	BigPolyTP result = empty_BigPolyT();
 	BigPolyTP temp   = empty_BigPolyT();
 	BigPolyTP temp2  = empty_BigPolyT();
+	
+	BigPolyTP subResult = empty_BigPolyT();
+	
+	BigPolyTP** subArr; //Holds a smaller array for calculating sub determinants
 	
 	int oneArr[] = {1};
 	BigIntTP one = new_BigIntT(oneArr, 1);
@@ -974,14 +1016,47 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	//Recursive case
 	else
 	{
+		//Allocate space for our sub array
+		subArr = malloc((size-1)*sizeof(BigPolyTP*));
+		for (int i = 0; i < size-1; i += 1)
+			subArr[i] = malloc((size-1)*sizeof(BigPolyTP));
+		
 		for (int i = 0; i < size; i += 1)
 		{
-			;
+			chara_eqn_sub_matrix(A, size, i, 0, subArr);
+			subResult = chara_eqn_recurse(subArr, mod, size-1);
+			
+			multiply_BigPolyT(A[i][0], subResult, temp);
+			
+			//Managing plus and minus signs accordingly
+			if (i % 2 == 0)
+			{
+				add_BigPolyT(temp, result, temp2);
+				copy_BigPolyT(temp2, result);
+			}
+			
+			else
+			{
+				multiply_BigPolyT(temp, minusOneConst, temp2);
+				add_BigPolyT(temp2, result, temp);
+				copy_BigPolyT(temp, result);
+			}
 		}
+		
+		//We only need to deallocate subArr itself
+		//The BigPolyTPs inside are just references
+		for (int i = 0; i < size-1; i += 1)
+		{
+			free(subArr[i]);
+			subArr[i] = NULL;
+		}
+		free(subArr);
+		subArr = NULL;
 	}
 	
 	temp = free_BigPolyT(temp);
 	temp2 = free_BigPolyT(temp2);
+	subResult = free_BigPolyT(subResult);
 	minusOneConst = free_BigPolyT(minusOneConst);
 	
 	one = free_BigIntT(one);
@@ -1047,19 +1122,6 @@ BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
 				algMat[row][col] = new_BigPolyT(&(A->matrix[row][col]), 1);
 		}
 	}
-	
-	//Now, let's test and see if this function actually works
-	/*
-	for (int i = 0; i < A->m; i += 1)
-	{
-		for (int j = 0; j < A->m; j += 1)
-		{
-			printp(algMat[i][j]);
-			printf(" ");
-		}
-		printf("\n");
-	}
-	*/
 	
 	//Ok, so we have our algebraic matrix
 	//Now, use it to get our characteristic equation

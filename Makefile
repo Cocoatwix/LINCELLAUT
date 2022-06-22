@@ -54,6 +54,7 @@ $(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c
 	
 $(OBJPATH)/$(LIB7).o:	$(LIBPATH)/$(LIB7).c
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB7).o $(LIBPATH)/$(LIB7).c
+
 	
 clean:
 	rm $(TARGET)
