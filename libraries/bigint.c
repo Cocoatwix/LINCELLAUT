@@ -40,9 +40,12 @@ BigIntTP free_BigIntT(BigIntTP n)
 /** Frees the memory used by a given BigIntT and
     returns NULL. */
 {
-	free(n->theInt);
-	n->theInt = NULL;
-	free(n);
+	if (n != NULL)
+	{
+		free(n->theInt);
+		n->theInt = NULL;
+		free(n);
+	}
 	return NULL;
 }
 

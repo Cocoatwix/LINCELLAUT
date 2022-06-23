@@ -169,14 +169,14 @@ void printp(BigPolyTP const p)
 	
 	for (int i = 0; i < p->size; i += 1)
 	{
+		//Logic surrounding when to print a +
+		if (i != 0)
+			if (compare_BigIntT(zero, p->coeffs[i-1]) != 0) //If last number wasn't zero
+				printf(" + ");
+					
 		//Only print if coefficient isn't zero
 		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
 		{
-			//Logic surrounding when to print a +
-			if (i != 0)
-				if (compare_BigIntT(zero, p->coeffs[i-1]) != 0) //If last number wasn't zero
-					printf(" + ");
-			
 			if (i == 0)
 				printi(p->coeffs[0]);
 			
@@ -645,6 +645,8 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 	int oneArr[1] = {1};
 	int twoArr[1] = {2};
 	
+	int degree = A->size; //Holds the degree of our polynomial as we reduce it
+	
 	BigIntTP zero = empty_BigIntT(1);
 	BigIntTP one  = new_BigIntT(oneArr, 1);
 	BigIntTP temp = empty_BigIntT(1);
@@ -715,10 +717,10 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 			factors = realloc(factors, (numOfFactorsSmall+2)*sizeof(BigPolyTP));
 			factors[numOfFactorsSmall] = new_BigPolyT(factorToTest, A->size);
 			
-			/*printf("\nFactor: ");
+			printf("\nFactor: ");
 			//Also check what the factor was that reduced our polynomial down to what it is
 			printp(factors[numOfFactorsSmall]);
-			printf("\n"); */
+			printf("\n");
 			
 			//Divide polynomial by our newfound factor, continue
 			//Also, start checking the lower factors again since we're
@@ -733,10 +735,18 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 					copy_BigIntT(zero, factorToTest[i]);
 				
 				copy_BigIntT(polyRemainder[i], currentPoly[i]);
-				//printi(currentPoly[i]);
-				//printf(" ");
+				printi(currentPoly[i]);
+				printf(" ");
 			}
-			//printf("\n");
+			printf("\n");
+			
+			//Calculating degree of newly reduced polynomial
+			for (int i = A->size-1; i >= 0; i += 1)
+				if (compare_BigIntT(zero, currentPoly[i]) != 0)
+				{
+					degree = i;
+					break;
+				}
 		}
 		
 		//Check to see if our currentPoly is a constant
@@ -775,7 +785,7 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 		else
 		{
 			allPolyTested = TRUE;
-			for (int i = 0; i < A->size; i += 1)
+			for (int i = 0; i <= degree; i += 1)
 			{
 				add_BigIntT(factorToTest[i], one, temp);
 				mod_BigIntT(temp, mod, factorToTest[i]);

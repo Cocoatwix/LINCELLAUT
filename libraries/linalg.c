@@ -16,6 +16,7 @@
 /* The following resources were used as a reference:
 https://stackoverflow.com/a/6317375
 https://www.c-programming-simple-steps.com/c-extern.html
+https://stackoverflow.com/questions/13239369/
 */
 
 //Maybe I could make a generic struct that has a union as its matrix
@@ -953,10 +954,13 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	//These two variables facilitate taking the correct rows and columns
 	// out of A
 	int xSkip = 0;
-	int ySkip = 0;
+	int ySkip;
 	
 	for (int row = 0; row < size; row += 1)
 	{
+		//Preventing indexing errors
+		ySkip = 0;
+		
 		if (row == x)
 		{
 			xSkip = -1;
@@ -975,6 +979,32 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			new[row + xSkip][col + ySkip] = A[row][col];
 		}
 	}
+	
+	/*printf("original array:\n");
+	for (int i = 0; i < size; i += 1)
+	{
+		for (int j = 0; j < size; j += 1)
+		{
+			printp(A[i][j]);
+			printf(", ");
+		}
+		printf("\n");
+	}
+	printf("\n");
+	
+	printf("Split @ %d %d\n", x, y);
+	
+	printf("subarray:\n");
+	for (int i = 0; i < size-1; i += 1)
+	{
+		for (int j = 0; j < size-1; j += 1)
+		{
+			printp(new[i][j]);
+			printf(", ");
+		}
+		printf("\n");
+	}
+	printf("\n"); */
 	
 	return 1;
 }
@@ -1023,10 +1053,10 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		
 		for (int i = 0; i < size; i += 1)
 		{
-			chara_eqn_sub_matrix(A, size, i, 0, subArr);
+			chara_eqn_sub_matrix(A, size, 0, i, subArr);
 			subResult = chara_eqn_recurse(subArr, mod, size-1);
 			
-			multiply_BigPolyT(A[i][0], subResult, temp);
+			multiply_BigPolyT(A[0][i], subResult, temp);
 			
 			//Managing plus and minus signs accordingly
 			if (i % 2 == 0)
@@ -1045,14 +1075,19 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		
 		//We only need to deallocate subArr itself
 		//The BigPolyTPs inside are just references
-		for (int i = 0; i < size-1; i += 1)
+		//No need to free an array that doesn't exist
+		for (int j = 0; j < size-1; j += 1)
 		{
-			free(subArr[i]);
-			subArr[i] = NULL;
+			free(subArr[j]);
+			subArr[j] = NULL;
 		}
 		free(subArr);
 		subArr = NULL;
 	}
+	
+	//Reduce result by modulus
+	mod_BigPolyT(result, mod, temp);
+	copy_BigPolyT(temp, result);
 	
 	temp = free_BigPolyT(temp);
 	temp2 = free_BigPolyT(temp2);
@@ -1061,6 +1096,24 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	
 	one = free_BigIntT(one);
 	minusOne = free_BigIntT(minusOne);
+	
+	/* DEBUG */
+	
+	/*printf("\nAlgebraic matrix:\n");
+	for (int i = 0; i < size; i += 1)
+	{
+		for (int j = 0; j < size; j += 1)
+		{
+			printp(A[i][j]);
+			printf(" || ");
+		}
+		printf("\n");
+	}
+	printf("\n");
+
+	printp(result);
+	printf("\n");
+	//getchar(); */
 	
 	return result;
 }

@@ -289,11 +289,11 @@ int main(int argc, char* argv[])
 		{
 			int oneArr[1] = {1};
 			
-			BigIntTP bigMod;
-			BigIntTP counter; //For displaying the factors we get
-			BigIntTP one;
-			BigIntTP temp;
-			BigIntTP numberOfTerms;
+			BigIntTP bigMod = NULL;
+			BigIntTP counter = NULL; //For displaying the factors we get
+			BigIntTP one = NULL;
+			BigIntTP temp = NULL;
+			BigIntTP numberOfTerms = NULL;
 			
 			int smallCounter = 0;
 			
@@ -332,11 +332,12 @@ int main(int argc, char* argv[])
 			}
 			
 			//Actually calculate the characteristic equation here
-			bigEqn = chara_eqn(bigMatrix, bigMod);
 			printf("Matrix:\n");
 			printbm(bigMatrix);
-			printf("Modulus: ");
+			printf("\nModulus: ");
 			printi(bigMod);
+			printf("\n");
+			bigEqn = chara_eqn(bigMatrix, bigMod);
 			printf("\nCharacteristic equation: ");
 			printp(bigEqn);
 			printf("\n\n");
