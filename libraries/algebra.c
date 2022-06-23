@@ -125,6 +125,13 @@ int degree(BigPolyTP const p)
 }
 
 
+BigIntTP constant(BigPolyTP const p)
+/** Returns the constant term of a BigPolyTP. */
+{
+	return p->coeffs[0];
+}
+
+
 int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 /** Copies a polynomial and stores it in another BigPolyTP.
     Returns 1 on success, 0 otherwise. */
@@ -165,6 +172,11 @@ void printp(BigPolyTP const p)
 		//Only print if coefficient isn't zero
 		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
 		{
+			//Logic surrounding when to print a +
+			if (i != 0)
+				if (compare_BigIntT(zero, p->coeffs[i-1]) != 0) //If last number wasn't zero
+					printf(" + ");
+			
 			if (i == 0)
 				printi(p->coeffs[0]);
 			
@@ -179,9 +191,6 @@ void printp(BigPolyTP const p)
 				printi(p->coeffs[i]);
 				printf("λ^%d", i);
 			}
-			
-			if (i != p->size-1)
-				printf(" + ");
 		}
 	}
 	
@@ -383,6 +392,16 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	int firstNonZeroTerm;
 	int lastNonZeroTerm;
 	
+	int degree; //Degree of prod
+	
+	/*printf("Current polynomial to make:\n");
+	for (int i = 0; i < size; i += 1)
+	{
+		printi(prod[i]);
+		printf(" ");
+	}
+	printf("\n\n"); */
+	
 	BigIntTP zero = empty_BigIntT(1);
 	
 	//Find the first nonzero entry in our polynomial
@@ -401,6 +420,13 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 			break;
 		}
 		
+	for (int i = size-1; i >= 0; i -= 1)
+		if (compare_BigIntT(zero, prod[i]) != 0)
+		{
+			degree = i;
+			break;
+		}
+		
 	//The first nonzero element in prod must come at least as late as fact's
 	//Otherwise, fact can't possibly be a factor
 	for (int i = 0; i < size; i += 1)
@@ -415,7 +441,7 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		}
 	}
 	
-	printf("place: %d\n\n", place);
+	/*printf("place: %d\n\n", place);
 	printf("Factor to check: ");
 	for (int i = 0; i < size; i += 1)
 	{
@@ -430,7 +456,7 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		printi(carries[i]);
 		printf(" ");
 	}
-	printf("\n\n");
+	printf("\n\n"); */
 	
 	BigIntTP* toMultiplyBy = malloc(sizeof(BigIntTP));
 	BigIntTP* newCarries   = malloc(size*sizeof(BigIntTP));
@@ -445,9 +471,9 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	int possibilities = 0;
 	
 	//Iterate over the rest of the polynomial, do the multiplication
-	for (int i = place; i < size-lastNonZeroTerm; i += 1)
+	for (int i = place; i <= degree-lastNonZeroTerm; i += 1)
 	{
-		printf("i: %d\n", i);
+		//printf("i: %d\n", i);
 		//Preparing for numbers to be copied into this pointer
 		toMultiplyBy[0] = empty_BigIntT(1);
 		
@@ -458,13 +484,13 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 																 mod, 
 																 &toMultiplyBy);
 		
-		printf("Possibilities found: ");
+		/*printf("Possibilities found: ");
 		for (int pp = 0; pp < possibilities; pp += 1)
 		{
 			printi(toMultiplyBy[pp]);
 			printf(" ");
 		}
-		printf("\n\n");
+		printf("\n\n"); */
 		
 		//If there's no way our current factor can be a factor
 		if (possibilities == 0)
@@ -502,7 +528,7 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 				for (int c = firstNonZeroTerm; c < size; c += 1)
 					copy_BigIntT(carries[c], newCarries[c]);
 				
-				for (int c = firstNonZeroTerm; c <= lastNonZeroTerm; c += 1)
+				for (int c = firstNonZeroTerm+i; c <= lastNonZeroTerm; c += 1)
 				{
 					multiply_BigIntT(toMultiplyBy[f], fact[c], temp);
 					add_BigIntT(temp, newCarries[c+i], temp2);
@@ -517,9 +543,27 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 					/* isPossible = TRUE;
 					f = possibilities; */
 					
-					return TRUE;
+					isPossible = TRUE;
+					break;
 				}
 			}
+			
+			//Free memory before leaving function
+			for (int j = 0; j < possibilities+1; j += 1)
+				toMultiplyBy[j] = free_BigIntT(toMultiplyBy[j]);
+			free(toMultiplyBy);
+			toMultiplyBy = NULL;
+			
+			for (int j = 0; j < size; j += 1)
+				newCarries[j] = free_BigIntT(newCarries[j]);
+			free(newCarries);
+			newCarries = NULL;
+			
+			temp  = free_BigIntT(temp);
+			temp2 = free_BigIntT(temp2);
+			zero = free_BigIntT(zero);
+	
+			return isPossible;
 		}
 		
 		//Get toMultiplyBy ready for next term
@@ -529,13 +573,13 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		toMultiplyBy = realloc(toMultiplyBy, sizeof(BigIntTP));
 		
 		//Print out other so I can get a sense for what this thing looks like
-		printf("Other factor: ");
+		/*printf("Other factor: ");
 		for (int ii = 0; ii < size; ii += 1)
 		{
 			printi(other[ii]);
 			printf(" ");
 		}
-		printf("\n\n");
+		printf("\n\n"); */
 	}
 
 	free(toMultiplyBy);
@@ -555,19 +599,38 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	//... or do I?
 	if (isPossible)
 	{
-		printf("Checking carries...\n");
+		/*printf("Checking carries...\n");
+		printf("Current carries: ");
+		for (int i = 0; i < size; i += 1)
+		{
+			printi(carries[i]);
+			printf(" ");
+		}
+		printf("\n\n"); */
+		
 		//Check to see if the remaining carries finish the polynomial
 		//This check only happens on a non-recursive fallout
-		for (int i = size-lastNonZeroTerm; i < size; i += 1)
+		for (int i = degree-lastNonZeroTerm; i < size; i += 1)
 			if (compare_BigIntT(prod[i], carries[i]) != 0)
 			{
 				isPossible = FALSE;
 				break;
 			}
-	} 
-	getchar();
+	}
 	
+	//Print out other so I can get a sense for what this thing looks like
+	/*printf("Other factor: ");
+	for (int ii = 0; ii < size; ii += 1)
+	{
+		printi(other[ii]);
+		printf(" ");
+	}
+	printf("\n\n");
+		
 	printf("%d\n", isPossible);
+	if (isPossible)
+		getchar();
+	printf("~~~~~~~~~~~~~~~~~~~~~~~~~~\n"); */
 	return isPossible;
 }
 
@@ -585,11 +648,14 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 	BigIntTP zero = empty_BigIntT(1);
 	BigIntTP one  = new_BigIntT(oneArr, 1);
 	BigIntTP temp = empty_BigIntT(1);
+	BigIntTP minusOne = empty_BigIntT(1);
+	subtract_BigIntT(mod, one, minusOne);
 	
 	BigPolyTP* factors = malloc(2*sizeof(BigPolyTP));
 	BigPolyTP oneConstant  = constant_BigPolyT(one);
 	BigPolyTP tempPoly = empty_BigPolyT();
 	BigPolyTP numOfFactors = constant_BigPolyT(zero);
+	
 	int numOfFactorsSmall = 0;
 	factors[0] = numOfFactors;
 	
@@ -642,45 +708,83 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 														 A->size,
 														 0))
 		{
-			printf("hey!\n");
 			add_BigPolyT(numOfFactors, oneConstant, tempPoly);
 			numOfFactorsSmall += 1;
 			copy_BigPolyT(tempPoly, factors[0]);
 			
 			factors = realloc(factors, (numOfFactorsSmall+2)*sizeof(BigPolyTP));
-			factors[numOfFactorsSmall] = new_BigPolyT(polyRemainder, A->size);
+			factors[numOfFactorsSmall] = new_BigPolyT(factorToTest, A->size);
+			
+			/*printf("\nFactor: ");
+			//Also check what the factor was that reduced our polynomial down to what it is
+			printp(factors[numOfFactorsSmall]);
+			printf("\n"); */
 			
 			//Divide polynomial by our newfound factor, continue
-			//Also print it for testing...
+			//Also, start checking the lower factors again since we're
+			// essentially checking a new polynomial now that we've divided
 			for (int i = 0; i < A->size; i += 1)
 			{
-				copy_BigIntT(polyRemainder[i], factorToTest[i]);
-				printi(polyRemainder[i]);
-				printf(" ");
+				//This allows us to start checking at 1λ again
+				if (i == 0)
+					copy_BigIntT(minusOne, factorToTest[0]);
+				
+				else
+					copy_BigIntT(zero, factorToTest[i]);
+				
+				copy_BigIntT(polyRemainder[i], currentPoly[i]);
+				//printi(currentPoly[i]);
+				//printf(" ");
 			}
-			printf("\n");
+			//printf("\n");
 		}
 		
-		/*
-		printf("Current factor: ");
+		//Check to see if our currentPoly is a constant
+		//If it is, just add that constant to our factors and call it a day
+		allPolyTested = TRUE;
+		for (int i = 0; i < A->size; i += 1)
+		{
+			if (i != 0)
+				if (compare_BigIntT(currentPoly[i], zero) != 0)
+				{
+					allPolyTested = FALSE;
+					break;
+				}
+		}
+		
+		//If we only have a constant left
+		if (allPolyTested)
+		{
+			add_BigPolyT(numOfFactors, oneConstant, tempPoly);
+			numOfFactorsSmall += 1;
+			copy_BigPolyT(tempPoly, factors[0]);
+			
+			factors = realloc(factors, (numOfFactorsSmall+2)*sizeof(BigPolyTP));
+			factors[numOfFactorsSmall] = new_BigPolyT(currentPoly, A->size);
+		}
+		
+		/*printf("Current factor: ");
 		for (int i = 0; i < A->size; i += 1)
 		{
 			printi(factorToTest[i]);
 			printf(" ");
 		}
-		printf("\n");
-		*/
+		printf("\n"); */
 		
-		allPolyTested = TRUE;
-		for (int i = 0; i < A->size; i += 1)
+		//Else, continue iterating as normal
+		else
 		{
-			add_BigIntT(factorToTest[i], one, temp);
-			mod_BigIntT(temp, mod, factorToTest[i]);
-			
-			if (compare_BigIntT(factorToTest[i], zero) != 0)
+			allPolyTested = TRUE;
+			for (int i = 0; i < A->size; i += 1)
 			{
-				allPolyTested = FALSE;
-				break;
+				add_BigIntT(factorToTest[i], one, temp);
+				mod_BigIntT(temp, mod, factorToTest[i]);
+				
+				if (compare_BigIntT(factorToTest[i], zero) != 0)
+				{
+					allPolyTested = FALSE;
+					break;
+				}
 			}
 		}
 	}
@@ -705,9 +809,10 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 	Give user factors when done.
 	*/
 	
-	zero = free_BigIntT(zero);
-	temp = free_BigIntT(temp);
-	one  = free_BigIntT(one);
+	zero     = free_BigIntT(zero);
+	temp     = free_BigIntT(temp);
+	one      = free_BigIntT(one);
+	minusOne = free_BigIntT(minusOne);
 	
 	oneConstant = free_BigPolyT(oneConstant);
 	tempPoly    = free_BigPolyT(tempPoly);

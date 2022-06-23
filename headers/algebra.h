@@ -25,6 +25,9 @@ BigPolyTP empty_BigPolyT();
 /** Returns the degree of the given polynomial. */
 int degree(BigPolyTP const);
 
+/** Returns the constant term of a BigPolyTP. */
+BigIntTP constant(BigPolyTP const);
+
 /** Copies a polynomial into another. This function assumes
     all arguments have been properly initialised.
 		Returns 1 on success, 0 otherwise. */

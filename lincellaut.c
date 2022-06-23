@@ -287,7 +287,16 @@ int main(int argc, char* argv[])
 		//Find the characteristic equation of the update matrix
 		else if (! strcmp(argv[1], "chara"))
 		{
+			int oneArr[1] = {1};
+			
 			BigIntTP bigMod;
+			BigIntTP counter; //For displaying the factors we get
+			BigIntTP one;
+			BigIntTP temp;
+			BigIntTP numberOfTerms;
+			
+			int smallCounter = 0;
+			
 			BigIntMatrixTP bigMatrix;
 			
 			BigPolyTP bigEqn;
@@ -335,16 +344,33 @@ int main(int argc, char* argv[])
 			printf("Factored characteristic equation:\n");
 			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
 			
-			for (int i = 0; i < degree(bigEqn); i += 1)
+			one  = new_BigIntT(oneArr, 1);
+			temp = empty_BigIntT(1);
+			numberOfTerms = empty_BigIntT(1);
+			copy_BigIntT(constant(bigEqnFactors[0]), numberOfTerms);
+			
+			for (counter = empty_BigIntT(1); 
+			     compare_BigIntT(numberOfTerms, counter) >= 0; 
+					 add_BigIntT(one, counter, temp), copy_BigIntT(temp, counter), smallCounter += 1)
 			{
-				printp(bigEqnFactors[i]);
-				printf(" ");
-				bigEqnFactors[i] = free_BigPolyT(bigEqnFactors[i]);
+				if (smallCounter != 0)
+				{
+					printf("(");
+					printp(bigEqnFactors[smallCounter]);
+					printf(")");
+				}
+				bigEqnFactors[smallCounter] = free_BigPolyT(bigEqnFactors[smallCounter]);
 			}
 			FREE(bigEqnFactors);
 			printf("\n");
 			
-			bigMod = free_BigIntT(bigMod);
+			bigMod  = free_BigIntT(bigMod);
+			counter = free_BigIntT(counter);
+			temp    = free_BigIntT(temp);
+			one     = free_BigIntT(one);
+			
+			numberOfTerms = free_BigIntT(numberOfTerms);
+			
 			bigMatrix = free_BigIntMatrixT(bigMatrix);
 			bigEqn = free_BigPolyT(bigEqn);
 		}
