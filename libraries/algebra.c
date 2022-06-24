@@ -121,7 +121,7 @@ int reduce_BigPolyT(BigPolyTP p)
 int degree(BigPolyTP const p)
 /** Returns the degree of a BigPolyTP. */
 {
-	return p->size;
+	return p->size - 1;
 }
 
 
@@ -166,17 +166,25 @@ void printp(BigPolyTP const p)
 /** Outputs a BigPolyTP to stdout. */
 {
 	BigIntTP zero = empty_BigIntT(1);
+	bool printPlus = FALSE;
 	
 	for (int i = 0; i < p->size; i += 1)
 	{
 		//Logic surrounding when to print a +
 		if (i != 0)
 			if (compare_BigIntT(zero, p->coeffs[i-1]) != 0) //If last number wasn't zero
-				printf(" + ");
+				printPlus = TRUE;
 					
 		//Only print if coefficient isn't zero
 		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
 		{
+			//Prevents a + when all other terms are zero afterwards
+			if (printPlus)
+			{
+				printf(" + ");
+				printPlus = FALSE;
+			}
+			
 			if (i == 0)
 				printi(p->coeffs[0]);
 			
@@ -263,10 +271,15 @@ int multiply_BigPolyT(BigPolyTP const A, BigPolyTP const B, BigPolyTP product)
 		
 		product->size = A->size + B->size - 1;
 		product->coeffs = realloc(product->coeffs, (product->size)*sizeof(BigIntTP));
+		
+		for (int i = 0; i < product->size; i += 1)
+			product->coeffs[i] = empty_BigIntT(1);
 	}
 	
-	for (int i = 0; i < product->size; i += 1)
-		product->coeffs[i] = empty_BigIntT(1);
+	//Zeroing out all coefficients
+	else
+		for (int i = 0; i < product->size; i += 1)
+			copy_BigIntT(temp, product->coeffs[i]);
 	
 	//Iterate through both polynomials, multiply them through
 	for (int a = 0; a < A->size; a += 1)
@@ -643,7 +656,7 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 		This function assumes the degree of A is at least 2. */
 {
 	int oneArr[1] = {1};
-	int twoArr[1] = {2};
+	//int twoArr[1] = {2};
 	
 	int degree = A->size; //Holds the degree of our polynomial as we reduce it
 	
@@ -740,8 +753,10 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 			}
 			printf("\n");
 			
+			//printf(":)\n");
+			
 			//Calculating degree of newly reduced polynomial
-			for (int i = A->size-1; i >= 0; i += 1)
+			for (int i = A->size-1; i >= 0; i -= 1)
 				if (compare_BigIntT(zero, currentPoly[i]) != 0)
 				{
 					degree = i;

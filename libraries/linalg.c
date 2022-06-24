@@ -573,7 +573,7 @@ void printbm(BigIntMatrixTP M)
 				for (int z = 1; z < MAXBUNCH; z *= 10)
 					printf("0");
 				
-			printi(M->matrix[row][col]);
+			printi_pad(M->matrix[row][col]);
 			printf(" ");
 		}
 		printf("\n");
@@ -1085,9 +1085,11 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		subArr = NULL;
 	}
 	
+	/*
 	//Reduce result by modulus
 	mod_BigPolyT(result, mod, temp);
 	copy_BigPolyT(temp, result);
+	*/
 	
 	temp = free_BigPolyT(temp);
 	temp2 = free_BigPolyT(temp2);
@@ -1127,7 +1129,6 @@ BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
 		matrix. Returns NULL on error. */
 {
 	BigPolyTP chara = NULL;
-	BigPolyTP moddedChara; //Holds chara eqn % mod
 	BigPolyTP** algMat;
 	
 	//For creating the BigPolyTP 2D array below
@@ -1179,8 +1180,6 @@ BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
 	//Ok, so we have our algebraic matrix
 	//Now, use it to get our characteristic equation
 	chara = chara_eqn_recurse(algMat, mod, A->m);
-	moddedChara = empty_BigPolyT();
-	mod_BigPolyT(chara, mod, moddedChara);
 	
 	//Now, free the horrible matrix we created
 	for (int row = 0; row < A->m; row += 1)
@@ -1202,9 +1201,7 @@ BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
 	one = free_BigIntT(one);
 	minusOne = free_BigIntT(minusOne);
 	
-	chara = free_BigPolyT(chara);
-	
-	return moddedChara;
+	return chara;
 }
 
 

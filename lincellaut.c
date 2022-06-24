@@ -28,6 +28,9 @@ https://stackoverflow.com/questions/3219393
 #include "headers/algebra.h"
 
 #define FREE(v) free(v); v = NULL
+#define op(a, b, c, o) printf("("); printp(a); printf(")"); printf(o); \
+											 printf("("); printp(b); printf(")"); printf(" == "); \
+											 printp(c); printf("\n")
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -1448,40 +1451,77 @@ int main(int argc, char* argv[])
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		//Testing find_factors()
-		/*
-		int factorArr[1]  = {0};
-		int targetArr[1]  = {1};
-		int carryArr[1]   = {1};
-		int modulusArr[1] = {49};
+		//Testing polynomial code
+		int randArr1[] = {9673618, 3476299, 18439610};
+		int randArr2[] = {1767099};
+		int randArr3[] = {1850569, 11820014, 84934910};
 		
-		BigIntTP target  = new_BigIntT(targetArr, 1);
-		BigIntTP factor  = new_BigIntT(factorArr, 1);
-		BigIntTP carry   = new_BigIntT(carryArr, 1);
-		BigIntTP modulus = new_BigIntT(modulusArr, 1);
+		BigIntTP rand1 = new_BigIntT(randArr1, 3);
+		BigIntTP rand2 = new_BigIntT(randArr2, 1);
+		BigIntTP rand3 = new_BigIntT(randArr3, 3);
+		BigIntTP tempInt = empty_BigIntT(1);
 		
-		BigIntTP* possibilities = malloc(sizeof(BigIntTP));
-		possibilities[0] = empty_BigIntT(1);
-		int possibilityCount = 0;
+		BigIntTP pArr1[] = {rand1, rand2, rand3};
+		BigIntTP pArr2[] = {rand2};
+		BigIntTP pArr3[] = {rand3, rand1};
 		
-		possibilityCount = find_factors(target, factor, carry, modulus, &possibilities);
-		printf("Possibilities found: %d\n", possibilityCount);
-		for (int i = 0; i < possibilityCount; i += 1)
-		{
-			printi(possibilities[i]);
-			printf(" ");
-		}
+		BigPolyTP p1 = new_BigPolyT(pArr1, 3);
+		BigPolyTP p2 = new_BigPolyT(pArr2, 1);
+		BigPolyTP p3 = new_BigPolyT(pArr3, 2);
+		BigPolyTP temp = empty_BigPolyT();
+		
+		printi(rand1);
+		printf(" * \n");
+		printi(rand3);
+		printf("\n");
+		multiply_BigIntT(rand1, rand3, tempInt);
+		printf("\n");
+		printi(tempInt);
 		printf("\n");
 		
-		target  = free_BigIntT(target);
-		factor  = free_BigIntT(factor);
-		carry   = free_BigIntT(carry);
-		modulus = free_BigIntT(modulus);
-		
-		for (int i = 0; i < possibilityCount+1; i += 1)
-			possibilities[i] = free_BigIntT(possibilities[i]);
-		FREE(possibilities);
+		/*
+		printf("Polynomials:\n");
+		printp(p1);
+		printf("\n");
+		printp(p2);
+		printf("\n");
+		printp(p3);
+		printf("\n");
 		*/
+		
+		/*
+		//Testing adding
+		add_BigPolyT(p1, p2, temp);
+		op(p1, p2, temp, " + ");
+		add_BigPolyT(p1, p3, temp);
+		op(p1, p3, temp, " + ");
+		add_BigPolyT(p2, p3, temp);
+		op(p2, p3, temp, " + ");
+		add_BigPolyT(p3, p2, temp);
+		op(p3, p2, temp, " + ");
+		*/
+		
+		/*
+		//Testing multiplication
+		multiply_BigPolyT(p1, p3, temp);
+		op(p1, p3, temp, " * ");
+		multiply_BigPolyT(p3, p1, temp);
+		op(p3, p1, temp, " * ");
+		multiply_BigPolyT(p1, p2, temp);
+		op(p1, p2, temp, " * ");
+		multiply_BigPolyT(p2, p3, temp);
+		op(p2, p3, temp, " * ");
+		*/
+		
+		p1 = free_BigPolyT(p1);
+		p2 = free_BigPolyT(p2);
+		p3 = free_BigPolyT(p3);
+		temp = free_BigPolyT(temp);
+		
+		rand1 = free_BigIntT(rand1);
+		rand2 = free_BigIntT(rand2);
+		rand3 = free_BigIntT(rand3);
+		tempInt = free_BigIntT(tempInt);
 	}
 	
 	//Freeing memory

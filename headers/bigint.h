@@ -31,12 +31,16 @@ BigIntTP empty_BigIntT(int);
 int strtoBIT(char* const, BigIntTP*);
 
 /** Returns the size of the BigIntT passed. */
-int size(BigIntTP);
+int size(BigIntTP const);
 
 /** Prints a BigIntT struct as an integer would be printed.
     This function does not print a newline or spaces
 		around the number. */
-void printi(BigIntTP);
+void printi(BigIntTP const);
+
+/** Same as printi, except zero padding is added 
+    to the beginning of the number. */
+void printi_pad(BigIntTP const);
 
 /** Same as printi, but outputs to a file stream. */
 void fprinti(FILE*, BigIntTP);

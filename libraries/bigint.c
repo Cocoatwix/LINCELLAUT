@@ -15,6 +15,8 @@ May 24, 2022
 #include "../headers/linalg.h" //num_digits()
 
 //How big each bunch in a BigIntT can be
+//This limit was chosen so that the multiply_by_ten() function
+// doesn't cause an overflow.
 const int MAXBUNCH = 100000000;
 
 /*
@@ -139,15 +141,42 @@ int strtoBIT(char* const numStr, BigIntTP* theBig)
 }
 
 
-int size(BigIntTP n)
+int size(BigIntTP const n)
 /** Returns the size of the BigIntT passed. */
 {
 	return n->size;
 }
 
 
-void printi(BigIntTP n)
+void printi(BigIntTP const n)
 /** Prints a BigIntT struct to the screen as a normal int would. */
+{
+	int power = 0;
+	int tempMaxBunch = MAXBUNCH;
+	
+	if (MAXBUNCH % 10 == 0)
+	{
+		//Getting what power of 10 our MAXBUNCH is
+		while (tempMaxBunch > 1)
+		{
+			tempMaxBunch /= 10;
+			power += 1;
+		}
+		
+		for (int i = n->size-1; i >= 0; i -= 1)
+		{
+			if (i != n->size-1)
+				for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
+					printf("0");
+
+			printf("%d", n->theInt[i]);
+		}
+	}
+}
+
+
+void printi_pad(BigIntTP const n)
+/** Same as printi(), except zero padding is added. */
 {
 	int power = 0;
 	int tempMaxBunch = MAXBUNCH;
@@ -566,7 +595,7 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	//Prepare our variables for the multiplication
 	clear_BigIntT(product);
 	copy_BigIntT(B, tempLot);
-	
+
 	//Prepare to add B a bunch of times
 	if (A->size > 1)
 	{
@@ -575,7 +604,7 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	}
 	
 	//Multiply by ten a few times to get the size perfect
-	for (int i = 0; i < num_digits(A->theInt[A->size-1]) - 1; i += 1)
+	for (int i = 0; i < num_digits(A->theInt[A->size-1])-1; i += 1)
 		multiply_by_ten(tempLot);
 	
 	//tempLot should now be the correct magnitude for adding
@@ -598,7 +627,8 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 			bunchMagnitude = MAXBUNCH / 10;
 		
 		//Now, extract the digits from the bunchValue, use them to add tempLot
-		while (bunchValue != 0)
+		//(bunchMagnitude > 0) ensures tempLot remains the correct magnitude 
+		while ((bunchValue != 0) || (bunchMagnitude > 0))
 		{
 			for (int i = 0; i < bunchValue / bunchMagnitude; i += 1)
 			{
@@ -619,7 +649,7 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	return 1;
 }
 
-
+//CHECK THIS FUNCTION FOR A SIMILAR ERROR TO multiply_BigIntT()
 int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP quotient)
 /** Divides the first BigIntT by the second, and stores the
     result in the third BigIntT. This function assumes
@@ -729,7 +759,6 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 						divide_by_ten(divisorMagnitude);
 					}
 				}
-				
 			}
 		}
 	}
@@ -745,7 +774,7 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 	return 1;
 }
 
-
+//CHECK THIS FUNCTION FOR A SIMILAR ERROR TO multiply_BigIntT()
 int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 /** Calculates toMod % modulus and stores it in residue.
     Returns 1 on success, 0 otherwise. */
