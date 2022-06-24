@@ -28,9 +28,12 @@ https://stackoverflow.com/questions/3219393
 #include "headers/algebra.h"
 
 #define FREE(v) free(v); v = NULL
-#define op(a, b, c, o) printf("("); printp(a); printf(")"); printf(o); \
-											 printf("("); printp(b); printf(")"); printf(" == "); \
-											 printp(c); printf("\n")
+#define opp(a, b, c, o) printf("("); printp(a); printf(")"); printf(o); \
+											  printf("("); printp(b); printf(")"); printf(" == "); \
+											  printp(c); printf("\n")
+#define opi(a, b, c, o) printf("("); printi(a); printf(")"); printf(o); \
+											  printf("("); printi(b); printf(")"); printf(" == "); \
+											  printi(c); printf("\n")
 
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
@@ -1451,6 +1454,7 @@ int main(int argc, char* argv[])
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
+		/*
 		//Testing polynomial code
 		int randArr1[] = {9673618, 3476299, 18439610};
 		int randArr2[] = {1767099};
@@ -1470,16 +1474,14 @@ int main(int argc, char* argv[])
 		BigPolyTP p3 = new_BigPolyT(pArr3, 2);
 		BigPolyTP temp = empty_BigPolyT();
 		
-		printi(rand1);
-		printf(" * \n");
-		printi(rand3);
-		printf("\n");
-		multiply_BigIntT(rand1, rand3, tempInt);
-		printf("\n");
-		printi(tempInt);
-		printf("\n");
+		divide_BigIntT(rand3, rand1, tempInt);
+		opi(rand3, rand1, tempInt, " // ");
+		divide_BigIntT(rand3, rand2, tempInt);
+		opi(rand3, rand2, tempInt, " // ");
+		divide_BigIntT(rand1, rand2, tempInt);
+		opi(rand1, rand2, tempInt, " // ");
 		
-		/*
+		
 		printf("Polynomials:\n");
 		printp(p1);
 		printf("\n");
@@ -1511,7 +1513,7 @@ int main(int argc, char* argv[])
 		op(p1, p2, temp, " * ");
 		multiply_BigPolyT(p2, p3, temp);
 		op(p2, p3, temp, " * ");
-		*/
+		
 		
 		p1 = free_BigPolyT(p1);
 		p2 = free_BigPolyT(p2);
@@ -1521,7 +1523,7 @@ int main(int argc, char* argv[])
 		rand1 = free_BigIntT(rand1);
 		rand2 = free_BigIntT(rand2);
 		rand3 = free_BigIntT(rand3);
-		tempInt = free_BigIntT(tempInt);
+		tempInt = free_BigIntT(tempInt); */
 	}
 	
 	//Freeing memory

@@ -649,7 +649,7 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	return 1;
 }
 
-//CHECK THIS FUNCTION FOR A SIMILAR ERROR TO multiply_BigIntT()
+
 int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP quotient)
 /** Divides the first BigIntT by the second, and stores the
     result in the third BigIntT. This function assumes
@@ -690,7 +690,7 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 	//Don't worry about the size of quotient,
 	// it sorts itself out once it gets chucked into a function
 	clear_BigIntT(quotient);
-	quotient->size = 1;
+	//quotient->size = 1; //I don't think I need this line
 	
 	//If there's actually some meaningful division to do
 	// (if toDivide > divideBy)
@@ -707,7 +707,18 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 			copy_BigIntT(temp, tempDivisor);
 		}
 		
+		/*printf("Size of toDivide's MSB: %d\n", num_digits(toDivide->theInt[toDivide->size-1]));
+		printf("Size of tempDivisor's MSB: %d\n", num_digits(tempDivisor->theInt[toDivide->size-1]));
+		
+		printf("toDivide: ");
+		printi(toDivide);
+		printf("\ntempDivisor: ");
+		printi(tempDivisor);
+		printf("\n"); */
+		
 		//Get tempDivisor as close to toDivide as possible
+		//Shouldn't use a for loop here since numbers with the name number of
+		// digits in their most significant bunch can be different in size
 		while (compare_BigIntT(tempDivisor, toDivide) <= 0)
 		{
 			multiply_by_ten(tempDivisor);
@@ -717,14 +728,7 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 		divide_by_ten(tempDivisor);
 		divide_by_ten(divisorMagnitude);
 		
-		// If you truly want arbitrary precision here, you can't directly
-		// use divisorMagnitude's size, as that'll max out at 2147483647.
-		// Rather, you need to manually subtract through divisorMagnitude with
-		// a for-loop to add the correct number of bunches here.
-		// add_bunches(divideBy, (divisorMagnitude->size)-1, tempDivisor);
-		
-		//Now, we can perform the actual division (which is just repeated
-		// subtraction here).
+		//Now, we perform the actual division (which is just repeated subtraction)
 		copy_BigIntT(toDivide, temp);
 		
 		while (compare_BigIntT(temp, divideBy) >= 0)
@@ -774,7 +778,7 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 	return 1;
 }
 
-//CHECK THIS FUNCTION FOR A SIMILAR ERROR TO multiply_BigIntT()
+
 int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 /** Calculates toMod % modulus and stores it in residue.
     Returns 1 on success, 0 otherwise. */
@@ -793,7 +797,7 @@ int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 	//If toMod >> modulus, it'll be very inefficient to
 	// subtract singular multiples of modulus.
 	// Rather, we can find the greatest value of 
-	// modulus*(MAXBUNCH^n) that's smaller than toMod and
+	// modulus*(MAXBUNCH^n)(10^m) that's smaller than toMod and
 	// use that. Then, we just find the next smallest one and
 	// repeat until we've reduced our number.
 	

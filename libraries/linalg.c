@@ -1085,11 +1085,9 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		subArr = NULL;
 	}
 	
-	/*
 	//Reduce result by modulus
 	mod_BigPolyT(result, mod, temp);
 	copy_BigPolyT(temp, result);
-	*/
 	
 	temp = free_BigPolyT(temp);
 	temp2 = free_BigPolyT(temp2);

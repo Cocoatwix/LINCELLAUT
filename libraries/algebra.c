@@ -335,7 +335,8 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
                                BigIntTP const factor,
 															 BigIntTP const carry,
 															 BigIntTP const modulus,
-															 BigIntTP** p)
+															 BigIntTP** p,
+															 BigIntTP const one)
 /* Finds all the possible numbers one can multiply factor by (mod modulus),
    then add carry, to get target. Stores all the possibilities within 
 	 p[0]. Returns the number of numbers in p[0], 0 if there
@@ -344,9 +345,7 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	//NOTE: possibilities should always start with a size of 1
 	
 	int possibilityCount = 0;
-	int oneArr[1] = {1};
 	
-	BigIntTP one   = new_BigIntT(oneArr, 1);
 	BigIntTP count = empty_BigIntT(1);
 	BigIntTP temp2 = empty_BigIntT(1);
 	BigIntTP temp3 = empty_BigIntT(1);
@@ -374,7 +373,6 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		copy_BigIntT(temp2, count);
 	}
 	
-	one   = free_BigIntT(one);
 	count = free_BigIntT(count);
 	temp2 = free_BigIntT(temp2);
 	temp3 = free_BigIntT(temp3);
@@ -389,7 +387,9 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 																				BigIntTP* carries,     //The inside of the area model
 																				BigIntTP const mod,    //The modulus used
 																				int size,              //Size of prod
-																				int place)             //How far into the multiplication we are
+																				int place,             //How far into the multiplication we are
+																				BigIntTP const zero,
+																				BigIntTP const one)
 /** Recursive function to check all possible "other" factors
     given our current factor to check. Basically, it sees whether our
 		factor corresponds to any other possible factor. If it does, then
@@ -402,6 +402,7 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	
 	//Is the factor we're given a possible factor?
 	bool isPossible = TRUE;
+	bool recursiveCall = FALSE;
 	int firstNonZeroTerm;
 	int lastNonZeroTerm;
 	
@@ -414,8 +415,6 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		printf(" ");
 	}
 	printf("\n\n"); */
-	
-	BigIntTP zero = empty_BigIntT(1);
 	
 	//Find the first nonzero entry in our polynomial
 	for (int i = 0; i < size; i += 1)
@@ -443,16 +442,9 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	//The first nonzero element in prod must come at least as late as fact's
 	//Otherwise, fact can't possibly be a factor
 	for (int i = 0; i < size; i += 1)
-	{
 		if (compare_BigIntT(zero, prod[i]) != 0)
-		{
 			if (i < firstNonZeroTerm)
-			{
-				zero = free_BigIntT(zero);
 				return FALSE;
-			}
-		}
-	}
 	
 	/*printf("place: %d\n\n", place);
 	printf("Factor to check: ");
@@ -495,7 +487,8 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		                             fact[firstNonZeroTerm], 
 																 carries[i+firstNonZeroTerm], 
 																 mod, 
-																 &toMultiplyBy);
+																 &toMultiplyBy,
+																 one);
 		
 		/*printf("Possibilities found: ");
 		for (int pp = 0; pp < possibilities; pp += 1)
@@ -531,6 +524,8 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		//Recursive case
 		else
 		{
+			recursiveCall = TRUE;
+			
 			//Assume all possibilities won't work until proven otherwise
 			isPossible = FALSE;
 			
@@ -551,32 +546,14 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 				//Keep track of what our other factor looks like
 				copy_BigIntT(toMultiplyBy[f], other[i]);
 				
-				if (factor_check_recurse(prod, fact, other, newCarries, mod, size, place+1))
-				{
-					/* isPossible = TRUE;
-					f = possibilities; */
-					
+				if (factor_check_recurse(prod, fact, other, newCarries, mod, size, place+1, zero, one))
+				{					
 					isPossible = TRUE;
 					break;
 				}
 			}
-			
-			//Free memory before leaving function
-			for (int j = 0; j < possibilities+1; j += 1)
-				toMultiplyBy[j] = free_BigIntT(toMultiplyBy[j]);
-			free(toMultiplyBy);
-			toMultiplyBy = NULL;
-			
-			for (int j = 0; j < size; j += 1)
-				newCarries[j] = free_BigIntT(newCarries[j]);
-			free(newCarries);
-			newCarries = NULL;
-			
-			temp  = free_BigIntT(temp);
-			temp2 = free_BigIntT(temp2);
-			zero = free_BigIntT(zero);
 	
-			return isPossible;
+			break; 
 		}
 		
 		//Get toMultiplyBy ready for next term
@@ -606,11 +583,9 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 	temp  = free_BigIntT(temp);
 	temp2 = free_BigIntT(temp2);
 	
-	zero = free_BigIntT(zero);
-	
 	//Gotta check the rest of the carries to see if they match the target polynomial
-	//... or do I?
-	if (isPossible)
+	//We only need to check this in the non-recursive case
+	if ((isPossible) && (!recursiveCall))
 	{
 		/*printf("Checking carries...\n");
 		printf("Current carries: ");
@@ -656,7 +631,6 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 		This function assumes the degree of A is at least 2. */
 {
 	int oneArr[1] = {1};
-	//int twoArr[1] = {2};
 	
 	int degree = A->size; //Holds the degree of our polynomial as we reduce it
 	
@@ -667,7 +641,7 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 	subtract_BigIntT(mod, one, minusOne);
 	
 	BigPolyTP* factors = malloc(2*sizeof(BigPolyTP));
-	BigPolyTP oneConstant  = constant_BigPolyT(one);
+	BigPolyTP oneConstant = constant_BigPolyT(one);
 	BigPolyTP tempPoly = empty_BigPolyT();
 	BigPolyTP numOfFactors = constant_BigPolyT(zero);
 	
@@ -694,6 +668,7 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 		copy_BigIntT(A->coeffs[i], currentPoly[i]);
 		
 		//This allows us to skip constants as polynomials
+		//(possible constant factors are handled at the end)
 		if (i == 1)
 			factorToTest[i] = new_BigIntT(oneArr, 1);
 		else
@@ -721,7 +696,9 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 														 polyCarries,
 														 mod,
 														 A->size,
-														 0))
+														 0,
+														 zero,
+														 one))
 		{
 			add_BigPolyT(numOfFactors, oneConstant, tempPoly);
 			numOfFactorsSmall += 1;
@@ -730,10 +707,10 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 			factors = realloc(factors, (numOfFactorsSmall+2)*sizeof(BigPolyTP));
 			factors[numOfFactorsSmall] = new_BigPolyT(factorToTest, A->size);
 			
-			printf("\nFactor: ");
+			/*printf("\nFactor: ");
 			//Also check what the factor was that reduced our polynomial down to what it is
 			printp(factors[numOfFactorsSmall]);
-			printf("\n");
+			printf("\n"); */
 			
 			//Divide polynomial by our newfound factor, continue
 			//Also, start checking the lower factors again since we're
@@ -748,12 +725,10 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 					copy_BigIntT(zero, factorToTest[i]);
 				
 				copy_BigIntT(polyRemainder[i], currentPoly[i]);
-				printi(currentPoly[i]);
-				printf(" ");
+				//printi(currentPoly[i]);
+				//printf(" ");
 			}
-			printf("\n");
-			
-			//printf(":)\n");
+			//printf("\n");
 			
 			//Calculating degree of newly reduced polynomial
 			for (int i = A->size-1; i >= 0; i -= 1)
@@ -787,14 +762,6 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 			factors = realloc(factors, (numOfFactorsSmall+2)*sizeof(BigPolyTP));
 			factors[numOfFactorsSmall] = new_BigPolyT(currentPoly, A->size);
 		}
-		
-		/*printf("Current factor: ");
-		for (int i = 0; i < A->size; i += 1)
-		{
-			printi(factorToTest[i]);
-			printf(" ");
-		}
-		printf("\n"); */
 		
 		//Else, continue iterating as normal
 		else
