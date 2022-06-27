@@ -343,7 +343,7 @@ int main(int argc, char* argv[])
 			printf("\nModulus: ");
 			printi(bigMod);
 			printf("\n");
-			bigEqn = chara_eqn(bigMatrix, bigMod);
+			bigEqn = chara_poly(bigMatrix, bigMod);
 			printf("\nCharacteristic equation: ");
 			printp(bigEqn);
 			printf("\n\n");
@@ -609,11 +609,14 @@ int main(int argc, char* argv[])
 			/*
 			Searched so far:
 			cycmatsearch 2 20 2 3
+			cycmatsearch 2 22 3 4
+			cycmatsearch 2 23 3 4 . . . 15/23
 			cycmatsearch 3 6 2 3 5
+			cycmatsearch 3 5 2 2 3
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {6};
+			int start[] = {21};
 			
 			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
@@ -631,6 +634,7 @@ int main(int argc, char* argv[])
 			if (strtoBIT(argv[3], &maxMod) == 0)
 			{
 				fprintf(stderr, "Unable to read modulus from command line.\n");
+				return EXIT_FAILURE;
 			}
 			
 			//If the user didn't provide enough cycles for the given matrix size
@@ -885,6 +889,161 @@ int main(int argc, char* argv[])
 			FREE(textOutputName);
 			
 			printf("Finished searching.\n");
+		}
+		
+		
+		//If we want to step over a matrix space to see what the
+		// characteristic polynomials look like over specific
+		// step sizes.
+		else if (! strcmp(argv[1], "charawalk"))
+		{
+			int counter;
+			int oneArr[1] = {1};
+			
+			BigIntTP mod  = NULL;
+			BigIntTP step = NULL; //How much to step in each direction in the matrix space
+			BigIntTP temp;
+			BigIntTP temp2;
+			BigIntTP zero;
+			BigIntTP one;
+			
+			//Holds the BigIntTPs describing what matrix we're
+			// currently testing
+			BigIntTP** currentMatrixElements;
+			
+			BigPolyTP  charaPoly;
+			BigPolyTP* factorList = NULL;
+			
+			BigIntMatrixTP startingMatrix;
+			BigIntMatrixTP currentMatrix;
+			BigIntMatrixTP identity;
+			
+			CycleInfoTP theCycle;
+			
+			startingMatrix = read_BigIntMatrixT(updatefilepath);
+			if (startingMatrix == NULL)
+			{
+				fprintf(stderr, "Unable to read .matrix file at %s.\n", updatefilepath);
+				return EXIT_FAILURE;
+			}
+			
+			//Getting user provided step size
+			if (strtoBIT(argv[2], &step) == 0)
+			{
+				fprintf(stderr, "Invalid step size passed on command line.\n");
+				return EXIT_FAILURE;
+			}
+			
+			//If user provided a specific modulus on CLI
+			if (argc > 3)
+			{
+				if (strtoBIT(argv[3], &mod) == 0)
+				{
+					fprintf(stderr, "Invalid modulus passed on command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			else
+			{
+				if (strtoBIT(bigintmodstring, &mod) == 0)
+				{
+					fprintf(stderr, "Unable to read modulus from .config file.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			
+			//Initialise currentMatrix
+			currentMatrixElements = malloc(big_rows(startingMatrix)*sizeof(BigIntTP*));
+			for (int i = 0; i < big_rows(startingMatrix); i += 1)
+			{
+				currentMatrixElements[i] = malloc(big_rows(startingMatrix)*sizeof(BigIntTP));
+				for (int j = 0; j < big_rows(startingMatrix); j += 1)
+				{
+					currentMatrixElements[i][j] = empty_BigIntT(1);
+					copy_BigIntT(big_element(startingMatrix, i, j), currentMatrixElements[i][j]);
+				}
+			}
+			
+			identity = identity_BigIntMatrixT(big_rows(startingMatrix));
+			currentMatrix = new_BigIntMatrixT(big_rows(startingMatrix), big_rows(startingMatrix));
+			set_big_matrix(currentMatrix, currentMatrixElements);
+			
+			temp  = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
+			zero  = empty_BigIntT(1);
+			one   = new_BigIntT(oneArr, 1);
+			
+			//Check matrices at given step sizes apart in all directions
+			for (int incRow = 0; incRow < big_rows(startingMatrix); incRow += 1)
+			{
+				for (int incCol = 0; incCol < big_rows(startingMatrix); incCol += 1)
+				{
+					//Step in one direction in the matrix space until we look back
+					do
+					{
+						add_BigIntT(currentMatrixElements[incRow][incCol], step, temp);
+						mod_BigIntT(temp, mod, currentMatrixElements[incRow][incCol]);
+						set_big_matrix(currentMatrix, currentMatrixElements);
+						
+						big_floyd(currentMatrix, identity, mod, &theCycle);
+						
+						charaPoly  = chara_poly(currentMatrix, mod);
+						factorList = factor_BigPolyT(charaPoly, mod);
+						
+						printbm(currentMatrix);
+						printf("Transient length: %d\n", tau(theCycle));
+						
+						theCycle = free_CycleInfoT(theCycle);
+						
+						//Print all found factors
+						printp(charaPoly);
+						printf("\n");
+						copy_BigIntT(zero, temp);
+						counter = 1;
+						while (compare_BigIntT(temp, constant(factorList[0])) < 0)
+						{
+							printf("(");
+							printp(factorList[counter]);
+							printf(")");
+							
+							counter += 1;
+							add_BigIntT(temp, one, temp2);
+							copy_BigIntT(temp2, temp);
+						}
+						printf("\n");
+					}
+					while (!compare_BigIntMatrixT(startingMatrix, currentMatrix));
+					
+					printf("------------------------------\n");
+				}
+			}
+			
+			
+			for (int i = 0; i < big_rows(startingMatrix); i += 1)
+			{
+				for (int j = 0; j < big_rows(startingMatrix); j += 1)
+					currentMatrixElements[i][j] = free_BigIntT(currentMatrixElements[i][j]);
+				
+				FREE(currentMatrixElements[i]);
+			}
+			FREE(currentMatrixElements);
+			
+			mod   = free_BigIntT(mod);
+			step  = free_BigIntT(step);
+			temp  = free_BigIntT(temp);
+			temp2 = free_BigIntT(temp2);
+			zero  = free_BigIntT(zero);
+			one   = free_BigIntT(one);
+			
+			charaPoly = free_BigPolyT(charaPoly);
+			
+			FREE(factorList);
+			
+			startingMatrix = free_BigIntMatrixT(startingMatrix);
+			currentMatrix  = free_BigIntMatrixT(currentMatrix);
+			identity       = free_BigIntMatrixT(identity);
 		}
 		
 		

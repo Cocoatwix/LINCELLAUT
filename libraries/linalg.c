@@ -72,7 +72,7 @@ int big_cols(BigIntMatrixTP M)
 }
 
 
-int element(IntMatrixTP M, int row, int col)
+int element(IntMatrixTP const M, int row, int col)
 /** Returns the element at M->matrix[row][col].
     Returns 0 for elements that aren't defined. */
 {
@@ -80,8 +80,20 @@ int element(IntMatrixTP M, int row, int col)
 	    (row < 0) || (col < 0))
 		return 0;
 		
-	else
-		return M->matrix[row][col];
+	return M->matrix[row][col];
+}
+
+
+BigIntTP big_element(BigIntMatrixTP const M, int row, int col)
+/** Returns the BigIntTP contained within M at the 
+    specified location. Returns NULL if the specified index
+		is out of bounds of the given matrix. */
+{
+	if ((row >= M->m) || (row < 0) ||
+	    (col >= M->n) || (col < 0))
+		return NULL;
+		
+	return M->matrix[row][col];
 }
 
 
@@ -183,6 +195,26 @@ IntMatrixTP identity_IntMatrixT(int r)
 	
 	for (int i = 0; i < r; i += 1)
 		I->matrix[i][i] = 1;
+	
+	return I;
+}
+
+
+BigIntMatrixTP identity_BigIntMatrixT(int r)
+/** Same as identity_IntMatrixT(), but for
+    BigIntMatrixTs. */
+{
+	if (r <= 0)
+		return NULL;
+	
+	BigIntMatrixTP I = new_BigIntMatrixT(r, r);
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	for (int i = 0; i < r; i += 1)
+		copy_BigIntT(one, I->matrix[i][i]);
+	
+	one = free_BigIntT(one);
 	
 	return I;
 }
@@ -946,8 +978,8 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 }
 
 
-/* private */ int chara_eqn_sub_matrix(BigPolyTP** const A, int size, int x, int y, BigPolyTP** new)
-/** Calculates the submatrices required for chara_eqn_recurse(), stores
+/* private */ int chara_poly_sub_matrix(BigPolyTP** const A, int size, int x, int y, BigPolyTP** new)
+/** Calculates the submatrices required for chara_poly_recurse(), stores
     result in new. This function assumes new is the correct size.
 		Returns 1 on success, 0 otherwise. */
 {
@@ -1010,8 +1042,8 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 }
 
 
-/* private */ BigPolyTP chara_eqn_recurse(BigPolyTP** const A, BigIntTP mod, int size)
-/** Helper function for chara_eqn(). Returns the characteristic
+/* private */ BigPolyTP chara_poly_recurse(BigPolyTP** const A, BigIntTP mod, int size)
+/** Helper function for chara_poly(). Returns the characteristic
     equation for a sub matrix. */
 {
 	//It might be nice to rewrite this function to pass
@@ -1053,8 +1085,8 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		
 		for (int i = 0; i < size; i += 1)
 		{
-			chara_eqn_sub_matrix(A, size, 0, i, subArr);
-			subResult = chara_eqn_recurse(subArr, mod, size-1);
+			chara_poly_sub_matrix(A, size, 0, i, subArr);
+			subResult = chara_poly_recurse(subArr, mod, size-1);
 			
 			multiply_BigPolyT(A[0][i], subResult, temp);
 			
@@ -1120,7 +1152,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 
 
 //det_subIntMatrixT(IntMatrixTP const M, int x, int y)
-BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
+BigPolyTP chara_poly(BigIntMatrixTP const A, BigIntTP mod)
 /** Spits a matrix's characteristic equation to the
     screen mod some modulus. A must be a square matrix. 
 		Returns the characteristic equation of the passed
@@ -1177,7 +1209,7 @@ BigPolyTP chara_eqn(BigIntMatrixTP const A, BigIntTP mod)
 	
 	//Ok, so we have our algebraic matrix
 	//Now, use it to get our characteristic equation
-	chara = chara_eqn_recurse(algMat, mod, A->m);
+	chara = chara_poly_recurse(algMat, mod, A->m);
 	
 	//Now, free the horrible matrix we created
 	for (int row = 0; row < A->m; row += 1)

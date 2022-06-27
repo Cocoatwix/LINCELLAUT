@@ -23,7 +23,8 @@ int cols(IntMatrixTP);
 int big_cols(BigIntMatrixTP);
 
 /** What's the element at the given indices in the matrix? */
-int element(IntMatrixTP, int, int);
+int element(IntMatrixTP const, int, int);
+BigIntTP big_element(BigIntMatrixTP const, int, int);
 
 
 /** Frees the memory of a matrix. Returns NULL. 
@@ -39,6 +40,7 @@ BigIntMatrixTP new_BigIntMatrixT(int, int);
 /** Creates a new identity matrix of given size and
     returns a pointer to the matrix. Returns NULL on error. */
 IntMatrixTP identity_IntMatrixT(int);
+BigIntMatrixTP identity_BigIntMatrixT(int);
 
 /** Sets the values of a column vector with elements specified
     in the given int pointer. Returns 1 on success, 0
@@ -107,7 +109,7 @@ IntMatrixTP inverse(IntMatrixTP const, int);
     screen mod some modulus. Returns a BigPolyTP
 		representing the characteristic equation on success,
 		NULL otherwise. */
-BigPolyTP chara_eqn(BigIntMatrixTP const, BigIntTP const);
+BigPolyTP chara_poly(BigIntMatrixTP const, BigIntTP const);
 
 
 
