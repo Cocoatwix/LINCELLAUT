@@ -264,6 +264,8 @@ int main(int argc, char* argv[])
 		//If we want to calculate the determinant of our matrix
 		else if (!strcmp(argv[1], "det"))
 		{
+			int theDet;
+			
 			//If the user specified a custom modulus
 			if (argc > 2)
 			{
@@ -284,7 +286,12 @@ int main(int argc, char* argv[])
 			
 			printf("Matrix:\n");
 			printm(A);
-			printf("Determinant: %d\n", det(A) % modulus);
+			theDet = det(A);
+			
+			if (theDet < 0)
+				printf("Determinant: %d\n", (theDet % modulus) + modulus);
+			else
+				printf("Determinant: %d\n", (theDet % modulus));
 			
 			A = free_IntMatrixT(A);
 		}
