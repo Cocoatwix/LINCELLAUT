@@ -28,6 +28,10 @@ cycmatsearch size maxmod cycles...: This tool allows the user to search for a ma
  - "maxmod" specifies the upper bound for the moduli to search. Searching will always begin at mod 2. This argument expects a positive integer.
  - "cycles..." is a list of cycle lengths for the first column vector, the second, and so on. These arguments expect positive integers.
 
+charawalk step [mod]: This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
+ - "step" specifies the step size to take. This argument expects a positive integer.
+ - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.
+
 fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
 
 2 2

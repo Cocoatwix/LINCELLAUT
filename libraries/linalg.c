@@ -978,6 +978,80 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 }
 
 
+int rref(IntMatrixTP M, int mod)
+/** Row reduces a matrix to the identity, or as close to
+    the identity as possible if the matrix is nonsquare.
+		Returns 1 if the reduction is successful, 0 otherwise. */
+{
+	//I should really do proper error checking in these functions, but oh well
+	//One day we will
+	
+	bool foundLeadEntry;
+	int minDim = (M->m < M->n) ? M->m : M->n;
+	int addFactor;
+	
+	//Says which row the lead entry should be put on.
+	//This is required as the lead entry isn't necessarily on a diagonal
+	int rowToSwap = 0;
+	
+	//Iterate over each pivot column possible
+	for (int pivotCol = 0; pivotCol < minDim; pivotCol += 1)
+	{
+		//Search for suitable leading entry
+		foundLeadEntry = FALSE;
+		for (int leadEntry = rowToSwap; leadEntry < M->m; leadEntry += 1)
+		{
+			if (num_inverse(M->matrix[leadEntry][pivotCol], mod) != -1)
+			{
+				foundLeadEntry = TRUE;
+				row_swap(M, rowToSwap, leadEntry);
+				break;
+			}
+		}
+		
+		if (foundLeadEntry)
+		{
+			//Now, we use our leading entry to zero out all other entries below it
+			row_multiply(M, rowToSwap, num_inverse(M->matrix[rowToSwap][pivotCol], mod), mod);
+			rowToSwap += 1;
+			
+			for (int row = rowToSwap; row < M->m; row += 1)
+			{
+				//Prevents the value from changing
+				addFactor = (mod - M->matrix[row][pivotCol]) % mod;
+				for (int t = 0; t < addFactor; t += 1)
+					row_add(M, row, rowToSwap-1, mod);
+			}
+		}
+	}
+	
+	printf("REF:\n");
+	printm(M);
+	
+	//Now we zero out elements above the leading elements
+	for (int row = 0; row < M->m; row += 1)
+	{
+		//Find the leading entry
+		for (int leadEntry = 0; leadEntry < M->n; leadEntry += 1)
+		{
+			if (M->matrix[row][leadEntry] == 1)
+			{				
+				//We found the leading entry, now zero out the elements above it
+				for (int toZeroRow = row-1; toZeroRow >= 0; toZeroRow -= 1)
+				{
+					addFactor = (mod - M->matrix[toZeroRow][leadEntry]) % mod;
+					for (int t = 0; t < addFactor; t += 1)
+						row_add(M, toZeroRow, row, mod);
+				}
+				break;
+			}
+		}
+	}
+	
+	return 1;
+}
+
+
 /* private */ int chara_poly_sub_matrix(BigPolyTP** const A, int size, int x, int y, BigPolyTP** new)
 /** Calculates the submatrices required for chara_poly_recurse(), stores
     result in new. This function assumes new is the correct size.
@@ -1011,32 +1085,6 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			new[row + xSkip][col + ySkip] = A[row][col];
 		}
 	}
-	
-	/*printf("original array:\n");
-	for (int i = 0; i < size; i += 1)
-	{
-		for (int j = 0; j < size; j += 1)
-		{
-			printp(A[i][j]);
-			printf(", ");
-		}
-		printf("\n");
-	}
-	printf("\n");
-	
-	printf("Split @ %d %d\n", x, y);
-	
-	printf("subarray:\n");
-	for (int i = 0; i < size-1; i += 1)
-	{
-		for (int j = 0; j < size-1; j += 1)
-		{
-			printp(new[i][j]);
-			printf(", ");
-		}
-		printf("\n");
-	}
-	printf("\n"); */
 	
 	return 1;
 }
@@ -1128,24 +1176,6 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	
 	one = free_BigIntT(one);
 	minusOne = free_BigIntT(minusOne);
-	
-	/* DEBUG */
-	
-	/*printf("\nAlgebraic matrix:\n");
-	for (int i = 0; i < size; i += 1)
-	{
-		for (int j = 0; j < size; j += 1)
-		{
-			printp(A[i][j]);
-			printf(" || ");
-		}
-		printf("\n");
-	}
-	printf("\n");
-
-	printp(result);
-	printf("\n");
-	//getchar(); */
 	
 	return result;
 }

@@ -105,6 +105,10 @@ int det(IntMatrixTP const);
     Returns NULL otherwise. */
 IntMatrixTP inverse(IntMatrixTP const, int);
 
+/** Reduces the given IntMatrixTP to its reduced row
+    echelon form. Returns 1 on success, 0 otherwise. */
+int rref(IntMatrixTP, int);
+
 /** Prints a matrix's characteristic equation to the
     screen mod some modulus. Returns a BigPolyTP
 		representing the characteristic equation on success,

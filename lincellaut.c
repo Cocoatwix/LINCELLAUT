@@ -390,14 +390,54 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to see how many vectors are in an IntMatrix's core
+		else if (! strcmp(argv[1], "core"))
+		{
+			IntMatrixTP A;
+			
+			//If the user provided a modulus on the CLI
+			if (argc > 2)
+			{
+				modulus = (int)strtol(argv[2], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Invalid modulus passed at command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			A = read_IntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read matrix file at %s.\n", updatefilepath);
+				return EXIT_FAILURE;
+			}
+			
+			printf("Matrix:\n");
+			printm(A);
+			printf("Modulus: %d\n", modulus);
+			rref(A, modulus);
+			printf("RREF Matrix:\n");
+			printm(A);
+			printf("\n");
+			
+			//Change of plans: we'll use the reduction factor to calculate the number of
+			// vectors in the core. This way, we don't have to deal with huge memory hoards
+			// or complicated solving methods. We just need to sift through the entire plane
+			// finding the matrix's kernel.
+			
+			A = free_IntMatrixT(A);
+		}
+		
+		
 		//If we want to use Floyd's Cycle Detection Algorithm
-		else if (!strcmp(argv[1], "floyd"))
+		else if (! strcmp(argv[1], "floyd"))
 		{
 			//If the user provided a custom modulus
 			if (argc > 2)
 			{
 				modulus = (int)strtol(argv[2], &tempStr, 10);
-				if (tempStr[0] == '\0')
+				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Invalid modulus passed at command line.\n");
 					return EXIT_FAILURE;
@@ -616,14 +656,13 @@ int main(int argc, char* argv[])
 			/*
 			Searched so far:
 			cycmatsearch 2 20 2 3
-			cycmatsearch 2 22 3 4
-			cycmatsearch 2 23 3 4 . . . 15/23
+			cycmatsearch 2 30 3 4
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 5 2 2 3
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {21};
+			int start[] = {23};
 			
 			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
@@ -670,18 +709,18 @@ int main(int argc, char* argv[])
 			temp    = empty_BigIntT(1);
 			
 			//Initialise our matrix elements
-			currMatElements = malloc(size*sizeof(BigIntTP*));
+			/*currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
 			{
 				currMatElements[i] = malloc(size*sizeof(BigIntTP));
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
-			}
+			} */
 			
 			//TESTING A SPECIFIC CASE. DELETE THIS LATER
-			/*
-			int theModValue[] = {5};
-			int theResumeValue[] = {4};
+			
+			int theModValue[] = {23};
+			int theResumeValue[] = {15};
 			
 			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
@@ -695,7 +734,7 @@ int main(int argc, char* argv[])
 						currMatElements[i][j] = new_BigIntT(theModValue, 1);
 				}
 			}
-			*/
+			
 			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
@@ -1603,6 +1642,9 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "size maxmod cycles..." ANSI_COLOR_RESET \
 		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n\n");
 		
+		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET \
+		": Steps around a matrix space and computes the characteritic polynomial for each matrix it lands on.\n\n");
+		
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
 		": Generate the Fibonacci cycle that contains the initial vector.\n\n");
 		
@@ -1619,77 +1661,6 @@ int main(int argc, char* argv[])
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
-		
-		/*
-		//Testing polynomial code
-		int randArr1[] = {9673618, 3476299, 18439610};
-		int randArr2[] = {1767099};
-		int randArr3[] = {1850569, 11820014, 84934910};
-		
-		BigIntTP rand1 = new_BigIntT(randArr1, 3);
-		BigIntTP rand2 = new_BigIntT(randArr2, 1);
-		BigIntTP rand3 = new_BigIntT(randArr3, 3);
-		BigIntTP tempInt = empty_BigIntT(1);
-		
-		BigIntTP pArr1[] = {rand1, rand2, rand3};
-		BigIntTP pArr2[] = {rand2};
-		BigIntTP pArr3[] = {rand3, rand1};
-		
-		BigPolyTP p1 = new_BigPolyT(pArr1, 3);
-		BigPolyTP p2 = new_BigPolyT(pArr2, 1);
-		BigPolyTP p3 = new_BigPolyT(pArr3, 2);
-		BigPolyTP temp = empty_BigPolyT();
-		
-		divide_BigIntT(rand3, rand1, tempInt);
-		opi(rand3, rand1, tempInt, " // ");
-		divide_BigIntT(rand3, rand2, tempInt);
-		opi(rand3, rand2, tempInt, " // ");
-		divide_BigIntT(rand1, rand2, tempInt);
-		opi(rand1, rand2, tempInt, " // ");
-		
-		
-		printf("Polynomials:\n");
-		printp(p1);
-		printf("\n");
-		printp(p2);
-		printf("\n");
-		printp(p3);
-		printf("\n");
-		*/
-		
-		/*
-		//Testing adding
-		add_BigPolyT(p1, p2, temp);
-		op(p1, p2, temp, " + ");
-		add_BigPolyT(p1, p3, temp);
-		op(p1, p3, temp, " + ");
-		add_BigPolyT(p2, p3, temp);
-		op(p2, p3, temp, " + ");
-		add_BigPolyT(p3, p2, temp);
-		op(p3, p2, temp, " + ");
-		*/
-		
-		/*
-		//Testing multiplication
-		multiply_BigPolyT(p1, p3, temp);
-		op(p1, p3, temp, " * ");
-		multiply_BigPolyT(p3, p1, temp);
-		op(p3, p1, temp, " * ");
-		multiply_BigPolyT(p1, p2, temp);
-		op(p1, p2, temp, " * ");
-		multiply_BigPolyT(p2, p3, temp);
-		op(p2, p3, temp, " * ");
-		
-		
-		p1 = free_BigPolyT(p1);
-		p2 = free_BigPolyT(p2);
-		p3 = free_BigPolyT(p3);
-		temp = free_BigPolyT(temp);
-		
-		rand1 = free_BigIntT(rand1);
-		rand2 = free_BigIntT(rand2);
-		rand3 = free_BigIntT(rand3);
-		tempInt = free_BigIntT(tempInt); */
 	}
 	
 	//Freeing memory

@@ -26,6 +26,24 @@ int num_inverse(int a, int modulus)
 }
 
 
+int num_root(int a, int modulus)
+/** Returns the smallest nonzero number that, when multiplied by a,
+    gives 0 when reduced by modulus. 
+		Returns 0 if no nonzero number exists. */
+{
+	int root = 0;
+	
+	for (int i = 1; i < modulus; i += 1)
+		if ((a*i) % modulus == 0)
+		{
+			root = i;
+			break;
+		}
+	
+	return root;
+}
+
+
 int square_root(int a, int modulus)
 /** Returns the square root of a mod modulus.
     Returns -1 if the square root DNE. 
