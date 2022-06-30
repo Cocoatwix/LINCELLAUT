@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "../headers/helper.h"
+
 #include "../headers/linalg.h"  //Letting us use matrices
 #include "../headers/factors.h" //Letting us check for square-free moduli
 #include "../headers/modular.h" //For using modular arithmetic stuff
@@ -439,9 +441,9 @@ CycleInfoTP floyd(IntMatrixTP const F, IntMatrixTP const s_0, int modulus)
 
 
 int big_floyd(BigIntMatrixTP const F, 
-                      BigIntMatrixTP const s_0, 
-											BigIntTP const modulus,
-											CycleInfoTP* info)
+              BigIntMatrixTP const s_0, 
+							BigIntTP const modulus,
+							CycleInfoTP* info)
 /** Same as floyd(), but for BigIntMatrixT structs.
 		
 		Returns a CycleInfoTP that points to the data calculated

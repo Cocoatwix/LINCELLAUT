@@ -393,40 +393,154 @@ int main(int argc, char* argv[])
 		//If we want to see how many vectors are in an IntMatrix's core
 		else if (! strcmp(argv[1], "core"))
 		{
-			IntMatrixTP A;
+			BigIntMatrixTP A;
+			BigIntMatrixTP vectToTest = NULL;
+			BigIntMatrixTP zeroVector;
+			BigIntMatrixTP tempVector;
+			
+			BigIntTP bigMod;
+			BigIntTP one;
+			BigIntTP zero;
+			BigIntTP temp;
+			BigIntTP kernelCount;
+			BigIntTP orderOfSpace;
+			
+			CycleInfoTP theCycle = NULL;
+			
+			BigIntTP** entriesToUse;
+			
+			int oneArr[1] = {1};
+			
+			bool checkedAllVects = FALSE;
 			
 			//If the user provided a modulus on the CLI
 			if (argc > 2)
 			{
-				modulus = (int)strtol(argv[2], &tempStr, 10);
-				if (tempStr[0] != '\0')
+				if (strtoBIT(argv[2], &bigMod) == 0)
 				{
 					fprintf(stderr, "Invalid modulus passed at command line.\n");
 					return EXIT_FAILURE;
 				}
 			}
 			
-			A = read_IntMatrixT(updatefilepath);
+			else
+			{
+				if (strtoBIT(bigintmodstring, &bigMod) == 0)
+				{
+					fprintf(stderr, "Invalid modulus passed at command line.\n");
+					return EXIT_FAILURE;
+				}
+			}
+			
+			A = read_BigIntMatrixT(updatefilepath);
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read matrix file at %s.\n", updatefilepath);
 				return EXIT_FAILURE;
 			}
 			
+			entriesToUse = malloc(big_rows(A)*sizeof(BigIntTP*));
+			for (int i = 0; i < big_rows(A); i += 1)
+			{
+				entriesToUse[i] = malloc(sizeof(BigIntTP));
+				entriesToUse[i][0] = empty_BigIntT(1);
+			}
+			
+			one  = new_BigIntT(oneArr, 1);
+			zero = empty_BigIntT(1);
+			temp = empty_BigIntT(1);
+			kernelCount = empty_BigIntT(1);
+			
+			vectToTest = new_BigIntMatrixT(big_rows(A), 1);
+			zeroVector = new_BigIntMatrixT(big_rows(A), 1);
+			tempVector = new_BigIntMatrixT(big_rows(A), 1);
+			
 			printf("Matrix:\n");
-			printm(A);
-			printf("Modulus: %d\n", modulus);
-			rref(A, modulus);
-			printf("RREF Matrix:\n");
-			printm(A);
+			printbm(A);
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\n");
+			big_floyd(A, A, bigMod, &theCycle);
+			
+			printf("Rep:\n");
+			printbm(rep(theCycle));
+			
+			//Loop until all vectors have been checked
+			//This could be a lot more efficient if I understood how best to
+			// manipulate how the kernel vectors divide the plane
+			while ((!checkedAllVects) && (tau(theCycle) != 0))
+			{
+				set_big_matrix(vectToTest, entriesToUse);
+				big_mat_mul(rep(theCycle), vectToTest, tempVector);
+				modbm(tempVector, bigMod);
+				
+				//If we found a vector that maps to the origin
+				if (compare_BigIntMatrixT(tempVector, zeroVector))
+				{
+					add_BigIntT(kernelCount, one, temp);
+					copy_BigIntT(temp, kernelCount);
+				}
+				
+				//Increment to next vector
+				checkedAllVects = TRUE;
+				for (int i = big_rows(A)-1; i >= 0; i -= 1)
+				{
+					add_BigIntT(entriesToUse[i][0], one, temp);
+					
+					if (compare_BigIntT(temp, bigMod) == 0)
+						copy_BigIntT(zero, entriesToUse[i][0]);
+					
+					else
+					{
+						copy_BigIntT(temp, entriesToUse[i][0]);
+						checkedAllVects = FALSE;
+						break;
+					}
+				}
+			}
+			
+			printf("ord(ker(core A) = ");
+			printi(kernelCount);
+			printf("\nord(core A) = ");
+			
+			//Calculate number of vectors in our space,
+			// then compact it
+			orderOfSpace = new_BigIntT(oneArr, 1);
+			for (int i = 0; i < big_rows(A); i += 1)
+			{
+				multiply_BigIntT(orderOfSpace, bigMod, temp);
+				copy_BigIntT(temp, orderOfSpace);
+			}
+			
+			if (compare_BigIntT(zero, kernelCount) != 0)
+				divide_BigIntT(orderOfSpace, kernelCount, temp);
+			else
+				copy_BigIntT(orderOfSpace, temp);
+			
+			printi(temp);
 			printf("\n");
 			
-			//Change of plans: we'll use the reduction factor to calculate the number of
-			// vectors in the core. This way, we don't have to deal with huge memory hoards
-			// or complicated solving methods. We just need to sift through the entire plane
-			// finding the matrix's kernel.
+		
+			for (int i = 0; i < big_rows(A); i += 1)
+			{
+				entriesToUse[i][0] = free_BigIntT(entriesToUse[i][0]);
+				FREE(entriesToUse[i]);
+			}
+			FREE(entriesToUse);
 			
-			A = free_IntMatrixT(A);
+			A          = free_BigIntMatrixT(A);
+			vectToTest = free_BigIntMatrixT(vectToTest);
+			zeroVector = free_BigIntMatrixT(zeroVector);
+			tempVector = free_BigIntMatrixT(tempVector);
+			
+			bigMod       = free_BigIntT(bigMod);
+			one          = free_BigIntT(one);
+			zero         = free_BigIntT(zero);
+			temp         = free_BigIntT(temp);
+			kernelCount  = free_BigIntT(kernelCount);
+			orderOfSpace = free_BigIntT(orderOfSpace);
+			
+			theCycle = free_CycleInfoT(theCycle);
 		}
 		
 		
