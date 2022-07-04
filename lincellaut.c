@@ -204,7 +204,7 @@ int main(int argc, char* argv[])
 			//The minus 1 is for easier conversion between ORBITVIS results
 			printf("Iterations: %d\n", iterations);
 			if (iterations > 0)
-				F_result = iterate(F, F_2, modulus, iterations-1);
+				F_result = iterate(F, F_2, modulus, iterations);
 			
 			//Prevents the matrix from being printed when
 			// an inverse doesn't exist and the iterations
@@ -213,7 +213,7 @@ int main(int argc, char* argv[])
 				printm(F_result);
 			
 			else if (iterations == 0)
-				printf("I\n");
+				printm(F_2);
 
 			F        = free_IntMatrixT(F);
 			F_2      = free_IntMatrixT(F_2);
@@ -289,7 +289,7 @@ int main(int argc, char* argv[])
 			theDet = det(A);
 			
 			if (theDet < 0)
-				printf("Determinant: %d\n", (theDet % modulus) + modulus);
+				printf("Determinant: %d\n", ((theDet % modulus) + modulus) % modulus);
 			else
 				printf("Determinant: %d\n", (theDet % modulus));
 			
@@ -770,15 +770,16 @@ int main(int argc, char* argv[])
 			/*
 			Searched so far:
 			cycmatsearch 2 20 2 3
+			cycmatsearch 2 20 3 5
 			cycmatsearch 2 30 3 4
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 5 2 2 3
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {23};
+			int start[] = {2};
 			
-			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
+			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
@@ -823,16 +824,16 @@ int main(int argc, char* argv[])
 			temp    = empty_BigIntT(1);
 			
 			//Initialise our matrix elements
-			/*currMatElements = malloc(size*sizeof(BigIntTP*));
+			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
 			{
 				currMatElements[i] = malloc(size*sizeof(BigIntTP));
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
-			} */
+			}
 			
-			//TESTING A SPECIFIC CASE. DELETE THIS LATER
-			
+			//TESTING A SPECIFIC CASE
+			/*
 			int theModValue[] = {23};
 			int theResumeValue[] = {15};
 			
@@ -848,6 +849,7 @@ int main(int argc, char* argv[])
 						currMatElements[i][j] = new_BigIntT(theModValue, 1);
 				}
 			}
+			*/
 			
 			
 			//Find the LCM of our cycles
@@ -1113,7 +1115,6 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			
 			//Initialise currentMatrix
 			currentMatrixElements = malloc(big_rows(startingMatrix)*sizeof(BigIntTP*));
 			for (int i = 0; i < big_rows(startingMatrix); i += 1)
@@ -1135,6 +1136,8 @@ int main(int argc, char* argv[])
 			zero  = empty_BigIntT(1);
 			one   = new_BigIntT(oneArr, 1);
 			
+			theCycle = new_CycleInfoT();
+			
 			//Check matrices at given step sizes apart in all directions
 			for (int incRow = 0; incRow < big_rows(startingMatrix); incRow += 1)
 			{
@@ -1155,7 +1158,9 @@ int main(int argc, char* argv[])
 						printbm(currentMatrix);
 						printf("Transient length: %d\n", tau(theCycle));
 						
+						//It would be real beneficial to make a "clear_CycleInfoT() function"
 						theCycle = free_CycleInfoT(theCycle);
+						theCycle = new_CycleInfoT();
 						
 						//Print all found factors
 						printp(charaPoly);
@@ -1743,6 +1748,9 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Find the characteristic equation of an update matrix under some modulus.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Calculates the number of vectors in a matrix's core.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n\n");

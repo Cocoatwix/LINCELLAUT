@@ -1226,6 +1226,7 @@ BigPolyTP chara_poly(BigIntMatrixTP const A, BigIntTP mod)
 			//Diagonal entry, element minus lambda
 			if (row == col)
 			{
+				//multiply_BigIntT(A->matrix[row][col], minusOne, term[0]);
 				copy_BigIntT(A->matrix[row][col], term[0]);
 				copy_BigIntT(minusOne, term[1]);
 				algMat[row][col] = new_BigPolyT(term, 2);
