@@ -135,3 +135,33 @@ int get_orbit_info_array(int (*update)[2][2], int modulus)
 	//In the future, this should also return tau in some way
 	return tauNum + modulus*k*omegaNum;
 }
+
+
+void C_iterate_matrix(int (*A)[2][2], int (*newA)[2][2], int mod)
+/** A function to iterate newA by A once and store the result 
+    in the same matrix. */
+{
+	IntMatrixTP matA    = new_IntMatrixT(2, 2);
+	IntMatrixTP matNewA = new_IntMatrixT(2, 2);
+	IntMatrixTP temp    = new_IntMatrixT(2, 2);
+	
+	int** betterA    = array_to_pointer(A);
+	int** betterNewA = array_to_pointer(newA);
+	
+	set_matrix(matA, betterA);
+	set_matrix(matNewA, betterNewA);
+	
+	mat_mul(matA, matNewA, temp);
+	modm(temp, mod);
+	
+	//Place the new matrix values in the given array
+	(*newA)[0][0] = element(temp, 0, 0);
+	(*newA)[0][1] = element(temp, 0, 1);
+	(*newA)[1][0] = element(temp, 1, 0);
+	(*newA)[1][1] = element(temp, 1, 1);
+	free_double_pointer(&betterA);
+	free_double_pointer(&betterNewA);
+	matA    = free_IntMatrixT(matA);
+	matNewA = free_IntMatrixT(matNewA);
+	temp    = free_IntMatrixT(temp);
+}

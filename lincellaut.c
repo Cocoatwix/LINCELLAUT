@@ -10,6 +10,14 @@
 https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
 https://stackoverflow.com/questions/3219393
 */
+
+//
+//
+//
+// REMEMBER TO PROGRAM AN UPPER BOUND TO THE MATRICES I CHECK.
+// I didn't save all the matrices I found yesterday; gotta refind them.
+// I should also have the program save the file at each checkpoint so I don't need to worry about all this.
+//
  
 #include <stdlib.h>
 #include <stdio.h>
@@ -173,7 +181,7 @@ int main(int argc, char* argv[])
 			
 			IntMatrixTP F;
 			IntMatrixTP F_2;
-			IntMatrixTP F_result;
+			IntMatrixTP F_result = NULL;
 			
 			if (iterations < 0)
 			{
@@ -574,6 +582,14 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
+			//Making sure dimensions of given matrices are correct
+			else if (rows(initial) != cols(update) ||
+			        (rows(initial) != rows(update)))
+			{
+				fprintf(stderr, "Given matrices have inappropriate dimensions for iterating.\n");
+				return EXIT_FAILURE;
+			}
+			
 			//If we actually get all the data we need
 			else
 			{
@@ -630,6 +646,13 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Unable to read .matrix files.\n");
 				return EXIT_FAILURE;
 			}
+			
+			else if ((big_rows(initial) != big_cols(update)) ||
+			         (big_rows(initial) != big_rows(update)))
+		  {
+			  fprintf(stderr, "Given matrices have inappropriate dimensions for iterating.\n");
+				return EXIT_FAILURE;
+		  }
 			
 			//Get cycle info
 			big_floyd(update, initial, bigModulus, &coolCycle);
@@ -770,16 +793,21 @@ int main(int argc, char* argv[])
 			/*
 			Searched so far:
 			cycmatsearch 2 20 2 3
-			cycmatsearch 2 20 3 5
+			cycmatsearch 2 28 3 5
 			cycmatsearch 2 30 3 4
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 5 2 2 3
+			
+			cycmatsearch 3 6-6 2 2 3 ; 1/6
 			*/
 			
 			int oneArr[] = {1};
-			int start[] = {2};
+			int threeArr[] = {3};
+			int fiveArr[] = {5};
+			int twoArr[] = {2};
+			int start[] = {6};
 			
-			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
+			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
@@ -824,6 +852,7 @@ int main(int argc, char* argv[])
 			temp    = empty_BigIntT(1);
 			
 			//Initialise our matrix elements
+			/*
 			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
 			{
@@ -831,11 +860,11 @@ int main(int argc, char* argv[])
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
 			}
+			*/
 			
 			//TESTING A SPECIFIC CASE
-			/*
-			int theModValue[] = {23};
-			int theResumeValue[] = {15};
+			int theModValue[] = {6};
+			int theResumeValue[] = {1};
 			
 			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
@@ -849,7 +878,18 @@ int main(int argc, char* argv[])
 						currMatElements[i][j] = new_BigIntT(theModValue, 1);
 				}
 			}
-			*/
+			
+			/*
+			//INITIALISING SPECIFIC NUMBERS SO THAT WE CAN STOP EXECUTION
+			// WHEN WE GET TO A SPECIFIC MATRIX
+			BigIntTP three = new_BigIntT(threeArr, 1);
+			BigIntTP two   = new_BigIntT(twoArr, 1);
+			BigIntTP five  = new_BigIntT(fiveArr, 1);
+
+			BigIntTP stopMat[3][3] = {{one,   three, five},
+																{two,   zero,  one},
+																{three, three, one}};
+																*/
 			
 			
 			//Find the LCM of our cycles
@@ -982,6 +1022,24 @@ int main(int argc, char* argv[])
 					
 					//Iterate to the next matrix
 					checkedAllMatrices = TRUE;
+					
+					/*
+					//CHECK TO SEE IF OUR MATRIX IS THE ONE WE WANT TO STOP AT
+					//DELETE THIS LATER
+					for (int i = 0; i < size; i += 1)
+					{
+						for (int j = 0; j < size; j += 1)
+						{
+							if (compare_BigIntT(currMatElements[i][j], stopMat[i][j]) != 0)
+							{
+								checkedAllMatrices = FALSE;
+								i = size;
+								j = size;
+							}
+						}
+					}
+					*/
+
 					for (i = 0; i < size; i += 1)
 					{
 						for (j = 0; j < size; j += 1)
@@ -1030,6 +1088,13 @@ int main(int argc, char* argv[])
 			one     = free_BigIntT(one);
 			zero    = free_BigIntT(zero);
 			temp    = free_BigIntT(temp);
+			
+			/*
+			//DELETE THESE LATER
+			two   = free_BigIntT(two);
+			three = free_BigIntT(three);
+			five  = free_BigIntT(five);
+			*/
 			
 			currMat  = free_BigIntMatrixT(currMat);
 			zeroMat  = free_BigIntMatrixT(zeroMat);
