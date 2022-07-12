@@ -208,10 +208,23 @@ int main(int argc, char* argv[])
 			if ((F == NULL) || (F_2 == NULL))
 				return EXIT_FAILURE;
 			
+			if (cols(F) != rows(F_2))
+			{
+				fprintf(stderr, "Given matrices cannot be multiplied.\n");
+				return EXIT_FAILURE;
+			}
+			
 			//Iterate F a few times
 			//The minus 1 is for easier conversion between ORBITVIS results
 			printf("Iterations: %d\n", iterations);
-			if (iterations > 0)
+			if (iterations == 1)
+			{
+				F_result = new_IntMatrixT(rows(F), cols(F_2));
+				mat_mul(F, F_2, F_result);
+				modm(F_result, modulus);
+			}
+			
+			else if (iterations > 0)
 				F_result = iterate(F, F_2, modulus, iterations);
 			
 			//Prevents the matrix from being printed when
@@ -402,6 +415,7 @@ int main(int argc, char* argv[])
 		else if (! strcmp(argv[1], "core"))
 		{
 			BigIntMatrixTP A;
+			BigIntMatrixTP I = NULL;
 			BigIntMatrixTP vectToTest = NULL;
 			BigIntMatrixTP zeroVector;
 			BigIntMatrixTP tempVector;
@@ -420,6 +434,7 @@ int main(int argc, char* argv[])
 			int oneArr[1] = {1};
 			
 			bool checkedAllVects = FALSE;
+			bool nonSquareMatrix = FALSE;
 			
 			//If the user provided a modulus on the CLI
 			if (argc > 2)
@@ -447,8 +462,8 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
-			entriesToUse = malloc(big_rows(A)*sizeof(BigIntTP*));
-			for (int i = 0; i < big_rows(A); i += 1)
+			entriesToUse = malloc(big_cols(A)*sizeof(BigIntTP*));
+			for (int i = 0; i < big_cols(A); i += 1)
 			{
 				entriesToUse[i] = malloc(sizeof(BigIntTP));
 				entriesToUse[i][0] = empty_BigIntT(1);
@@ -459,7 +474,7 @@ int main(int argc, char* argv[])
 			temp = empty_BigIntT(1);
 			kernelCount = empty_BigIntT(1);
 			
-			vectToTest = new_BigIntMatrixT(big_rows(A), 1);
+			vectToTest = new_BigIntMatrixT(big_cols(A), 1);
 			zeroVector = new_BigIntMatrixT(big_rows(A), 1);
 			tempVector = new_BigIntMatrixT(big_rows(A), 1);
 			
@@ -468,18 +483,38 @@ int main(int argc, char* argv[])
 			printf("Modulus: ");
 			printi(bigMod);
 			printf("\n");
-			big_floyd(A, A, bigMod, &theCycle);
 			
-			printf("Rep:\n");
-			printbm(rep(theCycle));
+			//Only use floyd if we actually can
+			if ((big_rows(A)) == big_cols(A))
+			{
+				I = identity_BigIntMatrixT(big_rows(A));
+				big_floyd(A, I, bigMod, &theCycle);
+				
+				printf("Rep:\n");
+				printbm(rep(theCycle));
+			}
+			
+			//NOTE: this tool is NOT a good way to gauge how many unique vectors
+			// can be made with a given basis, since duplicates can appear without 
+			// zero vectors ever appearing.
+			else
+			{
+				nonSquareMatrix = TRUE;
+				printf("ker(A):\n");
+			}
 			
 			//Loop until all vectors have been checked
 			//This could be a lot more efficient if I understood how best to
 			// manipulate how the kernel vectors divide the plane
-			while ((!checkedAllVects) && (tau(theCycle) != 0))
+			while (((nonSquareMatrix) || (tau(theCycle) != 0)) && (!checkedAllVects))
 			{
 				set_big_matrix(vectToTest, entriesToUse);
-				big_mat_mul(rep(theCycle), vectToTest, tempVector);
+				
+				if (nonSquareMatrix)
+					big_mat_mul(A, vectToTest, tempVector);
+				else
+					big_mat_mul(rep(theCycle), vectToTest, tempVector);
+				
 				modbm(tempVector, bigMod);
 				
 				//If we found a vector that maps to the origin
@@ -487,11 +522,17 @@ int main(int argc, char* argv[])
 				{
 					add_BigIntT(kernelCount, one, temp);
 					copy_BigIntT(temp, kernelCount);
+					
+					if (nonSquareMatrix)
+					{
+						printbm(vectToTest);
+						printf("\n");
+					}
 				}
 				
 				//Increment to next vector
 				checkedAllVects = TRUE;
-				for (int i = big_rows(A)-1; i >= 0; i -= 1)
+				for (int i = big_cols(A)-1; i >= 0; i -= 1)
 				{
 					add_BigIntT(entriesToUse[i][0], one, temp);
 					
@@ -507,29 +548,34 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			printf("ord(ker(core A) = ");
+			printf("|ker(A)| = ");
 			printi(kernelCount);
-			printf("\nord(core A) = ");
 			
-			//Calculate number of vectors in our space,
-			// then compact it
-			orderOfSpace = new_BigIntT(oneArr, 1);
-			for (int i = 0; i < big_rows(A); i += 1)
+			//It only makes sense to talk about the core of a square matrix
+			if (! nonSquareMatrix)
 			{
-				multiply_BigIntT(orderOfSpace, bigMod, temp);
-				copy_BigIntT(temp, orderOfSpace);
+				printf("\n|core(A)| = ");
+				
+				//Calculate number of vectors in our space,
+				// then compact it
+				orderOfSpace = new_BigIntT(oneArr, 1);
+				for (int i = 0; i < big_rows(A); i += 1)
+				{
+					multiply_BigIntT(orderOfSpace, bigMod, temp);
+					copy_BigIntT(temp, orderOfSpace);
+				}
+				
+				if (compare_BigIntT(zero, kernelCount) != 0)
+					divide_BigIntT(orderOfSpace, kernelCount, temp);
+				else
+					copy_BigIntT(orderOfSpace, temp);
+				
+				printi(temp);
 			}
-			
-			if (compare_BigIntT(zero, kernelCount) != 0)
-				divide_BigIntT(orderOfSpace, kernelCount, temp);
-			else
-				copy_BigIntT(orderOfSpace, temp);
-			
-			printi(temp);
 			printf("\n");
 			
 		
-			for (int i = 0; i < big_rows(A); i += 1)
+			for (int i = 0; i < big_cols(A); i += 1)
 			{
 				entriesToUse[i][0] = free_BigIntT(entriesToUse[i][0]);
 				FREE(entriesToUse[i]);
@@ -537,6 +583,7 @@ int main(int argc, char* argv[])
 			FREE(entriesToUse);
 			
 			A          = free_BigIntMatrixT(A);
+			I          = free_BigIntMatrixT(I);
 			vectToTest = free_BigIntMatrixT(vectToTest);
 			zeroVector = free_BigIntMatrixT(zeroVector);
 			tempVector = free_BigIntMatrixT(tempVector);
@@ -796,15 +843,13 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 28 3 5
 			cycmatsearch 2 30 3 4
 			cycmatsearch 3 6 2 3 5
-			cycmatsearch 3 5 2 2 3
-			
-			cycmatsearch 3 6-6 2 2 3 ; 1/6
+			cycmatsearch 3 6 2 2 3
 			*/
 			
 			int oneArr[] = {1};
-			int threeArr[] = {3};
+			/*int threeArr[] = {3};
 			int fiveArr[] = {5};
-			int twoArr[] = {2};
+			int twoArr[] = {2};*/
 			int start[] = {6};
 			
 			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
