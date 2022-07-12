@@ -219,9 +219,10 @@ void fprinti(FILE* file, BigIntTP n)
 		
 		for (int i = n->size-1; i >= 0; i -= 1)
 		{
-			//Zero padding
-			for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
-				fprintf(file, "0");
+			//Zero padding, only added if we're not on the most significant bunch
+			if (i != n->size-1)
+				for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
+					fprintf(file, "0");
 			
 			fprintf(file, "%d", n->theInt[i]);
 		}

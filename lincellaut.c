@@ -844,15 +844,17 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 3 4
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 6 2 2 3
+			
+			cycmatsearch 4 4 2 2 3 3 . . .
 			*/
 			
 			int oneArr[] = {1};
 			/*int threeArr[] = {3};
 			int fiveArr[] = {5};
 			int twoArr[] = {2};*/
-			int start[] = {6};
+			int start[] = {2};
 			
-			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
+			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
@@ -897,7 +899,6 @@ int main(int argc, char* argv[])
 			temp    = empty_BigIntT(1);
 			
 			//Initialise our matrix elements
-			/*
 			currMatElements = malloc(size*sizeof(BigIntTP*));
 			for (i = 0; i < size; i += 1)
 			{
@@ -905,9 +906,9 @@ int main(int argc, char* argv[])
 				for (j = 0; j < size; j += 1)
 					currMatElements[i][j] = empty_BigIntT(1);
 			}
-			*/
 			
 			//TESTING A SPECIFIC CASE
+			/*
 			int theModValue[] = {6};
 			int theResumeValue[] = {1};
 			
@@ -922,7 +923,7 @@ int main(int argc, char* argv[])
 					else
 						currMatElements[i][j] = new_BigIntT(theModValue, 1);
 				}
-			}
+			} */
 			
 			/*
 			//INITIALISING SPECIFIC NUMBERS SO THAT WE CAN STOP EXECUTION
@@ -981,6 +982,10 @@ int main(int argc, char* argv[])
 				printf("Currently searching mod ");
 				printi(currMod);
 				printf("...\n");
+				
+				fprintf(textOutput, "~~~Mod ");
+				fprinti(textOutput, currMod);
+				fprintf(textOutput, "~~~\n");
 
 				//Search throuh all matrices under the current modulus
 				checkedAllMatrices = FALSE;
@@ -1057,11 +1062,23 @@ int main(int argc, char* argv[])
 						printbm(currMat);
 						printf("\n");
 						
-						fprintf(textOutput, "Mod ");
-						fprinti(textOutput, currMod);
+						fprintbm_nopad(textOutput, currMat);
 						fprintf(textOutput, "\n");
-						fprintbm(textOutput, currMat);
-						fprintf(textOutput, "\n");
+						
+						if (fclose(textOutput) == EOF)
+						{
+							fprintf(stderr, "Error saving file %s.\n", textOutputName);
+							checkedAllMatrices = FALSE;
+							break;
+						}
+						
+						textOutput = fopen(textOutputName, "a");
+						if (textOutput == NULL)
+						{
+							fprintf(stderr, "Error reopening file %s after saving.\n", textOutputName);
+							checkedAllMatrices = FALSE;
+							break;
+						}
 					}
 					
 					

@@ -642,6 +642,23 @@ void fprintbm(FILE* file, BigIntMatrixTP M)
 }
 
 
+void fprintbm_nopad(FILE* file, BigIntMatrixTP M)
+/** Same as fprintbm(), except no padding is added to
+    the beginning of each matrix element. */
+{	
+	//Actually print out the entries
+	for (int row = 0; row < M->m; row += 1)
+	{
+		for (int col = 0; col < M->n; col += 1)
+		{				
+			fprinti(file, M->matrix[row][col]);
+			fprintf(file, " ");
+		}
+		fprintf(file, "\n");
+	}
+}
+
+
 int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
 /** Computes AB, stores result in result. 
     This function DOES check to make sure result is the proper dimensions.

@@ -83,6 +83,9 @@ void printbm(BigIntMatrixTP);
 void fprintm(FILE*, IntMatrixTP);
 void fprintbm(FILE*, BigIntMatrixTP);
 
+/** Same as function above, except no zero padding is added. */
+void fprintbm_nopad(FILE*, BigIntMatrixTP);
+
 /** Returns the number of digits a given
     positive integer has. */
 int num_digits(int);
