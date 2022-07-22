@@ -10,14 +10,6 @@
 https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
 https://stackoverflow.com/questions/3219393
 */
-
-//
-//
-//
-// REMEMBER TO PROGRAM AN UPPER BOUND TO THE MATRICES I CHECK.
-// I didn't save all the matrices I found yesterday; gotta refind them.
-// I should also have the program save the file at each checkpoint so I don't need to worry about all this.
-//
  
 #include <stdlib.h>
 #include <stdio.h>
@@ -845,16 +837,16 @@ int main(int argc, char* argv[])
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 6 2 2 3
 			
-			cycmatsearch 4 4 2 2 3 3 . . .
+			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
 			
 			int oneArr[] = {1};
 			/*int threeArr[] = {3};
-			int fiveArr[] = {5};
-			int twoArr[] = {2};*/
-			int start[] = {2};
+			int fiveArr[] = {5}; */
+			int twoArr[] = {2};
+			int start[] = {3};
 			
-			//printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
+			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
@@ -903,9 +895,36 @@ int main(int argc, char* argv[])
 			for (i = 0; i < size; i += 1)
 			{
 				currMatElements[i] = malloc(size*sizeof(BigIntTP));
-				for (j = 0; j < size; j += 1)
-					currMatElements[i][j] = empty_BigIntT(1);
+				/*for (j = 0; j < size; j += 1)
+					currMatElements[i][j] = empty_BigIntT(1); */
 			}
+			
+			//Starting at a specific matrix
+			/*
+			2 0 0 0 
+			2 2 2 1
+			0 0 1 0
+			0 1 0 2
+			*/
+			currMatElements[0][0] = new_BigIntT(twoArr, 1);
+			currMatElements[0][1] = empty_BigIntT(1);
+			currMatElements[0][2] = empty_BigIntT(1);
+			currMatElements[0][3] = empty_BigIntT(1);
+			
+			currMatElements[1][0] = new_BigIntT(twoArr, 1);
+			currMatElements[1][1] = new_BigIntT(twoArr, 1);
+			currMatElements[1][2] = new_BigIntT(twoArr, 1);
+			currMatElements[1][3] = new_BigIntT(oneArr, 1);
+			
+			currMatElements[2][0] = empty_BigIntT(1);
+			currMatElements[2][1] = empty_BigIntT(1);
+			currMatElements[2][2] = new_BigIntT(oneArr, 1);
+			currMatElements[2][3] = empty_BigIntT(1);
+			
+			currMatElements[3][0] = empty_BigIntT(1);
+			currMatElements[3][1] = new_BigIntT(oneArr, 1);
+			currMatElements[3][2] = empty_BigIntT(1);
+			currMatElements[3][3] = new_BigIntT(twoArr, 1);
 			
 			//TESTING A SPECIFIC CASE
 			/*
@@ -1609,59 +1628,55 @@ int main(int argc, char* argv[])
 		
 		
 		//If we want to iterate each vector in a space and record their cycle 
-		// and transient lengths, then repeat for a higher-powered modulus.
+		// and transient lengths, then repeat for higher-powered moduli.
 		else if (! strcmp(argv[1], "dynamics"))
 		{
-			int  lowpower = 1; //Holds the higher power of the modulus to check
 			int  highpower = 2;
 			int  highmod = 1;   //Holds the modulus raised to the correct power
-			int  OGmod ;
 
-			int* possibleCycleLengths;
+			int* possibleCycleLengths = NULL;
 			int* currVectElements;
-			int* currVectElementsMult; //Holds multiples of the current vector's elements
+			
+			//Each vector's lower-powered cycle lengths,
+			// used for finding correct previous tuple
+			int* currCycleLengths;
 			
 			int firstIndex; //Used to help create our lookup table for cycle lengths
+			int tempModulus;
 			
 			//Holds counts for all possible cycle length pairs
 			//For instance, if a vector % highmod has a cycle length
 			// of 20, while % modulus it has a cycle length of 2,
-			// then cycleTable[2][20] += 1;
-			int** cycleTable;
+			// then cycleTable[w=2][w=20] += 1;
+			int** cycleTable = NULL;
+			
+			//Each time we go up a modulus, we have to keep track of the pevious
+			// pairs of cycles we've found.
+			int** prevCycleTuples = NULL;
 			
 			bool checkedAllVects = FALSE;
+			bool matchedTuple;
 			
 			IntMatrixTP A; //Holds our update matrix
 			IntMatrixTP currVect;
 			
-			CycleInfoTP theCycle;
+			CycleInfoTP theCycle = NULL;
 			
-			//User-provided lower power
+			//User-provided upper bound for moduli power
 			if (argc > 2)
 			{
-				lowpower = (int)strtol(argv[2], &tempStr, 10);
+				highpower = (int)strtol(argv[2], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
-					fprintf(stderr, "Unable to read lower power from command line.\n");
-					return EXIT_FAILURE;
-				}
-			}
-			
-			//User-provided higher power
-			if (argc > 3)
-			{
-				highpower = (int)strtol(argv[3], &tempStr, 10);
-				if (tempStr[0] != '\0')
-				{
-					fprintf(stderr, "Unable to read higher power from command line.\n");
+					fprintf(stderr, "Unable to read upper bound from command line.\n");
 					return EXIT_FAILURE;
 				}
 			}
 			
 			//If user provided a modulus for us
-			if (argc > 4)
+			if (argc > 3)
 			{
-				modulus = (int)strtol(argv[4], &tempStr, 10);
+				modulus = (int)strtol(argv[3], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read modulus from command line.\n");
@@ -1682,162 +1697,258 @@ int main(int argc, char* argv[])
 				return EXIT_SUCCESS;
 			}
 			
-			//Calculate moduli raised to the given power
-			//It's the uer's responsibility to prevent these from overflowing
-			OGmod = modulus;
-			for (int i = 0; i < highpower; i += 1, highmod *= modulus);
-			for (int i = 1; i < lowpower; i += 1, modulus *= OGmod);
 			
-			printf("Moduli: %d, %d\n", modulus, highmod);
-			
-			
-			//Now that we have the matrix, calculate the cycle length
-			// and use it to reason all possible cycle lengths
-			// for alloting memory
-			theCycle = floyd(A, A, highmod);
-			printf("Matrix's multiplicative order mod %d: %d\n", highmod, omega(theCycle));
-			
-			printf("(lowmod, highmod)\n\n");
-			
-			//First number in the pointer says how many cycle lengths
-			// are stored in the vector
-			possibleCycleLengths = malloc(2*sizeof(int));
-			possibleCycleLengths[0] = 0;
-			
-			for (int i = 1; i <= omega(theCycle)/2; i += 1)
-				if (omega(theCycle) % i == 0)
+			for (int modulusCounter = 1; modulusCounter <= highpower; modulusCounter += 1)
+			{
+				checkedAllVects = FALSE;
+				
+				highmod *= modulus;
+				printf("Current modulus: %d\n", highmod);
+				
+				//Now that we have the matrix, calculate the cycle length
+				// and use it to reason all possible cycle lengths
+				// for alloting memory
+				theCycle = floyd(A, A, highmod);
+				printf("Matrix's multiplicative order mod %d: %d\n", highmod, omega(theCycle));
+				
+				//printf("(lowmod, highmod)\n\n");
+				
+				//First number in the pointer says how many cycle lengths
+				// are stored in the vector
+				if (possibleCycleLengths != NULL)
 				{
-					possibleCycleLengths[0] += 1;
-					possibleCycleLengths[possibleCycleLengths[0]] = omega(theCycle) / i;
-					possibleCycleLengths = realloc(possibleCycleLengths, 
-					                               (possibleCycleLengths[0]+2)*sizeof(int));
+					FREE(possibleCycleLengths);
+				}
+				possibleCycleLengths = malloc(2*sizeof(int));
+				possibleCycleLengths[0] = 0;
+				
+				//Adding all divisors of the matrix's cycle length to our list
+				//Reallocating the array each time is slow, but the numbers
+				// we're dealing with should be low enough so it isn't a problem
+				for (int i = 1; i <= omega(theCycle)/2; i += 1)
+					if (omega(theCycle) % i == 0)
+					{
+						possibleCycleLengths[0] += 1;
+						possibleCycleLengths[possibleCycleLengths[0]] = omega(theCycle) / i;
+						possibleCycleLengths = realloc(possibleCycleLengths, 
+																					 (possibleCycleLengths[0]+2)*sizeof(int));
+					}
+					
+				//Add 1 as a cycle length
+				possibleCycleLengths[0] += 1;
+				possibleCycleLengths[possibleCycleLengths[0]] = 1;
+				
+				theCycle = free_CycleInfoT(theCycle);
+				
+				/*printf("Possible vector cycle lengths: ");
+				for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
+					printf("%d ", possibleCycleLengths[i]);
+				printf("\n\n"); */
+				
+				//Now, construct our cycleTable to hold cycle counts
+				//Only allocating "half" the table since that's all we need
+				//This gets reallocated for each power we go up
+				if (modulusCounter == 1)
+				{
+					//We only need one row on the first pass; we have no tuples yet
+					cycleTable    = malloc(sizeof(int*));
+					cycleTable[0] = malloc(possibleCycleLengths[0]*sizeof(int));
 				}
 				
-			//Add 1 as a cycle length
-			possibleCycleLengths[0] += 1;
-			possibleCycleLengths[possibleCycleLengths[0]] = 1;
-			
-			free_CycleInfoT(theCycle);
-			
-			/*printf("Possible vector cycle lengths: ");
-			for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
-				printf("%d ", possibleCycleLengths[i]);
-			printf("\n\n"); */
-			
-			//Now, construct our cycleTable to hold cycle counts
-			//Only allocating half the table since that's all we need
-			cycleTable = malloc(possibleCycleLengths[0]*sizeof(int*));
-			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
-				cycleTable[i] = calloc(i+1, sizeof(int));
-			
-			
-			currVectElements = calloc(rows(A), sizeof(int));
-			currVectElementsMult = malloc(rows(A)*sizeof(int));
-			currVect = new_IntMatrixT(rows(A), 1);
-			
-			//Iterate until we've tested every vector
-			while (!checkedAllVects)
-			{
-				//printf("---\n");
-				set_column(currVect, currVectElements);
-				theCycle = floyd(A, currVect, modulus);
-				
-				//Print out vector in an easier-to-look-at way for stdout
-				/*printf("<");
-				for (int i = 0; i < rows(A)-1; i += 1)
-					printf("%d ", currVectElements[i]);
-				printf("%d>\t:\t", currVectElements[rows(A)-1]);
-				printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle));
-				printf("---\n");  */
-				
-				//Finding the first index for our table
-				firstIndex = omega(theCycle);
-				
-				for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
-					if (firstIndex == possibleCycleLengths[i])
+				else
+				{
+					cycleTable = malloc(prevCycleTuples[0][0]*sizeof(int*));
+					for (int i = 0; i < prevCycleTuples[0][0]; i += 1)
 					{
-						firstIndex = i-1;
-						break;
+						//This line can be improved by only allocating enough
+						// ints for those equal to or greater than the cycles
+						// within the tuple
+						cycleTable[i] = calloc(possibleCycleLengths[0], sizeof(int));
 					}
+				}
 				
-				free_CycleInfoT(theCycle);
+				currVectElements     = calloc(rows(A), sizeof(int));
+				currVect             = new_IntMatrixT(rows(A), 1);
 				
-				//Now that we've looked at the base vector's stats, let's go to % highmod
-				for (int i = 0; i < rows(A); i += 1) 
-					currVectElementsMult[i] = currVectElements[i];
-				
-				//Check all vectors which differ from our current vector by
-				// multiples of our modulus
+				//Iterate until we've tested every vector
 				while (!checkedAllVects)
 				{
-					set_column(currVect, currVectElementsMult);
-					theCycle = floyd(A, currVect, highmod);
+					//printf("---\n");
+					set_column(currVect, currVectElements);
 					
 					//Print out vector in an easier-to-look-at way for stdout
-					/*printf("<");
+					/*
+					printf("<");
 					for (int i = 0; i < rows(A)-1; i += 1)
-						printf("%d ", currVectElementsMult[i]);
-					printf("%d>\t:\t", currVectElementsMult[rows(A)-1]);
-					printf("w = %d,\tt = %d\n", omega(theCycle), tau(theCycle)); */
+						printf("%d ", currVectElements[i]);
+					printf("%d>\n", currVectElements[rows(A)-1]);
+					printf("---\n"); 
+					*/
 					
-					//Adding a count to our cycle table
-					for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
-						if (omega(theCycle) == possibleCycleLengths[i])
+					//Helps find which previous tuple this vector corresponds to
+					//Contains the cycle lengths of our vector under all moduli
+					// less than the current one. The last element is the
+					// current modulus' cycle length
+					currCycleLengths = malloc(modulusCounter*sizeof(int));
+					
+					//Start with highest modulus, work our way down
+					//Allows taking vectors mod tempModulus to be easier
+					tempModulus = modulus;
+					for (int i = 1; i < modulusCounter; i += 1, tempModulus *= modulus);
+					
+					for (int i = modulusCounter-1; i >= 0; i -= 1)
+					{
+						theCycle = floyd(A, currVect, tempModulus);
+						currCycleLengths[i] = omega(theCycle);
+						theCycle = free_CycleInfoT(theCycle);
+						
+						tempModulus /= modulus;
+						modm(currVect, tempModulus); //Might cause an error mod 1?
+					}
+					
+					//Now, find the correct firstIndex which matches our cycle lengths
+					if (modulusCounter == 1)
+						firstIndex = 0;
+					
+					else
+					{
+						for (int tuple = 1; tuple <= prevCycleTuples[0][0]; tuple += 1)
 						{
-							if (i-1 > firstIndex)
-								printf("This message appearing means a vector's cycle was added to an element outside the printed table.\n");
-
-							cycleTable[firstIndex][i-1] += 1;
+							//Now, check the specific elements of each tuple to see if they
+							// match with ours
+							matchedTuple = TRUE;
+							for (int tupleElem = 0; tupleElem < modulusCounter-1; tupleElem += 1)
+							{
+								if (prevCycleTuples[tuple][tupleElem] != currCycleLengths[tupleElem])
+								{
+									matchedTuple = FALSE;
+									break;
+								}
+							}
+							
+							if (matchedTuple)
+							{
+								firstIndex = tuple-1;
+								break;
+							}
+						}
+					}
+					
+					//Now, we simply add our count to the cycleTable entry
+					//Find our secondIndex
+					for (int secondIndex = 1; 
+					secondIndex <= possibleCycleLengths[0]; 
+					secondIndex += 1)
+					{
+						if (possibleCycleLengths[secondIndex] == currCycleLengths[modulusCounter-1])
+						{
+							cycleTable[firstIndex][secondIndex-1] += 1;
 							break;
 						}
-					
-					free_CycleInfoT(theCycle);
-					
-					//Now, iterate to the next vector which reduces to currVectElements
+					}
+
+					//Increment through all possible vectors (% modulus)
 					checkedAllVects = TRUE;
 					for (int i = rows(A)-1; i >= 0; i -= 1)
 					{
-						if (currVectElementsMult[i] != highmod - modulus + currVectElements[i])
+						if (currVectElements[i] != highmod - 1)
 						{
 							checkedAllVects = FALSE;
-							currVectElementsMult[i] += modulus;
-							i = -1;
+							currVectElements[i] += 1;
+							break;
 						}
 						
-						//Carry to next vect component
+						//Carry to next vector component
 						else
-							currVectElementsMult[i] = currVectElements[i];
+							currVectElements[i] = 0;
 					}
 				}
 				
-				//Increment through all possible vectors (% modulus)
-				checkedAllVects = TRUE;
-				for (int i = rows(A)-1; i >= 0; i -= 1)
+				//Now that we have a completed cycleTable up to a particular modulus,
+				// we need to get our list of tuples from it.
+				if (prevCycleTuples == NULL)
 				{
-					if (currVectElements[i] != modulus - 1)
+					prevCycleTuples    = malloc(sizeof(int*));
+					prevCycleTuples[0] = malloc(sizeof(int));
+					prevCycleTuples[0][0] = 0;
+					
+					//Add cycle lengths as tuples
+					for (int i = 0; i < possibleCycleLengths[0]; i += 1)
 					{
-						checkedAllVects = FALSE;
-						currVectElements[i] += 1;
-						i = -1;
+						if (cycleTable[0][i] != 0)
+						{
+							//Increasing tuple count
+							prevCycleTuples[0][0] += 1;
+							prevCycleTuples = realloc(prevCycleTuples, (prevCycleTuples[0][0]+1)*sizeof(int*));
+							prevCycleTuples[prevCycleTuples[0][0]] = malloc(sizeof(int));
+							prevCycleTuples[prevCycleTuples[0][0]][0] = possibleCycleLengths[i+1];
+						}
 					}
 					
-					//Carry to next vector component
-					else
-						currVectElements[i] = 0;
+					FREE(cycleTable[0]);
+					FREE(cycleTable);
+				}
+				
+				else
+				{
+					//Get cycleTable ready for next iteration
+					if (modulusCounter != highpower)
+					{
+						int prevPrevTupleCount = prevCycleTuples[0][0];
+						
+						//New tuples get put here, then prevCycleTuples points to this after
+						int** newPrevCycleTuples = malloc(sizeof(int*));
+						newPrevCycleTuples[0] = calloc(1, sizeof(int));
+						
+						for (int tuple = 0; tuple < prevPrevTupleCount; tuple += 1)
+						{
+							for (int newCycle = 0; newCycle < possibleCycleLengths[0]; newCycle += 1)
+							{
+								if (cycleTable[tuple][newCycle] != 0)
+								{
+									//Add new tuple
+									newPrevCycleTuples[0][0] += 1;
+									newPrevCycleTuples = realloc(newPrevCycleTuples, (newPrevCycleTuples[0][0]+1)*sizeof(int*));
+									newPrevCycleTuples[newPrevCycleTuples[0][0]] = malloc(modulusCounter*sizeof(int));
+									
+									//Re-add elements from previous tuple, add new cycle length
+									for (int tupleElem = 0; tupleElem < modulusCounter-1; tupleElem += 1)
+										newPrevCycleTuples[newPrevCycleTuples[0][0]][tupleElem] = prevCycleTuples[tuple+1][tupleElem];
+									newPrevCycleTuples[newPrevCycleTuples[0][0]][modulusCounter-1] = possibleCycleLengths[newCycle+1];
+								}
+							}
+						}
+
+						for (int i = 0; i < prevPrevTupleCount; i += 1)
+						{
+							FREE(cycleTable[i]);
+						}
+						FREE(cycleTable);
+						
+						//Now, deallocate prevCycleLengths, have it point to new tuples
+						for (int i = 1; i < prevCycleTuples[0][0]; i += 1)
+						{
+							FREE(prevCycleTuples[i]);
+						}
+						FREE(prevCycleTuples[0]);
+						FREE(prevCycleTuples);
+						prevCycleTuples = newPrevCycleTuples;
+					}
 				}
 			}
 			
 			//Now, we print all the numbers we've collected
 			printf("Cycle pairs:\n");
-			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
-				for (int j = 0; j <= i; j += 1)
+			for (int i = 0; i < prevCycleTuples[0][0]; i += 1)
+				for (int j = 0; j < possibleCycleLengths[0]; j += 1)
 					//Only print out info is vectors have that pair of cycle lengths
 					if (cycleTable[i][j] != 0)
 					{
-						printf("(%d, %d): %d\n", 
-						possibleCycleLengths[i+1],
-						possibleCycleLengths[j+1],
-						cycleTable[i][j]);
+						//Print relevant tuple
+						printf("(");
+						for (int tupleElem = 0; tupleElem < highpower-1; tupleElem += 1)
+							printf("%d, ", prevCycleTuples[i+1][tupleElem]);
+						printf("%d) = %d\n", possibleCycleLengths[j+1], cycleTable[i][j]);
 					}
 
 			A        = free_IntMatrixT(A);
@@ -1846,7 +1957,7 @@ int main(int argc, char* argv[])
 			//Don't need to free theCycle since it gets freed above
 			theCycle = NULL;
 			
-			for (int i = 0; i < possibleCycleLengths[0]; i += 1)
+			for (int i = 0; i < prevCycleTuples[0][0]; i += 1)
 			{
 				FREE(cycleTable[i]);
 			}
@@ -1854,7 +1965,15 @@ int main(int argc, char* argv[])
 			FREE(possibleCycleLengths);
 			
 			FREE(currVectElements);
-			FREE(currVectElementsMult);
+			
+			for (int i = 1; i < prevCycleTuples[0][0]; i += 1)
+			{
+				FREE(prevCycleTuples[i]);
+			}
+			FREE(prevCycleTuples[0]);
+			FREE(prevCycleTuples);
+			
+			FREE(currCycleLengths);
 		}
 	}
 	
@@ -1904,9 +2023,9 @@ int main(int argc, char* argv[])
 		": Searches the Fibonacci numbers, checking whether a " \
 		"multiple of each number up to the bound appears before a multiple of a power of the number.\n\n");
 		
-		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[power1] [power2] [modulus]" ANSI_COLOR_RESET \
+		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus]" ANSI_COLOR_RESET \
 		": Iterates every vector in a space, recording their transient lengths and cycle lengths. " \
-		"It then computes the same numbers for a higher-powered modulus.\n\n");
+		"It then computes the same numbers for higher-powered moduli.\n\n");
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
