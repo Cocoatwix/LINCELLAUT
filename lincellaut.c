@@ -28,6 +28,8 @@ https://stackoverflow.com/questions/3219393
 #include "headers/algebra.h"
 
 #define FREE(v) free(v); v = NULL
+
+//Debug macros; can be removed if not needed
 #define opp(a, b, c, o) printf("("); printp(a); printf(")"); printf(o); \
 											  printf("("); printp(b); printf(")"); printf(" == "); \
 											  printp(c); printf("\n")
@@ -43,6 +45,13 @@ https://stackoverflow.com/questions/3219393
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
+/** Frees all "global" variables we allocated memory for. */
+#define FREE_VARIABLES FREE(updatefilepath); \
+											 FREE(initialfilepath); \
+											 FREE(resumefilepath); \
+											 FREE(iterfilepath); \
+											 FREE(bigintmodstring); \
+											 FREE(resumemodstring)
 
 int main(int argc, char* argv[])
 {
@@ -69,14 +78,16 @@ int main(int argc, char* argv[])
 		return EXIT_FAILURE;
 	}
 	
-	int   iterations;
-	int   modulus;
+	int iterations;
+	int modulus;
 	
 	//For holding str representation of mod, used for BigIntT number (if needed)
 	char* bigintmodstring = malloc(MAXSTRLEN*sizeof(char));
+	char* resumemodstring = malloc(MAXSTRLEN*sizeof(char));
 	
 	char* updatefilepath  = malloc(MAXSTRLEN*sizeof(char));
 	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
+	char* resumefilepath  = malloc(MAXSTRLEN*sizeof(char));
 	char* iterfilepath    = malloc(MAXSTRLEN*sizeof(char));
 	
 	//Temporarily holds config data
@@ -135,6 +146,24 @@ int main(int argc, char* argv[])
 			}
 		}
 		
+		else if (! strcmp(systemData, "resumeMat"))
+		{
+			if (fscanf(system, "%s", resumefilepath) != 1)
+			{
+				fprintf(stderr, "Unable to read resume matrix path from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+		
+		else if (! strcmp(systemData, "resumeMod"))
+		{
+			if (fscanf(system, "%101s", resumemodstring) != 1)
+			{
+				fprintf(stderr, "Unable to read resume modulus from config file.\n");
+				return EXIT_FAILURE;
+			}
+		}
+		
 		else if (! strcmp(systemData, "itername"))
 		{
 			if (fscanf(system, "%s", iterfilepath) != 1)
@@ -149,6 +178,7 @@ int main(int argc, char* argv[])
 	if (fclose(system) == EOF)
 	{
 		fprintf(stderr, "Unable to close config file.\n");
+		FREE_VARIABLES;
 		return EXIT_FAILURE;
 	}
 	
@@ -167,6 +197,7 @@ int main(int argc, char* argv[])
 				if (tempStr == argv[2])
 				{
 					fprintf(stderr, "Invalid number of iterations provided at command line.\n");
+					FREE_VARIABLES;
 					return EXIT_FAILURE;
 				}
 			}
@@ -789,10 +820,12 @@ int main(int argc, char* argv[])
 		else if (! strcmp(argv[1], "cycmatsearch"))
 		{
 			//If user didn't provide enough arguments for the tool, explain how to use it
-			if (argc < 5)
+			if (argc < 6)
 			{
-				printf(ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "size maxmod cycles..." ANSI_COLOR_RESET \
+				printf(ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume maxmod cycles..." ANSI_COLOR_RESET \
 				": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n");
+				printf(" - " ANSI_COLOR_CYAN "resume" ANSI_COLOR_RESET \
+				": Says whether to resume computation at a particular matrix.\n");
 				printf(" - " ANSI_COLOR_CYAN "size" ANSI_COLOR_RESET \
 				": Tells what size matrix to use.\n");
 				printf(" - " ANSI_COLOR_CYAN "maxmod" ANSI_COLOR_RESET \
@@ -841,16 +874,11 @@ int main(int argc, char* argv[])
 			*/
 			
 			int oneArr[] = {1};
-			/*int threeArr[] = {3};
-			int fiveArr[] = {5}; */
-			int twoArr[] = {2};
-			int start[] = {3};
-			
-			printf("Currently, the first modulus checked is not 2 for testing purposes.\n");
+			int start[] = {2}; //Modulus to start with
 			
 			int* colVectCycles; //Holds the different cycle lengths 
 			
-			size = (int)strtol(argv[2], &tempStr, 10);
+			size = (int)strtol(argv[3], &tempStr, 10);
 			
 			if (tempStr[0] != '\0')
 			{
@@ -858,15 +886,55 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
+			//Initialise our matrix elements
+			currMatElements = malloc(size*sizeof(BigIntTP*));
+			for (i = 0; i < size; i += 1)
+			{
+				currMatElements[i] = malloc(size*sizeof(BigIntTP));
+				for (j = 0; j < size; j += 1)
+					currMatElements[i][j] = empty_BigIntT(1);
+			}
+			
+			//If we need to resume computation from a specific matrix
+			if (! strcmp(argv[2], "TRUE"))
+			{
+				currMat = read_BigIntMatrixT(resumefilepath);
+				if (strtoBIT(bigintmodstring, &currMod) == 0)
+				{
+					fprintf(stderr, "Unable to read resume modulus from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+				
+				if (currMat == NULL)
+				{
+					fprintf(stderr, "Unable to read resume matrix from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+				
+				//Now, set the values for currMatElements
+				for (i = 0; i < size; i += 1)
+					for (j = 0; j < size; j += 1)
+						copy_BigIntT(big_element(currMat, i, j), currMatElements[i][j]);
+			}
+			
+			else
+			{
+				//Start looking for matrices at mod 2 from the zero matrix
+				currMod = new_BigIntT(start, 1);
+				currMat = new_BigIntMatrixT(size, size);
+			}
+			
 			//If we couldn't read the modulus
-			if (strtoBIT(argv[3], &maxMod) == 0)
+			if (strtoBIT(argv[4], &maxMod) == 0)
 			{
 				fprintf(stderr, "Unable to read modulus from command line.\n");
 				return EXIT_FAILURE;
 			}
 			
 			//If the user didn't provide enough cycles for the given matrix size
-			if (argc < 4 + size)
+			if (argc < 5 + size)
 			{
 				printf("Too few cycles passed for given matrix size.\n");
 				return EXIT_FAILURE;
@@ -876,7 +944,7 @@ int main(int argc, char* argv[])
 			colVectCycles = malloc(size*sizeof(int));
 			for (i = 0; i < size; i += 1)
 			{
-				colVectCycles[i] = (int)strtol(argv[4+i], &tempStr, 10);
+				colVectCycles[i] = (int)strtol(argv[5+i], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read cycle lengths from command line.\n");
@@ -884,65 +952,9 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			//Start looking for matrices at mod 2
-			currMod = new_BigIntT(start, 1);
 			one     = new_BigIntT(oneArr, 1);
 			zero    = empty_BigIntT(1);
 			temp    = empty_BigIntT(1);
-			
-			//Initialise our matrix elements
-			currMatElements = malloc(size*sizeof(BigIntTP*));
-			for (i = 0; i < size; i += 1)
-			{
-				currMatElements[i] = malloc(size*sizeof(BigIntTP));
-				/*for (j = 0; j < size; j += 1)
-					currMatElements[i][j] = empty_BigIntT(1); */
-			}
-			
-			//Starting at a specific matrix
-			/*
-			2 0 0 0 
-			2 2 2 1
-			0 0 1 0
-			0 1 0 2
-			*/
-			currMatElements[0][0] = new_BigIntT(twoArr, 1);
-			currMatElements[0][1] = empty_BigIntT(1);
-			currMatElements[0][2] = empty_BigIntT(1);
-			currMatElements[0][3] = empty_BigIntT(1);
-			
-			currMatElements[1][0] = new_BigIntT(twoArr, 1);
-			currMatElements[1][1] = new_BigIntT(twoArr, 1);
-			currMatElements[1][2] = new_BigIntT(twoArr, 1);
-			currMatElements[1][3] = new_BigIntT(oneArr, 1);
-			
-			currMatElements[2][0] = empty_BigIntT(1);
-			currMatElements[2][1] = empty_BigIntT(1);
-			currMatElements[2][2] = new_BigIntT(oneArr, 1);
-			currMatElements[2][3] = empty_BigIntT(1);
-			
-			currMatElements[3][0] = empty_BigIntT(1);
-			currMatElements[3][1] = new_BigIntT(oneArr, 1);
-			currMatElements[3][2] = empty_BigIntT(1);
-			currMatElements[3][3] = new_BigIntT(twoArr, 1);
-			
-			//TESTING A SPECIFIC CASE
-			/*
-			int theModValue[] = {6};
-			int theResumeValue[] = {1};
-			
-			currMatElements = malloc(size*sizeof(BigIntTP*));
-			for (i = 0; i < size; i += 1)
-			{
-				currMatElements[i] = malloc(size*sizeof(BigIntTP));
-				for (j = 0; j < size; j += 1)
-				{
-					if ((i == size-1) && (j == size-1))
-						currMatElements[i][j] = new_BigIntT(theResumeValue, 1);
-					else
-						currMatElements[i][j] = new_BigIntT(theModValue, 1);
-				}
-			} */
 			
 			/*
 			//INITIALISING SPECIFIC NUMBERS SO THAT WE CAN STOP EXECUTION
@@ -962,7 +974,6 @@ int main(int argc, char* argv[])
 				cycleLCM = LCM(cycleLCM, colVectCycles[i]);
 			
 			zeroMat  = new_BigIntMatrixT(size, size);
-			currMat  = new_BigIntMatrixT(size, size);
 			tempMat  = new_BigIntMatrixT(size, size);
 			tempMat2 = new_BigIntMatrixT(size, size);
 			
@@ -973,18 +984,18 @@ int main(int argc, char* argv[])
 			//Forming name for text file output.
 			textOutputName = malloc(MAXSTRLEN*sizeof(char));
 			textOutputName[0] = '\0';
-			strcat(textOutputName, argv[1]);
+			strcat(textOutputName, argv[1]); //cycmatsearch
 			strcat(textOutputName, " ");
-			strcat(textOutputName, argv[2]);
+			strcat(textOutputName, argv[3]); //size
 			strcat(textOutputName, " ");
-			strcat(textOutputName, argv[3]);
+			strcat(textOutputName, argv[4]); //maxmod
 			strcat(textOutputName, " ");
 			for (i = 0; i < size-1; i += 1)
 			{
-				strcat(textOutputName, argv[4+i]);
+				strcat(textOutputName, argv[5+i]);
 				strcat(textOutputName, " ");
 			}
-			strcat(textOutputName, argv[size+3]);
+			strcat(textOutputName, argv[size+4]);
 			strcat(textOutputName, ".txt");
 			//printf("%s\n", textOutputName);
 			
@@ -1006,7 +1017,7 @@ int main(int argc, char* argv[])
 				fprinti(textOutput, currMod);
 				fprintf(textOutput, "~~~\n");
 
-				//Search throuh all matrices under the current modulus
+				//Search through all matrices under the current modulus
 				checkedAllMatrices = FALSE;
 				while (!checkedAllMatrices)
 				{
@@ -1106,7 +1117,6 @@ int main(int argc, char* argv[])
 					
 					/*
 					//CHECK TO SEE IF OUR MATRIX IS THE ONE WE WANT TO STOP AT
-					//DELETE THIS LATER
 					for (int i = 0; i < size; i += 1)
 					{
 						for (int j = 0; j < size; j += 1)
@@ -1169,13 +1179,6 @@ int main(int argc, char* argv[])
 			one     = free_BigIntT(one);
 			zero    = free_BigIntT(zero);
 			temp    = free_BigIntT(temp);
-			
-			/*
-			//DELETE THESE LATER
-			two   = free_BigIntT(two);
-			three = free_BigIntT(three);
-			five  = free_BigIntT(five);
-			*/
 			
 			currMat  = free_BigIntMatrixT(currMat);
 			zeroMat  = free_BigIntMatrixT(zeroMat);
@@ -1697,6 +1700,8 @@ int main(int argc, char* argv[])
 				return EXIT_SUCCESS;
 			}
 			
+			printf("Matrix:\n");
+			printm(A);
 			
 			for (int modulusCounter = 1; modulusCounter <= highpower; modulusCounter += 1)
 			{
@@ -1752,7 +1757,7 @@ int main(int argc, char* argv[])
 				{
 					//We only need one row on the first pass; we have no tuples yet
 					cycleTable    = malloc(sizeof(int*));
-					cycleTable[0] = malloc(possibleCycleLengths[0]*sizeof(int));
+					cycleTable[0] = calloc(possibleCycleLengths[0], sizeof(int));
 				}
 				
 				else
@@ -1826,6 +1831,8 @@ int main(int argc, char* argv[])
 								}
 							}
 							
+							//The for loop will reach this at some point since the vectors must fall into
+							// one of the defined cycle reductions (tuples)
 							if (matchedTuple)
 							{
 								firstIndex = tuple-1;
@@ -1885,8 +1892,21 @@ int main(int argc, char* argv[])
 						}
 					}
 					
-					FREE(cycleTable[0]);
-					FREE(cycleTable);
+					//Prevents a segmentation fault if highpower == 1
+					if (modulusCounter != highpower)
+					{
+						FREE(cycleTable[0]);
+						FREE(cycleTable);
+					}
+					
+					if (highpower == 1)
+					{
+						//If we're only checking one iteration, we don't need to
+						// prepare this value for a next iteration. It does, however,
+						// need to say how many tuples we had last iteration, which 
+						// in this case was 1 (the null tuple)
+						prevCycleTuples[0][0] = 1;
+					}
 				}
 				
 				else
@@ -1938,9 +1958,11 @@ int main(int argc, char* argv[])
 			}
 			
 			//Now, we print all the numbers we've collected
-			printf("Cycle pairs:\n");
+			printf("\nCycle tuples:\n");
 			for (int i = 0; i < prevCycleTuples[0][0]; i += 1)
+			{
 				for (int j = 0; j < possibleCycleLengths[0]; j += 1)
+				{
 					//Only print out info is vectors have that pair of cycle lengths
 					if (cycleTable[i][j] != 0)
 					{
@@ -1950,7 +1972,9 @@ int main(int argc, char* argv[])
 							printf("%d, ", prevCycleTuples[i+1][tupleElem]);
 						printf("%d) = %d\n", possibleCycleLengths[j+1], cycleTable[i][j]);
 					}
-
+				}
+			}
+			
 			A        = free_IntMatrixT(A);
 			currVect = free_IntMatrixT(currVect);
 			
@@ -2007,7 +2031,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Finds and outputs some basic rotation matrices for the given modulus.\n\n");
 		
-		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "size maxmod cycles..." ANSI_COLOR_RESET \
+		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET \
 		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET \
@@ -2032,10 +2056,7 @@ int main(int argc, char* argv[])
 	}
 	
 	//Freeing memory
-	FREE(updatefilepath);
-	FREE(initialfilepath);
-	FREE(iterfilepath);
-	FREE(bigintmodstring);
+	FREE_VARIABLES;
 	
 	return EXIT_SUCCESS;
 }

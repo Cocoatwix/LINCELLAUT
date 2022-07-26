@@ -19,4 +19,8 @@ update : This key specifies a file path where an update rule matrix can be found
 
 initial : This key specifies a file path where a starting vector can be found in .matrix format. The .matrix extension should be included in the filename. This vector is primarily used with Floyd's Cycle Detecting Algorithm. This key expects a string (no quotes around the string).
 
+resumeMat : This key specifies a file path where a matrix to resume from can be found in .matrix format. The .matrix extension should be included in the filename. The resume matrix is used to resume computation at a particular matrix, rather than recalculate everything again up to a certain point. It's especially useful for tools like cycmatsearch where multiple sessions are probably required to complete a search. This key expects a string (no quotes around string).
+
+resumeMod : This key specifies a modulus to resume computations at. Currently, it's unused. This key expects a positive integer.
+
 itername : This key specifies a filename for creating a .iteration file. The .iteration extension should be included in the filename. This file is created when write_iteration() is called. This key expects a string (no quotes around the string).
