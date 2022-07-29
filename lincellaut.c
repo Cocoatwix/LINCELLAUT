@@ -1203,6 +1203,226 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to compute some "cycle converting matrices"
+		else if (!strcmp(argv[1], "cycconvmat"))
+		{
+			BigIntTP bigMod;
+			BigIntTP from;
+			BigIntTP to;
+
+			BigIntMatrixTP sumMat;
+			BigIntMatrixTP A;
+			
+			//Check to see if user provided a custom modulus
+			if (argc > 4)
+			{
+				if (strtoBIT(argv[4], &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			else
+			{
+				if (strtoBIT(bigintmodstring, &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			if (strtoBIT(argv[2], &from) != 1)
+			{
+				fprintf(stderr, "Unable to read starting cycle length from command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (strtoBIT(argv[3], &to) != 1)
+			{
+				fprintf(stderr, "Unable to read conversion cycle length from command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			A = read_BigIntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix provided in config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+
+			sumMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
+			ccm(A, sumMat, from, to, bigMod);
+			
+			//Now, print out our resulting "cycle converting matrix"
+			printf("Matrix:\n");
+			printbm(A);
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\n\nCCM from ");
+			printi(from);
+			printf(" to ");
+			printi(to);
+			printf(":\n");
+			printbm(sumMat);
+			
+			
+			from   = free_BigIntT(from);
+			to     = free_BigIntT(to);
+			bigMod = free_BigIntT(bigMod);
+			
+			A      = free_BigIntMatrixT(A);
+			sumMat = free_BigIntMatrixT(sumMat);
+		}
+		
+		
+		//If we want to look for matrices that have CCMs equal to zero
+		else if (! strcmp(argv[1], "ccmzerosearch"))
+		{
+			BigIntTP   bigMod;
+			BigIntTP   zero;
+			BigIntTP   one;
+			BigIntTP   temp;
+			BigIntTP   temp2;
+			BigIntTP*  cycleLengthFactors;
+			BigIntTP** currMatElements;
+			
+			BigIntMatrixTP currMat;
+			BigIntMatrixTP tempCCM;
+			BigIntMatrixTP zeroMat;
+			
+			CycleInfoTP theCycle = NULL;
+			
+			int matSize;
+			int indexCounter; //For freeing and printing
+			int oneArr[1] = {1};
+			
+			//Holds the cycle length of each matrix we check
+			int cycleLengthArray[1] = {0};
+			BigIntTP bigOmega;
+			
+			bool checkedAllMatrices = FALSE;
+			
+			//Checking to see if the user provided a modulus on the command line
+			if (argc > 3)
+			{
+				if (strtoBIT(argv[3], &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus on command line.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			else
+			{
+				if (strtoBIT(bigintmodstring, &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			matSize = (int)strtol(argv[2], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Invalid matrix size provided on command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			currMatElements = malloc(matSize*sizeof(BigIntTP*));
+			for (int row = 0; row < matSize; row += 1)
+			{
+				currMatElements[row] = malloc(matSize*sizeof(BigIntTP));
+				for (int col = 0; col < matSize; col += 1)
+					currMatElements[row][col] = empty_BigIntT(1);
+			}
+			
+			zero = empty_BigIntT(1);
+			one  = new_BigIntT(oneArr, 1);
+			currMat = new_BigIntMatrixT(matSize, matSize);
+			zeroMat = new_BigIntMatrixT(matSize, matSize);
+			tempCCM = new_BigIntMatrixT(matSize, matSize);
+			
+			//Loop until we're checked every matrix under the given modulus
+			while (!checkedAllMatrices)
+			{
+				set_big_matrix(currMat, currMatElements);
+				big_floyd(currMat, currMat, bigMod, &theCycle);
+				
+				printf(":)\n");
+				
+				//This program currently assumes that the cycle length of the
+				// matrix will be less than MAXBUNCH
+				//free_CycleInfoT(theCycle);
+				//cycleLengthArray[0] = omega(theCycle);
+				cycleLengthArray[0] = 123;
+				bigOmega = new_BigIntT(cycleLengthArray, 1);
+				cycleLengthFactors = divisors_of_BigIntT(bigOmega);
+				
+				temp  = empty_BigIntT(1);
+				temp2 = empty_BigIntT(1);
+				indexCounter = 1;
+				while (compare_BigIntT(temp, cycleLengthFactors[0]) < 0)
+				{
+					printi(cycleLengthFactors[indexCounter]);
+					printf(", ");
+					
+					indexCounter += 1;
+					add_BigIntT(temp, one, temp2);
+					copy_BigIntT(temp2, temp);
+				}
+				printf("\n");
+				
+				//Testing to ensure factorisation function works properly
+				bigOmega = free_BigIntT(bigOmega);
+				
+				checkedAllMatrices = TRUE;
+			}
+			
+			
+			for (int row = 0; row < matSize; row += 1)
+			{
+				for (int col = 0; col < matSize; col += 1)
+					currMatElements[row][col] = free_BigIntT(currMatElements[row][col]);
+				FREE(currMatElements[row]);
+			}
+			FREE(currMatElements);
+			
+			//Freeing this matrix is a massive pain
+			indexCounter = 1;
+			copy_BigIntT(zero, temp);
+			while (compare_BigIntT(temp, cycleLengthFactors[0]) < 0)
+			{
+				cycleLengthFactors[indexCounter] = free_BigIntT(cycleLengthFactors[indexCounter]);
+				indexCounter += 1;
+				add_BigIntT(temp, one, temp2);
+				copy_BigIntT(temp2, temp);
+			}
+			cycleLengthFactors[0] = free_BigIntT(cycleLengthFactors[0]);
+			FREE(cycleLengthFactors);
+			
+			currMat = free_BigIntMatrixT(currMat);
+			zeroMat = free_BigIntMatrixT(zeroMat);
+			tempCCM = free_BigIntMatrixT(tempCCM);
+			
+			theCycle = free_CycleInfoT(theCycle);
+			
+			bigMod = free_BigIntT(bigMod);
+			zero   = free_BigIntT(zero);
+			one    = free_BigIntT(one);
+			temp   = free_BigIntT(temp);
+			temp2  = free_BigIntT(temp2);
+		}
+		
+		
 		//If we want to step over a matrix space to see what the
 		// characteristic polynomials look like over specific
 		// step sizes.
@@ -1805,6 +2025,14 @@ int main(int argc, char* argv[])
 					{
 						theCycle = floyd(A, currVect, tempModulus);
 						currCycleLengths[i] = omega(theCycle);
+						
+						/*
+						//Looking for particular cycle lengths. 
+						if (omega(theCycle) == 1)
+						{
+							printm(currVect);
+						}
+						*/
 						theCycle = free_CycleInfoT(theCycle);
 						
 						tempModulus /= modulus;
@@ -2033,6 +2261,9 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET \
 		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET \
+		": Outputs a \"cycle converting matrix\" for the given update matrix.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET \
 		": Steps around a matrix space and computes the characteritic polynomial for each matrix it lands on.\n\n");

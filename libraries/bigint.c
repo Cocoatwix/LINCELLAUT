@@ -833,3 +833,58 @@ int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 	
 	return 1;
 }
+
+
+BigIntTP* divisors_of_BigIntT(BigIntTP const toFactor)
+/** Returns an array of every possible factor of the given BigIntT.
+    The first number says how many factors are contained in the array. */
+{
+	BigIntTP* factorList = malloc(sizeof(BigIntTP));
+	
+	 //This allows us to cut back on the number of unnecessary factors we check
+	BigIntTP half = empty_BigIntT(1);
+	BigIntTP tempFactor = empty_BigIntT(1);
+	BigIntTP temp = empty_BigIntT(1);
+	
+	int oneArr[1] = {1};
+	int twoArr[1] = {2};
+	BigIntTP zero = empty_BigIntT(1);
+	BigIntTP one  = new_BigIntT(oneArr, 1);
+	BigIntTP two  = new_BigIntT(twoArr, 1);
+	
+	factorList[0] = empty_BigIntT(1);
+	divide_BigIntT(toFactor, two, half);
+	copy_BigIntT(one, tempFactor);
+	
+	int size = 0;
+	
+	//Search up until we get to half of toFactor
+	while (compare_BigIntT(tempFactor, half) <= 0)
+	{
+		//Check to see if tempFactor divides toFactor
+		mod_BigIntT(toFactor, tempFactor, temp);
+		if (compare_BigIntT(zero, temp) == 0)
+		{
+			add_BigIntT(factorList[0], one, temp);
+			copy_BigIntT(temp, factorList[0]);
+			size += 1;
+			
+			factorList = realloc(factorList, (size+1)*sizeof(BigIntTP));
+			factorList[size] = empty_BigIntT(1);
+			copy_BigIntT(tempFactor, factorList[size]);
+		}
+		
+		add_BigIntT(tempFactor, one, temp);
+		copy_BigIntT(temp, tempFactor);
+	}
+	
+	half = free_BigIntT(half);
+	temp = free_BigIntT(temp);
+	zero = free_BigIntT(zero);
+	one  = free_BigIntT(one);
+	two  = free_BigIntT(two);
+	
+	tempFactor = free_BigIntT(tempFactor);
+	
+	return factorList;
+}

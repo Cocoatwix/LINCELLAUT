@@ -108,4 +108,8 @@ int divide_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 		Returns 1 on success, 0 otherwise. */
 int mod_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 
+/** Returns an array pf all the possible factors of the given BigIntTP. 
+    The first number tells you how many factors there are. */
+BigIntTP* divisors_of_BigIntT(BigIntTP const);
+
 #endif //BIGINT_H

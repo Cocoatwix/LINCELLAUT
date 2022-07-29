@@ -90,15 +90,26 @@ void fprintbm_nopad(FILE*, BigIntMatrixTP);
     positive integer has. */
 int num_digits(int);
 
+/** Adds two matrices together, stores result in third matrix.
+    Returns 1 on success, 0 otherwise. */
+int big_mat_add(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
+
 /** Multiples two matrices together, stores result in a third matrix. 
     Returns 1 on success, 0 otherwise. */
 int mat_mul(IntMatrixTP const, IntMatrixTP const, IntMatrixTP);
 int big_mat_mul(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
 
+/** Calculates powers of first matrix, stores result in second
+    matrix. Currently, they only work for positive powers.
+		First int is the power, second is the modulus.
+		Returns 1 on success, 0 otherwise. */
+//int powm(IntMatrixTP const, IntMatrixTP, int, int);
+int powbm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const);
+
 /** Applies a modulus to every element of a given matrix. 
     Returns 1 on success, 0 otherwise. */
 int modm(IntMatrixTP, int);
-int modbm(BigIntMatrixTP, BigIntTP);
+int modbm(BigIntMatrixTP, BigIntTP const);
 
 /** Returns the determinant of a given matrix. 
     Returns zero if the matrix is nonsquare. */
@@ -117,6 +128,13 @@ int rref(IntMatrixTP, int);
 		representing the characteristic equation on success,
 		NULL otherwise. */
 BigPolyTP chara_poly(BigIntMatrixTP const, BigIntTP const);
+
+/** Stores the specified cycle converting matrix for the first one
+    in the second one. This function assumes the second matrix
+		has been initialised to the zero matrix.
+		Returns 1 on success, 0 otherwise. */
+//                     A                 CCM            from              to          modulus     
+int ccm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const, BigIntTP const);
 
 
 

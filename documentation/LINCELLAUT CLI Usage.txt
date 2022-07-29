@@ -32,6 +32,18 @@ cycmatsearch resume size maxmod cycles...: This tool allows the user to search f
  - "maxmod" specifies the upper bound for the moduli to search. Searching will always begin at mod 2. This argument expects a positive integer.
  - "cycles..." is a list of cycle lengths for the first column vector, the second, and so on. These arguments expect positive integers.
 
+cycconvmat from to [mod]: This tool allows the user to create a "cycle converting matrix" for the given update matrix. If A is the update matrix, this tool outputs the matrix:
+
+I + A^(to) + A^(2*to) + A^(3*to) + ... + A^(from-to)
+
+ - "from" specifies the cycle lengths you want to convert from. Any vector which has a cycle length under the update matrix which divides this number will work with the resulting matrix. This argument expects a positive integer.
+ - "to" specifies what cycle length to "convert" vectors to with the matrix. It guarantees that any vector multiplied by the resulting matrix will have a cycle length that divides this number when iterated by the update matrix. This argument expects a positive integer.
+ - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
+
+ccmzerosearch size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix.
+ - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
+ - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
+
 charawalk step [mod]: This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.

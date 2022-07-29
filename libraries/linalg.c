@@ -659,6 +659,31 @@ void fprintbm_nopad(FILE* file, BigIntMatrixTP M)
 }
 
 
+int big_mat_add(BigIntMatrixTP const A, BigIntMatrixTP const B, BigIntMatrixTP sum)
+/** Computes A + B, stores sum in sum. This function assumes 
+    sum has been initialised.
+    Returns 1 on success, 0 otherwise. */
+{
+	//Ensuring dimensions of all matrices are correct
+	if ((A->m != B->m) || (A->n != B->n) ||
+	    (A->m != sum->m) || (A->n != sum->n))
+		return 0;
+		
+	BigIntTP tempSum = empty_BigIntT(1);
+		
+	for (int row = 0; row < A->m; row += 1)
+		for (int col = 0; col < A->n; col += 1)
+		{
+			add_BigIntT(A->matrix[row][col], B->matrix[row][col], tempSum);
+			copy_BigIntT(tempSum, sum->matrix[row][col]);
+		}
+		
+	tempSum = free_BigIntT(tempSum);
+	
+	return 1;
+}
+
+
 int mat_mul(IntMatrixTP const A, IntMatrixTP const B, IntMatrixTP result)
 /** Computes AB, stores result in result. 
     This function DOES check to make sure result is the proper dimensions.
@@ -736,7 +761,7 @@ int modm(IntMatrixTP M, int mod)
 }
 
 
-int modbm(BigIntMatrixTP M, BigIntTP modulus)
+int modbm(BigIntMatrixTP M, BigIntTP const modulus)
 /** Reduces a BigIntMatrixTP by the given modulus.
     Returns 1 on success, 0 otherwise. */
 {
@@ -758,6 +783,65 @@ int modbm(BigIntMatrixTP M, BigIntTP modulus)
 	
 	temp = free_BigIntT(temp);
 	return 1;
+}
+
+
+int powbm(BigIntMatrixTP const A, 
+          BigIntMatrixTP AP, 
+					BigIntTP const power, 
+					BigIntTP const modulus)
+/** Calculates A^power, stores result in AP. Currently, this only
+    works for positive powers. 
+		This function assumes AP has already been initialised to the
+		same dmensions as A (a square matrix).
+		Returns 1 on success, 0 otherwise. */
+{
+	int returnVal = 0;
+	
+	if ((A->m != A->n) ||
+	    (AP->m != A->m) ||
+			(AP->n != A->n))
+		return returnVal;
+		
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	BigIntTP powerCounter; //For counting how many times we've iterated the matrix
+	BigIntTP tempInt;
+	
+	BigIntMatrixTP tempMat;
+	
+	//Negative powers can easily be supported with the inverse function,
+	// I just don't need that ability right now
+	if (compare_BigIntT(power, one) >= 0)
+	{
+		returnVal = 1;
+		
+		powerCounter = empty_BigIntT(1);
+		tempInt      = empty_BigIntT(1);
+		
+		tempMat  = identity_BigIntMatrixT(A->m);
+		
+		//Iterate matrix the desired number of times
+		while (compare_BigIntT(powerCounter, power) < 0)
+		{
+			big_mat_mul(A, tempMat, AP);
+			modbm(AP, modulus);
+			copy_BigIntMatrixT(AP, tempMat);
+			
+			//Increment counter
+			add_BigIntT(powerCounter, one, tempInt);
+			copy_BigIntT(tempInt, powerCounter);
+		}
+		
+		powerCounter = free_BigIntT(powerCounter);
+		tempInt      = free_BigIntT(tempInt);
+		tempMat      = free_BigIntMatrixT(tempMat);
+	}
+	
+	one = free_BigIntT(one);
+	
+	return returnVal;
 }
 
 //It may be better to implement this non-recursively in the future for speed
@@ -1280,6 +1364,54 @@ BigPolyTP chara_poly(BigIntMatrixTP const A, BigIntTP mod)
 	minusOne = free_BigIntT(minusOne);
 	
 	return chara;
+}
+
+
+int ccm(BigIntMatrixTP const A, 
+        BigIntMatrixTP CCM, 
+				BigIntTP const from, 
+				BigIntTP const to,
+				BigIntTP const mod)
+/** Calculates a cycle converting matrix for A (C_(from->to)) and
+    stores it in CCM. This function assumes CCM has been initialised
+		to the zero matrix.
+		Returns 1 on success, 0 otherwise. */
+{
+	//Making sure matrices are the correct dimensions
+	if ((A->m != A->n) ||
+	    (A->m != CCM->m) || (A->n != CCM->n))
+		return 0;
+		
+	BigIntTP tempPower;
+	BigIntTP tempInt;
+	
+	BigIntMatrixTP tempPowerMat = identity_BigIntMatrixT(big_rows(A));
+	BigIntMatrixTP tempMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
+		
+	tempPower = empty_BigIntT(1);
+	tempInt   = empty_BigIntT(1);
+
+
+	//Add up all the relevant matrix powers
+	while (compare_BigIntT(tempPower, from) < 0)
+	{
+		powbm(A, tempPowerMat, tempPower, mod);
+		big_mat_add(tempPowerMat, CCM, tempMat);
+		modbm(tempMat, mod);
+		copy_BigIntMatrixT(tempMat, CCM);
+		
+		//Increment counter
+		add_BigIntT(tempPower, to, tempInt);
+		copy_BigIntT(tempInt, tempPower);
+	}
+	
+	tempPower = free_BigIntT(tempPower);
+	tempInt   = free_BigIntT(tempInt);
+
+	tempPowerMat = free_BigIntMatrixT(tempPowerMat);
+	tempMat      = free_BigIntMatrixT(tempMat);
+	
+	return 1;
 }
 
 
