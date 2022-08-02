@@ -40,7 +40,7 @@ I + A^(to) + A^(2*to) + A^(3*to) + ... + A^(from-to)
  - "to" specifies what cycle length to "convert" vectors to with the matrix. It guarantees that any vector multiplied by the resulting matrix will have a cycle length that divides this number when iterated by the update matrix. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-ccmzerosearch size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix.
+ccmzerosearch size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix, even if nonzero vectors dividing the corresponding cycle length exist.
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 

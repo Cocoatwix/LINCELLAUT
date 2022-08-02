@@ -4,6 +4,7 @@
 
 #include "bigint.h"  //For using BigIntTP type
 #include "algebra.h" //For polynomials
+#include "helper.h"  //For booleans
 
 //Whenever you use this struct, there needs to be an interfacing function.
 // C can't see "inside" the struct; it needs a function to interface with it.
@@ -25,6 +26,14 @@ int big_cols(BigIntMatrixTP);
 /** What's the element at the given indices in the matrix? */
 int element(IntMatrixTP const, int, int);
 BigIntTP big_element(BigIntMatrixTP const, int, int);
+
+
+/** Increments an array of BigIntTs by one. Used for
+    incrementing through all possible matrices or vectors.
+		Returns TRUE if array rolls over,
+		FALSE otherwise. */
+//                                array  row  col       increment         modulus
+bool increment_BigIntT_array(BigIntTP**, int, int, BigIntTP const, BigIntTP const);
 
 
 /** Frees the memory of a matrix. Returns NULL. 

@@ -554,7 +554,8 @@ int main(int argc, char* argv[])
 				}
 				
 				//Increment to next vector
-				checkedAllVects = TRUE;
+				checkedAllVects = increment_BigIntT_array(entriesToUse, big_cols(A), 1, one, bigMod);
+				/*checkedAllVects = TRUE;
 				for (int i = big_cols(A)-1; i >= 0; i -= 1)
 				{
 					add_BigIntT(entriesToUse[i][0], one, temp);
@@ -568,7 +569,7 @@ int main(int argc, char* argv[])
 						checkedAllVects = FALSE;
 						break;
 					}
-				}
+				} */
 			}
 			
 			printf("|ker(A)| = ");
@@ -869,6 +870,8 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 3 4
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 6 2 2 3
+			cycmatsearch 2 30 6 15
+			cycmatsearch 3 6 6 10 14
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -1291,10 +1294,13 @@ int main(int argc, char* argv[])
 			BigIntTP   temp2;
 			BigIntTP*  cycleLengthFactors;
 			BigIntTP** currMatElements;
+			BigIntTP** currVectElements;
 			
 			BigIntMatrixTP currMat;
 			BigIntMatrixTP tempCCM;
 			BigIntMatrixTP zeroMat;
+			
+			BigIntMatrixTP currVect;
 			
 			CycleInfoTP theCycle = NULL;
 			
@@ -1302,11 +1308,19 @@ int main(int argc, char* argv[])
 			int indexCounter; //For freeing and printing
 			int oneArr[1] = {1};
 			
-			//Holds the cycle length of each matrix we check
+			//Holds the cycle length of each matrix and vector we check
 			int cycleLengthArray[1] = {0};
 			BigIntTP bigOmega;
+			BigIntTP bigVectOmega;
+			
+			//Holds the number of vectors with each possible cycle length
+			int* cycleLengthCounts;
 			
 			bool checkedAllMatrices = FALSE;
+			bool checkedAllVectors  = FALSE;
+			bool hasAllZeros        = FALSE;
+			
+			bool hasInterestingCycles = FALSE;
 			
 			//Checking to see if the user provided a modulus on the command line
 			if (argc > 3)
@@ -1337,19 +1351,27 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
-			currMatElements = malloc(matSize*sizeof(BigIntTP*));
+			//Initialising elements for matrices and vectors
+			currMatElements  = malloc(matSize*sizeof(BigIntTP*));
+			currVectElements = malloc(matSize*sizeof(BigIntTP*));
 			for (int row = 0; row < matSize; row += 1)
 			{
-				currMatElements[row] = malloc(matSize*sizeof(BigIntTP));
+				currMatElements[row]  = malloc(matSize*sizeof(BigIntTP));
 				for (int col = 0; col < matSize; col += 1)
 					currMatElements[row][col] = empty_BigIntT(1);
+				
+				currVectElements[row] = malloc(sizeof(BigIntTP));
+				currVectElements[row][0] = empty_BigIntT(1);
 			}
 			
 			zero = empty_BigIntT(1);
 			one  = new_BigIntT(oneArr, 1);
-			currMat = new_BigIntMatrixT(matSize, matSize);
-			zeroMat = new_BigIntMatrixT(matSize, matSize);
-			tempCCM = new_BigIntMatrixT(matSize, matSize);
+			currMat  = new_BigIntMatrixT(matSize, matSize);
+			zeroMat  = new_BigIntMatrixT(matSize, matSize);
+			currVect = new_BigIntMatrixT(matSize, 1);
+			
+			temp  = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
 			
 			//Loop until we're checked every matrix under the given modulus
 			while (!checkedAllMatrices)
@@ -1357,34 +1379,173 @@ int main(int argc, char* argv[])
 				set_big_matrix(currMat, currMatElements);
 				big_floyd(currMat, currMat, bigMod, &theCycle);
 				
-				printf(":)\n");
-				
 				//This program currently assumes that the cycle length of the
 				// matrix will be less than MAXBUNCH
-				//free_CycleInfoT(theCycle);
-				//cycleLengthArray[0] = omega(theCycle);
-				cycleLengthArray[0] = 123;
+				cycleLengthArray[0] = omega(theCycle);
 				bigOmega = new_BigIntT(cycleLengthArray, 1);
 				cycleLengthFactors = divisors_of_BigIntT(bigOmega);
 				
-				temp  = empty_BigIntT(1);
-				temp2 = empty_BigIntT(1);
+				//Check each factor to see what its CCM looks like
 				indexCounter = 1;
+				copy_BigIntT(zero, temp);
+				hasAllZeros = TRUE;
 				while (compare_BigIntT(temp, cycleLengthFactors[0]) < 0)
 				{
-					printi(cycleLengthFactors[indexCounter]);
-					printf(", ");
+					tempCCM = new_BigIntMatrixT(matSize, matSize);
+					ccm(currMat, tempCCM, bigOmega, cycleLengthFactors[indexCounter], bigMod);
+					
+					//If the CCM is not the zero matrix, we can stop looking
+					if (!compare_BigIntMatrixT(tempCCM, zeroMat))
+					{
+						tempCCM = free_BigIntMatrixT(tempCCM);
+						hasAllZeros = FALSE;
+						break;
+					}
 					
 					indexCounter += 1;
 					add_BigIntT(temp, one, temp2);
 					copy_BigIntT(temp2, temp);
+					tempCCM = free_BigIntMatrixT(tempCCM);
 				}
-				printf("\n");
 				
-				//Testing to ensure factorisation function works properly
+				//Calculate cycle length counts so we can determine if the CCM
+				// zeros are justified or not
+				cycleLengthCounts = calloc(indexCounter, sizeof(int));
+				
+				checkedAllVectors = FALSE;
+				while (!checkedAllVectors)
+				{
+					set_big_matrix(currVect, currVectElements);
+					/*printf("Curr vect:\n");
+					printbm(currVect);
+					printf("\n"); */
+					big_floyd(currMat, currVect, bigMod, &theCycle);
+					
+					cycleLengthArray[0] = omega(theCycle);
+					bigVectOmega = new_BigIntT(cycleLengthArray, 1);
+					
+					//First, check if vector cycle length is equal to matrix
+					//This prevents possible index errors below
+					if (compare_BigIntT(bigVectOmega, bigOmega) == 0)
+						cycleLengthCounts[indexCounter-1] += 1;
+					
+					else
+						//Find which cycle length group this vector belongs to
+						for (int w = 1; w < indexCounter-1; w += 1)
+							if (compare_BigIntT(cycleLengthFactors[w], bigVectOmega) == 0)
+							{
+								cycleLengthCounts[w-1] += 1;
+								break;
+							}
+							
+					//Iterate to next vector
+					checkedAllVectors = TRUE;
+					
+					for (int x = 0; x < matSize; x += 1)
+					{
+						add_BigIntT(one, currVectElements[x][0], temp);
+						if (compare_BigIntT(temp, bigMod) == 0)
+							copy_BigIntT(zero, currVectElements[x][0]);
+						
+						else
+						{
+							copy_BigIntT(temp, currVectElements[x][0]);
+							checkedAllVectors = FALSE;
+							break;
+						}
+					}
+				}
+				
+				//Now, check to see if any "interesting cycle lengths" exist for the matrix
+				// This is, cycle lengths that aren't maximal or zero
+				hasInterestingCycles = FALSE;
+				for (int c = 0; c < indexCounter-1; c += 1)
+				{
+					//We only care about fixed points if there's more than just the zero vector
+					if (c == 0)
+					{
+						if (cycleLengthCounts[0] > 1)
+						{
+							hasInterestingCycles = TRUE;
+							break;
+						}
+					}
+					
+					else
+					{
+						if (cycleLengthCounts[c] > 0)
+						{
+							hasInterestingCycles = TRUE;
+							break;
+						}
+					}
+				}
+				
+				//Print out the matrix we found, as well as any relevant information regarding it
+				if ((hasAllZeros) && (compare_BigIntT(one, bigOmega) != 0) && (hasInterestingCycles))
+				{
+					printf("Mod ");
+					printi(bigMod);
+					printf("\nPossible cycle lengths: ");
+					
+					indexCounter = 1;
+					copy_BigIntT(zero, temp);
+					while (compare_BigIntT(temp, cycleLengthFactors[0]) < 0)
+					{
+						printi(cycleLengthFactors[indexCounter]);
+						printf(" (%d), ", cycleLengthCounts[indexCounter-1]);
+						
+						indexCounter += 1;
+						add_BigIntT(temp, one, temp2);
+						copy_BigIntT(temp2, temp);
+					}
+					printi(bigOmega);
+					printf(" (%d)\n", cycleLengthCounts[indexCounter-1]);
+					printbm(currMat);
+					printf("\n");
+				}
+				
 				bigOmega = free_BigIntT(bigOmega);
+				bigVectOmega = free_BigIntT(bigVectOmega);
+				FREE(cycleLengthCounts);
 				
+				//Freeing this array is a massive pain
+				//I have to do it each loop since the factorisation matrix allocates new
+				// arrays each time.
+				//I should probably change this in the future for speed.
+				indexCounter = 1;
+				copy_BigIntT(zero, temp);
+				while (compare_BigIntT(temp, cycleLengthFactors[0]) < 0)
+				{
+					cycleLengthFactors[indexCounter] = free_BigIntT(cycleLengthFactors[indexCounter]);
+					indexCounter += 1;
+					add_BigIntT(temp, one, temp2);
+					copy_BigIntT(temp2, temp);
+				}
+				cycleLengthFactors[0] = free_BigIntT(cycleLengthFactors[0]);
+				FREE(cycleLengthFactors);
+				
+				//Iterate to next matrix
 				checkedAllMatrices = TRUE;
+				
+				for (int x = 0; x < matSize; x += 1)
+				{
+					for (int y = 0; y < matSize; y += 1)
+					{
+						add_BigIntT(one, currMatElements[x][y], temp);
+						if (compare_BigIntT(temp, bigMod) == 0)
+							copy_BigIntT(zero, currMatElements[x][y]);
+						
+						else
+						{
+							copy_BigIntT(temp, currMatElements[x][y]);
+							checkedAllMatrices = FALSE;
+							break;
+						}
+					}
+					if (!checkedAllMatrices)
+						break;
+				}
 			}
 			
 			
@@ -1393,25 +1554,16 @@ int main(int argc, char* argv[])
 				for (int col = 0; col < matSize; col += 1)
 					currMatElements[row][col] = free_BigIntT(currMatElements[row][col]);
 				FREE(currMatElements[row]);
+				
+				currVectElements[row][0] = free_BigIntT(currVectElements[row][0]);
+				FREE(currVectElements[row]);
 			}
 			FREE(currMatElements);
+			FREE(currVectElements);
 			
-			//Freeing this matrix is a massive pain
-			indexCounter = 1;
-			copy_BigIntT(zero, temp);
-			while (compare_BigIntT(temp, cycleLengthFactors[0]) < 0)
-			{
-				cycleLengthFactors[indexCounter] = free_BigIntT(cycleLengthFactors[indexCounter]);
-				indexCounter += 1;
-				add_BigIntT(temp, one, temp2);
-				copy_BigIntT(temp2, temp);
-			}
-			cycleLengthFactors[0] = free_BigIntT(cycleLengthFactors[0]);
-			FREE(cycleLengthFactors);
-			
-			currMat = free_BigIntMatrixT(currMat);
-			zeroMat = free_BigIntMatrixT(zeroMat);
-			tempCCM = free_BigIntMatrixT(tempCCM);
+			currMat  = free_BigIntMatrixT(currMat);
+			zeroMat  = free_BigIntMatrixT(zeroMat);
+			currVect = free_BigIntMatrixT(currVect);
 			
 			theCycle = free_CycleInfoT(theCycle);
 			
@@ -2264,6 +2416,9 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET \
 		": Outputs a \"cycle converting matrix\" for the given update matrix.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "size [mod]" ANSI_COLOR_RESET \
+		": Searches for matrices which have zero matrices as their cycle converting matrices.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET \
 		": Steps around a matrix space and computes the characteritic polynomial for each matrix it lands on.\n\n");

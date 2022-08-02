@@ -465,6 +465,14 @@ int big_floyd(BigIntMatrixTP const F,
 	//Making sure we don't try and dereference nothing
 	if ((*info)->inCycle->bigintmat == NULL)
 		(*info)->inCycle->bigintmat = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	
+	//Making sure we can actually store a rep of correct dimensions within bigintmat
+	if (big_rows((*info)->inCycle->bigintmat) != big_rows(s_0) ||
+	    big_cols((*info)->inCycle->bigintmat) != big_cols(s_0))
+	{
+		free_BigIntMatrixT((*info)->inCycle->bigintmat);
+		(*info)->inCycle->bigintmat = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	}
 
 	(*info)->omega = 0;
 	(*info)->tau = -1;
@@ -597,7 +605,6 @@ int big_floyd(BigIntMatrixTP const F,
 	x_2  = free_BigIntMatrixT(x_2);
 	y_1  = free_BigIntMatrixT(y_1);
 	y_2  = free_BigIntMatrixT(y_2);
-	//I    = free_IntMatrixT(I);
 	
 	return 1;
 }

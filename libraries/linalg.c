@@ -84,6 +84,76 @@ int element(IntMatrixTP const M, int row, int col)
 }
 
 
+bool increment_BigIntT_array(BigIntTP** intArr, 
+                             int sizeRow, 
+														 int sizeCol, 
+														 BigIntTP const inc, 
+														 BigIntTP const mod)
+/** Increments the given size by size BigIntTP array by one. 
+    Used to increment through all possible matrices or vectors 
+		under a particular modulus.
+		Returns TRUE if the array rolls over,
+		FALSE otherwise. */
+{
+	BigIntTP temp  = empty_BigIntT(1);
+	BigIntTP temp2 = empty_BigIntT(1);
+	BigIntTP carry = empty_BigIntT(1);
+	bool onceRolledOver = FALSE;
+	bool rolledOver = TRUE;
+	
+	//Initial incrementation
+	add_BigIntT(intArr[0][0], inc, temp2);
+	
+	//While loop allows us to go through the array
+	// multiple times if needed
+	while (rolledOver)
+	{
+		for (int row = 0; row < sizeRow; row += 1)
+		{
+			for (int col = 0; col < sizeCol; col += 1)
+			{
+				add_BigIntT(temp2, carry, temp);
+				
+				if (compare_BigIntT(temp, mod) >= 0)
+				{
+					mod_BigIntT(temp, mod, temp2);
+					copy_BigIntT(temp2, intArr[row][col]);
+					
+					divide_BigIntT(temp, mod, carry);
+					
+					//Prepare temp2 for carry
+					if (col+1 < sizeCol)
+						copy_BigIntT(intArr[row][col+1], temp2);
+					else if (row+1 < sizeRow)
+						copy_BigIntT(intArr[row+1][0], temp2);
+					else
+						copy_BigIntT(intArr[0][0], temp2);
+				}
+				
+				else
+				{
+					copy_BigIntT(temp, intArr[row][col]);
+					rolledOver = FALSE;
+					break;
+				}
+			}
+			
+			if (!rolledOver)
+				break;
+		}
+		
+		if (rolledOver)
+			onceRolledOver = TRUE;
+	}
+	
+	temp  = free_BigIntT(temp);
+	temp2 = free_BigIntT(temp2);
+	carry = free_BigIntT(carry);
+	
+	return onceRolledOver;
+}
+
+
 BigIntTP big_element(BigIntMatrixTP const M, int row, int col)
 /** Returns the BigIntTP contained within M at the 
     specified location. Returns NULL if the specified index
