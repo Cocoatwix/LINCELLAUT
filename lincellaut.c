@@ -1322,6 +1322,11 @@ int main(int argc, char* argv[])
 			
 			bool hasInterestingCycles = FALSE;
 			
+			char* outputfilename;
+			FILE* outputFile;
+			BigPolyTP  charaPoly;
+			BigPolyTP* charaPolyFactors;
+			
 			//Checking to see if the user provided a modulus on the command line
 			if (argc > 3)
 			{
@@ -1350,6 +1355,28 @@ int main(int argc, char* argv[])
 				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
+			
+			//Create output name
+			outputfilename = malloc(MAXSTRLEN*sizeof(char));
+			outputfilename[0] = '\0';
+			
+			strcat(outputfilename, argv[1]); //ccmzerosearch
+			strcat(outputfilename, " ");
+			strcat(outputfilename, argv[2]); //matrix size
+			strcat(outputfilename, " ");
+			
+			//modulus
+			if (argc > 3)
+				strcat(outputfilename, argv[3]);
+			else
+				strcat(outputfilename, bigintmodstring);
+			
+			strcat(outputfilename, ".txt");
+			outputFile = fopen(outputfilename, "w");
+			if (outputFile == NULL)
+				fprintf(stderr, "Unable to save found matrices. Continuing without saving...\n");
+			else
+				printf("Found matrices will be saved at %s\n", outputfilename);
 			
 			//Initialising elements for matrices and vectors
 			currMatElements  = malloc(matSize*sizeof(BigIntTP*));
@@ -1416,9 +1443,6 @@ int main(int argc, char* argv[])
 				while (!checkedAllVectors)
 				{
 					set_big_matrix(currVect, currVectElements);
-					/*printf("Curr vect:\n");
-					printbm(currVect);
-					printf("\n"); */
 					big_floyd(currMat, currVect, bigMod, &theCycle);
 					
 					cycleLengthArray[0] = omega(theCycle);
@@ -1484,9 +1508,14 @@ int main(int argc, char* argv[])
 				//Print out the matrix we found, as well as any relevant information regarding it
 				if ((hasAllZeros) && (compare_BigIntT(one, bigOmega) != 0) && (hasInterestingCycles))
 				{
-					printf("Mod ");
-					printi(bigMod);
-					printf("\nPossible cycle lengths: ");
+					printbm(currMat);
+					printf("Cycle length counts: ");
+					
+					if (outputFile != NULL)
+					{
+						fprintbm_nopad(outputFile, currMat);
+						fprintf(outputFile, "Cycle length counts: ");
+					}
 					
 					indexCounter = 1;
 					copy_BigIntT(zero, temp);
@@ -1495,14 +1524,53 @@ int main(int argc, char* argv[])
 						printi(cycleLengthFactors[indexCounter]);
 						printf(" (%d), ", cycleLengthCounts[indexCounter-1]);
 						
+						if (outputFile != NULL)
+						{
+							fprinti(outputFile, cycleLengthFactors[indexCounter]);
+							fprintf(outputFile, " (%d), ", cycleLengthCounts[indexCounter-1]);
+						}
+						
 						indexCounter += 1;
 						add_BigIntT(temp, one, temp2);
 						copy_BigIntT(temp2, temp);
 					}
 					printi(bigOmega);
 					printf(" (%d)\n", cycleLengthCounts[indexCounter-1]);
-					printbm(currMat);
-					printf("\n");
+					
+					charaPoly = chara_poly(currMat, bigMod);
+					charaPolyFactors = factor_BigPolyT(charaPoly, bigMod);
+					printf("Chara poly: ");
+					printp(charaPoly);
+					printf("\nFactored chara poly: ");
+					printpf(charaPolyFactors);
+					printf("\n\n");
+					
+					if (outputFile != NULL)
+					{
+						fprinti(outputFile, bigOmega);
+						fprintf(outputFile, " (%d)\n", cycleLengthCounts[indexCounter-1]);
+						
+						fprintf(outputFile, "Chara poly: ");
+						fprintpf(outputFile, charaPolyFactors);
+						fprintf(outputFile, "\n\n");
+						
+						//Saving file
+						if (fclose(outputFile) == EOF)
+						{
+							fprintf(stderr, "Unable to save data. Continuing without saving...\n");
+							outputFile = NULL;
+						}
+						
+						else
+						{
+							outputFile = fopen(outputfilename, "a");
+							if (outputFile == NULL)
+								fprintf(stderr, "Unable to save data. Continuing without saving...\n");
+						}
+					}
+					
+					charaPoly = free_BigPolyT(charaPoly);
+					charaPolyFactors = free_BigPolyT_factors(charaPolyFactors);
 				}
 				
 				bigOmega = free_BigIntT(bigOmega);
@@ -1572,6 +1640,10 @@ int main(int argc, char* argv[])
 			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
+			
+			FREE(outputfilename);
+			if (fclose(outputFile) == EOF)
+				fprintf(stderr, "Unable to save data.\n");
 		}
 		
 		

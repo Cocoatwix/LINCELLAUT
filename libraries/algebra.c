@@ -40,6 +40,39 @@ BigPolyTP free_BigPolyT(BigPolyTP p)
 }
 
 
+BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
+/** Frees an array of BigPolyT factors. */
+{
+	BigIntTP one;
+	BigIntTP temp;
+	BigIntTP indexCounter;
+	
+	int oneArr[1] = {1};
+	int index = 1;
+	
+	one = new_BigIntT(oneArr, 1);
+	indexCounter = new_BigIntT(oneArr, 1);
+	temp = empty_BigIntT(1);
+	
+	while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+	{
+		factors[index] = free_BigPolyT(factors[index]);
+		
+		index += 1;
+		add_BigIntT(one, indexCounter, temp);
+		copy_BigIntT(temp, indexCounter);
+	}
+	factors[0] = free_BigPolyT(factors[0]);
+	free(factors);
+	
+	one  = free_BigIntT(one);
+	temp = free_BigIntT(temp);
+	indexCounter = free_BigIntT(indexCounter);
+	
+	return NULL;
+}
+
+
 BigPolyTP new_BigPolyT(BigIntTP* const coefficients, int size)
 /** Creates a new BigPolyT with specified coefficients and size,
     returns a pointer to it. */
@@ -203,6 +236,110 @@ void printp(BigPolyTP const p)
 	}
 	
 	zero = free_BigIntT(zero);
+}
+
+
+void printpf(BigPolyTP* factors)
+/** Prints a factorised BigPolyT to stdout. */
+{
+	BigIntTP indexCounter;
+	BigIntTP one;
+	BigIntTP temp;
+	int oneArr[1] = {1};
+	
+	one = new_BigIntT(oneArr, 1);
+	indexCounter = new_BigIntT(oneArr, 1);
+	temp = empty_BigIntT(1);
+	int index = 1;
+	
+	while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+	{
+		printf("(");
+		printp(factors[index]);
+		printf(")");
+		
+		index += 1;
+		add_BigIntT(indexCounter, one, temp);
+		copy_BigIntT(temp, indexCounter);
+	}
+	
+	temp = free_BigIntT(temp);
+	one  = free_BigIntT(one);
+	indexCounter = free_BigIntT(indexCounter);
+}
+
+
+void fprintp(FILE* file, BigPolyTP const p)
+/** Outputs a BigPolyTP to a given file stream.. */
+{
+	BigIntTP zero = empty_BigIntT(1);
+	bool printPlus = FALSE;
+	
+	for (int i = 0; i < p->size; i += 1)
+	{
+		//Logic surrounding when to print a +
+		if (i != 0)
+			if (compare_BigIntT(zero, p->coeffs[i-1]) != 0) //If last number wasn't zero
+				printPlus = TRUE;
+					
+		//Only print if coefficient isn't zero
+		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
+		{
+			//Prevents a + when all other terms are zero afterwards
+			if (printPlus)
+			{
+				fprintf(file, " + ");
+				printPlus = FALSE;
+			}
+			
+			if (i == 0)
+				fprinti(file, p->coeffs[0]);
+			
+			else if (i == 1)
+			{
+				fprinti(file, p->coeffs[1]);
+				fprintf(file, "λ");
+			}
+			
+			else
+			{
+				fprinti(file, p->coeffs[i]);
+				fprintf(file, "λ^%d", i);
+			}
+		}
+	}
+	
+	zero = free_BigIntT(zero);
+}
+
+
+void fprintpf(FILE* file, BigPolyTP* factors)
+/** Prints a factorised BigPolyT to stdout. */
+{
+	BigIntTP indexCounter;
+	BigIntTP one;
+	BigIntTP temp;
+	int oneArr[1] = {1};
+	
+	one = new_BigIntT(oneArr, 1);
+	indexCounter = new_BigIntT(oneArr, 1);
+	temp = empty_BigIntT(1);
+	int index = 1;
+	
+	while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+	{
+		fprintf(file, "(");
+		fprintp(file, factors[index]);
+		fprintf(file, ")");
+		
+		index += 1;
+		add_BigIntT(indexCounter, one, temp);
+		copy_BigIntT(temp, indexCounter);
+	}
+	
+	temp = free_BigIntT(temp);
+	one  = free_BigIntT(one);
+	indexCounter = free_BigIntT(indexCounter);
 }
 
 

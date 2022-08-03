@@ -10,6 +10,9 @@ typedef struct bigpoly *BigPolyTP;
 /** Frees the memory used by a BigPolyT. Returns NULL. */
 BigPolyTP free_BigPolyT(BigPolyTP);
 
+/** Frees an array of BigPolyT factors. */
+BigPolyTP* free_BigPolyT_factors(BigPolyTP*);
+
 /** Creates a new BigPolyT with given coefficients and size,
     returns a pointer to it. */
 BigPolyTP new_BigPolyT(BigIntTP* const, int);
@@ -35,6 +38,13 @@ int copy_BigPolyT(BigPolyTP const, BigPolyTP);
 
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(BigPolyTP const);
+
+/** Prints a factored BigPolyT. */
+void printpf(BigPolyTP* const);
+
+/** Same as printp and printpf, but it prints to a file stream. */
+void fprintp(FILE*, BigPolyTP const);
+void fprintpf(FILE*, BigPolyTP* const);
 
 /** Adds the first two polynomials, stores the sum in the third.
     This function assumes all polynomials passed have been

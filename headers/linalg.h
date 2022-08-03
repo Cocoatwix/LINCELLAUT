@@ -132,9 +132,9 @@ IntMatrixTP inverse(IntMatrixTP const, int);
     echelon form. Returns 1 on success, 0 otherwise. */
 int rref(IntMatrixTP, int);
 
-/** Prints a matrix's characteristic equation to the
-    screen mod some modulus. Returns a BigPolyTP
-		representing the characteristic equation on success,
+/** Calculates a matrix's characteristic polynomial
+    mod some modulus. Returns a BigPolyTP
+		representing the characteristic polynomial on success,
 		NULL otherwise. */
 BigPolyTP chara_poly(BigIntMatrixTP const, BigIntTP const);
 
