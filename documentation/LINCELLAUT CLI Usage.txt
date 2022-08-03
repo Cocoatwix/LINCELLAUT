@@ -63,6 +63,6 @@ fibcyclelens [modulus]: This tool allows you to calculate all possible Fibonacci
 fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.
  - The optional argument "bound" allows the user to set a custom upper bound on the numbers to check. By default, the upper bound is set to 100. This argument expects a positive integer (can be arbitrarily big).
 
-dynamics [maxPower] [modulus]: This tool allows the user to iterate every vector in a space to get their cycle lengths and transient lengths. It then recomputes those numbers for higher-powered moduli.
+dynamics [maxPower] [modulus]: This tool allows the user to iterate every vector in a space to get their cycle lengths. It then recomputes those numbers for higher-powered moduli. The tool also outputs a text file under the name "dynamics [maxPower] [modulus] F[matrix].txt" containing all the vectors in each cycle length group.
  - The argument "maxPower" defines the highest exponent to use for the powered modulus. The default value is 2. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.

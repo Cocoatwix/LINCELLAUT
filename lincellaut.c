@@ -2037,6 +2037,9 @@ int main(int argc, char* argv[])
 			
 			CycleInfoTP theCycle = NULL;
 			
+			char* outputfilename;
+			FILE* outputFile;
+			
 			//User-provided upper bound for moduli power
 			if (argc > 2)
 			{
@@ -2075,6 +2078,33 @@ int main(int argc, char* argv[])
 			printf("Matrix:\n");
 			printm(A);
 			
+			//Creating filename
+			outputfilename = malloc(MAXSTRLEN*sizeof(char));
+			outputfilename[0] = '\0';
+			
+			strcat(outputfilename, argv[1]); //dynamics
+			strcat(outputfilename, " ");
+			strcat(outputfilename, argv[2]); //maxPower
+			strcat(outputfilename, " ");
+			
+			//Add modulus
+			append_int(outputfilename, modulus);
+			strcat(outputfilename, " ");
+			
+			//Now, include the update matrix elements
+			strcat(outputfilename, "F");
+			for (int x = 0; x < rows(A); x += 1)
+				for (int y = 0; y < rows(A); y += 1)
+					append_int(outputfilename, element(A, x, y));
+				
+			strcat(outputfilename, ".txt");
+			printf("Vectors will be saved to %s\n", outputfilename);
+			
+			//Now, open the output file
+			outputFile = fopen(outputfilename, "w");
+			if (outputFile == NULL)
+				fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
+			
 			for (int modulusCounter = 1; modulusCounter <= highpower; modulusCounter += 1)
 			{
 				checkedAllVects = FALSE;
@@ -2087,8 +2117,6 @@ int main(int argc, char* argv[])
 				// for alloting memory
 				theCycle = floyd(A, A, highmod);
 				printf("Matrix's multiplicative order mod %d: %d\n", highmod, omega(theCycle));
-				
-				//printf("(lowmod, highmod)\n\n");
 				
 				//First number in the pointer says how many cycle lengths
 				// are stored in the vector
@@ -2123,7 +2151,6 @@ int main(int argc, char* argv[])
 				printf("\n\n"); */
 				
 				//Now, construct our cycleTable to hold cycle counts
-				//Only allocating "half" the table since that's all we need
 				//This gets reallocated for each power we go up
 				if (modulusCounter == 1)
 				{
@@ -2150,17 +2177,7 @@ int main(int argc, char* argv[])
 				//Iterate until we've tested every vector
 				while (!checkedAllVects)
 				{
-					//printf("---\n");
 					set_column(currVect, currVectElements);
-					
-					//Print out vector in an easier-to-look-at way for stdout
-					/*
-					printf("<");
-					for (int i = 0; i < rows(A)-1; i += 1)
-						printf("%d ", currVectElements[i]);
-					printf("%d>\n", currVectElements[rows(A)-1]);
-					printf("---\n"); 
-					*/
 					
 					//Helps find which previous tuple this vector corresponds to
 					//Contains the cycle lengths of our vector under all moduli
@@ -2178,17 +2195,43 @@ int main(int argc, char* argv[])
 						theCycle = floyd(A, currVect, tempModulus);
 						currCycleLengths[i] = omega(theCycle);
 						
-						/*
-						//Looking for particular cycle lengths. 
-						if (omega(theCycle) == 1)
-						{
-							printm(currVect);
-						}
-						*/
 						theCycle = free_CycleInfoT(theCycle);
 						
 						tempModulus /= modulus;
 						modm(currVect, tempModulus); //Might cause an error mod 1?
+					}
+					
+					//Print out vector in an easier-to-look-at way for stdout
+					/*
+					printf("<");
+					for (int i = 0; i < rows(A)-1; i += 1)
+						printf("%d ", currVectElements[i]);
+					printf("%d>\n", currVectElements[rows(A)-1]);
+					printf("---\n"); 
+					*/
+					//Now, output to our file the current vector's group only if:
+					// we're on the last modulus to check and if the file exists
+					if ((modulusCounter == highpower) && (outputFile != NULL))
+					{
+						fprintf(outputFile, "(");
+						for (int i = 0; i < modulusCounter-1; i += 1)
+							fprintf(outputFile, "%d, ", currCycleLengths[i]);
+						fprintf(outputFile, "%d) : <", currCycleLengths[modulusCounter-1]);
+						
+						//Now, output the vector
+						for (int i = 0; i < rows(A)-1; i += 1)
+							fprintf(outputFile, "%d ", currVectElements[i]);
+						fprintf(outputFile, "%d>\n", currVectElements[rows(A)-1]);
+						
+						//Now, save the file
+						if (fclose(outputFile) == EOF)
+						{
+							fprintf(stderr, "Unable to properly save data. Continuing without saving...\n");
+							outputFile = NULL;
+						}
+						
+						else
+							outputFile = fopen(outputfilename, "a");
 					}
 					
 					//Now, find the correct firstIndex which matches our cycle lengths
@@ -2358,6 +2401,9 @@ int main(int argc, char* argv[])
 			A        = free_IntMatrixT(A);
 			currVect = free_IntMatrixT(currVect);
 			
+			if (fclose(outputFile) == EOF)
+				fprintf(stderr, "Unable to save data.\n");
+			
 			//Don't need to free theCycle since it gets freed above
 			theCycle = NULL;
 			
@@ -2378,6 +2424,8 @@ int main(int argc, char* argv[])
 			FREE(prevCycleTuples);
 			
 			FREE(currCycleLengths);
+			
+			FREE(outputfilename);
 		}
 	}
 	

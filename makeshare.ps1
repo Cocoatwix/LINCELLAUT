@@ -27,7 +27,8 @@ $LIBS = "modular",
 				"bigint", 
 				"algebra",
 				"cycles",
-				"factors"
+				"factors",
+				"helper"
 				
 #Create an array list to hold object paths for compiling shared library
 [System.Collections.ArrayList]$OBJS = @()
