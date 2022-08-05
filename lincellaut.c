@@ -623,6 +623,265 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to find a representative from each of the update matrix's orbits
+		else if (! strcmp(argv[1], "orbitreps"))
+		{
+			BigIntTP bigMod;
+			BigIntTP one;
+			int oneArr[1] = {1};
+			
+			BigIntMatrixTP A;
+			IntMatrixTP smallA; //Used for outputfilename
+			BigIntMatrixTP currVect;
+			BigIntMatrixTP tempVect;
+			BigIntMatrixTP tempVect2;
+			
+			BigIntMatrixTP** reps = NULL;
+			
+			int** foundCycleLengths; //[[cycle length, how many reps have cycle length]]
+			BigIntTP** currVectElements;
+			
+			CycleInfoTP theCycle = NULL;
+			
+			int index;
+			bool isNewCycle;
+			bool hasRep;
+			
+			char* outputfilename;
+			FILE* outputFile;
+			
+			//If user provided modulus at command line
+			if (argc > 2)
+			{
+				if (strtoBIT(argv[2], &bigMod) == 0)
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			else
+			{
+				if (strtoBIT(bigintmodstring, &bigMod) == 0)
+				{
+					fprintf(stderr, "Unable to read modulus from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			A = read_BigIntMatrixT(updatefilepath);
+			smallA = read_IntMatrixT(updatefilepath);
+			if ((A == NULL) || (smallA == NULL))
+			{
+				fprintf(stderr, "Unable to read update matrix file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (big_rows(A) != big_cols(A))
+			{
+				fprintf(stderr, "Given update matrix is not square.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			//First entry says how many cycle lengths we've found so far
+			foundCycleLengths = malloc(sizeof(int*));
+			foundCycleLengths[0] = calloc(2, sizeof(int));
+			
+			currVectElements = malloc(big_rows(A)*sizeof(BigIntTP*));
+			for (int i = 0; i < big_rows(A); i += 1)
+			{
+				currVectElements[i] = malloc(sizeof(BigIntTP));
+				currVectElements[i][0] = empty_BigIntT(1);
+			};
+			
+			//Construct output file name
+			outputfilename = malloc(MAXSTRLEN*sizeof(char));
+			outputfilename[0] = '\0';
+			strcat(outputfilename, argv[1]); //orbitreps
+			strcat(outputfilename, " ");
+			
+			//Modulus
+			if (argc > 2)
+				strcat(outputfilename, argv[2]);
+			else
+				strcat(outputfilename, bigintmodstring);
+			
+			strcat(outputfilename, " F");
+			
+			//Matrix
+			for (int row = 0; row < big_rows(A); row += 1)
+				for (int col = 0; col < big_rows(A); col += 1)
+					append_int(outputfilename, element(smallA, row, col));
+				
+			smallA = free_IntMatrixT(smallA);
+			strcat(outputfilename, ".txt");
+			
+			currVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
+			
+			one = new_BigIntT(oneArr, 1);
+			
+			//Increment through all possible vectors
+			do
+			{
+				//Getting cycle length, adding to list if needed
+				set_big_matrix(currVect, currVectElements);
+				big_floyd(A, currVect, bigMod, &theCycle);
+				
+				isNewCycle = TRUE;
+				for (int i = 1; i <= foundCycleLengths[0][0]; i += 1)
+					if (foundCycleLengths[i][0] == omega(theCycle))
+					{
+						isNewCycle = FALSE;
+						index = i;
+						break;
+					}
+					
+				if (isNewCycle)
+				{
+					//Allocate space for new cycle length info
+					foundCycleLengths[0][0] += 1;
+					foundCycleLengths = realloc(foundCycleLengths, (foundCycleLengths[0][0]+1)*sizeof(int*));
+					foundCycleLengths[foundCycleLengths[0][0]] = calloc(2, sizeof(int));
+					foundCycleLengths[foundCycleLengths[0][0]][0] = omega(theCycle);
+					index = foundCycleLengths[0][0];
+					
+					//Also allocate space for new representatives
+					reps = realloc(reps, foundCycleLengths[0][0]*sizeof(BigIntMatrixTP*));
+					reps[index-1] = NULL;
+				}
+				
+				//Now that we have our cycle length, we have to check every vector
+				// in our currVect's orbit to see if we already have a representative
+				if (foundCycleLengths[index][1] != 0)
+				{
+					copy_BigIntMatrixT(rep(theCycle), tempVect);
+					hasRep = FALSE;
+					
+					//Now, check tempVect's orbit for reps
+					for (int i = 0; i < omega(theCycle); i += 1)
+					{
+						for (int r = 0; r < foundCycleLengths[index][1]; r += 1)
+							if (compare_BigIntMatrixT(tempVect, reps[index-1][r]))
+							{
+								hasRep = TRUE;
+								break;
+							}
+							
+						if (hasRep)
+							break;
+						
+						big_mat_mul(A, tempVect, tempVect2);
+						modbm(tempVect2, bigMod);
+						copy_BigIntMatrixT(tempVect2, tempVect);
+					}
+					
+					//If we found a new representative, add it to the list
+					if (!hasRep)
+					{
+						foundCycleLengths[index][1] += 1;
+						reps[index-1] = realloc(reps[index-1], foundCycleLengths[index][1]*sizeof(BigIntMatrixTP));
+						
+						reps[index-1][foundCycleLengths[index][1]-1] = new_BigIntMatrixT(big_rows(A), 1);
+						copy_BigIntMatrixT(rep(theCycle), reps[index-1][foundCycleLengths[index][1]-1]);
+					}
+				}
+			
+				//If we don't have any representatives yet
+				else
+				{
+					//Increment number of reps we've found
+					foundCycleLengths[index][1] += 1;
+					reps[index-1] = realloc(reps[index-1], foundCycleLengths[index][1]*sizeof(BigIntMatrixTP));
+					
+					reps[index-1][0] = new_BigIntMatrixT(big_rows(A), 1);
+					copy_BigIntMatrixT(rep(theCycle), reps[index-1][0]);
+				}
+			}
+			while (! increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
+			
+			//Create save file
+			outputFile = fopen(outputfilename, "w");
+			if (outputFile == NULL)
+				fprintf(stderr, "Unable to create save file. Results will still print to stdout.\n");
+			
+			//Now, print out the representatives!
+			for (int cyclenindex = 1; cyclenindex <= foundCycleLengths[0][0]; cyclenindex += 1)
+			{
+				printf("Cycle length: %d\n", foundCycleLengths[cyclenindex][0]);
+				printf("Representatives:\n");
+				
+				if (outputFile != NULL)
+				{
+					fprintf(outputFile, "Cycle length: %d\n", foundCycleLengths[cyclenindex][0]);
+					fprintf(outputFile, "Reps: \n");
+				}
+				
+				for (int cycrep = 0; cycrep < foundCycleLengths[cyclenindex][1]; cycrep += 1)
+				{
+					printbm(reps[cyclenindex-1][cycrep]);
+					printf("\n");
+					
+					if (outputFile != NULL)
+					{
+						fprintf(outputFile, "<");
+						for (int component = 0; component < big_rows(A); component += 1)
+						{
+							fprinti(outputFile, big_element(reps[cyclenindex-1][cycrep], component, 0));
+							if (component != big_rows(A) - 1)
+								fprintf(outputFile, " ");
+						}
+						fprintf(outputFile, ">\n");
+					}
+				}
+				
+				if (outputFile != NULL)
+					fprintf(outputFile, "\n");
+			}
+			
+			if (fclose(outputFile) == EOF)
+				fprintf(stderr, "Unable to save data.\n");
+			
+			
+			for (int i = 0; i < big_rows(A); i += 1)
+			{
+				currVectElements[i][0] = free_BigIntT(currVectElements[i][0]);
+				FREE(currVectElements[i]);
+			}
+			FREE(currVectElements);
+			
+			for (int i = 1; i <= foundCycleLengths[0][0]; i += 1)
+			{
+				for (int j = 0; j < foundCycleLengths[i][1]; j += 1)
+					reps[i-1][j] = free_BigIntMatrixT(reps[i-1][j]);
+				
+				FREE(reps[i-1]);
+				FREE(foundCycleLengths[i]);
+			}
+			FREE(reps);
+
+			FREE(foundCycleLengths[0]);
+			FREE(foundCycleLengths);
+			
+			bigMod = free_BigIntT(bigMod);
+			one    = free_BigIntT(one);
+			
+			theCycle = free_CycleInfoT(theCycle);
+			
+			A         = free_BigIntMatrixT(A);
+			currVect  = free_BigIntMatrixT(currVect);
+			tempVect  = free_BigIntMatrixT(tempVect);
+			tempVect2 = free_BigIntMatrixT(tempVect2);
+			
+			FREE(outputfilename);
+		}
+		
+		
 		//If we want to use Floyd's Cycle Detection Algorithm
 		else if (! strcmp(argv[1], "floyd"))
 		{
@@ -2521,6 +2780,9 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Calculates the number of vectors in a matrix's core.\n\n");
+		
+		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+		": Finds a representative vector from each of the update matrix's orbits.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n\n");
