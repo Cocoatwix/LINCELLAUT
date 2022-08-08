@@ -30,7 +30,7 @@ rots [modulus]: This tool allows you to output basic rotation matrices for the g
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 cycmatsearch resume size maxmod cycles...: This tool allows the user to search for a matrix of a given size where the column vectors all have specified cycle lengths. The found matrices and their modulus are then output into a text file in the working directory following the naming convention "cycmatsearch <size> <maxmod> <cycles...>.txt". 
- - "resume" specifies whether to resume computation at the given resumeMat. The tool will also resume searching at the modulus provided in the config file. This argument expects TRUE or FALSE as its value.
+ - "resume" specifies whether to resume computation at the given resume matrix. The tool will also resume searching at the modulus provided in the config file. This argument expects TRUE or FALSE as its value.
  - "size" specifies how big of a matrix should be used. For instance, if 3 is input, then matrices of size 3x3 will be searched. This argument expects a positive integer.
  - "maxmod" specifies the upper bound for the moduli to search. Searching will always begin at mod 2. This argument expects a positive integer.
  - "cycles..." is a list of cycle lengths for the first column vector, the second, and so on. These arguments expect positive integers.
@@ -43,7 +43,8 @@ I + A^(to) + A^(2*to) + A^(3*to) + ... + A^(from-to)
  - "to" specifies what cycle length to "convert" vectors to with the matrix. It guarantees that any vector multiplied by the resulting matrix will have a cycle length that divides this number when iterated by the update matrix. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-ccmzerosearch size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix, even if nonzero vectors dividing the corresponding cycle length exist. This tool also outputs a text file with the name format "ccmzerosearch [size] [mod].txt" which saved all found matrices.
+ccmzerosearch resume size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix, even if nonzero vectors dividing the corresponding cycle length exist. This tool also outputs a text file with the name format "ccmzerosearch [size] [mod].txt" which saved all found matrices.
+ - "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 

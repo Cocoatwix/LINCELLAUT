@@ -1558,6 +1558,7 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP currMat;
 			BigIntMatrixTP tempCCM;
 			BigIntMatrixTP zeroMat;
+			BigIntMatrixTP resumeMat = NULL; //The matrix to resume at if specified
 			
 			BigIntMatrixTP currVect;
 			
@@ -1587,9 +1588,9 @@ int main(int argc, char* argv[])
 			BigPolyTP* charaPolyFactors;
 			
 			//Checking to see if the user provided a modulus on the command line
-			if (argc > 3)
+			if (argc > 4)
 			{
-				if (strtoBIT(argv[3], &bigMod) != 1)
+				if (strtoBIT(argv[4], &bigMod) != 1)
 				{
 					fprintf(stderr, "Unable to read modulus on command line.\n");
 					FREE_VARIABLES;
@@ -1607,12 +1608,23 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			matSize = (int)strtol(argv[2], &tempStr, 10);
+			matSize = (int)strtol(argv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Invalid matrix size provided on command line.\n");
 				FREE_VARIABLES;
 				return EXIT_FAILURE;
+			}
+			
+			//If the user wants to use the resume matrix
+			if (! strcmp(argv[2], "TRUE"))
+			{
+				resumeMat = read_BigIntMatrixT(resumefilepath);
+				if (resumeMat == NULL)
+				{
+					fprintf(stderr, "Unable to read resume matrix specified in config file. Computation " \
+					"will start from the zero matrix.\n");
+				}
 			}
 			
 			//Create output name
@@ -1621,12 +1633,12 @@ int main(int argc, char* argv[])
 			
 			strcat(outputfilename, argv[1]); //ccmzerosearch
 			strcat(outputfilename, " ");
-			strcat(outputfilename, argv[2]); //matrix size
+			strcat(outputfilename, argv[3]); //matrix size
 			strcat(outputfilename, " ");
 			
 			//modulus
-			if (argc > 3)
-				strcat(outputfilename, argv[3]);
+			if (argc > 4)
+				strcat(outputfilename, argv[4]);
 			else
 				strcat(outputfilename, bigintmodstring);
 			
@@ -1644,7 +1656,11 @@ int main(int argc, char* argv[])
 			{
 				currMatElements[row]  = malloc(matSize*sizeof(BigIntTP));
 				for (int col = 0; col < matSize; col += 1)
+				{
 					currMatElements[row][col] = empty_BigIntT(1);
+					if (resumeMat != NULL)
+						copy_BigIntT(big_element(resumeMat, row, col), currMatElements[row][col]);
+				}
 				
 				currVectElements[row] = malloc(sizeof(BigIntTP));
 				currVectElements[row][0] = empty_BigIntT(1);
@@ -1888,9 +1904,10 @@ int main(int argc, char* argv[])
 			FREE(currMatElements);
 			FREE(currVectElements);
 			
-			currMat  = free_BigIntMatrixT(currMat);
-			zeroMat  = free_BigIntMatrixT(zeroMat);
-			currVect = free_BigIntMatrixT(currVect);
+			currMat   = free_BigIntMatrixT(currMat);
+			zeroMat   = free_BigIntMatrixT(zeroMat);
+			currVect  = free_BigIntMatrixT(currVect);
+			resumeMat = free_BigIntMatrixT(resumeMat);
 			
 			theCycle = free_CycleInfoT(theCycle);
 			
