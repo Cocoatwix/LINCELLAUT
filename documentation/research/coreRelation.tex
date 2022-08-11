@@ -1,0 +1,382 @@
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=3cm]{geometry}
+\usepackage[parfill]{parskip} %Spaces for paragraphs
+
+%Line spacing
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont} %Double stroke font
+
+\usepackage{amsmath}
+
+\usepackage{natbib}
+
+%For adding spacing before section titles
+\newcommand{\ssection}[1]{\vspace{1cm}\section{#1}}
+\newcommand{\ssubsection}[1]{\vspace{0.25cm}\subsection{#1}}
+
+\author{Zach Strong}
+\title{Exploring matrix cores within prime-powered modules}
+\date{\today}
+
+\begin{document}
+	\maketitle
+	
+	\ssection{Introduction}
+	Given a module and a matrix $A$, there are two possibilities for each vector $\vec{v}$ in the module: 
+	either $A$ maps at least one vector to $\vec{v}$, or it doesn't. Vectors that don't get mapped to are 
+	said to be part of the \emph{transient region} of the given system. Any vector which gets mapped to 
+	only from vectors within the transient region are also said to be part of the transient region. Any 
+	vectors which aren't part of the transient region are said to be in the \emph{core} of the given system.
+	
+	More concretely, given some module $\mathds{Z}_{N}^{L}$ and an $L$ by $L$ matrix $A$ with elements 
+	in $\mathds{Z}_{N}$, the \emph{core} of $A$ (denoted by $S$) is the largest subset of the module such that
+	\[
+		AS = S
+	\]
+	One can think of the core as the largest set of vectors that gets shuffled around when multiplied by $A$.
+	For the following discussion, we'll let core$(A)$ represent this set $S$ for the matrix $A$. The modulus 
+	used will be apparent from context.
+	
+	The number of vectors in a matrix's core--the core's cardinality--changes depending on the modulus used. As a
+	simple example, the matrix $A = 
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				2 & 0 \\
+				0 & 2
+			\end{smallmatrix}
+		\end{bmatrix}
+	$
+	has 49 vectors in its core mod 7, but only 9 vectors mod 6. We're interested in whether there's any sort of
+	relationship between the cardinalities of a core under a prime modulus verses a core under a prime-powered modulus
+	(e.g. 7 vs $7^2$). Many other relations exist between prime and prime-powered moduli (see \citet{Patterson2008}
+	and \citet{Mendivil2012}), so it's natural to assume that the core would show some relation as well.
+	
+	\ssection{Properties of the Core}
+	Firstly, given some $L$ by $L$ matrix $A$, how should we treat core$(A)$? Computationally, the core of $A$ is
+	obtained by repeatedly multiplying $\mathds{Z}_{N}^{L}$ by $A$ until the set stops shrinking in size (cardinality). 
+	At this point, all vectors in the transient region have been removed from the set, and we're left with a set of 
+	vectors which shuffle amongst themselves under multiplication by $A$; this set is core$(A)$. Notably, this set 
+	is defined entirely by matrix multiplication. If $\tau$ is the transient length of $A$ (see \citet{Strong2022maximal}), 
+	then
+	\[
+		\text{core}(A) = A^{\tau}\mathds{Z}_{N}^{L}
+	\]
+	
+	The core of $A$, then, is the span of the column vectors of $A^{\tau}$:
+	\[
+		\text{core}(A) = \text{colsp}(A^{\tau})
+	\]
+	
+	So, the core of $A$ can be manipulated as a submodule of $\mathds{Z}_{N}^{L}$; the core isn't some arbitrary
+	collection of vectors with no structure. This greatly reduces the possible sets core$(A)$ could be for
+	any matrix $A$.
+	
+	\ssection{Cores Under a Prime Modulus}
+	Before considering the prime-powered case, it's beneficial to get an understanding of the prime case.
+	Let $A$ be an $L$ by $L$ matrix with elements in $\mathds{Z}_{p}$ for some prime $p$.	The prime case has
+	one slight difference which makes it easier to work with than any other case: $\mathds{Z}_{p}$ is a field,
+	meaning $\mathds{Z}_{p}^{L}$ can be treated as a vector space rather than just a module.
+
+	For us, this gives an even greater restriction on what core$(A)$ can look like. To see why, consider what
+	the span of a vector can look like in a vector space verses a module. In a vector space $\mathds{Z}_{p}^{L}$,
+	each vector (except for $\vec{0}$) must have $p$ vectors in its span, while in a module $\mathds{Z}_{N}^{L}$,
+	each vector only needs to have a number of vectors which is a \emph{divisor} of $N$ in its span.
+	
+	For example, in the vector space $\mathds{Z}_{7}^{2}$, the vector $\vec{v} = 
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				2 \\
+				4
+			\end{smallmatrix}
+		\end{bmatrix}
+	$
+	has 7 vectors in its span:
+	\begin{align*}
+		0\vec{v} \equiv
+		\begin{bmatrix}
+			0 \\
+			0
+		\end{bmatrix} &
+		\quad &
+		1\vec{v} \equiv
+		\begin{bmatrix}
+			2 \\
+			4
+		\end{bmatrix} &
+		\quad &
+		2\vec{v} \equiv
+		\begin{bmatrix}
+			4 \\
+			1
+		\end{bmatrix} &
+		\quad &
+		3\vec{v} \equiv
+		\begin{bmatrix}
+			6 \\
+			5
+		\end{bmatrix} \\
+		4\vec{v} \equiv
+		\begin{bmatrix}
+			1 \\
+			2
+		\end{bmatrix} &
+		\quad &
+		5\vec{v} \equiv
+		\begin{bmatrix}
+			3 \\
+			6
+		\end{bmatrix} &
+		\quad &
+		6\vec{v} \equiv
+		\begin{bmatrix}
+			5 \\
+			3
+		\end{bmatrix} &
+		\quad
+	\end{align*}
+	
+	In the module $\mathds{Z}_{6}^{2}$, the same vector $\vec{v}$ only has 3 vectors in its span:
+	\[
+		0\vec{v} \equiv
+		\begin{bmatrix}
+			0 \\
+			0
+		\end{bmatrix}
+		\quad
+		1\vec{v} \equiv
+		\begin{bmatrix}
+			2 \\
+			4
+		\end{bmatrix}
+		\quad
+		2\vec{v} \equiv
+		\begin{bmatrix}
+			4 \\
+			2
+		\end{bmatrix}
+		\quad
+		3\vec{v} \equiv 0\vec{v}
+	\]
+	
+	All of this is to say that the span of a vector in a vector space can be more "full" compared to when it's in
+	a module. In a vector space, each multiple of a vector is unique (except for $\vec{0}$), whereas in a module
+	this isn't necessarily the case.
+	
+	Because core$(A)$ is created from the span of a set of vectors, this means that, under a prime modulus, its 
+	cardinality will always be a power of the modulus. More specifically,
+	\[
+		|\text{core}(A)| = p^{\text{dim}(\text{core}(A))} \quad \text{for prime moduli} \,\, p 
+	\]
+	
+	Here, $|\text{core}(A)|$ refers to the cardinality of core$(A)$ and dim(core$(A)$) refers to the number
+	of directionally-independent vectors (vectors which don't share any vectors in their spans, except for $\vec{0}$) 
+	needed to span core$(A)$, the \emph{dimension} of core$(A)$. This equation may look complicated, but all it 
+	says is that the vectors that span core$(A)$ for a prime modulus must have "full" spans; the vectors that 
+	span core$(A)$ have unique multiples.
+	
+	Another way to think of this relation is that core$(A)$ cannot have any "gaps" in it for prime moduli. If a
+	vector in the span of core$(A)$ points in a specific direction, all the vectors along that direction must
+	also be in core$(A)$.
+	
+	Note that, if core$(A) = \{\vec{0}\}$, then we say dim(core$(A)) = 0$, and the above equation still holds.
+	
+	\ssection{Relationship Between Cores Under a Prime Modulus and a Prime-Powered Modulus}
+	Moving up to the prime-powered case, we note that $\mathds{Z}_{p^{k}}^{L}$ is no longer a vector space, so
+	we can't use the same arguments as above to restrict the structure of core$(A)$. However, we can instead 
+	make use of the relationships between prime moduli and prime-powered moduli to make conclusions about how 
+	cores behave in this setting.
+	
+	A natural question one may ask, for an $L$ by $L$ matrix $A$, is whether there's any connection between
+	core$(A)$ in $\mathds{Z}_{p}^{L}$ vs in $\mathds{Z}_{p^k}^{L}$.
+	
+	\ssubsection{Lifts}
+	It's helpful to understand the concept of a "lift vector" when dealing with prime-powered moduli.
+	Let's let
+	\[
+		\vec{a} = 
+		\begin{bmatrix}
+			c_{1}  \\
+			c_{2}  \\
+			\vdots \\
+			c_{L}
+		\end{bmatrix} \mod{p^k}
+	\]
+	and let $\vec{a}$ be in some cycle. If we then shift our attention to mod $p^{k+1}$, we find that
+	vectors in the form
+	\[
+		\vec{A}_{i} = 
+		\begin{bmatrix}
+			p^{k}b_{1} + c_{1} \\
+			p^{k}b_{2} + c_{2} \\
+			\vdots             \\
+			p^{k}b_{L} + c_{L}
+		\end{bmatrix} \mod{p^{k+1}}
+	\]
+	will behave very similarly to $\vec{a}$ mod $p^{k}$. In fact, if we only concern ourselves with the
+	$c_i$ terms for both vectors, their iterations will be identical, despite using different moduli.
+	This is because any value bigger than or equal to $p^k$ will be fed into the $p^{k}b_{i}$ terms,
+	leaving the $c_i$ terms to mimic their behaviour in the mod $p^k$ case. We'll call these $\vec{A}_{i}$ 
+	vectors \emph{lifts} of the vector $\vec{a}$. Every vector mod $p^k$ will have corresponding lifts
+	mod $p^{k+1}$.
+	
+	Not every lift of $\vec{a}$ will be in a cycle since the $p^{k}b_{i}$ terms can behave differently.
+	However, every lift will eventually lead into a cycle composed of lifts of the cycle of $\vec{a}$. 
+	This is merely because there are a finite number of possibilities for the $p^{k}b_{i}$ terms, and 
+	these terms don't affect the $c_i$ terms in any way; the $c_i$ terms already cycle, and the $p^{k}b_i$ 
+	terms have to cycle eventually.
+	
+	Another useful trait of any lift $\vec{A}_i$ mod $p^{k+1}$ is that they always reduce to their corresponding
+	$\vec{a}$ mod $p^k$, since reducing $\vec{A}_i$ mod $p^k$ would remove the $p^{k}b_i$ terms and retain
+	the $c_i$ terms.
+	
+	The idea of lifts helps relate prime-powered moduli of different exponents, since lifts give us a
+	relationship between the behaviour of vectors under both moduli. Note that lifts should be considered
+	different from "embed" vectors, which are the type of vectors used in proposition 5 within \citet{Mendivil2012}.
+	A vector mod $p^k$ can have several lifts mod $p^{k+1}$ which behave similarly, while that same vector
+	mod $p^k$ can only have one embed vector mod $p^{k+1}$ which behaves identically up to homomorphism.
+	
+	In fact, embed vectors are actually multiples of lift vectors since
+	\[
+		p\vec{a} \equiv p\vec{A}_i \mod{p^{k+1}}
+	\]
+	
+	\ssubsection{Dimensions of the Core}
+	Let's look at the dimension of the core. By proposition 5 in \citet{Mendivil2012}, we know
+	the behaviour of core$(A)$ under multiplication by $A$ in $\mathds{Z}_{p^{k}}^{L}$ is embedded in the 
+	behaviour of core$(A)$ in $\mathds{Z}_{p^{k+1}}^{L}$. This tells us that the dimension of core$(A)$ in 
+	$\mathds{Z}_{p^{k+1}}^{L}$ is at least the same as in $\mathds{Z}_{p^{k}}^{L}$. Otherwise, there's no 
+	way the behaviour of the core could be embedded in this way.
+	
+	We can also show that dim(core$(A)$) in $\mathds{Z}_{p^{k+1}}^{L}$ is at most the same as it was in
+	$\mathds{Z}_{p^k}^{L}$. Let
+	\[
+		\text{core}(A) = \text{span}(\{\vec{v}_{1}, \vec{v}_{2}, \cdots, \vec{v}_{b}\}) \quad \text{for} 
+		\,\, \mathds{Z}_{p^k}^{L}
+	\]
+	We'll assume that, on top of the $b$ vectors we know we need, an extra vector $\vec{w}$ is needed to
+	span core$(A)$ in $\mathds{Z}_{p^{k+1}}^{L}$.
+	
+	Now, since $\vec{w}$ is in the core, that means it's part of a cycle. If $\vec{w}$ cycles mod $p^{k+1}$, 
+	then it must also cycle mod $p^{k}$ since $\vec{w}$ must be the lift of some vector mod $p^{k}$. This 
+	implies that $\vec{w}$ reduced mod $p^{k}$ must be in core$(A)$ for $\mathds{Z}_{p^k}^{L}$. This means 
+	we can write $\vec{w}$ as
+	\[
+		\vec{w} \equiv x_{1}\vec{j}_{1} + x_{2}\vec{j}_{2} + \cdots + x_{b}\vec{j}_{b} + p^{k}\vec{V} \mod{p^{k+1}}
+	\]
+	for some lifts $\vec{j}_1 \cdots \vec{j}_b$ of the vectors $\vec{v}_1 \cdots \vec{v}_b$, some constants 
+	$x_{1} \cdots x_{b} \in \mathds{Z}_{p^{k+1}}$ and some vector $\vec{V} \in \mathds{Z}_{p}^{L}$. Without loss
+	of generality, we can assume all of $x_{i}\vec{j}_i$ are in cycles (and therefore in core$(A)$) since, if 
+	one of them wasn't, we could just iterate the vector until we reach an alternate lift for $\vec{v}_i$ which 
+	does cycle. Also, since we know the vectors $\vec{v}_1 \cdots \vec{v}_b$ span core$(A)$ for $\mathds{Z}_{p^k}^L$, 
+	they must be dimensionally-independent by construction. This means the lifts $\vec{j}_1 \cdots \vec{j}_b$ are 
+	also dimensionally-independent, which means each one adds an extra dimension to core$(A)$ in 
+	$\mathds{Z}_{p^{k+1}}^L$.
+	
+	Does the vector $p^{k}\vec{V}$ add another dimension? We can rewrite this vector as
+	\[
+		p^{k}\vec{V} = p(p^{k-1}\vec{V}) \mod{p^{k+1}}
+	\]
+	which shows that, by proposition 5 in \citet{Mendivil2012}, $p^{k}\vec{V}$ must be an embed vector for
+	some vector in $\mathds{Z}_{p^k}^L$. By definition, embed vectors are simply $p\vec{a}$ mod $p^{k+1}$ 
+	for some vector $\vec{a}$ mod $p^k$. We know the vector $\vec{a}$ must cycle since $p^{k}\vec{V}$ must
+	cycle (due to $\vec{w}$ being in a cycle), which means $p^{k}\vec{V}$ must be able to be written as
+	\begin{align*}
+		p^{k}\vec{V} & \equiv p\vec{a}                                                     & \mod{p^{k+1}} \\
+								 & \equiv p(y_{1}\vec{v}_1 + y_{2}\vec{v}_2 + \cdots + y_{b}\vec{v}_b) & \mod{p^{k+1}} \\
+								 & \equiv p(y_{1}\vec{j}_1 + y_{2}\vec{j}_2 + \cdots + y_{b}\vec{j}_b) & \mod{p^{k+1}}
+	\end{align*}
+	for some constants $y_1 \cdots y_b \in \mathds{Z}_{p^{k+1}}$. So $p^{k}\vec{V}$ can be written
+	in terms of vectors which we've already accounted for in the dimension of core$(A)$ for 
+	$\mathds{Z}_{p^{k+1}}^L$, so it cannot add an extra dimension. This means $\vec{w}$ isn't needed
+	to fully span core$(A)$ for $\mathds{Z}_{p^{k+1}}^L$.
+	
+	Therefore, the core mod $p^{k}$ must have the same dimension as the core mod $p^{k+1}$.
+	This means that cores under prime-powered moduli must have the same dimension as the core
+	under the corresponding prime modulus.
+	
+	\ssubsection{Cardinalities of the Core}
+	Thinking back to our discussion of cores under prime moduli, we found that
+	\[
+		|\text{core}(A)| = p^{\text{dim}(\text{core}(A))} \quad \text{for prime moduli} \,\, p 
+	\]
+	Is there a similar relation for prime-powered moduli? 
+	
+	Given a set of vectors $\vec{v}_1 \cdots \vec{v}_b$ which spans core$(A)$ for $\mathds{Z}_p^L$,
+	we know that we can find lifts for these vectors for $\mathds{Z}_{p^k}^L$ which are part of
+	the core. We also know that, since the vectors which span core$(A)$ in the prime case
+	necessarily have full spans, the lifts we find will have full spans, too.
+	
+	To see why this is true, let's look at an example. The vector $\vec{v} = 
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				8 \\
+				12
+			\end{smallmatrix}
+		\end{bmatrix}
+	$
+	mod 49 ($7^{2}$) has a full span since each of its multiples are unique. Neither 8 nor 12 is 
+	a multiple of 7, and thus their additive orders (the number of times they must be added to get 
+	zero) are each 49. This means the entire vector's additive order is also 49.
+	
+	If we move up to mod 343 ($7^{3}$), there are 49 vectors which reduce to $\vec{v}$ mod 49, 
+	all of them taking the form 
+	\[
+	\vec{w} =
+		\begin{bmatrix}
+			49a + 8 \\
+			49b + 12
+		\end{bmatrix}
+		=
+		\begin{bmatrix}
+			49a + 7 + 1 \\
+			49b + 7 + 5
+		\end{bmatrix}
+	\]
+	
+	As is evident from this form, none of the 49 possible lifts of $\vec{v}$ can have components 
+	that are multiples of 7, and therefore all their additive orders are 343. 
+	
+	This is a general property: if a number isn't a multiple of the prime under a prime-powered
+	modulus, then its lifts will also not be multiples of the prime under any prime-powered
+	modulus (of the same prime, of course). This means that, if a vector has maximum additive
+	order under some prime-powered modulus, then its lifts will also have maximum additive
+	order under any prime-powered modulus (again, of the same prime).
+	
+	Using this fact, we instantly know that the relationship surrounding the core's cardinality
+	under a prime modulus also extends to a prime-powered modulus. We've shown the dimension of 
+	the core has to remain fixed for all prime-powered moduli deriving from the same prime, and
+	of these dimensions, we can take lifts of the vectors which span the core for the prime case
+	and use them to span the prime-powered case. These vectors will all have full spans, so the
+	cardinality of the core of a matrix $A$ in these cases can be written as
+	\[
+		|\text{core}(A)| = (p^{k})^{\text{dim(core}(A))} \text{ for prime-powered moduli } p^{k}
+	\]
+	
+	This tells us that, for all prime-powered moduli, the size of the core will always be
+	maximal. Given the dimension of a core and a prime-powered modulus, we can instantly
+	find out what the cardinality of the core must be.
+	
+	\ssection{Significance}
+	There are a few reasons why it's beneficial to understand how the cores of matrices
+	behave under prime-powered moduli.
+	
+	Knowing that cores under prime-powered moduli must always be "full" allows a proper
+	basis to be formed for the core without the use of an irregularly-shaped module
+	(a module where different moduli are used for each vector component). This, in turn,
+	allows for matrices to more easily be restricted to the core, which allows specific
+	ideas and results to be applied to them (such as the result in \citet{Strong2022maximal}).
+	
+	As well, having a better general idea of what the core looks and acts like allows better
+	conclusions to be drawn about its converse: the transient region. By better understanding
+	and enumerating the core of a matrix, questions such as the number of transient vectors
+	can be reframed in terms of the core, an arguably easier construct to understand.
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+
+\end{document}

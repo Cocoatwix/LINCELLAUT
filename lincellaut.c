@@ -2816,7 +2816,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET \
 		": Outputs a \"cycle converting matrix\" for the given update matrix.\n\n");
 		
-		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "size [mod]" ANSI_COLOR_RESET \
+		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET \
 		": Searches for matrices which have zero matrices as their cycle converting matrices.\n\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET \
