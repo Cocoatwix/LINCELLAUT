@@ -25,3 +25,11 @@ howtogit.txt
 
 #No need to put scrap thoughts in the repo
 scraps/*
+
+#Make sure unnecessary LaTeX don't make their way into the repo
+documentation/research/*.aux
+documentation/research/*.log
+documentation/research/*.pdf
+documentation/research/*.toc
+documentation/research/*.bbl
+documentation/research/*.blg
