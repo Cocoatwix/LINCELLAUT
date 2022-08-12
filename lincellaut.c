@@ -52,6 +52,22 @@ https://stackoverflow.com/questions/3219393
 											 FREE(iterfilepath); \
 											 FREE(bigintmodstring); \
 											 FREE(resumemodstring)
+											 
+#define SET_BIG_NUM(str, bigint, msg) \
+if (strtoBIT((str), &(bigint)) != 1) \
+{ \
+	fprintf(stderr, "%s\n", (msg)); \
+	FREE_VARIABLES; \
+	return EXIT_FAILURE; \
+}
+
+/*
+if (strtoBIT(argv[2], &bigMod) != 1)
+				{
+					fprintf(stderr, "Unable to read modulus from command line.\n");
+					return EXIT_FAILURE;
+				}
+*/
 
 int main(int argc, char* argv[])
 {
@@ -362,21 +378,13 @@ int main(int argc, char* argv[])
 			//If the user provided a custom modulus
 			if (argc > 2)
 			{
-				if (strtoBIT(argv[2], &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			
 			//Extract the modulus in the .config file otherwise
 			else
 			{
-				if (strtoBIT(bigintmodstring, &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus from config file.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
 			//Now, read the update matrix
@@ -462,20 +470,12 @@ int main(int argc, char* argv[])
 			//If the user provided a modulus on the CLI
 			if (argc > 2)
 			{
-				if (strtoBIT(argv[2], &bigMod) == 0)
-				{
-					fprintf(stderr, "Invalid modulus passed at command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[2], bigMod, "Invalid modulus passed at command line.");
 			}
 			
 			else
 			{
-				if (strtoBIT(bigintmodstring, &bigMod) == 0)
-				{
-					fprintf(stderr, "Invalid modulus passed at command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, bigMod, "Invalid modulus passed in config file.");
 			}
 			
 			A = read_BigIntMatrixT(updatefilepath);
@@ -555,21 +555,6 @@ int main(int argc, char* argv[])
 				
 				//Increment to next vector
 				checkedAllVects = increment_BigIntT_array(entriesToUse, big_cols(A), 1, one, bigMod);
-				/*checkedAllVects = TRUE;
-				for (int i = big_cols(A)-1; i >= 0; i -= 1)
-				{
-					add_BigIntT(entriesToUse[i][0], one, temp);
-					
-					if (compare_BigIntT(temp, bigMod) == 0)
-						copy_BigIntT(zero, entriesToUse[i][0]);
-					
-					else
-					{
-						copy_BigIntT(temp, entriesToUse[i][0]);
-						checkedAllVects = FALSE;
-						break;
-					}
-				} */
 			}
 			
 			printf("|ker(A)| = ");
@@ -653,22 +638,12 @@ int main(int argc, char* argv[])
 			//If user provided modulus at command line
 			if (argc > 2)
 			{
-				if (strtoBIT(argv[2], &bigMod) == 0)
-				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			
 			else
 			{
-				if (strtoBIT(bigintmodstring, &bigMod) == 0)
-				{
-					fprintf(stderr, "Unable to read modulus from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
 			A = read_BigIntMatrixT(updatefilepath);
@@ -949,22 +924,13 @@ int main(int argc, char* argv[])
 			//If the user specified a custom modulus
 			if (argc > 2)
 			{
-				if (strtoBIT(argv[2], &bigModulus) == 0)
-				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[2], bigModulus, "Unable to read modulus from command line.");
 			}
 			
 			//Use the modulus provided in the .config file
 			else
 			{
-				if (strtoBIT(bigintmodstring, &bigModulus) == 0)
-				{
-					fprintf(stderr, "Unable to read modulus from .config file. It's possible the modulus" \
-					" is too big, in which case it must be provided at the command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, bigModulus, "Unable to read modulus from config file. Try giving the modulus as a CLI argument.");
 			}
 			
 			//Now, get the matrices from the provided files
@@ -1082,7 +1048,7 @@ int main(int argc, char* argv[])
 			//If user didn't provide enough arguments for the tool, explain how to use it
 			if (argc < 6)
 			{
-				printf(ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume maxmod cycles..." ANSI_COLOR_RESET \
+				printf(ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET \
 				": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n");
 				printf(" - " ANSI_COLOR_CYAN "resume" ANSI_COLOR_RESET \
 				": Says whether to resume computation at a particular matrix.\n");
@@ -1161,12 +1127,7 @@ int main(int argc, char* argv[])
 			if (! strcmp(argv[2], "TRUE"))
 			{
 				currMat = read_BigIntMatrixT(resumefilepath);
-				if (strtoBIT(bigintmodstring, &currMod) == 0)
-				{
-					fprintf(stderr, "Unable to read resume modulus from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, currMod, "Unable to read resume modulus from config file.");
 				
 				if (currMat == NULL)
 				{
@@ -1189,11 +1150,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//If we couldn't read the modulus
-			if (strtoBIT(argv[4], &maxMod) == 0)
-			{
-				fprintf(stderr, "Unable to read modulus from command line.\n");
-				return EXIT_FAILURE;
-			}
+			SET_BIG_NUM(argv[4], maxMod, "Unable to read modulus from command line.");
 			
 			//If the user didn't provide enough cycles for the given matrix size
 			if (argc < 5 + size)
@@ -1373,10 +1330,6 @@ int main(int argc, char* argv[])
 						}
 					}
 					
-					
-					//Iterate to the next matrix
-					checkedAllMatrices = TRUE;
-					
 					/*
 					//CHECK TO SEE IF OUR MATRIX IS THE ONE WE WANT TO STOP AT
 					for (int i = 0; i < size; i += 1)
@@ -1393,38 +1346,8 @@ int main(int argc, char* argv[])
 					}
 					*/
 
-					for (i = 0; i < size; i += 1)
-					{
-						for (j = 0; j < size; j += 1)
-						{
-							//Increment specific element; check if it overflows
-							add_BigIntT(one, currMatElements[i][j], temp);
-							
-							if (compare_BigIntT(temp, currMod) >= 0)
-							{
-								copy_BigIntT(zero, currMatElements[i][j]);
-								
-								//Print a progress update to the console
-								if ((i == size-1) && (j == size-2))
-								{
-									printi(currMatElements[i][j+1]);
-									printf(" / ");
-									printi(currMod);
-									printf(" checked...\n");
-								}
-								
-							}
-							
-							//No overflow
-							else
-							{
-								checkedAllMatrices = FALSE;
-								copy_BigIntT(temp, currMatElements[i][j]);
-								i = size;
-								j = size;
-							}
-						}
-					}
+					//Iterate to the next matrix
+					checkedAllMatrices = increment_BigIntT_array(currMatElements, size, size, one, currMod);
 				}
 				
 				//Increment modulus
@@ -1478,37 +1401,16 @@ int main(int argc, char* argv[])
 			//Check to see if user provided a custom modulus
 			if (argc > 4)
 			{
-				if (strtoBIT(argv[4], &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[4], bigMod, "Unable to read modulus from command line.");
 			}
 			
 			else
 			{
-				if (strtoBIT(bigintmodstring, &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
-			if (strtoBIT(argv[2], &from) != 1)
-			{
-				fprintf(stderr, "Unable to read starting cycle length from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
-			}
-			
-			if (strtoBIT(argv[3], &to) != 1)
-			{
-				fprintf(stderr, "Unable to read conversion cycle length from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
-			}
+			SET_BIG_NUM(argv[2], from, "Unable to read starting cycle length from command line.");
+			SET_BIG_NUM(argv[3], to, "Unable to read conversion cycle length from command line.");
 			
 			A = read_BigIntMatrixT(updatefilepath);
 			if (A == NULL)
@@ -1590,22 +1492,12 @@ int main(int argc, char* argv[])
 			//Checking to see if the user provided a modulus on the command line
 			if (argc > 4)
 			{
-				if (strtoBIT(argv[4], &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus on command line.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[4], bigMod, "Unable to read modulus on command line.");
 			}
 			
 			else
 			{
-				if (strtoBIT(bigintmodstring, &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
 			matSize = (int)strtol(argv[3], &tempStr, 10);
@@ -1738,21 +1630,7 @@ int main(int argc, char* argv[])
 							}
 							
 					//Iterate to next vector
-					checkedAllVectors = TRUE;
-					
-					for (int x = 0; x < matSize; x += 1)
-					{
-						add_BigIntT(one, currVectElements[x][0], temp);
-						if (compare_BigIntT(temp, bigMod) == 0)
-							copy_BigIntT(zero, currVectElements[x][0]);
-						
-						else
-						{
-							copy_BigIntT(temp, currVectElements[x][0]);
-							checkedAllVectors = FALSE;
-							break;
-						}
-					}
+					checkedAllVectors = increment_BigIntT_array(currVectElements, matSize, 1, one, bigMod);
 				}
 				
 				//Now, check to see if any "interesting cycle lengths" exist for the matrix
@@ -1869,26 +1747,7 @@ int main(int argc, char* argv[])
 				FREE(cycleLengthFactors);
 				
 				//Iterate to next matrix
-				checkedAllMatrices = TRUE;
-				
-				for (int x = 0; x < matSize; x += 1)
-				{
-					for (int y = 0; y < matSize; y += 1)
-					{
-						add_BigIntT(one, currMatElements[x][y], temp);
-						if (compare_BigIntT(temp, bigMod) == 0)
-							copy_BigIntT(zero, currMatElements[x][y]);
-						
-						else
-						{
-							copy_BigIntT(temp, currMatElements[x][y]);
-							checkedAllMatrices = FALSE;
-							break;
-						}
-					}
-					if (!checkedAllMatrices)
-						break;
-				}
+				checkedAllMatrices = increment_BigIntT_array(currMatElements, matSize, matSize, one, bigMod);
 			}
 			
 			
@@ -1959,29 +1818,17 @@ int main(int argc, char* argv[])
 			}
 			
 			//Getting user provided step size
-			if (strtoBIT(argv[2], &step) == 0)
-			{
-				fprintf(stderr, "Invalid step size passed on command line.\n");
-				return EXIT_FAILURE;
-			}
+			SET_BIG_NUM(argv[2], step, "Invalid step size passed on command line.");
 			
 			//If user provided a specific modulus on CLI
 			if (argc > 3)
 			{
-				if (strtoBIT(argv[3], &mod) == 0)
-				{
-					fprintf(stderr, "Invalid modulus passed on command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[3], mod, "Invalid modulus passed on command line.");
 			}
 			
 			else
 			{
-				if (strtoBIT(bigintmodstring, &mod) == 0)
-				{
-					fprintf(stderr, "Unable to read modulus from .config file.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(bigintmodstring, mod, "Unable to read modulus from config file.");
 			}
 			
 			//Initialise currentMatrix
@@ -2166,83 +2013,77 @@ int main(int argc, char* argv[])
 			
 			//Use modulus provided on CLI
 			if (argc == 3)
-				ok = strtoBIT(argv[2], &bigModulus);
+			{
+				SET_BIG_NUM(argv[2], bigModulus, "Unable to read modulus provided on command line.");
+			}
 			
 			//Use config modulus instead
 			else
-				ok = strtoBIT(bigintmodstring, &bigModulus);
-			
-			//If we read the modulus alright
-			if (ok)
 			{
-				printf("Modulus: ");
-				printi(bigModulus);
-				printf("\n");
-				
-				//Iterate through all possible starting vectors
-				while (compare_BigIntT(startingX, bigModulus) < 0)
-				{
-					while (compare_BigIntT(startingY, bigModulus) < 0)
-					{
-						//Prepping our starting vector
-						copy_BigIntT(startingX, currX);
-						copy_BigIntT(startingY, currY);
-						counter = 0;
-						
-						//Increment until we get back to the start
-						do
-						{
-							//Perform the iteration
-							add_BigIntT(currX, currY, tempInt);
-							mod_BigIntT(tempInt, bigModulus, currY);
-							copy_BigIntT(currX, tempInt);
-							copy_BigIntT(currY, currX);
-							copy_BigIntT(tempInt, currY);
-							
-							counter += 1;
-						}
-						while ((compare_BigIntT(currX, startingX) != 0) ||
-						       (compare_BigIntT(currY, startingY) != 0));
-									 
-						//Now, check to see if we've already gotten this cycle length
-						ok = 1;
-						for (int x = 0; x < indexCounter; x += 1)
-						{
-							if (cycleLengths[x] == counter)
-							{
-								ok = 0;
-								break;
-							}
-						}
-							
-						//If we didn't find it, add the new cycle length
-						if (ok)
-						{
-							cycleLengths[indexCounter] = counter;
-							indexCounter += 1;
-							printf("Cycle length: %d\n", counter);
-							printf("Starting vector: [");
-							printi(startingX);
-							printf(", ");
-							printi(startingY);
-							printf("]\n");
-						}
-						
-						//Incrementing Y
-						add_BigIntT(startingY, one, tempInt);
-						copy_BigIntT(tempInt, startingY);
-					}
-					//Incrementing X, resetting Y
-					copy_BigIntT(zero, startingY);
-					add_BigIntT(startingX, one, tempInt);
-					copy_BigIntT(tempInt, startingX);
-				}
+				SET_BIG_NUM(bigintmodstring, bigModulus, "Unable to read modulus from config file.");
 			}
 			
-			else
+			printf("Modulus: ");
+			printi(bigModulus);
+			printf("\n");
+			
+			//Iterate through all possible starting vectors
+			while (compare_BigIntT(startingX, bigModulus) < 0)
 			{
-				fprintf(stderr, "Unable to use provided modulus.\n");
-				return EXIT_FAILURE;
+				while (compare_BigIntT(startingY, bigModulus) < 0)
+				{
+					//Prepping our starting vector
+					copy_BigIntT(startingX, currX);
+					copy_BigIntT(startingY, currY);
+					counter = 0;
+					
+					//Increment until we get back to the start
+					do
+					{
+						//Perform the iteration
+						add_BigIntT(currX, currY, tempInt);
+						mod_BigIntT(tempInt, bigModulus, currY);
+						copy_BigIntT(currX, tempInt);
+						copy_BigIntT(currY, currX);
+						copy_BigIntT(tempInt, currY);
+						
+						counter += 1;
+					}
+					while ((compare_BigIntT(currX, startingX) != 0) ||
+								 (compare_BigIntT(currY, startingY) != 0));
+								 
+					//Now, check to see if we've already gotten this cycle length
+					ok = 1;
+					for (int x = 0; x < indexCounter; x += 1)
+					{
+						if (cycleLengths[x] == counter)
+						{
+							ok = 0;
+							break;
+						}
+					}
+						
+					//If we didn't find it, add the new cycle length
+					if (ok)
+					{
+						cycleLengths[indexCounter] = counter;
+						indexCounter += 1;
+						printf("Cycle length: %d\n", counter);
+						printf("Starting vector: [");
+						printi(startingX);
+						printf(", ");
+						printi(startingY);
+						printf("]\n");
+					}
+					
+					//Incrementing Y
+					add_BigIntT(startingY, one, tempInt);
+					copy_BigIntT(tempInt, startingY);
+				}
+				//Incrementing X, resetting Y
+				copy_BigIntT(zero, startingY);
+				add_BigIntT(startingX, one, tempInt);
+				copy_BigIntT(tempInt, startingX);
 			}
 			
 			bigModulus = (bigModulus == NULL) ? NULL : free_BigIntT(bigModulus);
@@ -2281,11 +2122,7 @@ int main(int argc, char* argv[])
 			
 			if (argc > 2)
 			{
-				if (! strtoBIT(argv[2], &upperbound))
-				{
-					fprintf(stderr, "Invalid upper bound passed.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[2], upperbound, "Invalid upper bound passed.");
 			}
 			else
 				upperbound = new_BigIntT(hundred, 1);
@@ -2493,11 +2330,6 @@ int main(int argc, char* argv[])
 				
 				theCycle = free_CycleInfoT(theCycle);
 				
-				/*printf("Possible vector cycle lengths: ");
-				for (int i = 1; i <= possibleCycleLengths[0]; i += 1)
-					printf("%d ", possibleCycleLengths[i]);
-				printf("\n\n"); */
-				
 				//Now, construct our cycleTable to hold cycle counts
 				//This gets reallocated for each power we go up
 				if (modulusCounter == 1)
@@ -2548,15 +2380,7 @@ int main(int argc, char* argv[])
 						tempModulus /= modulus;
 						modm(currVect, tempModulus); //Might cause an error mod 1?
 					}
-					
-					//Print out vector in an easier-to-look-at way for stdout
-					/*
-					printf("<");
-					for (int i = 0; i < rows(A)-1; i += 1)
-						printf("%d ", currVectElements[i]);
-					printf("%d>\n", currVectElements[rows(A)-1]);
-					printf("---\n"); 
-					*/
+
 					//Now, output to our file the current vector's group only if:
 					// we're on the last modulus to check and if the file exists
 					if ((modulusCounter == highpower) && (outputFile != NULL))
@@ -2626,6 +2450,8 @@ int main(int argc, char* argv[])
 					}
 
 					//Increment through all possible vectors (% modulus)
+					//When I switch this program to use BigIntMatrixTPs, I can use my
+					// new function here
 					checkedAllVects = TRUE;
 					for (int i = rows(A)-1; i >= 0; i -= 1)
 					{
@@ -2783,58 +2609,23 @@ int main(int argc, char* argv[])
 		printf("Usage: lincellaut <tool> [options]\n\n");
 		printf("Tools:\n");
 		
-		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET \
-		": Iterate the initial matrix by the update matrix a given number of times.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Find the inverse of an update matrix under some modulus.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Find the determinant of an update matrix under some modulus.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Find the characteristic equation of an update matrix under some modulus.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Calculates the number of vectors in a matrix's core.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Finds a representative vector from each of the update matrix's orbits.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Use Floyd's Cycle Detection Algorithm to find out specific details about the given LCA.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "bigfloyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Same as floyd, but uses BigIntMatrixT and BigIntT structs instead of IntMatrixT and ints.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
-		": Finds and outputs some basic rotation matrices for the given modulus.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET \
-		": Searches for a matrix whose column vectors cycle with cycle lengths less than the matrix itself.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET \
-		": Outputs a \"cycle converting matrix\" for the given update matrix.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET \
-		": Searches for matrices which have zero matrices as their cycle converting matrices.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET \
-		": Steps around a matrix space and computes the characteritic polynomial for each matrix it lands on.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
-		": Generate the Fibonacci cycle that contains the initial vector.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET \
-		": Calculate all possible Fibonacci cycle lengths.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET \
-		": Searches the Fibonacci numbers, checking whether a " \
-		"multiple of each number up to the bound appears before a multiple of a power of the number.\n\n");
-		
-		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus]" ANSI_COLOR_RESET \
-		": Iterates every vector in a space, recording their transient lengths and cycle lengths. " \
-		"It then computes the same numbers for higher-powered moduli.\n\n");
+		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "bigfloyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus]" ANSI_COLOR_RESET "\n");
 		
 		printf("For a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

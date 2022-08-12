@@ -1,0 +1,25 @@
+\begin{thebibliography}{3}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Mendivil and Patterson(2012)]{Mendivil2012}
+Franklin Mendivil and Donald Patterson.
+\newblock Dynamics of finite linear cellular automata over \textbackslash z{N}.
+\newblock \emph{Rocky Mountain Journal of Mathematics}, 42\penalty0
+  (2):\penalty0 695--709, 2012.
+\newblock \doi{https://doi.org/10.1216/RMJ-2012-42-2-695}.
+
+\bibitem[Patterson(2008)]{Patterson2008}
+Donald Patterson.
+\newblock Linear cellular automata.
+\newblock 2008.
+
+\bibitem[Strong(2022)]{Strong2022maximal}
+Zach Strong.
+\newblock Finding vectors with maximal cycle length within modules.
+\newblock 2022.
+
+\end{thebibliography}

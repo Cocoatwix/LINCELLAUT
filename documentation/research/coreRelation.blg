@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: coreRelation.aux
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+The style file: plainnat.bst
+Reallocating 'name_of_file' (item size: 1) to 9 items.
+Database file #1: refs.bib
+Warning--empty journal in Patterson2008
+Warning--empty journal in Strong2022maximal
+You've used 3 entries,
+            2773 wiz_defined-function locations,
+            611 strings with 5241 characters,
+and the built_in function-call counts, 1097 in all, are:
+= -- 97
+> -- 41
+< -- 3
++ -- 15
+- -- 12
+* -- 71
+:= -- 177
+add.period$ -- 10
+call.type$ -- 3
+change.case$ -- 13
+chr.to.int$ -- 3
+cite$ -- 8
+duplicate$ -- 58
+empty$ -- 101
+format.name$ -- 17
+if$ -- 222
+int.to.chr$ -- 1
+int.to.str$ -- 1
+missing$ -- 3
+newline$ -- 24
+num.names$ -- 12
+pop$ -- 29
+preamble$ -- 1
+purify$ -- 10
+quote$ -- 0
+skip$ -- 43
+stack$ -- 0
+substring$ -- 31
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 33
+warning$ -- 2
+while$ -- 11
+width$ -- 0
+write$ -- 44
+(There were 2 warnings)
