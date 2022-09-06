@@ -47,8 +47,8 @@ CycleInfoTP floyd(IntMatrixTP const, IntMatrixTP const, int);
     Returns 1 on success, 0 otherwise. */
 int big_floyd(BigIntMatrixTP const, 
               BigIntMatrixTP const, 
-							BigIntTP const,
-							CycleInfoTP*);
+			  BigIntTP const,
+			  CycleInfoTP*);
 
 /** Creates a .iteration file containing a single iteration of
     every vector under the given update matrix and modulus. 

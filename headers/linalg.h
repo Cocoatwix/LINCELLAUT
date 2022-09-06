@@ -28,12 +28,15 @@ int element(IntMatrixTP const, int, int);
 BigIntTP big_element(BigIntMatrixTP const, int, int);
 
 
-/** Increments an array of BigIntTs by one. Used for
+/** Increments an array of BigIntTs by a given inc. Used for
     incrementing through all possible matrices or vectors.
-		Returns TRUE if array rolls over,
-		FALSE otherwise. */
+	Returns TRUE if array rolls over, FALSE otherwise. */
 //                                array  row  col       increment         modulus
 bool increment_BigIntT_array(BigIntTP**, int, int, BigIntTP const, BigIntTP const);
+
+/** Frees an array of BigIntTs. Returns NULL. */
+//                                        rows cols
+BigIntTP** free_BigIntT_array(BigIntTP**, int, int);
 
 
 /** Frees the memory of a matrix. Returns NULL. 

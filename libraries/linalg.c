@@ -155,6 +155,22 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 }
 
 
+BigIntTP** free_BigIntT_array(BigIntTP** arr, int rows, int cols)
+/** Frees an array of BigIntTs. Returns NULL. */
+{
+	for (int i = 0; i < rows; i += 1)
+	{
+		for (int j = 0; j < cols; j += 1)
+			arr[i][j] = free_BigIntT(arr[i][j]);
+		
+		free(arr[i]);
+		arr[i] = NULL;
+	}
+	free(arr);
+	return NULL;
+}
+
+
 BigIntTP big_element(BigIntMatrixTP const M, int row, int col)
 /** Returns the BigIntTP contained within M at the 
     specified location. Returns NULL if the specified index

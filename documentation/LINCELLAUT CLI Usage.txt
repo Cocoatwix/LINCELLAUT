@@ -20,6 +20,9 @@ core [modulus]: This tool allows the user to calculate how many vectors are in a
 orbitreps [modulus]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
+branchreps [modulus] (UNFINISHED): This tool takes the given update matrix and finds a representative from all its transient branches. The tool also creates a text file with the name "branchreps [modulus] F[matrix].txt" which saves the found vectors.
+ - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
+
 floyd [modulus]: This tool allows the user to calculate specific info about an LCA system, such as the matrix's cycle length and the transient length, using Floyd's Cycle Detection Algorithm. The tool makes use of the initial and update matrices specified in the .config file as its parameters.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 

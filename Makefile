@@ -32,35 +32,39 @@ verbose:	FLAGS += -DVERBOSE
 verbose:	$(TARGET)
 
 #The -lm is included at the end of the command to avoid linker problems
-# https://stackoverflow.com/questions/11336477
+# stackoverflow.com/questions/11336477
 $(TARGET):	$(TARGET).c $(ALLOBJS)
 	$(COMPILER) $(FLAGS) -o $(TARGET) $(TARGET).c $(ALLOBJS) -lm
 	
-$(OBJPATH)/$(LIB1).o:	$(LIBPATH)/$(LIB1).c
+$(OBJPATH)/$(LIB1).o:	$(LIBPATH)/$(LIB1).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB1).o $(LIBPATH)/$(LIB1).c
 	
-$(OBJPATH)/$(LIB2).o:	$(LIBPATH)/$(LIB2).c
+$(OBJPATH)/$(LIB2).o:	$(LIBPATH)/$(LIB2).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB2).o $(LIBPATH)/$(LIB2).c
 	
-$(OBJPATH)/$(LIB3).o:	$(LIBPATH)/$(LIB3).c
+$(OBJPATH)/$(LIB3).o:	$(LIBPATH)/$(LIB3).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB3).o $(LIBPATH)/$(LIB3).c
 	
-$(OBJPATH)/$(LIB4).o:	$(LIBPATH)/$(LIB4).c
+$(OBJPATH)/$(LIB4).o:	$(LIBPATH)/$(LIB4).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB4).o $(LIBPATH)/$(LIB4).c
 	
-$(OBJPATH)/$(LIB5).o:	$(LIBPATH)/$(LIB5).c
+$(OBJPATH)/$(LIB5).o:	$(LIBPATH)/$(LIB5).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB5).o $(LIBPATH)/$(LIB5).c
 	
-$(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c
+$(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB6).o $(LIBPATH)/$(LIB6).c
 	
-$(OBJPATH)/$(LIB7).o:	$(LIBPATH)/$(LIB7).c
+$(OBJPATH)/$(LIB7).o:	$(LIBPATH)/$(LIB7).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB7).o $(LIBPATH)/$(LIB7).c
 	
-$(OBJPATH)/$(LIB8).o:	$(LIBPATH)/$(LIB8).c
+$(OBJPATH)/$(LIB8).o:	$(LIBPATH)/$(LIB8).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB8).o $(LIBPATH)/$(LIB8).c
-
 	
+#Create objects directory if it doesn't already exist
+# stackoverflow.com/questions/12605051
+$(OBJPATH):
+	mkdir -p $@
+
 clean:
 	rm $(TARGET)
 	rm $(OBJPATH)/*.o
