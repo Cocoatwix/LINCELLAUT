@@ -746,6 +746,28 @@ void fprintbm_nopad(FILE* file, BigIntMatrixTP M)
 }
 
 
+BigIntMatrixTP BigIntMatrixT_catalogue_get(BigIntMatrixTP** catalogue, int* catLength, BigIntMatrixTP const toFind)
+/** Searches a BigIntMatrixTP array to find a reference to a matrix which is
+    equivalent to the one passed in. If a suitable matrix isn't found, it's added 
+		to the array (by copy) and a reference is returned. 
+		
+		This function assumes all the matrices in the catalogue are of the same dimensions. */
+{
+	//Search catalogue first to see if the matrix is in there
+	for (int i = 0; i < *catLength; i += 1)
+		if (compare_BigIntMatrixT(catalogue[0][i], toFind))
+			return catalogue[0][i];
+
+		
+	//If we can't find toFind in the catalogue, add it
+	*catLength += 1;
+	catalogue[0] = realloc(catalogue[0], (*catLength)*sizeof(BigIntMatrixTP));
+	catalogue[0][(*catLength)-1] = new_BigIntMatrixT(toFind->m, toFind->n);
+	copy_BigIntMatrixT(toFind, catalogue[0][(*catLength)-1]);
+	return catalogue[0][*catLength-1];
+}
+
+
 int big_mat_add(BigIntMatrixTP const A, BigIntMatrixTP const B, BigIntMatrixTP sum)
 /** Computes A + B, stores sum in sum. This function assumes 
     sum has been initialised.

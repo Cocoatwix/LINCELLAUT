@@ -1,0 +1,8 @@
+Cycle length: 1
+Reps: 
+<0 0 0>
+
+Cycle length: 8
+Reps: 
+<0 1 2>
+

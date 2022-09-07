@@ -102,6 +102,15 @@ void fprintbm_nopad(FILE*, BigIntMatrixTP);
     positive integer has. */
 int num_digits(int);
 
+/** Searches a given BigIntMatrixTP array for a matrix equivalent to the one
+    passed in, then returns the refernece to it. If the given matrix isn't
+	in the array, it's copied to the array (by copy) and its reference is
+	returned. 
+	
+	This function assumes all the matrices in the catalogue are of the same dimensions. */
+//                                         catalogue      length  matrix to find
+BigIntMatrixTP BigIntMatrixT_catalogue_get(BigIntMatrixTP**, int*, BigIntMatrixTP const);
+
 /** Adds two matrices together, stores result in third matrix.
     Returns 1 on success, 0 otherwise. */
 int big_mat_add(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
