@@ -927,11 +927,15 @@ int main(int argc, char* argv[])
 			//Loop over each vector, check if it's in a cycle or not
 			do
 			{
+				//This is here to prevent the program from counting new branches after we blocked off a single leaf
+				// from adding to the branch count
+				hasConnections = TRUE; //Says whether the leaf we're looking at has other connections feeding into it
+				
 				set_big_matrix(currVect, currVectElements);
 				big_floyd(A, currVect, bigMod, &theCycle);
-				/*printf("Current vector:\n");
+				printf("Current vector:\n");
 				printbm(currVect);
-				printf("\n");*/
+				printf("\n");
 				
 				//If we found a vector that isn't a part of a cycle
 				if (tau(theCycle) != 0)
@@ -939,7 +943,7 @@ int main(int argc, char* argv[])
 					//If we found our first branch
 					if (numOfBranches == 0)
 					{
-						//printf("First branch.\n");
+						printf("First branch.\n");
 						
 						//Insert vector into leaf
 						copy_BigIntMatrixT(currVect, branches[0][0]);
@@ -980,9 +984,9 @@ int main(int argc, char* argv[])
 						//Easy case. We just create a new branch like before
 						if (isNewRoot)
 						{
-							/*printf("Has a new root:\n");
+							printf("Has a new root:\n");
 							printbm(tempRoot);
-							printf("\n");*/
+							printf("\n");
 							
 							copy_BigIntMatrixT(currVect, branches[numOfBranches][0]);
 							copy_BigIntMatrixT(tempRoot, branches[numOfBranches][1]);
@@ -992,8 +996,8 @@ int main(int argc, char* argv[])
 						//Now, we search through the existing branches to find where currVect grows from
 						else
 						{
-							foundGrowth = FALSE;
-							vectInsideVine = TRUE; //Says whether the vect is intrinsically inside another branch
+							foundGrowth = FALSE;   //Says whether we found a place to attach currVect onto
+							vectInsideVine = TRUE; //Says whether the vect is intrinsically inside another branch, meaning we can ignore it
 							
 							copy_BigIntMatrixT(currVect, tempVect);
 							while (!foundGrowth)
@@ -1009,9 +1013,9 @@ int main(int argc, char* argv[])
 											foundGrowth = TRUE;
 											if (!vectInsideVine)
 											{
-												/*printf("Vector connects to base of branch:\n");
+												printf("Vector connects to base of branch:\n");
 												printbm(branches[twig][1]);
-												printf("\n");*/
+												printf("\n");
 												
 												//Create new branch which feeds into the root of our current one
 												copy_BigIntMatrixT(currVect, branches[numOfBranches][0]);
@@ -1050,41 +1054,51 @@ int main(int argc, char* argv[])
 													// currVect becomes the leaf
 													if (!hasConnections)
 													{
-														/*printf("Vector connects to a single leaf:\n");
+														printf("Vector connects to a single leaf:\n");
 														printbm(branches[twig][0]);
-														printf("\n");*/
+														printf("\n");
 														copy_BigIntMatrixT(currVect, branches[twig][0]);
 														break;
 													}
 												}
 												
-												//If currVect connects somehwere in the middle of the branch
-												/*printf("Vector connects to branch at:\n");
-												printbm(tempVect2);
-												printf("\n");*/
+												//If currVect connects somehwere in the middle of the branch,
+												// and isn't INSIDE the branch
+												if (!vectInsideVine)
+												{
+													printf("Vector connects to branch at:\n");
+													printbm(tempVect2);
+													printf("\n");
+													
+													//New branch with currVect
+													copy_BigIntMatrixT(currVect, branches[numOfBranches][0]);
+													copy_BigIntMatrixT(tempVect, branches[numOfBranches][1]);
+													copy_BigIntMatrixT(branches[twig][2], branches[numOfBranches][2]);
+													
+													numOfBranches += 1;
+													branches = realloc(branches, (numOfBranches+1)*sizeof(BigIntMatrixTP*));
+													branches[numOfBranches] = malloc(3*sizeof(BigIntMatrixTP));
+													branches[numOfBranches][0] = new_BigIntMatrixT(big_rows(A), 1);
+													branches[numOfBranches][1] = new_BigIntMatrixT(big_rows(A), 1);
+													branches[numOfBranches][2] = new_BigIntMatrixT(big_rows(A), 1);
+													
+													//Bottom split of old branch
+													copy_BigIntMatrixT(branches[numOfBranches-1][1], branches[numOfBranches][0]);
+													copy_BigIntMatrixT(branches[twig][1], branches[numOfBranches][1]);
+													copy_BigIntMatrixT(branches[twig][2], branches[numOfBranches][2]);
+													
+													//Top split
+													copy_BigIntMatrixT(branches[numOfBranches][0], branches[twig][1]);
+													
+													//Split old branch into two branches
+													//We want our new branch's root to be a leaf for one of the split parts
+												}
+												else
+												{
+													printf("Vector is inside the branch.\n");
+													hasConnections = FALSE;
+												}
 												
-												//New branch with currVect
-												copy_BigIntMatrixT(currVect, branches[numOfBranches][0]);
-												copy_BigIntMatrixT(tempVect, branches[numOfBranches][1]);
-												copy_BigIntMatrixT(branches[twig][2], branches[numOfBranches][2]);
-												
-												numOfBranches += 1;
-												branches = realloc(branches, (numOfBranches+1)*sizeof(BigIntMatrixTP*));
-												branches[numOfBranches] = malloc(3*sizeof(BigIntMatrixTP));
-												branches[numOfBranches][0] = new_BigIntMatrixT(big_rows(A), 1);
-												branches[numOfBranches][1] = new_BigIntMatrixT(big_rows(A), 1);
-												branches[numOfBranches][2] = new_BigIntMatrixT(big_rows(A), 1);
-												
-												//Bottom split of old branch
-												copy_BigIntMatrixT(branches[numOfBranches-1][1], branches[numOfBranches][0]);
-												copy_BigIntMatrixT(branches[twig][1], branches[numOfBranches][1]);
-												copy_BigIntMatrixT(branches[twig][2], branches[numOfBranches][2]);
-												
-												//Top split
-												copy_BigIntMatrixT(branches[numOfBranches][0], branches[twig][1]);
-												
-												//Split old branch into two branches
-												//We want our new branch's root to be a leaf for one of the split parts
 												break;
 											}
 											
@@ -1121,7 +1135,7 @@ int main(int argc, char* argv[])
 				}
 				
 				//See what our branches look like
-				/*getchar();
+				getchar();
 				printf("\n~~~~~Branches:~~~~~\n");
 				for (int br = 0; br < numOfBranches; br += 1)
 				{
@@ -1132,23 +1146,24 @@ int main(int argc, char* argv[])
 					printbm(branches[br][2]);
 					printf("\n~~~~~~~~~~~~~~~~~~~\n");
 				}
-				getchar();*/
+				printf("Current number of branches: %d\n", numOfBranches);
+				getchar();
 			}
 			while (!increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
 			
 			//print out our branches
-			printf("\n~~~~~Branches:~~~~~\n");
+			/*printf("\n~~~~~Branches:~~~~~\n");
 			for (int br = 0; br < numOfBranches; br += 1)
 			{
+				printf("Leaf:\n");
 				printbm(branches[br][0]);
-				printf("\n");
+				printf("\nRoot:\n");
 				printbm(branches[br][1]);
-				printf("\n");
+				printf("\nBase root:\n");
 				printbm(branches[br][2]);
-				printf("\n~~~~~~~~~~~~~~~~~~~\n");
-			}
+				printf("~~~~~~~~~~~~~~~~~~~\n");
+			} */
 			
-
 			
 			for (int i = 0; i <= numOfBranches; i += 1)
 			{
@@ -2945,7 +2960,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus]" ANSI_COLOR_RESET "\n");
 		
-		printf("For a more complete description of LINCELLAUT's usage, " \
+		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 	}
 	
