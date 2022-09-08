@@ -2629,6 +2629,9 @@ int main(int argc, char* argv[])
 			int* allConfigsLengths = NULL; //Holds how many cycle tuples each config in allConfigs has
 			int numOfConfigs = 0;
 			
+			//Holds an example matrix for each different dynamic behaviour found
+			IntMatrixTP* allConfigsMatrices = NULL;
+			
 			bool findAllConfigs = FALSE;
 			bool isUniqueConfig = TRUE; //Used to determine whether we've found a new configuration once we've computed a new one
 			
@@ -2674,6 +2677,7 @@ int main(int argc, char* argv[])
 			
 			printf("Matrix:\n");
 			printm(originalA);
+			printf("~~~~~~~\n");
 			A = new_IntMatrixT(rows(originalA), rows(originalA));
 			copy_IntMatrixT(originalA, A);
 			
@@ -3112,6 +3116,14 @@ int main(int argc, char* argv[])
 					}
 				}
 				
+				//If it is unique, add the matrix to an array 
+				if ((findAllConfigs) && ((isUniqueConfig) || (numOfConfigs == 1)))
+				{
+					allConfigsMatrices = realloc(allConfigsMatrices, numOfConfigs*sizeof(IntMatrixTP));
+					allConfigsMatrices[numOfConfigs-1] = new_IntMatrixT(rows(A), rows(A));
+					copy_IntMatrixT(A, allConfigsMatrices[numOfConfigs-1]);
+				}
+				
 				currVect = free_IntMatrixT(currVect);
 				
 				if ((outputFile != NULL) && (fclose(outputFile) == EOF))
@@ -3170,17 +3182,18 @@ int main(int argc, char* argv[])
 			}
 			
 			//Now, let's try and print out our record of unique dynamics configurations
-			printf("\n(cycle lengths ... number of vectors)\n");
 			for (int config = 0; config < numOfConfigs; config += 1)
 			{
 				printf("Config #%d:\n", config);
 				for (int tuple = 0; tuple < allConfigsLengths[config]; tuple += 1)
 				{
 					printf("(");
-					for (int num = 0; num < highpower; num += 1)
+					for (int num = 0; num < highpower-1; num += 1)
 						printf("%d, ", allConfigs[config][tuple][num]);
-					printf("%d)\n", allConfigs[config][tuple][highpower]);
+					printf("%d) -> %d\n", allConfigs[config][tuple][highpower-1], allConfigs[config][tuple][highpower]);
 				}
+				printf("Representative matrix:\n");
+				printm(allConfigsMatrices[config]);
 				printf("\n");
 			}
 			
@@ -3188,6 +3201,7 @@ int main(int argc, char* argv[])
 			{
 				for (int config = 0; config < numOfConfigs; config += 1)
 				{
+					allConfigsMatrices[config] = free_IntMatrixT(allConfigsMatrices[config]);
 					for (int tuple = 0; tuple < allConfigsLengths[config]; tuple += 1)
 					{
 						FREE(allConfigs[config][tuple]);
@@ -3197,6 +3211,8 @@ int main(int argc, char* argv[])
 				FREE(allConfigs);
 				
 				FREE(allConfigsLengths);
+				
+				FREE(allConfigsMatrices);
 			}
 			
 			for (int i = 0; i < rows(originalA); i += 1)
