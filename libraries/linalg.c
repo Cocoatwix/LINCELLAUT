@@ -84,12 +84,77 @@ int element(IntMatrixTP const M, int row, int col)
 }
 
 
+bool increment_int_array(int** intArr, int sizeRow, int sizeCol, int inc, int mod)
+/** Increments the given size by size int array by inc. 
+    Used to increment through all possible matrices or vectors 
+		under a particular modulus.
+		Returns TRUE if the array rolls over,
+		FALSE otherwise. */
+{
+	//I could totally restructure this to be more efficient instead of a copy-paste
+	// from the BigIntTP version, but this works well enough
+	
+	int temp  = 0;
+	int temp2 = 0;
+	int carry = 0;
+	bool onceRolledOver = FALSE;
+	bool rolledOver = TRUE;
+	
+	//Initial incrementation
+	temp2 = intArr[0][0] + inc;
+	
+	//While loop allows us to go through the array
+	// multiple times if needed
+	while (rolledOver)
+	{
+		for (int row = 0; row < sizeRow; row += 1)
+		{
+			for (int col = 0; col < sizeCol; col += 1)
+			{
+				temp = temp2 + carry;
+				
+				if (temp >= mod)
+				{
+					temp2 = temp % mod;
+					intArr[row][col] = temp2;
+					carry = temp / mod;
+					
+					//Prepare temp2 for carry
+					if (col+1 < sizeCol)
+						temp2 = intArr[row][col+1];
+					else if (row+1 < sizeRow)
+						temp2 = intArr[row+1][0];
+					else
+						temp2 = intArr[0][0];
+				}
+				
+				else
+				{
+					intArr[row][col] = temp;
+					rolledOver = FALSE;
+					break;
+				}
+			}
+			
+			
+			if (!rolledOver)
+				break;
+		}
+		
+		if (rolledOver)
+			onceRolledOver = TRUE;
+	}
+	
+	return onceRolledOver;
+}
+
+
 bool increment_BigIntT_array(BigIntTP** intArr, 
                              int sizeRow, 
 														 int sizeCol, 
 														 BigIntTP const inc, 
 														 BigIntTP const mod)
-/** Increments the given size by size BigIntTP array by one. 
+/** Increments the given size by size BigIntTP array by inc. 
     Used to increment through all possible matrices or vectors 
 		under a particular modulus.
 		Returns TRUE if the array rolls over,

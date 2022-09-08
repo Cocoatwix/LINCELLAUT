@@ -21,7 +21,7 @@ orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and fi
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "fileoutput" says whether to output a text file with the found representative vectors. This argument expects a TRUE or FALSE. By default, this option is set to TRUE.
 
-branchreps [modulus] (UNFINISHED): This tool takes the given update matrix and finds a representative from all its transient branches. The tool also creates a text file with the name "branchreps [modulus] F[matrix].txt" which saves the found vectors.
+branchreps [modulus]: This tool takes the given update matrix and finds a representative from all its transient branches. The tool also creates a text file with the name "branchreps [modulus] F[matrix].txt" which saves the found vectors.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 floyd [modulus]: This tool allows the user to calculate specific info about an LCA system, such as the matrix's cycle length and the transient length, using Floyd's Cycle Detection Algorithm. The tool makes use of the initial and update matrices specified in the .config file as its parameters.
@@ -71,6 +71,7 @@ fibcyclelens [modulus]: This tool allows you to calculate all possible Fibonacci
 fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.
  - The optional argument "bound" allows the user to set a custom upper bound on the numbers to check. By default, the upper bound is set to 100. This argument expects a positive integer (can be arbitrarily big).
 
-dynamics [maxPower] [modulus]: This tool allows the user to iterate every vector in a space to get their cycle lengths. It then recomputes those numbers for higher-powered moduli. The tool also outputs a text file under the name "dynamics [maxPower] [modulus] F[matrix].txt" containing all the vectors in each cycle length group.
+dynamics [maxPower] [modulus] [allConfigs]: This tool allows the user to iterate every vector in a space to get their cycle lengths. It then recomputes those numbers for higher-powered moduli. The tool also outputs a text file under the name "dynamics [maxPower] [modulus] F[matrix].txt" containing all the vectors in each cycle length group.
  - The argument "maxPower" defines the highest exponent to use for the powered modulus. The default value is 2. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
+ - The optional argument "allConfigs" specifies whether the program should find all possible configurations for the dynamics of the given matrix and all its lifts. When set to TRUE, an output file will not be created. This argument expects the value TRUE or FALSE. The default value is FALSE.

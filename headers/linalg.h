@@ -27,6 +27,11 @@ int big_cols(BigIntMatrixTP);
 int element(IntMatrixTP const, int, int);
 BigIntTP big_element(BigIntMatrixTP const, int, int);
 
+/** Increments an array of ints by a given inc. Used for
+    incrementing through all possible matrices or vectors.
+	Returns TRUE if array rolls over, FALSE otherwise. */
+//                       array  row  col  inc  mod
+bool increment_int_array(int**, int, int, int, int);
 
 /** Increments an array of BigIntTs by a given inc. Used for
     incrementing through all possible matrices or vectors.
@@ -61,7 +66,7 @@ int set_column(IntMatrixTP, int* const);
 
 /** Sets the values of a matrix to the
     values supplied in the 2D array. Returns 1 on success,
-		0 otherwise. */
+	0 otherwise. */
 int set_matrix(IntMatrixTP, int** const);
 int set_big_matrix(BigIntMatrixTP, BigIntTP** const);
 
@@ -122,8 +127,8 @@ int big_mat_mul(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
 
 /** Calculates powers of first matrix, stores result in second
     matrix. Currently, they only work for positive powers.
-		First int is the power, second is the modulus.
-		Returns 1 on success, 0 otherwise. */
+	First int is the power, second is the modulus.
+	Returns 1 on success, 0 otherwise. */
 //int powm(IntMatrixTP const, IntMatrixTP, int, int);
 int powbm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const);
 
