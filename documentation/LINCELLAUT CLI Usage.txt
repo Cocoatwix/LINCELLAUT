@@ -52,6 +52,10 @@ ccmzerosearch resume size [mod]: This tool allows the user to search for matrice
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
+matprops maxpower [modulus] (UNFINISHED): This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
+ - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
+ - The optional argument "modulus" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
+
 charawalk step [mod]: This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.

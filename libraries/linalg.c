@@ -125,7 +125,10 @@ bool increment_int_array(int** intArr, int sizeRow, int sizeCol, int inc, int mo
 					else if (row+1 < sizeRow)
 						temp2 = intArr[row+1][0];
 					else
+					{
 						temp2 = intArr[0][0];
+						carry -= 1; //Prevents the zero vector from being skipped when rolling over
+					}
 				}
 				
 				else
@@ -163,9 +166,13 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 	BigIntTP temp  = empty_BigIntT(1);
 	BigIntTP temp2 = empty_BigIntT(1);
 	BigIntTP carry = empty_BigIntT(1);
+	
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
 	bool onceRolledOver = FALSE;
 	bool rolledOver = TRUE;
-	
+
 	//Initial incrementation
 	add_BigIntT(intArr[0][0], inc, temp2);
 	
@@ -192,7 +199,11 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 					else if (row+1 < sizeRow)
 						copy_BigIntT(intArr[row+1][0], temp2);
 					else
+					{
 						copy_BigIntT(intArr[0][0], temp2);
+						subtract_BigIntT(carry, one, temp); //Prevents the zero vector from being skipped when incrementing
+						copy_BigIntT(temp, carry);
+					}
 				}
 				
 				else
@@ -212,6 +223,7 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 			onceRolledOver = TRUE;
 	}
 	
+	one   = free_BigIntT(one);
 	temp  = free_BigIntT(temp);
 	temp2 = free_BigIntT(temp2);
 	carry = free_BigIntT(carry);

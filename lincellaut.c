@@ -2004,7 +2004,7 @@ int main(int argc, char* argv[])
 				{
 					set_big_matrix(currVect, currVectElements);
 					big_floyd(currMat, currVect, bigMod, &theCycle);
-					
+
 					cycleLengthArray[0] = omega(theCycle);
 					bigVectOmega = new_BigIntT(cycleLengthArray, 1);
 					
@@ -2014,17 +2014,20 @@ int main(int argc, char* argv[])
 						cycleLengthCounts[indexCounter-1] += 1;
 					
 					else
+					{
 						//Find which cycle length group this vector belongs to
-						for (int w = 1; w < indexCounter-1; w += 1)
+						for (int w = 1; w <= indexCounter-1; w += 1)
 							if (compare_BigIntT(cycleLengthFactors[w], bigVectOmega) == 0)
 							{
 								cycleLengthCounts[w-1] += 1;
 								break;
 							}
+					}
 							
 					//Iterate to next vector
 					checkedAllVectors = increment_BigIntT_array(currVectElements, matSize, 1, one, bigMod);
 				}
+				
 				
 				//Now, check to see if any "interesting cycle lengths" exist for the matrix
 				// This is, cycle lengths that aren't maximal or zero
@@ -2172,6 +2175,71 @@ int main(int argc, char* argv[])
 			FREE(outputfilename);
 			if (fclose(outputFile) == EOF)
 				fprintf(stderr, "Unable to save data.\n");
+		}
+		
+		
+		//If the user wants to calculate some useful properties of a given matrix
+		// (simplify higher powers)
+		else if (! strcmp(argv[1], "matprops"))
+		{
+			int maxpower;
+			
+			BigIntTP bigMod;
+			
+			BigIntMatrixTP A;
+			BigPolyTP charaPoly;
+			
+			if (argc > 2)
+			{
+				maxpower = (int)strtol(argv[2], &tempStr, 10);
+				
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read maxpower from command line.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
+			else
+			{
+				printf(ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET ": Calculates" \
+				" some useful matrix properties.\n");
+				printf(" - " ANSI_COLOR_CYAN "maxpower" ANSI_COLOR_RESET \
+				": The highest power of the update matrix to calculate an equivalent expression for.\n");
+				printf(" - " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+				": Overrides the modulus specified in the config file.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			if (argc > 3)
+			{
+				SET_BIG_NUM(argv[3], bigMod, "Invalid modulus passed on command line.");
+			}
+			
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Invalid modulus in config file.");
+			}
+			
+			A = read_BigIntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix from config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			charaPoly = chara_poly(A, bigMod);
+			printp(charaPoly);
+			printf("\n");
+			
+			bigMod = free_BigIntT(bigMod);
+			
+			A = free_BigIntMatrixT(A);
+			
+			charaPoly = free_BigPolyT(charaPoly);
 		}
 		
 		
@@ -2722,7 +2790,9 @@ int main(int argc, char* argv[])
 			for (int m = 1; m < highpower; m += 1)
 				maxmod *= modulus;
 			
-			while (increment_int_array(matrixLiftOffsets, rows(A), rows(A), 1, maxmod/matrixLiftIncrement) != TRUE)
+			//Dealing with exiting when highpower == 1 is done near the bottom of the tool
+			while ((increment_int_array(matrixLiftOffsets, rows(A), rows(A), 1, maxmod/matrixLiftIncrement) != TRUE) ||
+			       (highpower == 1))
 			{
 				highmod = 1;
 				for (int modulusCounter = 1; modulusCounter <= highpower; modulusCounter += 1)
@@ -3065,27 +3135,6 @@ int main(int argc, char* argv[])
 						{
 							for (int entry = 0; entry < highpower+1; entry += 1)
 							{
-								/*
-								printf("first config:\n");
-								for (int tempTuple = 0; tempTuple < allConfigsLengths[prevConfig]; tempTuple += 1)
-								{
-									printf("(");
-									for (int e = 0; e < maxmod+1; e += 1)
-										printf("%d,", allConfigs[prevConfig][tempTuple][e]);
-									printf(")\n");
-								}
-								printf("\nnew tuple:\n");
-								for (int tempTuple = 0; tempTuple < allConfigsLengths[numOfConfigs-1]; tempTuple += 1)
-								{
-									printf("(");
-									for (int e = 0; e < maxmod+1; e += 1)
-										printf("%d,", allConfigs[numOfConfigs-1][tempTuple][e]);
-									printf(")\n");
-								}
-								printf("\n");
-								
-								printf("%d vs %d\n", allConfigs[prevConfig][currTuple][entry], allConfigs[numOfConfigs-1][currTuple][entry]);
-								*/
 								//If at least one number in the tuple is different
 								if (allConfigs[prevConfig][currTuple][entry] != allConfigs[numOfConfigs-1][currTuple][entry])
 								{
@@ -3116,8 +3165,9 @@ int main(int argc, char* argv[])
 					}
 				}
 				
-				//If it is unique, add the matrix to an array 
-				if ((findAllConfigs) && ((isUniqueConfig) || (numOfConfigs == 1)))
+				//If it is unique, add the matrix to the array 
+				//The allConfigsMatrices == NULL prevents already stored matrices from being overriden when there's only one unique config
+				if ((findAllConfigs) && ((isUniqueConfig) || ((numOfConfigs == 1) && (allConfigsMatrices == NULL))))
 				{
 					allConfigsMatrices = realloc(allConfigsMatrices, numOfConfigs*sizeof(IntMatrixTP));
 					allConfigsMatrices[numOfConfigs-1] = new_IntMatrixT(rows(A), rows(A));
@@ -3156,7 +3206,7 @@ int main(int argc, char* argv[])
 				}
 				
 				//Ensuring we don't have to loop a bunch of times when only computing one dynamics configuration
-				if (!findAllConfigs)
+				if ((!findAllConfigs) || (highpower == 1))
 					break;
 				
 				//Set A to the next lift
@@ -3245,6 +3295,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
