@@ -2185,9 +2185,15 @@ int main(int argc, char* argv[])
 			int maxpower;
 			
 			BigIntTP bigMod;
+			BigIntTP temp  = NULL;
+			BigIntTP temp2 = NULL;
+			BigIntTP temp3 = NULL;
+			BigIntTP zero  = NULL;
 			
 			BigIntMatrixTP A;
 			BigPolyTP charaPoly;
+			BigIntTP* OGcoeffs = NULL; //Holds the coefficients of charaPoly
+			BigIntTP* newcoeffs = NULL; //Holds the coefficients for higher powers of A
 			
 			if (argc > 2)
 			{
@@ -2235,7 +2241,93 @@ int main(int argc, char* argv[])
 			printp(charaPoly);
 			printf("\n");
 			
+			//Check to make sure there's actually some computation to do
+			if (degree(charaPoly) <= maxpower)
+			{
+				temp  = empty_BigIntT(1);
+				temp2 = empty_BigIntT(1);
+				temp3 = empty_BigIntT(1);
+				zero  = empty_BigIntT(1);
+				OGcoeffs = extract_coefficients(charaPoly);
+				
+				//Okay, we have the coefficients. Now to negate them.
+				for (int i = 0; i < degree(charaPoly); i += 1)
+				{
+					subtract_BigIntT(bigMod, OGcoeffs[i], temp);
+					mod_BigIntT(temp, bigMod, OGcoeffs[i]);
+				}
+				
+				//WHEN A NUMBER IS ZERO, ITS TERM SHOULDN'T BE PRINTED
+				
+				//This gives us the first equivalent expression
+				printf("A^%d = ", degree(charaPoly));
+				printi(OGcoeffs[0]);
+				printf(" + ");
+				for (int i = 1; i < degree(charaPoly)-1; i += 1)
+				{
+					printi(OGcoeffs[i]);
+					printf("A^%d + ", i);
+				}
+				printi(OGcoeffs[degree(charaPoly)-1]);
+				printf("A^%d\n", degree(charaPoly)-1);
+				
+				newcoeffs = malloc((degree(charaPoly)-1)*sizeof(BigIntTP));
+				for (int i = 0; i < degree(charaPoly); i += 1)
+				{
+					newcoeffs[i] = empty_BigIntT(1);
+					copy_BigIntT(OGcoeffs[i], newcoeffs[i]);
+				}
+				
+				//Now, we compute the rest of the requested powers
+				for (int i = degree(charaPoly)+1; i <= maxpower; i += 1)
+				{
+					//Shift all coefficients up a power
+					copy_BigIntT(newcoeffs[degree(charaPoly)-1], temp);
+					
+					for (int n = degree(charaPoly)-2; n >= 0; n -= 1)
+						copy_BigIntT(newcoeffs[n], newcoeffs[n+1]);
+					copy_BigIntT(zero, newcoeffs[0]);
+					
+					//Now, simplify the big term into smaller exponent terms
+					for (int n = 0; n < degree(charaPoly); n += 1)
+					{
+						multiply_BigIntT(temp, OGcoeffs[n], temp2);
+						add_BigIntT(temp2, newcoeffs[n], temp3);
+						mod_BigIntT(temp3, bigMod, newcoeffs[n]);
+					}
+					
+					//Now, we print out the new expression
+					printf("A^%d = ", i);
+					printi(newcoeffs[0]);
+					printf(" + ");
+					for (int n = 1; n < degree(charaPoly)-1; n += 1)
+					{
+						printi(newcoeffs[n]);
+						printf("A^%d + ", n);
+					}
+					printi(newcoeffs[degree(charaPoly)-1]);
+					printf("A^%d\n", degree(charaPoly)-1);
+				}
+			}
+			
+			else
+				printf("Degree of characteristic polynomial is less than maxpower. No computation to do.\n");
+			
+			for (int i = 0; i <= degree(charaPoly); i += 1)
+			{
+				if (i < degree(charaPoly))
+					newcoeffs[i] = free_BigIntT(newcoeffs[i]);
+				
+				OGcoeffs[i] = free_BigIntT(OGcoeffs[i]);
+			}
+			FREE(OGcoeffs);
+			FREE(newcoeffs);
+			
 			bigMod = free_BigIntT(bigMod);
+			temp   = free_BigIntT(temp);
+			temp2  = free_BigIntT(temp2);
+			temp3  = free_BigIntT(temp3);
+			zero   = free_BigIntT(zero);
 			
 			A = free_BigIntMatrixT(A);
 			

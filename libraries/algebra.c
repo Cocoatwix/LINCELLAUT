@@ -165,6 +165,22 @@ BigIntTP constant(BigPolyTP const p)
 }
 
 
+BigIntTP* extract_coefficients(BigPolyTP const p)
+/** Returns a list of the BigPolyT's coefficients, in
+    order of ascending term exponents.
+		Returns NULL on error. */
+{
+	BigIntTP* c = malloc((p->size)*sizeof(BigIntTP));
+	for (int i = 0; i < p->size; i += 1)
+	{
+		c[i] = empty_BigIntT(1);
+		copy_BigIntT(p->coeffs[i], c[i]);
+	}
+	
+	return c;
+}
+
+
 int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 /** Copies a polynomial and stores it in another BigPolyTP.
     Returns 1 on success, 0 otherwise. */

@@ -31,6 +31,11 @@ int degree(BigPolyTP const);
 /** Returns the constant term of a BigPolyTP. */
 BigIntTP constant(BigPolyTP const);
 
+/** Returns an array of the given BigPolyT's coefficients,
+    sorted in ascending order of the terms' exponents.
+	Returns NULL on error. */
+BigIntTP* extract_coefficients(BigPolyTP const);
+
 /** Copies a polynomial into another. This function assumes
     all arguments have been properly initialised.
 		Returns 1 on success, 0 otherwise. */
