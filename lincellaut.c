@@ -1846,6 +1846,7 @@ int main(int argc, char* argv[])
 			BigIntTP   one;
 			BigIntTP   temp;
 			BigIntTP   temp2;
+			BigIntTP   prevLastElement; //Holds the last element in the matrix; for debugging
 			BigIntTP*  cycleLengthFactors;
 			BigIntTP** currMatElements;
 			BigIntTP** currVectElements;
@@ -1876,6 +1877,7 @@ int main(int argc, char* argv[])
 			bool hasAllZeros        = FALSE;
 			
 			bool hasInterestingCycles = FALSE;
+			bool debug = TRUE;
 			
 			char* outputfilename;
 			FILE* outputFile;
@@ -1959,12 +1961,22 @@ int main(int argc, char* argv[])
 			
 			temp  = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
+			prevLastElement = empty_BigIntT(1);
 			
 			//Loop until we're checked every matrix under the given modulus
 			while (!checkedAllMatrices)
 			{
 				set_big_matrix(currMat, currMatElements);
 				big_floyd(currMat, currMat, bigMod, &theCycle);
+				
+				if (compare_BigIntT(currMatElements[matSize-1][matSize-2], prevLastElement) != 0)
+				{
+					if (debug)
+					{
+						printf("Current matrix:\n");
+						printbm(currMat);
+					}
+				}
 				
 				//This program currently assumes that the cycle length of the
 				// matrix will be less than MAXBUNCH
@@ -2143,6 +2155,7 @@ int main(int argc, char* argv[])
 				FREE(cycleLengthFactors);
 				
 				//Iterate to next matrix
+				copy_BigIntT(currMatElements[matSize-1][matSize-2], prevLastElement);
 				checkedAllMatrices = increment_BigIntT_array(currMatElements, matSize, matSize, one, bigMod);
 			}
 			
@@ -2171,6 +2184,8 @@ int main(int argc, char* argv[])
 			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
+			
+			prevLastElement = free_BigIntT(prevLastElement);
 			
 			FREE(outputfilename);
 			if (fclose(outputFile) == EOF)
@@ -2250,10 +2265,15 @@ int main(int argc, char* argv[])
 				zero  = empty_BigIntT(1);
 				OGcoeffs = extract_coefficients(charaPoly);
 				
+				//Now we need to divide by the leading coefficient
+				big_num_inverse(OGcoeffs[degree(charaPoly)], bigMod, temp2);
+				
 				//Okay, we have the coefficients. Now to negate them.
 				for (int i = 0; i < degree(charaPoly); i += 1)
 				{
 					subtract_BigIntT(bigMod, OGcoeffs[i], temp);
+					mod_BigIntT(temp, bigMod, OGcoeffs[i]);
+					multiply_BigIntT(temp2, OGcoeffs[i], temp);
 					mod_BigIntT(temp, bigMod, OGcoeffs[i]);
 				}
 				
@@ -3387,7 +3407,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus] " ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");

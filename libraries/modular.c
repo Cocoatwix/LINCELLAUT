@@ -6,6 +6,8 @@ arithmetic operations.
 May 10, 2022
 */
 
+#include "../headers/bigint.h" //For big_num_inverse()
+
 int num_inverse(int a, int modulus)
 /** Returns the inverse of a given number under
     the given modulus. Returns -1 if the inverse DNE.
@@ -23,6 +25,48 @@ int num_inverse(int a, int modulus)
 		}
 		
 	return inv;
+}
+
+
+void big_num_inverse(BigIntTP const findInverse, BigIntTP const modulus, BigIntTP result)
+/** Same as num_inverse, but for BigIntTs. Stores result in result (must be initialised).
+    Stores 0 on error or if inverse doesn't exist. */
+{
+	int oneArr[] = {1};
+	BigIntTP zero  = empty_BigIntT(1);
+	BigIntTP one   = new_BigIntT(oneArr, 1);
+	BigIntTP temp  = empty_BigIntT(1);
+	BigIntTP temp2 = empty_BigIntT(1);
+	BigIntTP temp3 = empty_BigIntT(1);
+	
+	copy_BigIntT(one, temp2);
+	add_BigIntT(one, temp2, temp);
+	
+	copy_BigIntT(zero, result);
+	
+	//Search for inverse
+	while (compare_BigIntT(temp, modulus) < 0)
+	{
+		multiply_BigIntT(temp, findInverse, temp2);
+		mod_BigIntT(temp2, modulus, temp3);
+		
+		//Check to see if this is the correct inverse
+		if (compare_BigIntT(one, temp3) == 0)
+		{
+			copy_BigIntT(temp, result);
+			break;
+		}
+		
+		//Increment temp
+		add_BigIntT(one, temp, temp3);
+		copy_BigIntT(temp3, temp);
+	}
+	
+	zero  = free_BigIntT(zero);
+	one   = free_BigIntT(one);
+	temp  = free_BigIntT(temp);
+	temp2 = free_BigIntT(temp2);
+	temp3 = free_BigIntT(temp3);
 }
 
 
