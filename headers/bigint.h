@@ -24,6 +24,15 @@ BigIntTP new_BigIntT(int* const, int);
 		size of the struct to create. */
 BigIntTP empty_BigIntT(int);
 
+/** Returns a pointer to a BigIntTP 2D array. Each
+    BigIntTP will be initialised to zero.
+	Returns NULL on error. */
+BigIntTP** new_BigIntT_array(int, int);
+
+/** Frees all BigIntTs in a BigIntTP 2D array, then
+    frees the array itself. Returns NULL. */
+BigIntTP** free_BigIntT_array(BigIntTP**, int, int);
+
 /** Reads in a string and stores its numerical value
     in the given BigIntTP. The BigIntTP is assumed NOT
 		to have been initialised, only declared.

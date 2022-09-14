@@ -3386,6 +3386,319 @@ int main(int argc, char* argv[])
 			originalA = free_IntMatrixT(originalA);
 			A = free_IntMatrixT(A);
 		}
+		
+		
+		//If the user wants to see how orbits from higher moduli map to lower moduli orbits
+		else if (! strcmp(argv[1], "orbitmaps"))
+		{
+			BigIntTP bigMod;
+			BigIntTP bigModPower; //Holds bigMod^maxpower
+			BigIntTP one;
+			BigIntTP temp;
+			BigIntTP temp2;
+			
+			int oneArr[1] = {1};
+			
+			BigIntMatrixTP A;
+			BigIntMatrixTP currVect;
+			BigIntMatrixTP tempVect;
+			BigIntMatrixTP tempVect2;
+			BigIntTP** currVectElements;
+			
+			CycleInfoTP theCycle = NULL;
+			
+			BigIntMatrixTP** orbitReps;
+			int** orbitLengths;
+			int** orbitMaps; //Keeps track of how the orbits map onto each other
+			int*  numOfOrbits;
+			
+			int maxpower; //Holds the max power as a regular int
+			
+			bool isNewOrbit; //For checking whether particular orbits are already in our list
+			
+			if (argc > 2)
+			{
+				maxpower = (int)strtol(argv[2], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read maxpower from command line.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			else
+			{
+				printf(ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET \
+				": Calculates orbit representatives for a higher-powered modulus and sees how they map down to lower-powered moduli.\n");
+				printf(" - " ANSI_COLOR_CYAN "maxpower" ANSI_COLOR_RESET \
+				": The highest (initial) power to use for the modulus.\n");
+				printf(" - " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
+				": Says what (base) modulus to use.\n\n");
+				
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			if (argc > 3)
+			{
+				SET_BIG_NUM(argv[3], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			}
+			
+			A = read_BigIntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix provided in config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			
+			one   = new_BigIntT(oneArr, 1);
+			temp  = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
+			
+			bigModPower = new_BigIntT(oneArr, 1);
+			
+			orbitReps    = calloc(maxpower, sizeof(BigIntMatrixTP*));
+			orbitLengths = calloc(maxpower, sizeof(int*));
+			numOfOrbits  = calloc(maxpower, sizeof(int));
+			
+			currVectElements = new_BigIntT_array(big_rows(A), 1);
+			currVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
+			
+			//Calculate bigMod^maxpower
+			for (int i = 0; i < maxpower; i += 1)
+			{
+				multiply_BigIntT(bigMod, bigModPower, temp);
+				copy_BigIntT(temp, bigModPower);
+			}
+			
+			printf("Base modulus: ");
+			printi(bigMod);
+			printf("\nMax power: %d\n", maxpower);
+			printf("Matrix:\n");
+			printbm(A);
+			printf("~~~~~~~~~\n");
+			
+			//Iterate over each vector in our highest modulus to find all orbits
+			do
+			{
+				set_big_matrix(currVect, currVectElements);
+				big_floyd(A, currVect, bigModPower, &theCycle);
+				
+				if (tau(theCycle) != 0)
+					continue;
+				
+				//If we don't have any orbits yet
+				if (numOfOrbits[maxpower-1] == 0)
+				{
+					numOfOrbits[maxpower-1] += 1;
+					orbitReps[maxpower-1] = realloc(orbitReps[maxpower-1], numOfOrbits[maxpower-1]*sizeof(BigIntMatrixTP));
+					orbitLengths[maxpower-1] = realloc(orbitLengths[maxpower-1], numOfOrbits[maxpower-1]*sizeof(int));
+					
+					//Saving orbit data
+					orbitReps[maxpower-1][numOfOrbits[maxpower-1]-1] = new_BigIntMatrixT(big_rows(A), 1);
+					copy_BigIntMatrixT(rep(theCycle), orbitReps[maxpower-1][numOfOrbits[maxpower-1]-1]); //Does it implicitly cast?
+					orbitLengths[maxpower-1][numOfOrbits[maxpower-1]-1] = omega(theCycle);
+				}
+				
+				//If we already have orbits, we have to check and see if 
+				// we've already accounted for our current orbit
+				else
+				{
+					isNewOrbit = TRUE;
+					
+					//Iterate over all the orbits we already have
+					for (int i = 0; i < numOfOrbits[maxpower-1]; i += 1)
+					{
+						copy_BigIntMatrixT(orbitReps[maxpower-1][i], tempVect);
+						
+						//Check to see if any vector in the cycle matches currVect
+						do
+						{
+							if (compare_BigIntMatrixT(tempVect, currVect))
+							{
+								isNewOrbit = FALSE;
+								break;
+							}
+							
+							big_mat_mul(A, tempVect, tempVect2);
+							modbm(tempVect2, bigModPower);
+							copy_BigIntMatrixT(tempVect2, tempVect);
+						}
+						while (!compare_BigIntMatrixT(tempVect, orbitReps[maxpower-1][i])); //Will this implicitly cast?
+						
+						if (!isNewOrbit)
+							break;
+					}
+					
+					if (isNewOrbit)
+					{
+						numOfOrbits[maxpower-1] += 1;
+						orbitReps[maxpower-1] = realloc(orbitReps[maxpower-1], numOfOrbits[maxpower-1]*sizeof(BigIntMatrixTP));
+						orbitLengths[maxpower-1] = realloc(orbitLengths[maxpower-1], numOfOrbits[maxpower-1]*sizeof(int));
+						
+						orbitLengths[maxpower-1][numOfOrbits[maxpower-1]-1] = omega(theCycle);
+						orbitReps[maxpower-1][numOfOrbits[maxpower-1]-1] = new_BigIntMatrixT(big_rows(A), 1);
+						copy_BigIntMatrixT(rep(theCycle), orbitReps[maxpower-1][numOfOrbits[maxpower-1]-1]);
+					}
+				}
+			}
+			while (!increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigModPower));
+			
+			orbitMaps = malloc(numOfOrbits[maxpower-1]*sizeof(int*));
+			for (int i = 0; i < numOfOrbits[maxpower-1]; i += 1)
+			{
+				orbitMaps[i] = calloc(maxpower, sizeof(int));
+				orbitMaps[i][maxpower-1] = i;
+			}
+			
+			//Now, we have to find the orbitreps for all the lower moduli
+			for (int i = maxpower-2; i >= 0; i -= 1)
+			{
+				//Calculate new modulus
+				divide_BigIntT(bigModPower, bigMod, temp);
+				copy_BigIntT(temp, bigModPower);
+				
+				//Go through each rep from the last modulus we calculated
+				for (int cyc = 0; cyc < numOfOrbits[i+1]; cyc += 1)
+				{
+					copy_BigIntMatrixT(orbitReps[i+1][cyc], currVect);
+					modbm(currVect, bigModPower);
+					
+					if (numOfOrbits[i] == 0)
+					{
+						numOfOrbits[i] += 1;
+						orbitReps[i] = realloc(orbitReps[i], numOfOrbits[i]*sizeof(BigIntMatrixTP));
+						orbitLengths[i] = realloc(orbitLengths[i], numOfOrbits[i]*sizeof(int));
+						
+						big_floyd(A, currVect, bigModPower, &theCycle);
+						orbitLengths[i][numOfOrbits[i]-1] = omega(theCycle);
+						orbitReps[i][numOfOrbits[i]-1] = new_BigIntMatrixT(big_rows(A), 1);
+						copy_BigIntMatrixT(rep(theCycle), orbitReps[i][numOfOrbits[i]-1]);
+					}
+					
+					//Check to see if current higher mod orbit maps to a 
+					// lower mod orbit we already have
+					else
+					{
+						isNewOrbit = TRUE;
+						
+						//Iterate over all our current reps
+						for (int newOrbs = 0; newOrbs < numOfOrbits[i]; newOrbs += 1)
+						{
+							copy_BigIntMatrixT(orbitReps[i][newOrbs], tempVect);
+							do
+							{
+								//If our rep is already accounted for with a cycle
+								if (compare_BigIntMatrixT(tempVect, currVect))
+								{
+									isNewOrbit = FALSE;
+									break;
+								}
+								
+								big_mat_mul(A, tempVect, tempVect2);
+								modbm(tempVect2, bigModPower);
+								copy_BigIntMatrixT(tempVect2, tempVect);
+							}
+							while (!compare_BigIntMatrixT(tempVect, orbitReps[i][newOrbs]));
+							
+							if (!isNewOrbit)
+								break;
+						}
+						
+						//Add new orbit to list if necessary
+						if (isNewOrbit)
+						{
+							numOfOrbits[i] += 1;
+							orbitReps[i] = realloc(orbitReps[i], numOfOrbits[i]*sizeof(BigIntMatrixTP));
+							orbitLengths[i] = realloc(orbitLengths[i], numOfOrbits[i]*sizeof(int));
+							
+							big_floyd(A, currVect, bigModPower, &theCycle);
+							orbitLengths[i][numOfOrbits[i]-1] = omega(theCycle);
+							orbitReps[i][numOfOrbits[i]-1] = new_BigIntMatrixT(big_rows(A), 1);
+							copy_BigIntMatrixT(rep(theCycle), orbitReps[i][numOfOrbits[i]-1]);
+						}
+					}
+					
+					//Make sure to keep track of mappings
+					for (int map = 0; map < numOfOrbits[maxpower-1]; map += 1)
+						if (orbitMaps[map][i+1] == cyc)
+							orbitMaps[map][i] = numOfOrbits[i]-1;
+				}
+			}
+			
+			//Now, let's check to see if I got the orbitreps correctly
+			for (int e = maxpower-1; e >= 0; e -= 1)
+			{
+				printf("For ");
+				printi(bigMod);
+				printf("^%d:\n", e+1);
+				
+				for (int i = 0; i < numOfOrbits[e]; i += 1)
+				{
+					printf("Rep: ");
+					printbm_row(orbitReps[e][i]);
+					printf(",\tOrbit length: %d\n", orbitLengths[e][i]);
+				}
+				
+				printf("\n");
+			}
+			
+			//Print out how orbits reduce
+			for (int map = 0; map < numOfOrbits[maxpower-1]; map += 1)
+			{
+				//printf("[");
+				for (int orb = maxpower-1; orb > 0; orb -= 1)
+				{
+					//printf("%d,", orbitMaps[map][orb]);
+					printbm_row(orbitReps[orb][orbitMaps[map][orb]]);
+					printf(" (ω = %d) -> ", orbitLengths[orb][orbitMaps[map][orb]]);
+				}
+				//printf("%d]\n", orbitMaps[map][0]);
+				printbm_row(orbitReps[0][orbitMaps[map][0]]);
+				printf(" (ω = %d)\n", orbitLengths[0][orbitMaps[map][0]]);
+			}
+			
+			bigMod      = free_BigIntT(bigMod);
+			bigModPower = free_BigIntT(bigModPower);
+			one         = free_BigIntT(one);
+			temp        = free_BigIntT(temp);
+			temp2       = free_BigIntT(temp2);
+			
+			for (int i = 0; i < maxpower; i += 1)
+			{
+				for (int j = 0; j < numOfOrbits[i]; j += 1)
+					orbitReps[i][j] = free_BigIntMatrixT(orbitReps[i][j]);
+				
+				FREE(orbitReps[i]);
+				FREE(orbitLengths[i]);
+			}
+			FREE(orbitReps);
+			FREE(orbitLengths);
+			
+			for (int i = 0; i < numOfOrbits[maxpower-1]; i += 1)
+			{
+				FREE(orbitMaps[i]);
+			}
+			FREE(orbitMaps);
+			
+			FREE(numOfOrbits);
+			
+			currVectElements = free_BigIntT_array(currVectElements, big_rows(A), 1);
+			currVect  = free_BigIntMatrixT(currVect);
+			tempVect  = free_BigIntMatrixT(tempVect);
+			tempVect2 = free_BigIntMatrixT(tempVect2);
+			theCycle  = free_CycleInfoT(theCycle);
+			
+			A = free_BigIntMatrixT(A);
+		}
 	}
 	
 	else
@@ -3407,12 +3720,13 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus] " ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] " ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

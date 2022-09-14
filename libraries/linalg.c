@@ -232,22 +232,6 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 }
 
 
-BigIntTP** free_BigIntT_array(BigIntTP** arr, int rows, int cols)
-/** Frees an array of BigIntTs. Returns NULL. */
-{
-	for (int i = 0; i < rows; i += 1)
-	{
-		for (int j = 0; j < cols; j += 1)
-			arr[i][j] = free_BigIntT(arr[i][j]);
-		
-		free(arr[i]);
-		arr[i] = NULL;
-	}
-	free(arr);
-	return NULL;
-}
-
-
 BigIntTP big_element(BigIntMatrixTP const M, int row, int col)
 /** Returns the BigIntTP contained within M at the 
     specified location. Returns NULL if the specified index
@@ -688,7 +672,7 @@ int num_digits(int num)
 	
 
 //I'll probably make this more efficient later
-void printm(IntMatrixTP M)
+void printm(IntMatrixTP const M)
 /** Prints an m by n matrix to stdout. 
     If zeroPad == TRUE, numbers will have
 		zeros added to the left of them to align them on the console. */
@@ -719,7 +703,7 @@ void printm(IntMatrixTP M)
 }
 
 
-void fprintm(FILE* file, IntMatrixTP M)
+void fprintm(FILE* file, IntMatrixTP const M)
 /** Same as printm, except it prints to a file stream. */
 {
 	int maxDigits = 0;
@@ -748,7 +732,7 @@ void fprintm(FILE* file, IntMatrixTP M)
 }
 
 
-void printbm(BigIntMatrixTP M)
+void printbm(BigIntMatrixTP const M)
 /** Prints out a BigIntMatrixT matrix to the console. */
 {
 	int maxBunches = 0;
@@ -773,6 +757,29 @@ void printbm(BigIntMatrixTP M)
 			printf(" ");
 		}
 		printf("\n");
+	}
+}
+
+
+void printbm_row(BigIntMatrixTP const M)
+/** Prints a BigIntMatrixTP as a row vector. */
+{
+	if ((M->m > 1) && (M->n > 1))
+		printbm(M);
+	
+	else if (M->m == 1)
+		printbm(M);
+	
+	else if (M->n == 1)
+	{
+		printf("<");
+		for (int i = 0; i < M->m-1; i += 1)
+		{
+			printi(M->matrix[i][0]);
+			printf(" ");
+		}
+		printi(M->matrix[M->m-1][0]);
+		printf(">");
 	}
 }
 
@@ -806,7 +813,7 @@ void fprintbm(FILE* file, BigIntMatrixTP M)
 }
 
 
-void fprintbm_nopad(FILE* file, BigIntMatrixTP M)
+void fprintbm_nopad(FILE* file, BigIntMatrixTP const M)
 /** Same as fprintbm(), except no padding is added to
     the beginning of each matrix element. */
 {	

@@ -39,11 +39,6 @@ bool increment_int_array(int**, int, int, int, int);
 //                                array  row  col       increment         modulus
 bool increment_BigIntT_array(BigIntTP**, int, int, BigIntTP const, BigIntTP const);
 
-/** Frees an array of BigIntTs. Returns NULL. */
-//                                        rows cols
-BigIntTP** free_BigIntT_array(BigIntTP**, int, int);
-
-
 /** Frees the memory of a matrix. Returns NULL. 
     Also returns NULL if the argument is NULL. */
 IntMatrixTP free_IntMatrixT(IntMatrixTP);
@@ -93,15 +88,17 @@ int compare_BigIntMatrixT(BigIntMatrixTP const, BigIntMatrixTP const);
 int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2, int);
 
 /** Prints a given matrix to the console. */
-void printm(IntMatrixTP);
-void printbm(BigIntMatrixTP);
+void printm(IntMatrixTP const);
+void printbm(BigIntMatrixTP const);
+
+void printbm_row(BigIntMatrixTP const); //<0 0 0>
 
 /** Same as functions above, but they print to a file stream. */
-void fprintm(FILE*, IntMatrixTP);
-void fprintbm(FILE*, BigIntMatrixTP);
+void fprintm(FILE*, IntMatrixTP const);
+void fprintbm(FILE*, BigIntMatrixTP const);
 
 /** Same as function above, except no zero padding is added. */
-void fprintbm_nopad(FILE*, BigIntMatrixTP);
+void fprintbm_nopad(FILE*, BigIntMatrixTP const);
 
 /** Returns the number of digits a given
     positive integer has. */

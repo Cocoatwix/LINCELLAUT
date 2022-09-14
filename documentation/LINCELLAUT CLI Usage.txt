@@ -52,7 +52,7 @@ ccmzerosearch resume size [mod]: This tool allows the user to search for matrice
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-matprops maxpower [modulus] (UNFINISHED): This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
+matprops maxpower [modulus]: This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
  - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
@@ -70,12 +70,16 @@ in .matrix format. This specific update matrix has its own tools since each iter
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
 
 fibcyclelens [modulus]: This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
- - The option argument "modulus" allows you to override the modulus provided in the .config file. This argument expects a positive integer (tehcnically, it expects a BigIntT, but for all intents and purposes the user can treat this like an arbitrarily large integer).
+ - The option argument "modulus" allows you to override the modulus provided in the .config file. This argument expects a positive integer (technically, it expects a BigIntT, but for all intents and purposes the user can treat this like an arbitrarily large integer).
 
 fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.
  - The optional argument "bound" allows the user to set a custom upper bound on the numbers to check. By default, the upper bound is set to 100. This argument expects a positive integer (can be arbitrarily big).
 
 dynamics [maxPower] [modulus] [allConfigs]: This tool allows the user to iterate every vector in a space to get their cycle lengths. It then recomputes those numbers for higher-powered moduli. The tool also outputs a text file under the name "dynamics [maxPower] [modulus] F[matrix].txt" containing all the vectors in each cycle length group.
  - The argument "maxPower" defines the highest exponent to use for the powered modulus. The default value is 2. This argument expects a positive integer.
- - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "allConfigs" specifies whether the program should find all possible configurations for the dynamics of the given matrix and all its lifts. When set to TRUE, an output file will not be created. This argument expects the value TRUE or FALSE. The default value is FALSE.
+
+orbitmaps maxpower [modulus] (UNFINISHED): This tool allows the user to generate orbit representatives (and the respective cycle lengths) for some high-power modulus, then map how these orbits reduce down to orbits of lower-powered moduli.
+ - The argument "maxpower" specifies the highest (initial) power to use for the modulus. This argument expects a positive integer.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.

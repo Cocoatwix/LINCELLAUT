@@ -81,6 +81,39 @@ BigIntTP empty_BigIntT(int zeros)
 }
 
 
+BigIntTP** new_BigIntT_array(int rows, int cols)
+/** Creates a 2D array of BigIntTs with the specified rows
+    and cols, and initialised it with zeros. Returns a pointer
+    to the array on success, NULL otherwise. */
+{
+	BigIntTP** arr = malloc(rows*sizeof(BigIntTP*));
+	for (int i = 0; i < rows; i += 1)
+	{
+		arr[i] = malloc(cols*sizeof(BigIntTP));
+		for (int j = 0; j < cols; j += 1)
+			arr[i][j] = empty_BigIntT(1);
+	}
+	
+	return arr;
+}
+
+
+BigIntTP** free_BigIntT_array(BigIntTP** arr, int rows, int cols)
+/** Frees an array of BigIntTs. Returns NULL. */
+{
+	for (int i = 0; i < rows; i += 1)
+	{
+		for (int j = 0; j < cols; j += 1)
+			arr[i][j] = free_BigIntT(arr[i][j]);
+		
+		free(arr[i]);
+		arr[i] = NULL;
+	}
+	free(arr);
+	return NULL;
+}
+
+
 int strtoBIT(char* const numStr, BigIntTP* theBig)
 /** Takes a numerical string and creates a BigIntT
     struct using it, storing it in theBig. 
