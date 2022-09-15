@@ -3412,7 +3412,8 @@ int main(int argc, char* argv[])
 			int** orbitMaps; //Keeps track of how the orbits map onto each other
 			int*  numOfOrbits;
 			
-			int maxpower; //Holds the max power as a regular int
+			int maxpower;     //Holds the max power as a regular int
+			int reducedOrbit; //Holds which orbit our current orbit feeds into
 			
 			bool isNewOrbit; //For checking whether particular orbits are already in our list
 			
@@ -3574,6 +3575,7 @@ int main(int argc, char* argv[])
 					
 					if (numOfOrbits[i] == 0)
 					{
+						reducedOrbit = 0;
 						numOfOrbits[i] += 1;
 						orbitReps[i] = realloc(orbitReps[i], numOfOrbits[i]*sizeof(BigIntMatrixTP));
 						orbitLengths[i] = realloc(orbitLengths[i], numOfOrbits[i]*sizeof(int));
@@ -3600,6 +3602,7 @@ int main(int argc, char* argv[])
 								if (compare_BigIntMatrixT(tempVect, currVect))
 								{
 									isNewOrbit = FALSE;
+									reducedOrbit = newOrbs;
 									break;
 								}
 								
@@ -3616,6 +3619,7 @@ int main(int argc, char* argv[])
 						//Add new orbit to list if necessary
 						if (isNewOrbit)
 						{
+							reducedOrbit = numOfOrbits[i];
 							numOfOrbits[i] += 1;
 							orbitReps[i] = realloc(orbitReps[i], numOfOrbits[i]*sizeof(BigIntMatrixTP));
 							orbitLengths[i] = realloc(orbitLengths[i], numOfOrbits[i]*sizeof(int));
@@ -3630,14 +3634,14 @@ int main(int argc, char* argv[])
 					//Make sure to keep track of mappings
 					for (int map = 0; map < numOfOrbits[maxpower-1]; map += 1)
 						if (orbitMaps[map][i+1] == cyc)
-							orbitMaps[map][i] = numOfOrbits[i]-1;
+							orbitMaps[map][i] = reducedOrbit;
 				}
 			}
 			
 			//Now, let's check to see if I got the orbitreps correctly
 			for (int e = maxpower-1; e >= 0; e -= 1)
 			{
-				printf("For ");
+				printf("For mod ");
 				printi(bigMod);
 				printf("^%d:\n", e+1);
 				
