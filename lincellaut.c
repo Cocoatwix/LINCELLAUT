@@ -517,12 +517,7 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
-			entriesToUse = malloc(big_cols(A)*sizeof(BigIntTP*));
-			for (int i = 0; i < big_cols(A); i += 1)
-			{
-				entriesToUse[i] = malloc(sizeof(BigIntTP));
-				entriesToUse[i][0] = empty_BigIntT(1);
-			}
+			entriesToUse = new_BigIntT_array(big_cols(A), 1);
 			
 			one  = new_BigIntT(oneArr, 1);
 			zero = empty_BigIntT(1);
@@ -615,13 +610,8 @@ int main(int argc, char* argv[])
 			}
 			printf("\n");
 			
-		
-			for (int i = 0; i < big_cols(A); i += 1)
-			{
-				entriesToUse[i][0] = free_BigIntT(entriesToUse[i][0]);
-				FREE(entriesToUse[i]);
-			}
-			FREE(entriesToUse);
+			
+			entriesToUse = free_BigIntT_array(entriesToUse, big_cols(A), 1);
 			
 			A          = free_BigIntMatrixT(A);
 			I          = free_BigIntMatrixT(I);
@@ -648,7 +638,6 @@ int main(int argc, char* argv[])
 			int oneArr[1] = {1};
 			
 			BigIntMatrixTP A;
-			IntMatrixTP smallA; //Used for outputfilename
 			BigIntMatrixTP currVect;
 			BigIntMatrixTP tempVect;
 			BigIntMatrixTP tempVect2;
@@ -686,8 +675,7 @@ int main(int argc, char* argv[])
 					fileoutput = FALSE;
 			
 			A = read_BigIntMatrixT(updatefilepath);
-			smallA = read_IntMatrixT(updatefilepath);
-			if ((A == NULL) || (smallA == NULL))
+			if ((A == NULL))
 			{
 				fprintf(stderr, "Unable to read update matrix file.\n");
 				FREE_VARIABLES;
@@ -705,12 +693,7 @@ int main(int argc, char* argv[])
 			foundCycleLengths = malloc(sizeof(int*));
 			foundCycleLengths[0] = calloc(2, sizeof(int));
 			
-			currVectElements = malloc(big_rows(A)*sizeof(BigIntTP*));
-			for (int i = 0; i < big_rows(A); i += 1)
-			{
-				currVectElements[i] = malloc(sizeof(BigIntTP));
-				currVectElements[i][0] = empty_BigIntT(1);
-			};
+			currVectElements = new_BigIntT_array(big_rows(A), 1);
 			
 			//Construct output file name
 			outputfilename = malloc(MAXSTRLEN*sizeof(char));
@@ -729,9 +712,8 @@ int main(int argc, char* argv[])
 			//Matrix
 			for (int row = 0; row < big_rows(A); row += 1)
 				for (int col = 0; col < big_rows(A); col += 1)
-					append_int(outputfilename, element(smallA, row, col));
+					append_BigIntT(outputfilename, big_element(A, row, col));
 				
-			smallA = free_IntMatrixT(smallA);
 			strcat(outputfilename, ".txt");
 			
 			currVect  = new_BigIntMatrixT(big_rows(A), 1);
@@ -868,12 +850,7 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Unable to save data.\n");
 			
 			
-			for (int i = 0; i < big_rows(A); i += 1)
-			{
-				currVectElements[i][0] = free_BigIntT(currVectElements[i][0]);
-				FREE(currVectElements[i]);
-			}
-			FREE(currVectElements);
+			currVectElements = free_BigIntT_array(currVectElements, big_rows(A), 1);
 			
 			for (int i = 1; i <= foundCycleLengths[0][0]; i += 1)
 			{
@@ -976,18 +953,19 @@ int main(int argc, char* argv[])
 			branches    = malloc(sizeof(BigIntMatrixTP*));
 			branches[0] = malloc(3*sizeof(BigIntMatrixTP));
 			
-			currVectElements = malloc(big_rows(A)*sizeof(BigIntTP*));
-			for (int i = 0; i < big_rows(A); i += 1)
-			{
-				currVectElements[i] = malloc(sizeof(BigIntTP));
-				currVectElements[i][0] = empty_BigIntT(1);
-			}
+			currVectElements = new_BigIntT_array(big_rows(A), 1);
 			
 			currVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect3 = new_BigIntMatrixT(big_rows(A), 1);
 			tempRoot  = new_BigIntMatrixT(big_rows(A), 1);
+			
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\nMatrix:\n");
+			printbm(A);
+			printf("~~~~~~~~~~\n");
 			
 			//Loop over each vector, check if it's in a cycle or not
 			do
@@ -998,9 +976,6 @@ int main(int argc, char* argv[])
 				
 				set_big_matrix(currVect, currVectElements);
 				big_floyd(A, currVect, bigMod, &theCycle);
-				/*printf("Current vector:\n");
-				printbm(currVect);
-				printf("\n");*/
 				
 				//If we found a vector that isn't a part of a cycle
 				if (tau(theCycle) != 0)
@@ -1198,21 +1173,6 @@ int main(int argc, char* argv[])
 						branches[numOfBranches] = malloc(3*sizeof(BigIntMatrixTP));
 					}
 				}
-				
-				//See what our branches look like
-				/*getchar();
-				printf("\n~~~~~Branches:~~~~~\n");
-				for (int br = 0; br < numOfBranches; br += 1)
-				{
-					printbm(branches[br][0]);
-					printf("\n");
-					printbm(branches[br][1]);
-					printf("\n");
-					printbm(branches[br][2]);
-					printf("~~~~~~~~~~~~~~~~~~~\n");
-				}
-				printf("Current number of branches: %d\n", numOfBranches);
-				getchar(); */
 			}
 			while (!increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
 			
@@ -1228,10 +1188,12 @@ int main(int argc, char* argv[])
 				printf("\nBase root:\n");
 				printbm(branches[br][2]);
 				printf("~~~~~~~~~~~~~~~~~~~\n");
-			}*/
+			}
+			*/
 			
 			//Now, we simply figure out which leaves are "true leaves",
 			// that is, leaves that aren't the roots of any branch
+			printf("Leaves of the transient tree:\n");
 			for (int maybeLeaf = 0; maybeLeaf < numOfBranches; maybeLeaf += 1)
 			{
 				isTopLeaf = TRUE;
@@ -1244,14 +1206,12 @@ int main(int argc, char* argv[])
 					
 				if (isTopLeaf)
 				{
-					printf("<");
-					for (int c = 0; c < big_rows(A)-1; c += 1)
-					{
-						printi(big_element(branches[maybeLeaf][0], c, 0));
-						printf(", ");
-					}
-					printi(big_element(branches[maybeLeaf][0], big_rows(A)-1, 0));
-					printf(">\n");
+					if (vectorType == row)
+						printbm_row(branches[maybeLeaf][0]);
+					else
+						printbm(branches[maybeLeaf][0]);
+					
+					printf("\n");
 				}
 			}
 			
@@ -1483,14 +1443,7 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
-			//Initialise our matrix elements
-			currMatElements = malloc(size*sizeof(BigIntTP*));
-			for (i = 0; i < size; i += 1)
-			{
-				currMatElements[i] = malloc(size*sizeof(BigIntTP));
-				for (j = 0; j < size; j += 1)
-					currMatElements[i][j] = empty_BigIntT(1);
-			}
+			currMatElements = new_BigIntT_array(size, size);
 			
 			//If we need to resume computation from a specific matrix
 			if (! strcmp(argv[2], "TRUE"))
@@ -1742,16 +1695,8 @@ int main(int argc, char* argv[])
 			theCycle = free_CycleInfoT(theCycle);
 			
 			FREE(colVectCycles);
-			
-			for (i = 0; i < size; i += 1)
-			{
-				for (j = 0; j < size; j += 1)
-					currMatElements[i][j] = free_BigIntT(currMatElements[i][j]);
-				
-				free(currMatElements[i]);
-			}
-			FREE(currMatElements);
 			FREE(textOutputName);
+			currMatElements = free_BigIntT_array(currMatElements, size, size);
 			
 			printf("Finished searching.\n");
 		}
@@ -1913,21 +1858,8 @@ int main(int argc, char* argv[])
 				printf("Found matrices will be saved at %s\n", outputfilename);
 			
 			//Initialising elements for matrices and vectors
-			currMatElements  = malloc(matSize*sizeof(BigIntTP*));
-			currVectElements = malloc(matSize*sizeof(BigIntTP*));
-			for (int row = 0; row < matSize; row += 1)
-			{
-				currMatElements[row]  = malloc(matSize*sizeof(BigIntTP));
-				for (int col = 0; col < matSize; col += 1)
-				{
-					currMatElements[row][col] = empty_BigIntT(1);
-					if (resumeMat != NULL)
-						copy_BigIntT(big_element(resumeMat, row, col), currMatElements[row][col]);
-				}
-				
-				currVectElements[row] = malloc(sizeof(BigIntTP));
-				currVectElements[row][0] = empty_BigIntT(1);
-			}
+			currMatElements  = new_BigIntT_array(matSize, matSize);
+			currVectElements = new_BigIntT_array(matSize, 1);
 			
 			zero = empty_BigIntT(1);
 			one  = new_BigIntT(oneArr, 1);
@@ -2011,7 +1943,7 @@ int main(int argc, char* argv[])
 								break;
 							}
 					}
-							
+
 					//Iterate to next vector
 					checkedAllVectors = increment_BigIntT_array(currVectElements, matSize, 1, one, bigMod);
 				}
@@ -2136,17 +2068,8 @@ int main(int argc, char* argv[])
 			}
 			
 			
-			for (int row = 0; row < matSize; row += 1)
-			{
-				for (int col = 0; col < matSize; col += 1)
-					currMatElements[row][col] = free_BigIntT(currMatElements[row][col]);
-				FREE(currMatElements[row]);
-				
-				currVectElements[row][0] = free_BigIntT(currVectElements[row][0]);
-				FREE(currVectElements[row]);
-			}
-			FREE(currMatElements);
-			FREE(currVectElements);
+			currMatElements  = free_BigIntT_array(currMatElements, matSize, matSize);
+			currVectElements = free_BigIntT_array(currVectElements, matSize, 1);
 			
 			currMat   = free_BigIntMatrixT(currMat);
 			zeroMat   = free_BigIntMatrixT(zeroMat);
