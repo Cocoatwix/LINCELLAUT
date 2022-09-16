@@ -652,23 +652,6 @@ int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2,
 	
 	return N;
 }
-
-
-int num_digits(int num)
-/** Calculuates how many digits an integer has and returns
-    that number. The function assumes the number given is
-		positive. */
-{
-	int count = 0;
-	while (TRUE)
-	{
-		num /= 10;
-		count += 1;
-		
-		if (num == 0)
-			return count;
-	}
-}
 	
 
 //I'll probably make this more efficient later
@@ -700,6 +683,25 @@ void printm(IntMatrixTP const M)
 		printf("%d", M->matrix[mIndex][M->n-1]);
 		printf("\n");
 	}
+}
+
+
+void printm_row(IntMatrixTP const M)
+/** Same as printm(), except it prints vectors as row vectors. 
+    This function also ditches the zero padding from the original. */
+{
+	//Making sure we're actually dealing with a column vector
+	if ((M->n == 1) && (M->m >= 1))
+	{
+		printf("<");
+		for (int mIndex = 0; mIndex < M->m-1; mIndex += 1)
+			printf("%d ", M->matrix[mIndex][0]);
+		
+		printf("%d>", M->matrix[M->m-1][0]);
+	}
+	
+	else
+		printm(M);
 }
 
 
@@ -768,7 +770,17 @@ void printbm_row(BigIntMatrixTP const M)
 		printbm(M);
 	
 	else if (M->m == 1)
-		printbm(M);
+	{
+		printf("<");
+		for (int i = 0; i < M->n-1; i += 1)
+		{
+			printi(M->matrix[0][i]);
+			printf(" ");
+		}
+		printi(M->matrix[0][M->n-1]);
+		printf(">");
+	}
+		
 	
 	else if (M->n == 1)
 	{
@@ -809,6 +821,29 @@ void fprintbm(FILE* file, BigIntMatrixTP M)
 			fprintf(file, " ");
 		}
 		fprintf(file, "\n");
+	}
+}
+
+
+void fprintbm_row(FILE* file, BigIntMatrixTP const M)
+/** Same as printbm_row(), but prints to a file stream. */
+{
+	if ((M->m > 1) && (M->n > 1))
+		fprintbm(file, M);
+	
+	else if (M->m == 1)
+		fprintbm(file, M);
+	
+	else if (M->n == 1)
+	{
+		fprintf(file, "<");
+		for (int i = 0; i < M->m-1; i += 1)
+		{
+			fprinti(file, M->matrix[i][0]);
+			fprintf(file, " ");
+		}
+		fprinti(file, M->matrix[M->m-1][0]);
+		fprintf(file, ">");
 	}
 }
 

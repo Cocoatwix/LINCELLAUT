@@ -8,6 +8,22 @@ August 3, 2022
 #include <stdlib.h>
 #include <string.h>
 
+int num_digits(int num)
+/** Calculuates how many digits an integer has and returns
+    that number. The function assumes the number given is
+		positive. */
+{
+	int count = 0;
+	while (1)
+	{
+		num /= 10;
+		count += 1;
+		
+		if (num == 0)
+			return count;
+	}
+}
+
 void append_int(char* str, int toApp)
 /** Appends the given integer to the given string. */
 {

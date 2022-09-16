@@ -61,13 +61,6 @@ if (strtoBIT((str), &(bigint)) != 1) \
 	return EXIT_FAILURE; \
 }
 
-/*
-if (strtoBIT(argv[2], &bigMod) != 1)
-				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
-					return EXIT_FAILURE;
-				}
-*/
 
 int main(int argc, char* argv[])
 {
@@ -84,6 +77,9 @@ int main(int argc, char* argv[])
 	
 	//The maximum length for a string in the .config file
 	const int MAXSTRLEN = 101;
+	
+	typedef enum vt {row, col} VectorTypeE;
+	VectorTypeE vectorType = row;
 	
 	//Read .config file to get appropriate data loaded
 	FILE* system = fopen("config/system.config", "r");
@@ -107,7 +103,7 @@ int main(int argc, char* argv[])
 	char* iterfilepath    = malloc(MAXSTRLEN*sizeof(char));
 	
 	//Temporarily holds config data
-	char* systemData = malloc(MAXSTRLEN*sizeof(char));
+	char* systemData  = malloc(MAXSTRLEN*sizeof(char));
 	
 	char* tempStr; //Holds temporary info when using string functions
 	
@@ -121,6 +117,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%101s", bigintmodstring) != 1)
 			{
 				fprintf(stderr, "Unable to read modulus from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 			
@@ -130,9 +127,25 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Invalid modulus provided in config file.\n");
+					FREE_VARIABLES;
 					return EXIT_FAILURE;
 				}
 			}
+		}
+		
+		//If the user wants to change how vectors are displayed to the console
+		else if (! strcmp(systemData, "vectorType"))
+		{
+			if (fscanf(system, "%s", systemData) != 1)
+			{
+				fprintf(stderr, "Unable to read vector type from config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			else
+				if (!strcmp(systemData, "col"))
+					vectorType = col;
 		}
 		
 		else if (! strcmp(systemData, "iterations"))
@@ -140,6 +153,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%d", &iterations) != 1)
 			{
 				fprintf(stderr, "Unable to read number of iterations from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 		}
@@ -149,6 +163,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%s", updatefilepath) != 1)
 			{
 				fprintf(stderr, "Unable to read update matrix path from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 		}
@@ -158,6 +173,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%s", initialfilepath) != 1)
 			{
 				fprintf(stderr, "Unable to read initial vector path from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 		}
@@ -167,6 +183,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%s", resumefilepath) != 1)
 			{
 				fprintf(stderr, "Unable to read resume matrix path from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 		}
@@ -176,6 +193,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%101s", resumemodstring) != 1)
 			{
 				fprintf(stderr, "Unable to read resume modulus from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 		}
@@ -185,6 +203,7 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%s", iterfilepath) != 1)
 			{
 				fprintf(stderr, "Unable to read iteration file path from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 		}
@@ -270,10 +289,23 @@ int main(int argc, char* argv[])
 			// an inverse doesn't exist and the iterations
 			// provided was negative
 			if (iterations > 0)
-				printm(F_result);
+			{
+				if (vectorType == row)
+					printm_row(F_result);
+				else
+					printm(F_result);
+			}
 			
 			else if (iterations == 0)
-				printm(F_2);
+			{
+				if (vectorType == row)
+					printm_row(F_2);
+				else
+					printm(F_2);
+			}
+			
+			if (vectorType == row)
+				printf("\n");
 
 			F        = free_IntMatrixT(F);
 			F_2      = free_IntMatrixT(F_2);
@@ -1250,64 +1282,8 @@ int main(int argc, char* argv[])
 		}
 		
 		
-		//If we want to use Floyd's Cycle Detection Algorithm
+		//If the user wants to use Floyd's Cycle Detection Algorithm
 		else if (! strcmp(argv[1], "floyd"))
-		{
-			//If the user provided a custom modulus
-			if (argc > 2)
-			{
-				modulus = (int)strtol(argv[2], &tempStr, 10);
-				if (tempStr[0] != '\0')
-				{
-					fprintf(stderr, "Invalid modulus passed at command line.\n");
-					return EXIT_FAILURE;
-				}
-			}
-			
-			IntMatrixTP initial = read_IntMatrixT(initialfilepath);
-			IntMatrixTP update  = read_IntMatrixT(updatefilepath);
-			CycleInfoTP coolCycle;
-			
-			if (initial == NULL)
-			{
-				fprintf(stderr, "Unable to read matrix in %s.\n", initialfilepath);
-				return EXIT_FAILURE;
-			}
-			
-			else if (update == NULL)
-			{
-				fprintf(stderr, "Unable to read matrix in %s.\n", updatefilepath);
-				return EXIT_FAILURE;
-			}
-			
-			//Making sure dimensions of given matrices are correct
-			else if (rows(initial) != cols(update) ||
-			        (rows(initial) != rows(update)))
-			{
-				fprintf(stderr, "Given matrices have inappropriate dimensions for iterating.\n");
-				return EXIT_FAILURE;
-			}
-			
-			//If we actually get all the data we need
-			else
-			{
-				coolCycle = floyd(update, initial, modulus);
-				
-				if (coolCycle == NULL)
-					printf("Update matrix provided is not a square matrix.\n");
-				
-				else
-					printcycle(coolCycle);
-			}
-			
-			initial   = free_IntMatrixT(initial);
-			update    = free_IntMatrixT(update);
-			coolCycle = free_CycleInfoT(coolCycle);
-		}
-		
-		
-		//Same as floyd, but uses big datatypes
-		else if (! strcmp(argv[1], "bigfloyd"))
 		{
 			BigIntTP bigModulus;
 			BigIntMatrixTP initial;
@@ -2204,6 +2180,8 @@ int main(int argc, char* argv[])
 			BigIntTP temp2 = NULL;
 			BigIntTP temp3 = NULL;
 			BigIntTP zero  = NULL;
+			BigIntTP one   = NULL;
+			int oneArr[1]  = {1};
 			
 			BigIntMatrixTP A;
 			BigPolyTP charaPoly;
@@ -2259,14 +2237,20 @@ int main(int argc, char* argv[])
 			//Check to make sure there's actually some computation to do
 			if (degree(charaPoly) <= maxpower)
 			{
+				printf(":)\n");
 				temp  = empty_BigIntT(1);
 				temp2 = empty_BigIntT(1);
 				temp3 = empty_BigIntT(1);
 				zero  = empty_BigIntT(1);
+				one   = new_BigIntT(oneArr, 1);
 				OGcoeffs = extract_coefficients(charaPoly);
 				
-				//Now we need to divide by the leading coefficient
-				big_num_inverse(OGcoeffs[degree(charaPoly)], bigMod, temp2);
+				//Now we need to divide by the leading coefficient, if it exists
+				//If not, then don't do anything
+				if (compare_BigIntT(OGcoeffs[degree(charaPoly)], one) != 0)
+					big_num_inverse(OGcoeffs[degree(charaPoly)], bigMod, temp2);
+				else
+					copy_BigIntT(one, temp2);
 				
 				//Okay, we have the coefficients. Now to negate them.
 				for (int i = 0; i < degree(charaPoly); i += 1)
@@ -2348,6 +2332,7 @@ int main(int argc, char* argv[])
 			temp2  = free_BigIntT(temp2);
 			temp3  = free_BigIntT(temp3);
 			zero   = free_BigIntT(zero);
+			one    = free_BigIntT(one);
 			
 			A = free_BigIntMatrixT(A);
 			
@@ -2813,6 +2798,7 @@ int main(int argc, char* argv[])
 			IntMatrixTP* allConfigsMatrices = NULL;
 			
 			bool findAllConfigs = FALSE;
+			bool fileoutput = FALSE;
 			bool isUniqueConfig = TRUE; //Used to determine whether we've found a new configuration once we've computed a new one
 			
 			//User-provided upper bound for moduli power
@@ -2841,6 +2827,11 @@ int main(int argc, char* argv[])
 			if (argc > 4)
 				if (!strcmp(argv[4], "TRUE"))
 					findAllConfigs = TRUE;
+				
+			//If user wants to store an output file
+			if (argc > 5)
+				if (!strcmp(argv[5], "TRUE"))
+					fileoutput = TRUE;
 			
 			originalA = read_IntMatrixT(updatefilepath);
 			if (originalA == NULL)
@@ -2862,7 +2853,7 @@ int main(int argc, char* argv[])
 			copy_IntMatrixT(originalA, A);
 			
 			//Creating filename
-			if (!findAllConfigs)
+			if ((!findAllConfigs) && (fileoutput))
 			{
 				outputfilename = malloc(MAXSTRLEN*sizeof(char));
 				outputfilename[0] = '\0';
@@ -3417,6 +3408,10 @@ int main(int argc, char* argv[])
 			
 			bool isNewOrbit; //For checking whether particular orbits are already in our list
 			
+			FILE* outputFile = NULL;
+			char* outputFileName = NULL;
+			bool fileoutput = FALSE;
+			
 			if (argc > 2)
 			{
 				maxpower = (int)strtol(argv[2], &tempStr, 10);
@@ -3429,12 +3424,14 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				printf(ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET \
+				printf(ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput]" ANSI_COLOR_RESET \
 				": Calculates orbit representatives for a higher-powered modulus and sees how they map down to lower-powered moduli.\n");
 				printf(" - " ANSI_COLOR_CYAN "maxpower" ANSI_COLOR_RESET \
 				": The highest (initial) power to use for the modulus.\n");
 				printf(" - " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 				": Says what (base) modulus to use.\n\n");
+				printf(" - " ANSI_COLOR_CYAN "[fileoutput]" ANSI_COLOR_RESET \
+				": Says whether to create an output file.\n\n");
 				
 				FREE_VARIABLES;
 				return EXIT_SUCCESS;
@@ -3449,6 +3446,10 @@ int main(int argc, char* argv[])
 				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
+			if (argc > 4)
+				if (!strcmp(argv[4], "TRUE"))
+					fileoutput = TRUE;
+			
 			A = read_BigIntMatrixT(updatefilepath);
 			if (A == NULL)
 			{
@@ -3457,6 +3458,27 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
+			//Create filename
+			if (fileoutput)
+			{
+				outputFileName = malloc(MAXSTRLEN*sizeof(char));
+				outputFileName[0] = '\0';
+				
+				strcat(outputFileName, "orbitmaps ");
+				append_int(outputFileName, maxpower);
+				strcat(outputFileName, " ");
+				append_BigIntT(outputFileName, bigMod);
+				strcat(outputFileName, " F");
+				for (int x = 0; x < big_rows(A); x += 1)
+					for (int y = 0; y < big_cols(A); y += 1)
+						append_BigIntT(outputFileName, big_element(A, x, y));
+					
+				strcat(outputFileName, ".txt");
+				
+				outputFile = fopen(outputFileName, "w");
+				if (outputFile == NULL)
+					fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
+			}
 			
 			one   = new_BigIntT(oneArr, 1);
 			temp  = empty_BigIntT(1);
@@ -3664,11 +3686,27 @@ int main(int argc, char* argv[])
 					//printf("%d,", orbitMaps[map][orb]);
 					printbm_row(orbitReps[orb][orbitMaps[map][orb]]);
 					printf(" (ω = %d) -> ", orbitLengths[orb][orbitMaps[map][orb]]);
+					
+					if (outputFile != NULL)
+					{
+						fprintbm_row(outputFile, orbitReps[orb][orbitMaps[map][orb]]);
+						fprintf(outputFile, " (ω = %d) -> ", orbitLengths[orb][orbitMaps[map][orb]]);
+					}
 				}
 				//printf("%d]\n", orbitMaps[map][0]);
 				printbm_row(orbitReps[0][orbitMaps[map][0]]);
 				printf(" (ω = %d)\n", orbitLengths[0][orbitMaps[map][0]]);
+				
+				if (outputFile != NULL)
+				{
+					fprintbm_row(outputFile, orbitReps[0][orbitMaps[map][0]]);
+					fprintf(outputFile, " (ω = %d)\n", orbitLengths[0][orbitMaps[map][0]]);
+				}
 			}
+			
+			if (outputFile != NULL)
+				if (fclose(outputFile) == EOF)
+					fprintf(stderr, "Unable to close output file. Unable to save data.\n");
 			
 			bigMod      = free_BigIntT(bigMod);
 			bigModPower = free_BigIntT(bigModPower);
@@ -3701,6 +3739,8 @@ int main(int argc, char* argv[])
 			tempVect2 = free_BigIntMatrixT(tempVect2);
 			theCycle  = free_CycleInfoT(theCycle);
 			
+			FREE(outputFileName);
+			
 			A = free_BigIntMatrixT(A);
 		}
 	}
@@ -3719,7 +3759,6 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "bigfloyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
@@ -3729,8 +3768,8 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] " ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

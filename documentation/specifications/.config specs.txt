@@ -13,6 +13,13 @@ The following is a list of accepted keys and the data they expect:
 
 mod : This key specifies the modulus for lincellaut.c to feed into whatever functions it uses. This key expects an integer.
 
+vectorType : This key specifies how vectors should be displayed to the console when using the various tools. This key expects one of: {row, col}.
+ - "row" will display vectors in row form: <1 2 3>
+ - "col" will display vectors in column form: 1
+                                              2
+                                              3
+By default, vectorType will be set to row.
+
 iterations : This key specifies how many iterations of a particular operation to perform. The specifics of how this value is used depend on how LINCELLAUT is being used. This key expects an integer as its value.
 
 update : This key specifies a file path where an update rule matrix can be found in .matrix format. The .matrix extension should be included in the filename. This key expects a string (no quotes around the string).

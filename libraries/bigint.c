@@ -13,11 +13,13 @@ May 24, 2022
 #include <math.h>
 
 #include "../headers/linalg.h" //num_digits()
+#include "../headers/helper.h" //append_int()
 
 //How big each bunch in a BigIntT can be
 //This limit was chosen so that the multiply_by_ten() function
 // doesn't cause an overflow.
-const int MAXBUNCH = 100000000;
+const int MAXBUNCH       = 100000000;
+const int MAXBUNCHDIGITS = 8;
 
 /*
 BigIntT structs hold numbers in little endian style,
@@ -178,6 +180,26 @@ int size(BigIntTP const n)
 /** Returns the size of the BigIntT passed. */
 {
 	return n->size;
+}
+
+
+int append_BigIntT(char* dest, BigIntTP const src)
+/** Appends a BigIntT to the given string.
+    This function assumes there's enough space in the string to
+		hold the BigIntT.
+    Returns 1 on success, 0 otherwise. */
+{
+	for (int b = src->size-1; b >= 0 ; b -= 1)
+	{
+		//Add padding zeros if necessary
+		if (b != src->size-1)
+			for (int i = 0; i < MAXBUNCHDIGITS - num_digits(src->theInt[b]); i += 1)
+				append_int(dest, 0);
+			
+		append_int(dest, src->theInt[b]);
+	}
+	
+	return 1;
 }
 
 

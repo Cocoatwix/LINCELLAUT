@@ -42,6 +42,12 @@ int strtoBIT(char* const, BigIntTP*);
 /** Returns the size of the BigIntT passed. */
 int size(BigIntTP const);
 
+/** Appends a BigIntTP to a string.
+    This function assumes there's enough space in the string to
+	hold the BigIntT.
+    Returns 1 on success, 0 otherwise. */
+int append_BigIntT(char*, BigIntTP const);
+
 /** Prints a BigIntT struct as an integer would be printed.
     This function does not print a newline or spaces
 		around the number. */

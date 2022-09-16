@@ -91,18 +91,17 @@ int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2,
 void printm(IntMatrixTP const);
 void printbm(BigIntMatrixTP const);
 
+void printm_row(IntMatrixTP const);
 void printbm_row(BigIntMatrixTP const); //<0 0 0>
 
 /** Same as functions above, but they print to a file stream. */
 void fprintm(FILE*, IntMatrixTP const);
 void fprintbm(FILE*, BigIntMatrixTP const);
 
+void fprintbm_row(FILE*, BigIntMatrixTP const); //<0 0 0>
+
 /** Same as function above, except no zero padding is added. */
 void fprintbm_nopad(FILE*, BigIntMatrixTP const);
-
-/** Returns the number of digits a given
-    positive integer has. */
-int num_digits(int);
 
 /** Searches a given BigIntMatrixTP array for a matrix equivalent to the one
     passed in, then returns the refernece to it. If the given matrix isn't
