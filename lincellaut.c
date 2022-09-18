@@ -1871,6 +1871,12 @@ int main(int argc, char* argv[])
 			temp2 = empty_BigIntT(1);
 			prevLastElement = empty_BigIntT(1);
 			
+			//Allowing user to resume computation
+			if (resumeMat != NULL)
+				for (int i = 0; i < matSize; i += 1)
+					for (int j = 0; j < matSize; j += 1)
+						copy_BigIntT(big_element(resumeMat, i, j), currMatElements[i][j]);
+			
 			//Loop until we're checked every matrix under the given modulus
 			while (!checkedAllMatrices)
 			{
@@ -3326,10 +3332,19 @@ int main(int argc, char* argv[])
 			int** orbitMaps; //Keeps track of how the orbits map onto each other
 			int*  numOfOrbits;
 			
+			int   groupCount = 0;
+			int   currCycleLength;
+			int   prevCycleLength; //Used to sort mappoings by cycle length
+			int*  currOrbitMapMatch = NULL; //For organising output intogroupings of reductions
+			int** currOrbitMapGroup = NULL; //Holds the vectors that match our match
+			
 			int maxpower;     //Holds the max power as a regular int
 			int reducedOrbit; //Holds which orbit our current orbit feeds into
 			
 			bool isNewOrbit; //For checking whether particular orbits are already in our list
+			bool matchingMap; //For finding maps that match our grouping for output
+			bool printedAllMaps = FALSE;
+			bool newCycleLength; //For determining whether we found a new cycle length when printing results
 			
 			FILE* outputFile = NULL;
 			char* outputFileName = NULL;
@@ -3600,30 +3615,118 @@ int main(int argc, char* argv[])
 				printf("\n");
 			}
 			
-			//Print out how orbits reduce
-			for (int map = 0; map < numOfOrbits[maxpower-1]; map += 1)
+			currOrbitMapMatch = calloc((maxpower-1), sizeof(int));
+			
+			//Go through the mappings, organise them based on common mappings
+			while (!printedAllMaps)
 			{
-				//printf("[");
-				for (int orb = maxpower-1; orb > 0; orb -= 1)
+				groupCount = 0;
+				
+				for (int map = 0; map < numOfOrbits[maxpower-1]; map += 1)
 				{
-					//printf("%d,", orbitMaps[map][orb]);
-					printbm_row(orbitReps[orb][orbitMaps[map][orb]]);
-					printf(" (ω = %d) -> ", orbitLengths[orb][orbitMaps[map][orb]]);
+					matchingMap = TRUE;
 					
-					if (outputFile != NULL)
+					//Checking each individual reduction to see if they match
+					for (int modLevel = 0; modLevel < maxpower-1; modLevel += 1)
 					{
-						fprintbm_row(outputFile, orbitReps[orb][orbitMaps[map][orb]]);
-						fprintf(outputFile, " (ω = %d) -> ", orbitLengths[orb][orbitMaps[map][orb]]);
+						//If the map we checked isn't equal somewhere
+						if (orbitMaps[map][modLevel] != currOrbitMapMatch[modLevel])
+						{
+							matchingMap = FALSE;
+							break;
+						}
+					}
+					
+					//Add matching map to the group
+					if (matchingMap)
+					{
+						groupCount += 1;
+						currOrbitMapGroup = realloc(currOrbitMapGroup, groupCount*sizeof(int*));
+						currOrbitMapGroup[groupCount-1] = orbitMaps[map];
 					}
 				}
-				//printf("%d]\n", orbitMaps[map][0]);
-				printbm_row(orbitReps[0][orbitMaps[map][0]]);
-				printf(" (ω = %d)\n", orbitLengths[0][orbitMaps[map][0]]);
 				
-				if (outputFile != NULL)
+				//Now, we should have every matching mapping, sorted by cycle length
+				//Print them out
+				prevCycleLength = 0;
+				while (TRUE)
 				{
-					fprintbm_row(outputFile, orbitReps[0][orbitMaps[map][0]]);
-					fprintf(outputFile, " (ω = %d)\n", orbitLengths[0][orbitMaps[map][0]]);
+					newCycleLength = FALSE;
+					currCycleLength = -1;
+					
+					//Go through mappings and find the next lowest cycle length
+					for (int map = 0; map < groupCount; map += 1)
+					{
+						if ((orbitLengths[maxpower-1][currOrbitMapGroup[map][maxpower-1]] > prevCycleLength) &&
+						    ((currCycleLength == -1) ||
+								(orbitLengths[maxpower-1][currOrbitMapGroup[map][maxpower-1]] < currCycleLength)))
+						{
+							currCycleLength = orbitLengths[maxpower-1][currOrbitMapGroup[map][maxpower-1]];
+							newCycleLength = TRUE;
+						}
+					}
+					
+					if (newCycleLength)
+					{
+						for (int map = 0; map < groupCount; map += 1)
+						{
+							if (orbitLengths[maxpower-1][currOrbitMapGroup[map][maxpower-1]] == currCycleLength)
+							{
+								for (int modLevel = maxpower-1; modLevel > 0; modLevel -= 1)
+								{
+									printbm_row(orbitReps[modLevel][currOrbitMapGroup[map][modLevel]]);
+									printf(" (ω = %d) -> ", orbitLengths[modLevel][currOrbitMapGroup[map][modLevel]]);
+									if (outputFile != NULL)
+									{
+										fprintbm_row(outputFile, orbitReps[modLevel][currOrbitMapGroup[map][modLevel]]);
+										fprintf(outputFile, " (ω = %d) -> ", orbitLengths[modLevel][currOrbitMapGroup[map][modLevel]]);
+									}
+								}
+								printbm_row(orbitReps[0][currOrbitMapGroup[map][0]]);
+								printf(" (ω = %d)\n", orbitLengths[0][currOrbitMapGroup[map][0]]);
+								if (outputFile != NULL)
+								{
+									fprintbm_row(outputFile, orbitReps[0][currOrbitMapGroup[map][0]]);
+									fprintf(outputFile, " (ω = %d)\n", orbitLengths[0][currOrbitMapGroup[map][0]]);
+								}
+							}
+						}
+						
+						prevCycleLength = currCycleLength;
+					}
+					
+					else
+						break;
+				}
+				
+				//Preventing extra newlines from cluttering the screen
+				if (groupCount > 0)
+				{
+					printf("\n");
+					if (outputFile != NULL)
+						fprintf(outputFile, "\n");
+				}
+				
+				//Now, we change which mapping we're looking for and repeat
+				for (int i = maxpower-2; i >= 0; i -= 1)
+				{
+					printedAllMaps = TRUE;
+					
+					currOrbitMapMatch[i] += 1;
+					if (i == 0)
+					{
+						printf("==========\n\n");
+						if (outputFile != NULL)
+							fprintf(outputFile, "=========\n\n");
+					}
+					
+					if (currOrbitMapMatch[i] == numOfOrbits[i])
+						currOrbitMapMatch[i] = 0;
+					else
+					{
+						printedAllMaps = FALSE;
+						break;
+					}
 				}
 			}
 			
@@ -3655,6 +3758,8 @@ int main(int argc, char* argv[])
 			FREE(orbitMaps);
 			
 			FREE(numOfOrbits);
+			FREE(currOrbitMapMatch);
+			FREE(currOrbitMapGroup);
 			
 			currVectElements = free_BigIntT_array(currVectElements, big_rows(A), 1);
 			currVect  = free_BigIntMatrixT(currVect);
