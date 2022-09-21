@@ -98,6 +98,7 @@ void printbm_row(BigIntMatrixTP const); //<0 0 0>
 void fprintm(FILE*, IntMatrixTP const);
 void fprintbm(FILE*, BigIntMatrixTP const);
 
+void fprintm_row(FILE*, IntMatrixTP const);
 void fprintbm_row(FILE*, BigIntMatrixTP const); //<0 0 0>
 
 /** Same as function above, except no zero padding is added. */

@@ -2909,7 +2909,7 @@ int main(int argc, char* argv[])
 						//Start with highest modulus, work our way down
 						//Allows taking vectors mod tempModulus to be easier
 						tempModulus = modulus;
-						for (int i = 1; i < modulusCounter; i += 1, tempModulus *= modulus);
+						for (int i = 1; i < modulusCounter; tempModulus *= modulus, i += 1);
 						
 						for (int i = modulusCounter-1; i >= 0; i -= 1)
 						{
@@ -2919,8 +2919,14 @@ int main(int argc, char* argv[])
 							theCycle = free_CycleInfoT(theCycle);
 							
 							tempModulus /= modulus;
-							modm(currVect, tempModulus); //Might cause an error mod 1?
+							modm(currVect, tempModulus);
 						}
+						
+						/*
+						printf("currTuple: (");
+						for (int cc = 0; cc < modulusCounter; cc += 1)
+							printf("%d,", currCycleLengths[cc]);
+						printf(")\n");*/
 
 						//Now, output to our file the current vector's group only if:
 						// we're on the last modulus to check and if the file exists
@@ -2929,12 +2935,12 @@ int main(int argc, char* argv[])
 							fprintf(outputFile, "(");
 							for (int i = 0; i < modulusCounter-1; i += 1)
 								fprintf(outputFile, "%d, ", currCycleLengths[i]);
-							fprintf(outputFile, "%d) : <", currCycleLengths[modulusCounter-1]);
+							fprintf(outputFile, "%d) : ", currCycleLengths[modulusCounter-1]);
 							
 							//Now, output the vector
-							for (int i = 0; i < rows(A)-1; i += 1)
-								fprintf(outputFile, "%d ", currVectElements[i]);
-							fprintf(outputFile, "%d>\n", currVectElements[rows(A)-1]);
+							set_column(currVect, currVectElements);							
+							fprintm_row(outputFile, currVect);
+							fprintf(outputFile, "\n");
 							
 							//Now, save the file
 							if (fclose(outputFile) == EOF)
@@ -2958,6 +2964,7 @@ int main(int argc, char* argv[])
 								//Now, check the specific elements of each tuple to see if they
 								// match with ours
 								matchedTuple = TRUE;
+								
 								for (int tupleElem = 0; tupleElem < modulusCounter-1; tupleElem += 1)
 								{
 									if (prevCycleTuples[tuple][tupleElem] != currCycleLengths[tupleElem])
@@ -2971,6 +2978,12 @@ int main(int argc, char* argv[])
 								// one of the defined cycle reductions (tuples)
 								if (matchedTuple)
 								{
+									/*
+									printf("Matched prev tuple: (");
+									for (int pc = 0; pc < modulusCounter-1; pc += 1)
+										printf("%d,", prevCycleTuples[tuple][pc]);
+									printf(")\n");*/
+									
 									firstIndex = tuple-1;
 									break;
 								}
@@ -2985,6 +2998,8 @@ int main(int argc, char* argv[])
 						{
 							if (possibleCycleLengths[secondIndex] == currCycleLengths[modulusCounter-1])
 							{
+								/*
+								printf("Cycle length found: %d\n", possibleCycleLengths[secondIndex]);*/
 								cycleTable[firstIndex][secondIndex-1] += 1;
 								break;
 							}
@@ -3130,6 +3145,7 @@ int main(int argc, char* argv[])
 								printf("(");
 							
 							//Here, we either print the tuples or store them in allConfigs, checking whether they're unique
+							//printf("(");
 							for (int tupleElem = 0; tupleElem < highpower-1; tupleElem += 1)
 							{
 								if (!findAllConfigs)
@@ -3140,7 +3156,11 @@ int main(int argc, char* argv[])
 								// If it's not new, we'll just reallocate our memory back to how it was before
 								else
 									allConfigs[numOfConfigs-1][allConfigsLengths[numOfConfigs-1]-1][tupleElem] = prevCycleTuples[i+1][tupleElem];
+								
+								//printf("%d,", prevCycleTuples[i+1][tupleElem]);
 							}
+
+							//printf("%d) = %d\n", possibleCycleLengths[j+1], cycleTable[i][j]);
 							
 							if (!findAllConfigs)
 								printf("%d) = %d\n", possibleCycleLengths[j+1], cycleTable[i][j]);
@@ -3156,9 +3176,30 @@ int main(int argc, char* argv[])
 				
 				//Now, we check to see if we've seen this specific tuple before
 				//Essentially, we're trying to prove that it's not unique
-				isUniqueConfig = FALSE;
+				isUniqueConfig = TRUE;
+				
+				//Print out configs 
+				/*
 				for (int prevConfig = 0; prevConfig < numOfConfigs-1; prevConfig += 1)
 				{
+					for (int tuple = 0; tuple < allConfigsLengths[prevConfig]; tuple += 1)
+					{
+						printf("(");
+						for (int entry = 0; entry < highpower+1; entry += 1)
+							printf("%d,", allConfigs[prevConfig][tuple][entry]);
+						printf(")\n");
+					}
+					printf("~~~\n");
+				}
+				*/
+				
+				//Determining whether configurations are equal or not hinges on the
+				// assumptipon that configurations with equivalent tuples will appear
+				// in exactly the same order.
+				//This SHOULD always be the case due to how configs are copied into
+				// allConfigs, but I'm leaving a note here just in case.
+				for (int prevConfig = 0; prevConfig < numOfConfigs-1; prevConfig += 1)
+				{					
 					//If the two configs have the same number of tuples
 					if (allConfigsLengths[prevConfig] == allConfigsLengths[numOfConfigs-1])
 					{

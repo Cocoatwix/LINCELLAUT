@@ -734,6 +734,24 @@ void fprintm(FILE* file, IntMatrixTP const M)
 }
 
 
+void fprintm_row(FILE* file, IntMatrixTP const M)
+/** Same as printm_row(), except it prints vectors to a given file. */
+{
+	//Making sure we're actually dealing with a column vector
+	if ((M->n == 1) && (M->m >= 1))
+	{
+		fprintf(file, "<");
+		for (int mIndex = 0; mIndex < M->m-1; mIndex += 1)
+			fprintf(file, "%d ", M->matrix[mIndex][0]);
+		
+		fprintf(file, "%d>", M->matrix[M->m-1][0]);
+	}
+	
+	else
+		fprintm(file, M);
+}
+
+
 void printbm(BigIntMatrixTP const M)
 /** Prints out a BigIntMatrixT matrix to the console. */
 {
