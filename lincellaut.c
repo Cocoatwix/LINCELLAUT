@@ -3350,6 +3350,10 @@ int main(int argc, char* argv[])
 			char* outputFileName = NULL;
 			bool fileoutput = FALSE;
 			
+			FILE* graphFile = NULL; //GRAPHVIS output file
+			char* graphFileName = NULL;
+			int tempCounter = 0;
+			
 			if (argc > 2)
 			{
 				maxpower = (int)strtol(argv[2], &tempStr, 10);
@@ -3401,17 +3405,28 @@ int main(int argc, char* argv[])
 			{
 				outputFileName = malloc(MAXSTRLEN*sizeof(char));
 				outputFileName[0] = '\0';
+				graphFileName = malloc(MAXSTRLEN*sizeof(char));
+				graphFileName[0] = '\0';
 				
 				strcat(outputFileName, "orbitmaps ");
+				strcat(graphFileName, "graph ");
 				append_int(outputFileName, maxpower);
+				append_int(graphFileName, maxpower);
 				strcat(outputFileName, " ");
+				strcat(graphFileName, " ");
 				append_BigIntT(outputFileName, bigMod);
+				append_BigIntT(graphFileName, bigMod);
 				strcat(outputFileName, " F");
+				strcat(graphFileName, " F");
 				for (int x = 0; x < big_rows(A); x += 1)
 					for (int y = 0; y < big_cols(A); y += 1)
+					{
 						append_BigIntT(outputFileName, big_element(A, x, y));
+						append_BigIntT(graphFileName, big_element(A, x, y));
+					}
 					
 				strcat(outputFileName, ".txt");
+				strcat(graphFileName, ".graph");
 				
 				outputFile = fopen(outputFileName, "w");
 				if (outputFile == NULL)
@@ -3647,7 +3662,7 @@ int main(int argc, char* argv[])
 				}
 				
 				//Now, we should have every matching mapping, sorted by cycle length
-				//Print them out
+				//Print them out, and save any relevant files
 				prevCycleLength = 0;
 				while (TRUE)
 				{
@@ -3730,9 +3745,66 @@ int main(int argc, char* argv[])
 				}
 			}
 			
+			graphFile = fopen(graphFileName, "w");
+			if (graphFile == NULL)
+				fprintf(stderr, "Unable to save .graph file.\n");
+			
+			if (graphFile != NULL)
+			{
+				fprintf(graphFile, "~b:True\n"); //Turning on the bounding box
+				
+				fprintf(graphFile, "~n:");
+				for (int i = 0; i < maxpower; i += 1)
+					tempCounter += numOfOrbits[i];
+				
+				fprintf(graphFile, "%d\n~l:body\n", tempCounter);
+				tempCounter = 0;
+				
+				//Give labels to every vector we've saved
+				for (int p = 0; p < maxpower; p += 1)
+					for (int v = 0; v < numOfOrbits[p]; v += 1)
+					{
+						fprintf(graphFile, "%d:", tempCounter);
+						fprintbm_row(graphFile, orbitReps[p][v]);
+						fprintf(graphFile, "\n");
+						tempCounter += 1;
+					}
+					
+				fprintf(graphFile, "~c:direction\n");
+				
+				//Add our reductions to the .graph file
+				for (int map = 0; map < numOfOrbits[maxpower-1]; map += 1)
+				{
+					for (int pow = maxpower-1; pow > 0; pow -= 1)
+					{
+						//ID of first vector
+						tempCounter = 0;
+						for (int prevs = 0; prevs < pow; tempCounter += numOfOrbits[prevs], prevs += 1);
+						tempCounter += orbitMaps[map][pow];
+						printf("%d : ", tempCounter);
+						printbm_row(orbitReps[pow][orbitMaps[map][pow]]);
+						printf("\n");
+						fprintf(graphFile, "%d,", tempCounter);
+						
+						//ID of second vector
+						tempCounter = 0;
+						for (int prevs = 0; prevs < pow-1;  tempCounter += numOfOrbits[prevs], prevs += 1);
+						tempCounter += orbitMaps[map][pow-1];
+						printf("%d : ", tempCounter);
+						printbm_row(orbitReps[pow-1][orbitMaps[map][pow-1]]);
+						printf("\n");
+						fprintf(graphFile, "%d\n", tempCounter);
+					}
+				}
+			}
+			
 			if (outputFile != NULL)
 				if (fclose(outputFile) == EOF)
 					fprintf(stderr, "Unable to close output file. Unable to save data.\n");
+				
+			if (graphFile != NULL)
+				if (fclose(graphFile) == EOF)
+					fprintf(stderr, "Unable to close .graph file. Unable to save graph.\n");
 			
 			bigMod      = free_BigIntT(bigMod);
 			bigModPower = free_BigIntT(bigModPower);
@@ -3768,6 +3840,7 @@ int main(int argc, char* argv[])
 			theCycle  = free_CycleInfoT(theCycle);
 			
 			FREE(outputFileName);
+			FREE(graphFileName);
 			
 			A = free_BigIntMatrixT(A);
 		}

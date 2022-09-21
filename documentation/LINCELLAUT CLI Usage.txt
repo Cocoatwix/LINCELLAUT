@@ -81,4 +81,4 @@ dynamics [maxPower] [modulus] [allConfigs] [fileoutput]: This tool allows the us
 orbitmaps maxpower [modulus] [fileoutput]: This tool allows the user to generate orbit representatives (and the respective cycle lengths) for some high-power modulus, then map how these orbits reduce down to orbits of lower-powered moduli.
  - The argument "maxpower" specifies the highest (initial) power to use for the modulus. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
- - The optional argument "fileoutput" specifies whether the tool's output should be saved to a file (naming convention "orbitmaps [maxpower] [modulus] F[matrix].txt"). This argument expects TRUE or FALSE. The default value is FALSE.
+ - The optional argument "fileoutput" specifies whether the tool's output should be saved to a file (naming convention "orbitmaps [maxpower] [modulus] F[matrix].txt"). This also determines whether the program should output a .graph file for use with GRAPHVIS. This argument expects TRUE or FALSE. The default value is FALSE.
