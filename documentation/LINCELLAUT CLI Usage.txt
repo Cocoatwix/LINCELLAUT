@@ -17,6 +17,10 @@ chara [modulus]: This tool allows the user to find the characteristic equation o
 core [modulus]: This tool allows the user to calculate how many vectors are in a given matrix's core under some modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
+orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a particular matrix and print them to the console. This tool can also create an output file containing the orbits. The filename will be "orbits <modulus> F<matrix>.txt"
+ - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
+ - The optional argument "fileoutput" says whether the tool should create an output file. This argument expects TRUE or FALSE as its value. The default value is FALSE.
+
 orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "fileoutput" says whether to output a text file with the found representative vectors. This argument expects a TRUE or FALSE. By default, this option is set to TRUE.
@@ -57,7 +61,7 @@ charawalk step [mod]: This tool steps around a matrix space (each element of the
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.
 
-fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
+fibcycle [modulus] (INACTIVE): This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
 
 2 2
 1 1
@@ -66,7 +70,7 @@ fibcycle [modulus]: This tool allows you to generate the Fibonacci cycle which c
 in .matrix format. This specific update matrix has its own tools since each iteration can be computed more efficiently than by using general matrix multiplication.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
 
-fibcyclelens [modulus]: This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
+fibcyclelens [modulus] (INACTIVE): This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
  - The option argument "modulus" allows you to override the modulus provided in the .config file. This argument expects a positive integer (technically, it expects a BigIntT, but for all intents and purposes the user can treat this like an arbitrarily large integer).
 
 fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.

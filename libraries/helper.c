@@ -33,13 +33,8 @@ void append_int(char* str, int toApp)
 	char* tempDigit = malloc(2*sizeof(char));
 	tempDigit[1] = '\0';
 	
-	while (1)
-	{
-		if (toApp / tempPower >= 10)
-			tempPower *= 10;
-		else
-			break;
-	}
+	while (toApp / tempPower >= 10)
+		tempPower *= 10;
 	
 	tempInt = toApp;
 	while (tempPower > 0)
@@ -47,7 +42,7 @@ void append_int(char* str, int toApp)
 		//Converting numbers to characters
 		tempDigit[0] = (tempInt / tempPower) + 48;
 		strcat(str, tempDigit);
-		tempInt %= 10;
+		tempInt %= tempPower;
 		tempPower /= 10;
 	}
 	

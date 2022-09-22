@@ -630,6 +630,223 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to calculate the specific vectors in a
+		// matrix's orbits
+		else if (! strcmp(argv[1], "orbits"))
+		{
+			BigIntTP bigMod;
+			BigIntTP overflowCheck;
+			int smallMod;
+			int totalVects = 1;
+			int foundVectors = 0;
+			
+			BigIntMatrixTP  A;
+			BigIntMatrixTP  currVect;
+			BigIntTP** currVectElements;
+			
+			CycleInfoTP theCycle = NULL;
+			
+			int numOfOrbits = 0;
+			BigIntMatrixTP* orbitReps = NULL;
+			bool foundNewOrbit = FALSE;
+			
+			int oneArr[1] = {1};
+			BigIntTP one;
+			BigIntTP temp;
+			
+			BigIntMatrixTP tempVect;
+			BigIntMatrixTP tempVect2;
+			
+			FILE* outputFile = NULL;
+			char* outputFileName = NULL;
+			bool fileoutput = FALSE;
+			
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Invalid modulus passed on command line.");
+				smallMod = (int)strtol(argv[2], &tempStr, 10);
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Invalid modulus passed in config file.");
+				smallMod = (int)strtol(bigintmodstring, &tempStr, 10);
+			}
+			
+			if (argc > 3)
+				if (! strcmp(argv[3], "TRUE"))
+					fileoutput = TRUE;
+				
+			A = read_BigIntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix from config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (big_rows(A) != big_cols(A))
+			{
+				fprintf(stderr, "Given update matrix isn't square.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+				
+			//Creating filename and file
+			if (fileoutput)
+			{
+				outputFileName = malloc(MAXSTRLEN*sizeof(char));
+				outputFileName[0] = '\0';
+				
+				strcat(outputFileName, "orbits ");
+				append_BigIntT(outputFileName, bigMod);
+				strcat(outputFileName, " F");
+				for (int row = 0; row < big_rows(A); row += 1)
+					for (int col = 0; col < big_rows(A); col += 1)
+						append_BigIntT(outputFileName, big_element(A, row, col));
+				strcat(outputFileName, ".txt");
+				
+				outputFile = fopen(outputFileName, "w");
+				if (outputFile == NULL)
+					fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
+			}
+			
+			currVectElements = new_BigIntT_array(big_rows(A), 1);
+			currVect = new_BigIntMatrixT(big_rows(A), 1);
+			
+			one = new_BigIntT(oneArr, 1);
+			temp = empty_BigIntT(1);
+			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
+			
+			overflowCheck = new_BigIntT(oneArr, 1);
+			for (int a = 0; a < big_rows(A); a += 1)
+			{
+				multiply_BigIntT(bigMod, overflowCheck, temp);
+				copy_BigIntT(temp, overflowCheck);
+				
+				totalVects *= smallMod;
+			}
+			
+			//Iterate through all vectors, find all orbits
+			do
+			{
+				foundNewOrbit = FALSE;
+				
+				set_big_matrix(currVect, currVectElements);
+				big_floyd(A, currVect, bigMod, &theCycle);
+				
+				if (numOfOrbits == 0)
+				{
+					foundNewOrbit = TRUE;
+					
+					numOfOrbits += 1;
+					orbitReps = malloc(sizeof(BigIntMatrixTP));
+					orbitReps[0] = new_BigIntMatrixT(big_rows(A), 1);
+					
+					copy_BigIntMatrixT(rep(theCycle), orbitReps[0]);
+				}
+				
+				//Sift through our currently-found orbits to see if our currVect is in them
+				else
+				{
+					foundNewOrbit = TRUE;
+					for (int ourRep = 0; ourRep < numOfOrbits; ourRep += 1)
+					{
+						copy_BigIntMatrixT(orbitReps[ourRep], tempVect);
+						do
+						{
+							//If we found our rep of currVect's cycle in a cycle
+							if (compare_BigIntMatrixT(tempVect, rep(theCycle)))
+							{
+								foundNewOrbit = FALSE;
+								break;
+							}
+							
+							big_mat_mul(A, tempVect, tempVect2);
+							modbm(tempVect2, bigMod);
+							copy_BigIntMatrixT(tempVect2, tempVect);
+						}
+						while (!compare_BigIntMatrixT(tempVect, orbitReps[ourRep]));
+						
+						if (!foundNewOrbit)
+							break;
+					}
+					
+					if (foundNewOrbit)
+					{
+						numOfOrbits += 1;
+						orbitReps = realloc(orbitReps, numOfOrbits*sizeof(BigIntMatrixTP));
+						orbitReps[numOfOrbits-1] = new_BigIntMatrixT(big_rows(A), 1);
+						copy_BigIntMatrixT(rep(theCycle), orbitReps[numOfOrbits-1]);
+					}
+				}
+				
+				if (foundNewOrbit)
+				{
+					printf("Orbit #%d:\n", numOfOrbits-1);
+					copy_BigIntMatrixT(orbitReps[numOfOrbits-1], tempVect);
+					
+					if (outputFile != NULL)
+						fprintf(outputFile, "%d\n", numOfOrbits-1);
+					
+					for (int v = 0; v < omega(theCycle); v += 1)
+					{
+						foundVectors += 1;
+						
+						printbm_row(tempVect);
+						printf("\n");
+						
+						if (outputFile != NULL)
+						{
+							fprintbm_row(outputFile, tempVect);
+							fprintf(outputFile, "\n");
+						}
+						
+						big_mat_mul(A, tempVect, tempVect2);
+						modbm(tempVect2, bigMod);
+						copy_BigIntMatrixT(tempVect2, tempVect);
+					}
+					
+					printf("Vectors in cycles: %d\n", foundVectors);
+					printf("\n");
+					if (outputFile != NULL)
+						fprintf(outputFile, "\n");
+				}
+				
+				//If we've accounted for all the vectors in the module
+				//The first condition prevents this from triggering if 
+				if ((size(overflowCheck) == 1) && (foundVectors == totalVects))
+					break;
+			}
+			while (!increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
+			
+			if (outputFile != NULL)
+				if (fclose(outputFile) == EOF)
+					fprintf(stderr, "Unable to save output file.\n");
+			
+			FREE(outputFileName);
+			bigMod = free_BigIntT(bigMod);
+			
+			for (int i = 0; i < numOfOrbits; i += 1)
+				orbitReps[i] = free_BigIntMatrixT(orbitReps[i]);
+			FREE(orbitReps);
+			
+			currVectElements = free_BigIntT_array(currVectElements, big_rows(A), 1);
+			currVect = free_BigIntMatrixT(currVect);
+			one = free_BigIntT(one);
+			
+			tempVect  = free_BigIntMatrixT(tempVect);
+			tempVect2 = free_BigIntMatrixT(tempVect);
+			
+			temp = free_BigIntT(temp);
+			overflowCheck = free_BigIntT(overflowCheck);
+			
+			theCycle = free_CycleInfoT(theCycle);
+			
+			A = free_BigIntMatrixT(A);
+		}
+		
+		
 		//If we want to find a representative from each of the update matrix's orbits
 		else if (! strcmp(argv[1], "orbitreps"))
 		{
@@ -825,19 +1042,13 @@ int main(int argc, char* argv[])
 				
 				for (int cycrep = 0; cycrep < foundCycleLengths[cyclenindex][1]; cycrep += 1)
 				{
-					printbm(reps[cyclenindex-1][cycrep]);
+					printbm_row(reps[cyclenindex-1][cycrep]);
 					printf("\n");
 					
 					if (outputFile != NULL)
-					{
-						fprintf(outputFile, "<");
-						for (int component = 0; component < big_rows(A); component += 1)
-						{
-							fprinti(outputFile, big_element(reps[cyclenindex-1][cycrep], component, 0));
-							if (component != big_rows(A) - 1)
-								fprintf(outputFile, " ");
-						}
-						fprintf(outputFile, ">\n");
+					{						
+						fprintbm_row(outputFile, reps[cyclenindex-1][cycrep]);
+						fprintf(outputFile, "\n");
 					}
 				}
 				
@@ -1497,19 +1708,6 @@ int main(int argc, char* argv[])
 			zero    = empty_BigIntT(1);
 			temp    = empty_BigIntT(1);
 			
-			/*
-			//INITIALISING SPECIFIC NUMBERS SO THAT WE CAN STOP EXECUTION
-			// WHEN WE GET TO A SPECIFIC MATRIX
-			BigIntTP three = new_BigIntT(threeArr, 1);
-			BigIntTP two   = new_BigIntT(twoArr, 1);
-			BigIntTP five  = new_BigIntT(fiveArr, 1);
-
-			BigIntTP stopMat[3][3] = {{one,   three, five},
-																{two,   zero,  one},
-																{three, three, one}};
-																*/
-			
-			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
 				cycleLCM = LCM(cycleLCM, colVectCycles[i]);
@@ -1651,22 +1849,6 @@ int main(int argc, char* argv[])
 							break;
 						}
 					}
-					
-					/*
-					//CHECK TO SEE IF OUR MATRIX IS THE ONE WE WANT TO STOP AT
-					for (int i = 0; i < size; i += 1)
-					{
-						for (int j = 0; j < size; j += 1)
-						{
-							if (compare_BigIntT(currMatElements[i][j], stopMat[i][j]) != 0)
-							{
-								checkedAllMatrices = FALSE;
-								i = size;
-								j = size;
-							}
-						}
-					}
-					*/
 
 					//Iterate to the next matrix
 					checkedAllMatrices = increment_BigIntT_array(currMatElements, size, size, one, currMod);
@@ -2417,6 +2599,7 @@ int main(int argc, char* argv[])
 		
 		//If we want to generate a Fibonacci cycle for
 		// the given initial vector
+		/*
 		else if (! strcmp(argv[1], "fibcycle"))
 		{
 			int* initVect = malloc(2*sizeof(int));
@@ -2473,9 +2656,11 @@ int main(int argc, char* argv[])
 			
 			FREE(initVect);
 		}
+		*/
 		
 		
 		//If we want to see all possible cycle lengths for a particular modulus
+		/*
 		else if (! strcmp(argv[1], "fibcyclelens"))
 		{
 			int justOne[] = {1};
@@ -2585,6 +2770,7 @@ int main(int argc, char* argv[])
 			
 			FREE(cycleLengths);
 		}
+		*/
 		
 		
 		//If we want to check the Fibonacci numbers to see if multiples of numbers
@@ -3898,6 +4084,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
@@ -3907,8 +4094,8 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
+		//printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
+		//printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
