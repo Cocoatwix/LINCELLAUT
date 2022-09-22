@@ -639,6 +639,10 @@ int main(int argc, char* argv[])
 			int smallMod;
 			int totalVects = 1;
 			int foundVectors = 0;
+			int tempVectCount = 0;
+			BigIntTP tempIndex1;
+			BigIntTP tempIndex2;
+			BigIntTP zero;
 			
 			BigIntMatrixTP  A;
 			BigIntMatrixTP  currVect;
@@ -653,6 +657,8 @@ int main(int argc, char* argv[])
 			int oneArr[1] = {1};
 			BigIntTP one;
 			BigIntTP temp;
+			BigIntTP temp2;
+			BigIntTP temp3;
 			
 			BigIntMatrixTP tempVect;
 			BigIntMatrixTP tempVect2;
@@ -660,6 +666,9 @@ int main(int argc, char* argv[])
 			FILE* outputFile = NULL;
 			char* outputFileName = NULL;
 			bool fileoutput = FALSE;
+			
+			FILE* graphFile = NULL;
+			char* graphFileName;
 			
 			if (argc > 2)
 			{
@@ -697,17 +706,31 @@ int main(int argc, char* argv[])
 				outputFileName = malloc(MAXSTRLEN*sizeof(char));
 				outputFileName[0] = '\0';
 				
+				graphFileName = malloc(MAXSTRLEN*sizeof(char));
+				graphFileName[0] = '\0';
+				
 				strcat(outputFileName, "orbits ");
+				strcat(graphFileName, "graph ");
 				append_BigIntT(outputFileName, bigMod);
+				append_BigIntT(graphFileName, bigMod);
 				strcat(outputFileName, " F");
+				strcat(graphFileName, " F");
 				for (int row = 0; row < big_rows(A); row += 1)
 					for (int col = 0; col < big_rows(A); col += 1)
+					{
 						append_BigIntT(outputFileName, big_element(A, row, col));
+						append_BigIntT(graphFileName, big_element(A, row, col));
+					}
 				strcat(outputFileName, ".txt");
+				strcat(graphFileName, ".graph");
 				
 				outputFile = fopen(outputFileName, "w");
 				if (outputFile == NULL)
 					fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
+				
+				graphFile = fopen(graphFileName, "w");
+				if (graphFile == NULL)
+					fprintf(stderr, "Unable to create graph file.\n");
 			}
 			
 			currVectElements = new_BigIntT_array(big_rows(A), 1);
@@ -715,8 +738,14 @@ int main(int argc, char* argv[])
 			
 			one = new_BigIntT(oneArr, 1);
 			temp = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
+			temp3 = empty_BigIntT(1);
 			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
+			
+			zero = empty_BigIntT(1);
+			tempIndex1 = empty_BigIntT(1);
+			tempIndex2 = empty_BigIntT(1);
 			
 			overflowCheck = new_BigIntT(oneArr, 1);
 			for (int a = 0; a < big_rows(A); a += 1)
@@ -823,8 +852,80 @@ int main(int argc, char* argv[])
 			if (outputFile != NULL)
 				if (fclose(outputFile) == EOF)
 					fprintf(stderr, "Unable to save output file.\n");
+				
+			if (graphFile != NULL)
+			{
+				fprintf(graphFile, "~b:False\n");
+				fprintf(graphFile, "~n:%d\n~l:above\n", foundVectors);
+				for (int i = 0; i < big_rows(A); i += 1)
+					copy_BigIntT(zero, currVectElements[i][0]);
+				
+				do
+				{
+					set_big_matrix(currVect, currVectElements);
+					fprintf(graphFile, "%d:", tempVectCount);
+					fprintbm_row(graphFile, currVect);
+					fprintf(graphFile, "\n");
+					tempVectCount += 1;
+				}
+				while (!increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
+				
+				fprintf(graphFile, "~c:direction\n");
+				
+				//Go through every cycle, add the cycles to the file
+				for (int r = 0; r < numOfOrbits; r += 1)
+				{
+					copy_BigIntMatrixT(orbitReps[r], tempVect);
+					big_mat_mul(A, tempVect, tempVect2);
+					modbm(tempVect2, bigMod);
+					
+					//Loop around until we've recorded every mapping in the orbit
+					do
+					{
+						//Get numbers for each vector
+						copy_BigIntT(zero, tempIndex1);
+						copy_BigIntT(zero, tempIndex2);
+						copy_BigIntT(one, temp);
+						
+						for (int i = 0; i < big_rows(A); i += 1)
+						{
+							//Get correct powers of our modulus
+							for (int j = 0; j < i; j += 1)
+							{
+								multiply_BigIntT(temp, bigMod, temp2);
+								copy_BigIntT(temp2, temp);
+							}
+							
+							//temp holds correct power
+							multiply_BigIntT(temp, big_element(tempVect, i, 0), temp2);
+							add_BigIntT(temp2, tempIndex1, temp3);
+							copy_BigIntT(temp3, tempIndex1);
+							
+							multiply_BigIntT(temp, big_element(tempVect2, i, 0), temp2);
+							add_BigIntT(temp2, tempIndex2, temp3);
+							copy_BigIntT(temp3, tempIndex2);
+						}
+						
+						//Now our tempIndices hold the correct numbers representing each vector
+						fprinti(graphFile, tempIndex1);
+						fprintf(graphFile, ",");
+						fprinti(graphFile, tempIndex2);
+						fprintf(graphFile, "\n");
+						
+						//Update our vectors to the next mapping in the orbit
+						copy_BigIntMatrixT(tempVect2, tempVect);
+						big_mat_mul(A, tempVect, tempVect2);
+						modbm(tempVect2, bigMod);
+					}
+					while (!compare_BigIntMatrixT(tempVect, orbitReps[r]));
+				}
+				
+				if (fclose(graphFile) == EOF)
+					fprintf(stderr, "Unable to save graph file.\n");
+			}
 			
 			FREE(outputFileName);
+			FREE(graphFileName);
 			bigMod = free_BigIntT(bigMod);
 			
 			for (int i = 0; i < numOfOrbits; i += 1)
@@ -838,7 +939,10 @@ int main(int argc, char* argv[])
 			tempVect  = free_BigIntMatrixT(tempVect);
 			tempVect2 = free_BigIntMatrixT(tempVect);
 			
+			tempIndex1 = free_BigIntT(tempIndex1);
+			tempIndex2 = free_BigIntT(tempIndex2);
 			temp = free_BigIntT(temp);
+			temp2 = free_BigIntT(temp);
 			overflowCheck = free_BigIntT(overflowCheck);
 			
 			theCycle = free_CycleInfoT(theCycle);
@@ -3978,7 +4082,7 @@ int main(int argc, char* argv[])
 			
 			if (graphFile != NULL)
 			{
-				fprintf(graphFile, "~b:True\n"); //Turning on the bounding box
+				fprintf(graphFile, "~b:False\n"); //Turning on the bounding box
 				
 				fprintf(graphFile, "~n:");
 				for (int i = 0; i < maxpower; i += 1)
@@ -4008,18 +4112,12 @@ int main(int argc, char* argv[])
 						tempCounter = 0;
 						for (int prevs = 0; prevs < pow; tempCounter += numOfOrbits[prevs], prevs += 1);
 						tempCounter += orbitMaps[map][pow];
-						printf("%d : ", tempCounter);
-						printbm_row(orbitReps[pow][orbitMaps[map][pow]]);
-						printf("\n");
 						fprintf(graphFile, "%d,", tempCounter);
 						
 						//ID of second vector
 						tempCounter = 0;
 						for (int prevs = 0; prevs < pow-1;  tempCounter += numOfOrbits[prevs], prevs += 1);
 						tempCounter += orbitMaps[map][pow-1];
-						printf("%d : ", tempCounter);
-						printbm_row(orbitReps[pow-1][orbitMaps[map][pow-1]]);
-						printf("\n");
 						fprintf(graphFile, "%d\n", tempCounter);
 					}
 				}
