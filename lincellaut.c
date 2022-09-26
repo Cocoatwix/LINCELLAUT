@@ -816,7 +816,7 @@ int main(int argc, char* argv[])
 					copy_BigIntMatrixT(orbitReps[numOfOrbits-1], tempVect);
 					
 					if (outputFile != NULL)
-						fprintf(outputFile, "%d\n", numOfOrbits-1);
+						fprintf(outputFile, "Orbit #%d (ω = %d)\n", numOfOrbits-1, omega(theCycle));
 					
 					for (int v = 0; v < omega(theCycle); v += 1)
 					{
@@ -827,6 +827,7 @@ int main(int argc, char* argv[])
 						
 						if (outputFile != NULL)
 						{
+							fprintf(outputFile, "%d: ", v);
 							fprintbm_row(outputFile, tempVect);
 							fprintf(outputFile, "\n");
 						}
@@ -2084,7 +2085,9 @@ int main(int argc, char* argv[])
 			bool hasAllZeros        = FALSE;
 			
 			bool hasInterestingCycles = FALSE;
+			
 			bool debug = TRUE;
+			int matrixCounter = 0;
 			
 			char* outputfilename;
 			FILE* outputFile;
@@ -2169,12 +2172,12 @@ int main(int argc, char* argv[])
 				set_big_matrix(currMat, currMatElements);
 				big_floyd(currMat, currMat, bigMod, &theCycle);
 				
-				if (compare_BigIntT(currMatElements[matSize-1][matSize-2], prevLastElement) != 0)
+				if (debug)
 				{
-					if (debug)
+					if (compare_BigIntT(currMatElements[matSize-1][matSize-2], prevLastElement) != 0)
 					{
-						printf("Current matrix:\n");
-						printbm(currMat);
+							printf("Current matrix:\n");
+							printbm(currMat);
 					}
 				}
 				
@@ -2269,6 +2272,7 @@ int main(int argc, char* argv[])
 				//Print out the matrix we found, as well as any relevant information regarding it
 				if ((hasAllZeros) && (compare_BigIntT(one, bigOmega) != 0) && (hasInterestingCycles))
 				{
+					matrixCounter += 1;
 					printbm(currMat);
 					printf("Cycle length counts: ");
 					
@@ -2358,6 +2362,9 @@ int main(int argc, char* argv[])
 				copy_BigIntT(currMatElements[matSize-1][matSize-2], prevLastElement);
 				checkedAllMatrices = increment_BigIntT_array(currMatElements, matSize, matSize, one, bigMod);
 			}
+			
+			if (debug)
+				printf("Number of matrices with unjustified CCMs: %d\n", matrixCounter);
 			
 			
 			currMatElements  = free_BigIntT_array(currMatElements, matSize, matSize);
@@ -4088,7 +4095,7 @@ int main(int argc, char* argv[])
 				for (int i = 0; i < maxpower; i += 1)
 					tempCounter += numOfOrbits[i];
 				
-				fprintf(graphFile, "%d\n~l:body\n", tempCounter);
+				fprintf(graphFile, "%d\n~l:above\n", tempCounter);
 				tempCounter = 0;
 				
 				//Give labels to every vector we've saved

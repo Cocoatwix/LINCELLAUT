@@ -1209,8 +1209,6 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	//Converting toReduce to upper triangular (row echelon) form
 	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
 	{
-		hasLeadEntry = FALSE;
-		
 		//Find a row with a non-zero first entry
 		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
 		{
@@ -1242,11 +1240,38 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		//If we couldn't find a nonzero entry for our pivot column
 		if (!hasLeadEntry)
 		{
+			#ifdef VERBOSE
+			printf("No nonzero, invertible leading entry could be found.\n");
+			printf("Attempting to add rows instead.\n");
+			#endif
+			
+			//Check to see if we can add rows to get an invertible entry
+			for (int rowToMaybeAdd = focusRow; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
+			{
+				//If we found a row that we can add to our current row to get an invertible number
+				if (num_inverse(M->matrix[rowToMaybeAdd][focusRow] + M->matrix[focusRow][focusRow], modulus) != -1)
+				{
+					row_add(toReduce, focusRow, rowToMaybeAdd, modulus);
+					row_add(inv, focusRow, rowToMaybeAdd, modulus);
+					
+					#ifdef VERBOSE
+					printf("Added row %d to row %d.\n", rowToMaybeAdd, focusRow);
+					#endif
+					
+					hasLeadEntry = TRUE;
+					break;
+				}
+			}
+		}
+		
+		//If we couldn't find a suitable row to create an invertible element
+		if (!hasLeadEntry)
+		{
 			toReduce = free_IntMatrixT(toReduce);
 			inv = free_IntMatrixT(inv);
 			
 			#ifdef VERBOSE
-			printf("No nonzero, invertible leading entry could be found.\n");
+			printf("No suitable row was found to create an invertible entry.\n");
 			#endif
 			
 			return NULL;
