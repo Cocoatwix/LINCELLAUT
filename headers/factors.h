@@ -2,8 +2,14 @@
 #ifndef FACTORS_H
 #define FACTORS_H //Header guard
 
+#include "bigint.h"
+
 /** Returns the greatest common divisor of the two given integers. */
 int GCD(int, int);
+
+/** Returns a pointer to a BigIntT representing the GCD of the
+    two given arguments. */
+BigIntTP big_gcd(BigIntTP const, BigIntTP const);
 
 /** Returns the least common multiple of the two arguments. */
 int LCM(int, int);

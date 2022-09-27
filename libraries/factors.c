@@ -3,6 +3,8 @@
 #include <stdio.h>
 //#include <math.h>
 
+#include "../headers/bigint.h"
+
 int GCD(int a, int b)
 /** Returns the GCD of the given integers.
     If both integers given are zero, returns -1. */
@@ -35,6 +37,64 @@ int GCD(int a, int b)
 		r = greater % lesser;
 	}
 	
+	return lesser;
+}
+
+
+BigIntTP big_gcd(BigIntTP const A, BigIntTP const B)
+/** Same as GCD(), but for BigIntTs. */
+{
+	BigIntTP zero = empty_BigIntT(1);
+	BigIntTP greater;
+	BigIntTP lesser;
+	BigIntTP r;
+	
+	if ((compare_BigIntT(A, zero) == 0) && (compare_BigIntT(B, zero) == 0))
+	{
+		zero = free_BigIntT(zero);
+		return NULL;
+	}
+	
+	else if (compare_BigIntT(A, zero) == 0)
+	{
+		zero = free_BigIntT(zero);
+		return B;
+	}
+	
+	else if (compare_BigIntT(B, zero) == 0)
+	{
+		zero = free_BigIntT(zero);
+		return A;
+	}
+	
+	greater = empty_BigIntT(1);
+	lesser = empty_BigIntT(1);
+	r = empty_BigIntT(1);
+	
+	if (compare_BigIntT(B, A) > 0)
+	{
+		copy_BigIntT(B, greater);
+		copy_BigIntT(A, lesser);
+	}
+	else
+	{
+		copy_BigIntT(A, greater);
+		copy_BigIntT(B, lesser);
+	}
+	
+	mod_BigIntT(greater, lesser, r); //r holds the current remainder
+	
+	while (compare_BigIntT(r, zero) != 0)
+	{
+		copy_BigIntT(lesser, greater);
+		copy_BigIntT(r, lesser);
+		mod_BigIntT(greater, lesser, r);
+	}
+	
+	zero    = free_BigIntT(zero);
+	greater = free_BigIntT(greater);
+	r       = free_BigIntT(r);
+
 	return lesser;
 }
 

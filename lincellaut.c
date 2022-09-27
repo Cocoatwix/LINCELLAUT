@@ -78,7 +78,6 @@ int main(int argc, char* argv[])
 	//The maximum length for a string in the .config file
 	const int MAXSTRLEN = 101;
 	
-	typedef enum vt {row, col} VectorTypeE;
 	VectorTypeE vectorType = row;
 	
 	//Read .config file to get appropriate data loaded
@@ -221,69 +220,105 @@ int main(int argc, char* argv[])
 	if (argc > 1)
 	{
 		//If we want to iterate the given update matrix
+		// This is written with IntMatrices because I don't yet have a "big_inverse()"
 		if (! strcmp(argv[1], "iterate"))
 		{
+			BigIntMatrixTP F;
+			BigIntMatrixTP F_2;
+			BigIntMatrixTP F_result = NULL;
+			BigIntMatrixTP power = NULL;
+			
+			int tempArr[1];
+			BigIntTP bigIters = NULL;
+			
+			BigIntTP bigMod;
+			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+		
 			//If the user provided a custom number of iterations
 			if (argc > 2)
 			{
 				iterations = (int)strtol(argv[2], &tempStr, 10);
 				
 				//If we didn't read any digits for iterations
-				if (tempStr == argv[2])
+				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Invalid number of iterations provided at command line.\n");
+					bigMod = free_BigIntT(bigMod);
+					
 					FREE_VARIABLES;
 					return EXIT_FAILURE;
 				}
 			}
 			
-			IntMatrixTP F;
-			IntMatrixTP F_2;
-			IntMatrixTP F_result = NULL;
-			
+			printf("Iterations: %d\n", iterations);
 			if (iterations < 0)
 			{
-				F_2 = read_IntMatrixT(updatefilepath);
-				F   = inverse(F_2, modulus);
+				F_2 = read_BigIntMatrixT(updatefilepath);
+				F   = big_inverse(F_2, bigMod);
 				
 				if (F == NULL)
-					printf("An inverse for the update matrix mod %d does not exist.\n", modulus);
+				{
+					printf("An inverse for the update matrix modulo ");
+					printi(bigMod);
+					printf(" doesn't exist.\n");
+				}
 				
 				else
 				{
 					iterations *= -1;
-					F_2 = free_IntMatrixT(F_2);
-					F_2 = read_IntMatrixT(initialfilepath);
+					F_2 = free_BigIntMatrixT(F_2);
+					F_2 = read_BigIntMatrixT(initialfilepath);
 				}
 			}
 			
 			else
 			{
-				F   = read_IntMatrixT(updatefilepath);
-				F_2 = read_IntMatrixT(initialfilepath);
+				F   = read_BigIntMatrixT(updatefilepath);
+				F_2 = read_BigIntMatrixT(initialfilepath);
 			}
 			
 			if ((F == NULL) || (F_2 == NULL))
+			{
+				fprintf(stderr, "Unable to read matrices from config file.\n");
+				F = free_BigIntMatrixT(F);
+				F_2 = free_BigIntMatrixT(F_2);
+				bigMod = free_BigIntT(bigMod);
+				
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
+			}
 			
-			if (cols(F) != rows(F_2))
+			if (big_cols(F) != big_rows(F_2))
 			{
 				fprintf(stderr, "Given matrices cannot be multiplied.\n");
+				F = free_BigIntMatrixT(F);
+				F_2 = free_BigIntMatrixT(F_2);
+				bigMod = free_BigIntT(bigMod);
+				
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
 			
 			//Iterate F a few times
 			//The minus 1 is for easier conversion between ORBITVIS results
-			printf("Iterations: %d\n", iterations);
 			if (iterations == 1)
 			{
-				F_result = new_IntMatrixT(rows(F), cols(F_2));
-				mat_mul(F, F_2, F_result);
-				modm(F_result, modulus);
+				F_result = new_BigIntMatrixT(big_rows(F), big_cols(F_2));
+				big_mat_mul(F, F_2, F_result);
+				modbm(F_result, bigMod);
 			}
 			
 			else if (iterations > 0)
-				F_result = iterate(F, F_2, modulus, iterations);
+			{
+				tempArr[0] = iterations;
+				bigIters = new_BigIntT(tempArr, 1);
+				F_result = new_BigIntMatrixT(big_rows(F_2), big_cols(F_2));
+				
+				power = new_BigIntMatrixT(big_rows(F), big_cols(F));
+				powbm(F, power, bigIters, bigMod);
+				big_mat_mul(power, F_2, F_result);
+				modbm(F_result, bigMod);
+			}
 			
 			//Prevents the matrix from being printed when
 			// an inverse doesn't exist and the iterations
@@ -291,25 +326,28 @@ int main(int argc, char* argv[])
 			if (iterations > 0)
 			{
 				if (vectorType == row)
-					printm_row(F_result);
+					printbm_row(F_result);
 				else
-					printm(F_result);
+					printbm(F_result);
 			}
 			
 			else if (iterations == 0)
 			{
 				if (vectorType == row)
-					printm_row(F_2);
+					printbm_row(F_2);
 				else
-					printm(F_2);
+					printbm(F_2);
 			}
 			
-			if (vectorType == row)
+			if ((vectorType == row) && (big_rows(F_2) != big_cols(F_2)))
 				printf("\n");
 
-			F        = free_IntMatrixT(F);
-			F_2      = free_IntMatrixT(F_2);
-			F_result = free_IntMatrixT(F_result);
+			F        = free_BigIntMatrixT(F);
+			F_2      = free_BigIntMatrixT(F_2);
+			F_result = free_BigIntMatrixT(F_result);
+			power    = free_BigIntMatrixT(power);
+			
+			bigIters = free_BigIntT(bigIters);
 		}
 		
 		
@@ -1602,7 +1640,11 @@ int main(int argc, char* argv[])
 				printf("Update matrix is not a square matrix.\n");
 			
 			else
-				printcycle(coolCycle);
+			{
+				printcycle(coolCycle, vectorType);
+				if ((vectorType == row) && (big_rows(initial) != big_cols(initial)))
+					printf("\n");
+			}
 			
 			
 			bigModulus = free_BigIntT(bigModulus);
@@ -1740,14 +1782,13 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 20 2 3
 			cycmatsearch 2 28 3 5
 			cycmatsearch 2 30 3 4
+			cycmatsearch 2 30 6 10
 			cycmatsearch 3 6 2 3 5
 			cycmatsearch 3 6 2 2 3
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
-			
-			cycmatsearch 2 30 6 10 14/29
 			*/
 			
 			int oneArr[] = {1};
@@ -3983,8 +4024,18 @@ int main(int argc, char* argv[])
 				for (int i = 0; i < numOfOrbits[e]; i += 1)
 				{
 					printf("Rep: ");
-					printbm_row(orbitReps[e][i]);
-					printf(",\tOrbit length: %d\n", orbitLengths[e][i]);
+					if (vectorType == row)
+					{
+						printbm_row(orbitReps[e][i]);
+						printf(",\tOrbit length: %d\n", orbitLengths[e][i]);
+					}
+					else if (vectorType == col)
+					{
+						printf("\n");
+						printbm(orbitReps[e][i]);
+						printf("Orbit length: %d\n", orbitLengths[e][i]);
+					}
+					
 				}
 				
 				printf("\n");
@@ -4049,16 +4100,32 @@ int main(int argc, char* argv[])
 							{
 								for (int modLevel = maxpower-1; modLevel > 0; modLevel -= 1)
 								{
-									printbm_row(orbitReps[modLevel][currOrbitMapGroup[map][modLevel]]);
-									printf(" (ω = %d) -> ", orbitLengths[modLevel][currOrbitMapGroup[map][modLevel]]);
+									if (vectorType == row)
+									{
+										printbm_row(orbitReps[modLevel][currOrbitMapGroup[map][modLevel]]);
+										printf(" (ω = %d) -> ", orbitLengths[modLevel][currOrbitMapGroup[map][modLevel]]);
+									}
+									else if (vectorType == col)
+									{
+										printbm(orbitReps[modLevel][currOrbitMapGroup[map][modLevel]]);
+										printf("↓ (ω = %d)\n", orbitLengths[modLevel][currOrbitMapGroup[map][modLevel]]);
+									}
 									if (outputFile != NULL)
 									{
 										fprintbm_row(outputFile, orbitReps[modLevel][currOrbitMapGroup[map][modLevel]]);
 										fprintf(outputFile, " (ω = %d) -> ", orbitLengths[modLevel][currOrbitMapGroup[map][modLevel]]);
 									}
 								}
-								printbm_row(orbitReps[0][currOrbitMapGroup[map][0]]);
-								printf(" (ω = %d)\n", orbitLengths[0][currOrbitMapGroup[map][0]]);
+								if (vectorType == row)
+								{
+									printbm_row(orbitReps[0][currOrbitMapGroup[map][0]]);
+									printf(" (ω = %d)\n", orbitLengths[0][currOrbitMapGroup[map][0]]);
+								}
+								else if (vectorType == col)
+								{
+									printbm(orbitReps[0][currOrbitMapGroup[map][0]]);
+									printf("(ω = %d)\n\n", orbitLengths[0][currOrbitMapGroup[map][0]]);
+								}
 								if (outputFile != NULL)
 								{
 									fprintbm_row(outputFile, orbitReps[0][currOrbitMapGroup[map][0]]);
@@ -4105,9 +4172,12 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			graphFile = fopen(graphFileName, "w");
-			if (graphFile == NULL)
-				fprintf(stderr, "Unable to save .graph file.\n");
+			if (fileoutput)
+			{
+				graphFile = fopen(graphFileName, "w");
+				if (graphFile == NULL)
+					fprintf(stderr, "Unable to save .graph file.\n");
+			}
 			
 			if (graphFile != NULL)
 			{

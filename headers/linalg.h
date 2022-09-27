@@ -14,6 +14,9 @@ typedef struct intmatrix *IntMatrixTP;
 /** IntMatrixT, but for BigIntT numbers. */
 typedef struct bigintmatrix *BigIntMatrixTP;
 
+/** Used for determining how to print vectors to the console/files. */
+typedef enum vt {row, col} VectorTypeE;
+
 
 /** How many rows are in the given matrix? */
 int rows(IntMatrixTP);
@@ -141,6 +144,9 @@ int det(IntMatrixTP const);
 /** Returns the inverse of a given matrix with given modulus, if it exists.
     Returns NULL otherwise. */
 IntMatrixTP inverse(IntMatrixTP const, int);
+
+/** Same as inverse(), but for BigIntMatrixTs. */
+BigIntMatrixTP big_inverse(BigIntMatrixTP const, BigIntTP const);
 
 /** Reduces the given IntMatrixTP to its reduced row
     echelon form. Returns 1 on success, 0 otherwise. */

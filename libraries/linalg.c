@@ -1149,6 +1149,24 @@ int det(IntMatrixTP M)
 }
 
 
+/* private */ int big_row_swap(BigIntMatrixTP M, int x, int y)
+/** Swaps the two given rows in the given matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	//If rows given are out of range for the given matrix
+	if ((x < 0) || (y < 0) ||
+	    (x >= M->m) || (y >= M->m))
+		return 0;
+		
+	//Swap row pointers
+	BigIntTP* tempRow = M->matrix[x];
+	M->matrix[x] = M->matrix[y];
+	M->matrix[y] = tempRow;
+
+	return 1;
+}
+
+
 /* private */ int row_multiply(IntMatrixTP M, int row, int multiple, int modulus)
 /** Multiplies a row by the given multiple, then takes it mod modulus.
     Returns 1 on success, 0 otherwise. */
@@ -1159,6 +1177,30 @@ int det(IntMatrixTP M)
 	//Iterate over row, multiply, take mod
 	for (int i = 0; i < M->n; i += 1)
 		M->matrix[row][i] = (multiple * M->matrix[row][i]) % modulus;
+	
+	return 1;
+}
+
+
+/* private */ int big_row_multiply(BigIntMatrixTP M, int row, BigIntTP const multiple, BigIntTP const modulus)
+/** Multiplies a row by the given multiple, then takes it mod modulus.
+    Returns 1 on success, 0 otherwise. */
+{
+	BigIntTP temp;
+	
+	if ((row < 0) || (row >= M->m))
+		return 0;
+	
+	temp = empty_BigIntT(1);
+	
+	//Iterate over row, multiply, take mod
+	for (int i = 0; i < M->n; i += 1)
+	{
+		multiply_BigIntT(M->matrix[row][i], multiple, temp);
+		mod_BigIntT(temp, modulus, M->matrix[row][i]);
+	}
+	
+	temp = free_BigIntT(temp);
 	
 	return 1;
 }
@@ -1178,6 +1220,31 @@ int det(IntMatrixTP M)
 		M->matrix[addTo][i] += (M->matrix[addFrom][i]);
 		M->matrix[addTo][i] %= modulus;
 	}
+	
+	return 1;
+}	
+
+
+/* private */ int big_row_add(BigIntMatrixTP M, int addTo, int addFrom, BigIntTP const modulus)
+/** Adds row addFrom to row addTo in the given matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	BigIntTP temp;
+	
+	if ((addTo < 0) || (addFrom < 0) ||
+	    (addTo >= M->m) || (addFrom >= M->m))
+		return 0;
+		
+	temp = empty_BigIntT(1);
+		
+	//Iterate over row, add relevant entries, take modulus
+	for (int i = 0; i < M->n; i += 1)
+	{
+		add_BigIntT(M->matrix[addTo][i], M->matrix[addFrom][i], temp);
+		mod_BigIntT(temp, modulus, M->matrix[addTo][i]);
+	}
+	
+	temp = free_BigIntT(temp);
 	
 	return 1;
 }	
@@ -1308,6 +1375,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		//If the leading entry is a 1, we don't need to find an inverse
 		if (toReduce->matrix[focusRow][focusRow] != 1)
 		{
+			/*
 			//Finding the inverse of our leading entry (i)
 			for (int i = 0; i < modulus; i += 1)
 			{
@@ -1324,6 +1392,15 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 					break;
 				}
 			}
+			*/
+			tempInverse = num_inverse(toReduce->matrix[focusRow][focusRow], modulus);
+			row_multiply(toReduce, focusRow, tempInverse, modulus);
+			row_multiply(inv, focusRow, tempInverse, modulus);
+			
+			#ifdef VERBOSE
+			printf("Multiplied row %d by %d.\n", focusRow, tempInverse);
+			printm(toReduce);
+			#endif
 		}
 		
 		//Now, we clear out all nonzero entries in our current pivot column
@@ -1374,6 +1451,259 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	}
 	
 	toReduce = free_IntMatrixT(toReduce);
+	return inv;
+}
+
+
+BigIntMatrixTP big_inverse(BigIntMatrixTP const M, BigIntTP const modulus)
+/** If the inverse of M exists, a pointer to M's inverse
+    is returned. Otherwise, returns NULL. 
+		
+		This function assumes the given matrix conforms to the 
+		given modulus (all entries are less than the modulus). 
+		
+		This function is the same as inverse(), but for BigIntMatrixTs. */
+{
+	//If we're given a non-square matrix
+	if ((M->m != M->n))
+		return NULL;
+	
+	bool hasLeadEntry = FALSE;
+	
+	BigIntTP tempInverse;
+	BigIntTP zero;
+	BigIntTP one;
+	int oneArr[1] = {1};
+	
+	BigIntTP bigMult; //Holds the loop variable mult so we can multiply matrix elements with it
+	BigIntTP temp;
+	BigIntTP temp2;
+	
+	BigIntMatrixTP toReduce = new_BigIntMatrixT(M->m, M->m);
+	BigIntMatrixTP inv      = identity_BigIntMatrixT(M->m);
+	copy_BigIntMatrixT(M, toReduce);
+	
+	#ifdef VERBOSE
+	printf("Matrix to reduce:\n");
+	printbm(toReduce);
+	#endif
+	
+	zero        = empty_BigIntT(1);
+	one         = new_BigIntT(oneArr, 1);
+	temp        = empty_BigIntT(1);
+	temp2       = empty_BigIntT(1);
+	bigMult     = empty_BigIntT(1);
+	tempInverse = empty_BigIntT(1);
+	
+	//Converting toReduce to upper triangular (row echelon) form
+	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
+	{
+		//Find a row with a non-zero first entry
+		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
+		{
+			//Checking to see whether the leading entry is one
+			//OR
+			//Checking to see whether the leading entry is nonzero and has an inverse
+			if ((compare_BigIntT(toReduce->matrix[nonzero][focusRow], one) == 0) ||
+					((compare_BigIntT(toReduce->matrix[nonzero][focusRow], zero) != 0) &&
+					 (compare_BigIntT(big_gcd(toReduce->matrix[nonzero][focusRow], modulus), one) == 0)))
+			{
+				hasLeadEntry = TRUE;
+				
+				//Don't need to swap if the row is already in place
+				if (nonzero == focusRow)
+				{
+					#ifdef VERBOSE
+					printf("Nonzero leading entry is already in place; no swap necessary.\n");
+					#endif
+					break;
+				}
+				
+				big_row_swap(toReduce, focusRow, nonzero);
+				big_row_swap(inv, focusRow, nonzero);
+				
+				#ifdef VERBOSE
+				printf("Swapped row %d and %d.\n", focusRow, nonzero);
+				printbm(toReduce);
+				#endif
+
+				break;
+			}
+		}
+		
+		//If we couldn't find a nonzero entry for our pivot column
+		if (!hasLeadEntry)
+		{
+			#ifdef VERBOSE
+			printf("No nonzero, invertible leading entry could be found.\n");
+			printf("Attempting to add rows instead.\n");
+			#endif
+			
+			//Check to see if we can add rows to get an invertible entry
+			for (int rowToMaybeAdd = focusRow+1; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
+			{
+				//Hopefully finging a row that we can add to our current row to get an invertible number
+				copy_BigIntT(one, bigMult);
+				while (compare_BigIntT(bigMult, modulus) < 0)
+				{
+					multiply_BigIntT(bigMult, M->matrix[rowToMaybeAdd][focusRow], temp);
+					add_BigIntT(temp, M->matrix[focusRow][focusRow], temp2);
+					big_num_inverse(temp2, modulus, tempInverse);
+					
+					if (compare_BigIntT(tempInverse, zero) != 0)
+					{
+						//Add rows to get an invertible number as a leading entry
+						copy_BigIntT(bigMult, temp);
+						while (compare_BigIntT(temp, zero) > 0)
+						{
+							big_row_add(toReduce, focusRow, rowToMaybeAdd, modulus);
+							big_row_add(inv, focusRow, rowToMaybeAdd, modulus);
+							
+							//Decrement temp
+							subtract_BigIntT(temp, one, temp2);
+							copy_BigIntT(temp2, temp);
+						}
+						
+						#ifdef VERBOSE
+						printf("Added row %d to row %d a total of ", rowToMaybeAdd, focusRow);
+						printi(bigMult);
+						printf(" times.\n");
+						printbm(toReduce);
+						#endif
+						
+						//Now, get the leading entry to one
+						big_row_multiply(toReduce, focusRow, tempInverse, modulus);
+						big_row_multiply(inv, focusRow, tempInverse, modulus);
+						
+						#ifdef VERBOSE
+						printf("Multipled row %d by ", focusRow);
+						printi(tempInverse);
+						printf(".\n");
+						printbm(toReduce);
+						#endif
+						
+						hasLeadEntry = TRUE;
+						break;
+					}
+					
+					//Increment bigMult
+					add_BigIntT(bigMult, one, temp);
+					copy_BigIntT(temp, bigMult);
+				}
+				
+				if (hasLeadEntry)
+					break;
+			}
+		}
+		
+		//If we couldn't find a suitable row to create an invertible element
+		if (!hasLeadEntry)
+		{
+			toReduce = free_BigIntMatrixT(toReduce);
+			inv = free_BigIntMatrixT(inv);
+			
+			zero        = free_BigIntT(zero);
+			one         = free_BigIntT(one);
+			tempInverse = free_BigIntT(tempInverse);
+			bigMult     = free_BigIntT(bigMult);
+			temp        = free_BigIntT(temp);
+			temp2       = free_BigIntT(temp2);
+			
+			#ifdef VERBOSE
+			printf("No suitable row was found to create an invertible entry.\n");
+			#endif
+			
+			return NULL;
+		}
+
+		//If the leading entry is a 1, we don't need to find an inverse
+		if (compare_BigIntT(toReduce->matrix[focusRow][focusRow], one) != 0)
+		{
+			big_num_inverse(toReduce->matrix[focusRow][focusRow], modulus, tempInverse);
+			big_row_multiply(toReduce, focusRow, tempInverse, modulus);
+			big_row_multiply(inv, focusRow, tempInverse, modulus);
+			
+			#ifdef VERBOSE
+			printf("Multiplied row %d by ", focusRow);
+			printi(tempInverse);
+			printf(".\n");
+			printbm(toReduce);
+			#endif
+			
+			break;
+		}
+		
+		//Now, we clear out all nonzero entries in our current pivot column
+		for (int i = focusRow+1; i < M->m; i += 1)
+		{
+			subtract_BigIntT(modulus, toReduce->matrix[i][focusRow], temp);
+			mod_BigIntT(temp, modulus, temp2); //temp2 is acting as "numTimesToAdd" here
+			
+			#ifdef VERBOSE
+			printf("Added row %d to row %d a total of ", focusRow, i);
+			printi(temp2);
+			printf(" times.\n");
+			#endif
+			
+			while (compare_BigIntT(temp2, zero) != 0)
+			{
+				big_row_add(toReduce, i, focusRow, modulus);
+				big_row_add(inv, i, focusRow, modulus);
+				
+				//Decrement temp2
+				subtract_BigIntT(temp2, one, temp);
+				copy_BigIntT(temp, temp2);
+			}
+			
+			#ifdef VERBOSE
+			printbm(toReduce);
+			#endif
+		}
+	}
+	
+	#ifdef VERBOSE
+	printf("The matrix should now be in row echelon form.\n\n");
+	#endif
+	
+	//Converting toReduce to reduced row echelon form (the identity)
+	for (int i = M->m-1; i >= 0; i -= 1)
+	{
+		//Each element above our leading entry
+		for (int element = i-1; element >= 0; element -= 1)
+		{
+			subtract_BigIntT(modulus, toReduce->matrix[element][i], temp);
+			mod_BigIntT(temp, modulus, temp2); //temp2 is acting as "numTimesToAdd" here
+			
+			#ifdef VERBOSE
+			printf("Added row %d to row %d a total of ", i, element);
+			printi(temp2);
+			printf(" times.\n");
+			#endif
+
+			while (compare_BigIntT(temp2, zero) != 0)
+			{
+				big_row_add(toReduce, element, i, modulus);
+				big_row_add(inv, element, i, modulus);
+				
+				//Decrement temp2
+				subtract_BigIntT(temp2, one, temp);
+				copy_BigIntT(temp, temp2);
+			}
+			
+			#ifdef VERBOSE
+			printbm(toReduce);
+			#endif
+		}
+	}
+	
+	zero        = free_BigIntT(zero);
+	one         = free_BigIntT(one);
+	tempInverse = free_BigIntT(tempInverse);
+	bigMult     = free_BigIntT(bigMult);
+	temp        = free_BigIntT(temp);
+	temp2       = free_BigIntT(temp2);
+	
+	toReduce = free_BigIntMatrixT(toReduce);
 	return inv;
 }
 

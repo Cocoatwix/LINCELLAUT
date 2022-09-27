@@ -75,7 +75,7 @@ CycleInfoTP new_CycleInfoT()
 }
 
 
-void printcycle(CycleInfoTP c)
+void printcycle(CycleInfoTP c, VectorTypeE e)
 /** Prints info about a cycle to the screen. */
 {
 	printf("Floyd's Algorithm stopping time: %d\n", c->stoppingTime);
@@ -94,13 +94,31 @@ void printcycle(CycleInfoTP c)
 	{
 		case (IntMatrixE):
 		{
-			printm(c->inCycle->intmat);
+			if (e == col)
+			{
+				printm(c->inCycle->intmat);
+				break;
+			}
+			else if (e == row)
+			{
+				printm_row(c->inCycle->intmat);
+				break;
+			}
 			break;
 		}
 		
 		case (BigIntMatrixE):
 		{
-			printbm(c->inCycle->bigintmat);
+			if (e == col)
+			{
+				printbm(c->inCycle->bigintmat);
+				break;
+			}
+			else if (e == row)
+			{
+				printbm_row(c->inCycle->bigintmat);
+				break;
+			}
 			break;
 		}
 	}
