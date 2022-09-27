@@ -1716,6 +1716,8 @@ int main(int argc, char* argv[])
 			BigIntTP zero;
 			BigIntTP temp;    //For holding temporary results of calculations
 			
+			BigIntTP lastLastElement; //For keeping track of progress through a modulus
+			
 			BigIntTP** currMatElements; //Holds matrix numbers so we can set the matrix easily
 			
 			CycleInfoTP theCycle; //Used to get matrices in a cycle
@@ -1744,6 +1746,8 @@ int main(int argc, char* argv[])
 			cycmatsearch 3 6 6 10 14
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
+			
+			cycmatsearch 2 30 6 10 14/29
 			*/
 			
 			int oneArr[] = {1};
@@ -1813,6 +1817,8 @@ int main(int argc, char* argv[])
 			zero    = empty_BigIntT(1);
 			temp    = empty_BigIntT(1);
 			
+			lastLastElement = empty_BigIntT(1);
+			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
 				cycleLCM = LCM(cycleLCM, colVectCycles[i]);
@@ -1850,6 +1856,10 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
+			//Prepare to monitor whether the last element in our matrix increased or not
+			copy_BigIntT(currMatElements[size-1][size-1], lastLastElement);
+
+			
 			//Search all moduli until we get to the specified limit
 			while (compare_BigIntT(currMod, maxMod) <= 0)
 			{
@@ -1869,6 +1879,16 @@ int main(int argc, char* argv[])
 					set_big_matrix(currMat, currMatElements);
 					big_floyd(currMat, currMat, currMod, &theCycle);
 					copy_BigIntMatrixT(rep(theCycle), tempMat);
+					
+					if (compare_BigIntT(currMatElements[size-1][size-1], lastLastElement) != 0)
+					{
+						printi(currMatElements[size-1][size-1]);
+						printf(" / ");
+						printi(currMod);
+						printf(" searched...\n");
+						
+						copy_BigIntT(currMatElements[size-1][size-1], lastLastElement);
+					}
 					
 					currIteration = 0;
 					
@@ -1973,6 +1993,8 @@ int main(int argc, char* argv[])
 			one     = free_BigIntT(one);
 			zero    = free_BigIntT(zero);
 			temp    = free_BigIntT(temp);
+			
+			lastLastElement = free_BigIntT(lastLastElement);
 			
 			currMat  = free_BigIntMatrixT(currMat);
 			zeroMat  = free_BigIntMatrixT(zeroMat);

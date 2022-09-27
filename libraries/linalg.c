@@ -1039,7 +1039,7 @@ int powbm(BigIntMatrixTP const A,
 /** Calculates A^power, stores result in AP. Currently, this only
     works for positive powers. 
 		This function assumes AP has already been initialised to the
-		same dmensions as A (a square matrix).
+		same dimensions as A (a square matrix).
 		Returns 1 on success, 0 otherwise. */
 {
 	int returnVal = 0;
@@ -1089,6 +1089,7 @@ int powbm(BigIntMatrixTP const A,
 	
 	return returnVal;
 }
+
 
 //It may be better to implement this non-recursively in the future for speed
 //This also hasn't been extensively tested yet.
@@ -1193,9 +1194,10 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	if ((M->m != M->n))
 		return NULL;
 	
-	bool hasLeadEntry;
+	bool hasLeadEntry = FALSE;
 	
 	int numTimesToAdd; //Tells how many times we add a row to another row
+	int tempInverse;
 	
 	IntMatrixTP toReduce = new_IntMatrixT(M->m, M->m);
 	IntMatrixTP inv      = identity_IntMatrixT(M->m);
@@ -1223,7 +1225,12 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 				
 				//Don't need to swap if the row is already in place
 				if (nonzero == focusRow)
+				{
+					#ifdef VERBOSE
+					printf("Nonzero leading entry is already in place; no swap necessary.\n");
+					#endif
 					break;
+				}
 				
 				row_swap(toReduce, focusRow, nonzero);
 				row_swap(inv, focusRow, nonzero);
@@ -1246,21 +1253,42 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 			#endif
 			
 			//Check to see if we can add rows to get an invertible entry
-			for (int rowToMaybeAdd = focusRow; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
+			for (int rowToMaybeAdd = focusRow+1; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
 			{
 				//If we found a row that we can add to our current row to get an invertible number
-				if (num_inverse(M->matrix[rowToMaybeAdd][focusRow] + M->matrix[focusRow][focusRow], modulus) != -1)
+				for (int mult = 1; mult < modulus; mult += 1)
 				{
-					row_add(toReduce, focusRow, rowToMaybeAdd, modulus);
-					row_add(inv, focusRow, rowToMaybeAdd, modulus);
-					
-					#ifdef VERBOSE
-					printf("Added row %d to row %d.\n", rowToMaybeAdd, focusRow);
-					#endif
-					
-					hasLeadEntry = TRUE;
-					break;
+					tempInverse = num_inverse(mult*M->matrix[rowToMaybeAdd][focusRow] + M->matrix[focusRow][focusRow], modulus);
+					if (tempInverse != -1)
+					{
+						//Add rows to get an invertible number as a leading entry
+						for (int t = 0; t < mult; t += 1)
+						{
+							row_add(toReduce, focusRow, rowToMaybeAdd, modulus);
+							row_add(inv, focusRow, rowToMaybeAdd, modulus);
+						}
+						
+						#ifdef VERBOSE
+						printf("Added row %d to row %d a total of %d times.\n", rowToMaybeAdd, focusRow, mult);
+						printm(toReduce);
+						#endif
+						
+						//Now, get the leading entry to one
+						row_multiply(toReduce, focusRow, tempInverse, modulus);
+						row_multiply(inv, focusRow, tempInverse, modulus);
+						
+						#ifdef VERBOSE
+						printf("Multipled row %d by %d.\n", focusRow, tempInverse);
+						printm(toReduce);
+						#endif
+						
+						hasLeadEntry = TRUE;
+						break;
+					}
 				}
+				
+				if (hasLeadEntry)
+					break;
 			}
 		}
 		
