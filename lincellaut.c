@@ -354,40 +354,52 @@ int main(int argc, char* argv[])
 		//Find the inverse of the update matrix
 		else if (!strcmp(argv[1], "inverse"))
 		{
-			IntMatrixTP F = read_IntMatrixT(updatefilepath);
-			IntMatrixTP Finv;
+			BigIntMatrixTP F = read_BigIntMatrixT(updatefilepath);
+			BigIntMatrixTP Finv;
+			
+			BigIntTP bigMod;
 			
 			if (F == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix from config file.\n");
+				FREE_VARIABLES;
 				return EXIT_FAILURE;
+			}
 			
 			printf("Update matrix:\n");
-			printm(F);
+			printbm(F);
 			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
 			{
-				modulus = (int)strtol(argv[2], &tempStr, 10);
-				
-				if (tempStr[0] != '\0')
-				{
-					fprintf(stderr, "Invalid modulus passed at command line.\n");
-					return EXIT_FAILURE;
-				}
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from command line.");
 			}
 			
-			Finv = inverse(F, modulus);
+			Finv = big_inverse(F, bigMod);
 			
 			if (Finv == NULL)
-				printf("An inverse for the update matrix mod %d does not exist.\n", modulus);
+			{
+				printf("An inverse for the update matrix modulo ");
+				printi(bigMod);
+				printf(" doesn't exist.\n");
+			}
 			
 			else
 			{
-				printf("Inverse mod %d:\n", modulus);
-				printm(Finv);
+				printf("Inverse modulo ");
+				printi(bigMod);
+				printf(":\n");
+				printbm(Finv);
 			}
 			
-			F    = free_IntMatrixT(F);
-			Finv = free_IntMatrixT(Finv);
+			F    = free_BigIntMatrixT(F);
+			Finv = free_BigIntMatrixT(Finv);
+			
+			bigMod = free_BigIntT(bigMod);
 		}
 		
 		
@@ -1756,9 +1768,16 @@ int main(int argc, char* argv[])
 			BigIntTP currMod; //What modulus are we currently checking?
 			BigIntTP one;
 			BigIntTP zero;
-			BigIntTP temp;    //For holding temporary results of calculations
 			
-			BigIntTP lastLastElement; //For keeping track of progress through a modulus
+			BigIntTP temp;
+			BigIntTP temp2;
+			BigIntTP tempModCounter;
+			BigIntTP tempPercentCounter;
+			
+			BigIntTP progressUpdateElement; //For keeping track of progress through a modulus
+			int progressRow = 2;
+			int progressCol = 1; //Used to decide which element in the matrix to look at for progress updates
+			bool printProgress = TRUE;
 			
 			BigIntTP** currMatElements; //Holds matrix numbers so we can set the matrix easily
 			
@@ -1787,6 +1806,8 @@ int main(int argc, char* argv[])
 			cycmatsearch 3 6 2 2 3
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
+			
+			cycmatsearch 3 9/9 6 10 14 ()
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -1854,11 +1875,14 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			one     = new_BigIntT(oneArr, 1);
-			zero    = empty_BigIntT(1);
-			temp    = empty_BigIntT(1);
+			one   = new_BigIntT(oneArr, 1);
+			zero  = empty_BigIntT(1);
+			temp  = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
 			
-			lastLastElement = empty_BigIntT(1);
+			tempModCounter        = empty_BigIntT(1);
+			tempPercentCounter    = empty_BigIntT(1);
+			progressUpdateElement = empty_BigIntT(1);
 			
 			//Find the LCM of our cycles
 			for (i = 0; i < size; i += 1)
@@ -1888,7 +1912,6 @@ int main(int argc, char* argv[])
 			}
 			strcat(textOutputName, argv[size+4]);
 			strcat(textOutputName, ".txt");
-			//printf("%s\n", textOutputName);
 			
 			textOutput = fopen(textOutputName, "w");
 			if (textOutput == NULL)
@@ -1897,8 +1920,8 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
-			//Prepare to monitor whether the last element in our matrix increased or not
-			copy_BigIntT(currMatElements[size-1][size-1], lastLastElement);
+			//Prepare to monitor whether the progress element in our matrix increased or not
+			copy_BigIntT(currMatElements[progressRow][progressCol], progressUpdateElement);
 
 			
 			//Search all moduli until we get to the specified limit
@@ -1921,14 +1944,36 @@ int main(int argc, char* argv[])
 					big_floyd(currMat, currMat, currMod, &theCycle);
 					copy_BigIntMatrixT(rep(theCycle), tempMat);
 					
-					if (compare_BigIntT(currMatElements[size-1][size-1], lastLastElement) != 0)
+					if ((printProgress) && 
+					    (compare_BigIntT(currMatElements[progressRow][progressCol], progressUpdateElement) != 0))
 					{
-						printi(currMatElements[size-1][size-1]);
+						//Calculate proper fraction to show for percentage
+						copy_BigIntT(one, tempModCounter);
+						copy_BigIntT(zero, tempPercentCounter);
+						for (int r = progressRow; r < size; r += 1)
+						{
+							for (int c = 0; c < size; c += 1)
+							{
+								//Making sure we start from the correct element in the matrix
+								if ((r == progressRow) && (c == 0))
+									c = progressCol;
+								
+								multiply_BigIntT(currMatElements[r][c], tempModCounter, temp);
+								add_BigIntT(tempPercentCounter, temp, temp2);
+								copy_BigIntT(temp2, tempPercentCounter);
+								
+								//Increment modCounter
+								multiply_BigIntT(tempModCounter, currMod, temp);
+								copy_BigIntT(temp, tempModCounter);
+							}
+						}
+						
+						printi(tempPercentCounter);
 						printf(" / ");
-						printi(currMod);
+						printi(tempModCounter);
 						printf(" searched...\n");
 						
-						copy_BigIntT(currMatElements[size-1][size-1], lastLastElement);
+						copy_BigIntT(currMatElements[progressRow][progressCol], progressUpdateElement);
 					}
 					
 					currIteration = 0;
@@ -2034,8 +2079,11 @@ int main(int argc, char* argv[])
 			one     = free_BigIntT(one);
 			zero    = free_BigIntT(zero);
 			temp    = free_BigIntT(temp);
+			temp2   = free_BigIntT(temp2);
 			
-			lastLastElement = free_BigIntT(lastLastElement);
+			tempModCounter = free_BigIntT(tempModCounter);
+			tempPercentCounter = free_BigIntT(tempPercentCounter);
+			progressUpdateElement = free_BigIntT(progressUpdateElement);
 			
 			currMat  = free_BigIntMatrixT(currMat);
 			zeroMat  = free_BigIntMatrixT(zeroMat);
