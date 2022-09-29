@@ -1261,7 +1261,7 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	if ((M->m != M->n))
 		return NULL;
 	
-	bool hasLeadEntry = FALSE;
+	bool hasLeadEntry;
 	
 	int numTimesToAdd; //Tells how many times we add a row to another row
 	int tempInverse;
@@ -1278,6 +1278,8 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 	//Converting toReduce to upper triangular (row echelon) form
 	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
 	{
+		hasLeadEntry = FALSE;
+		
 		//Find a row with a non-zero first entry
 		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
 		{
@@ -1375,24 +1377,6 @@ IntMatrixTP inverse(IntMatrixTP const M, int modulus)
 		//If the leading entry is a 1, we don't need to find an inverse
 		if (toReduce->matrix[focusRow][focusRow] != 1)
 		{
-			/*
-			//Finding the inverse of our leading entry (i)
-			for (int i = 0; i < modulus; i += 1)
-			{
-				if (toReduce->matrix[focusRow][focusRow]*i % modulus == 1)
-				{
-					row_multiply(toReduce, focusRow, i, modulus);
-					row_multiply(inv, focusRow, i, modulus);
-					
-					#ifdef VERBOSE
-					printf("Multiplied row %d by %d.\n", focusRow, i);
-					printm(toReduce);
-					#endif
-					
-					break;
-				}
-			}
-			*/
 			tempInverse = num_inverse(toReduce->matrix[focusRow][focusRow], modulus);
 			row_multiply(toReduce, focusRow, tempInverse, modulus);
 			row_multiply(inv, focusRow, tempInverse, modulus);
@@ -1468,7 +1452,7 @@ BigIntMatrixTP big_inverse(BigIntMatrixTP const M, BigIntTP const modulus)
 	if ((M->m != M->n))
 		return NULL;
 	
-	bool hasLeadEntry = FALSE;
+	bool hasLeadEntry;
 	
 	BigIntTP tempInverse;
 	BigIntTP zero;
@@ -1498,6 +1482,9 @@ BigIntMatrixTP big_inverse(BigIntMatrixTP const M, BigIntTP const modulus)
 	//Converting toReduce to upper triangular (row echelon) form
 	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
 	{
+		//Make sure each row has to find an invertible leading entry
+		hasLeadEntry = FALSE;
+		
 		//Find a row with a non-zero first entry
 		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
 		{
@@ -1629,8 +1616,6 @@ BigIntMatrixTP big_inverse(BigIntMatrixTP const M, BigIntTP const modulus)
 			printf(".\n");
 			printbm(toReduce);
 			#endif
-			
-			break;
 		}
 		
 		//Now, we clear out all nonzero entries in our current pivot column
