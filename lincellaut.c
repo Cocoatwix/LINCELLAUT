@@ -1807,7 +1807,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 ()
+			cycmatsearch 3 9/9 6 10 14 (5/81)
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -2763,6 +2763,7 @@ int main(int argc, char* argv[])
 						factorList = factor_BigPolyT(charaPoly, mod);
 						
 						printbm(currentMatrix);
+						printf("Cycle length: %d\n", omega(theCycle));
 						printf("Transient length: %d\n", tau(theCycle));
 						
 						//It would be real beneficial to make a "clear_CycleInfoT() function"
@@ -2793,14 +2794,9 @@ int main(int argc, char* argv[])
 			}
 			
 			
-			for (int i = 0; i < big_rows(startingMatrix); i += 1)
-			{
-				for (int j = 0; j < big_rows(startingMatrix); j += 1)
-					currentMatrixElements[i][j] = free_BigIntT(currentMatrixElements[i][j]);
-				
-				FREE(currentMatrixElements[i]);
-			}
-			FREE(currentMatrixElements);
+			currentMatrixElements = free_BigIntT_array(currentMatrixElements, 
+			                                           big_rows(startingMatrix), 
+																								 big_rows(startingMatrix));
 			
 			mod   = free_BigIntT(mod);
 			step  = free_BigIntT(step);
@@ -3230,6 +3226,9 @@ int main(int argc, char* argv[])
 			for (int m = 1; m < highpower; m += 1)
 				maxmod *= modulus;
 			
+			currVectElements = calloc(rows(A), sizeof(int));
+			currVect         = new_IntMatrixT(rows(A), 1);
+			
 			//Dealing with exiting when highpower == 1 is done near the bottom of the tool
 			while ((increment_int_array(matrixLiftOffsets, rows(A), rows(A), 1, maxmod/matrixLiftIncrement) != TRUE) ||
 			       (highpower == 1))
@@ -3300,19 +3299,16 @@ int main(int argc, char* argv[])
 						}
 					}
 					
-					currVectElements     = calloc(rows(A), sizeof(int));
-					currVect             = new_IntMatrixT(rows(A), 1);
-					
+					//Helps find which previous tuple this vector corresponds to
+					//Contains the cycle lengths of our vector under all moduli
+					// less than the current one. The last element is the
+					// current modulus' cycle length
+					currCycleLengths = malloc(modulusCounter*sizeof(int));
+				
 					//Iterate until we've tested every vector
 					while (!checkedAllVects)
 					{
 						set_column(currVect, currVectElements);
-						
-						//Helps find which previous tuple this vector corresponds to
-						//Contains the cycle lengths of our vector under all moduli
-						// less than the current one. The last element is the
-						// current modulus' cycle length
-						currCycleLengths = malloc(modulusCounter*sizeof(int));
 						
 						//Start with highest modulus, work our way down
 						//Allows taking vectors mod tempModulus to be easier
@@ -3431,6 +3427,8 @@ int main(int argc, char* argv[])
 								currVectElements[i] = 0;
 						}
 					}
+					
+					FREE(currCycleLengths);
 					
 					//Now that we have a completed cycleTable up to a particular modulus,
 					// we need to get our list of tuples from it.
@@ -3655,8 +3653,6 @@ int main(int argc, char* argv[])
 					copy_IntMatrixT(A, allConfigsMatrices[numOfConfigs-1]);
 				}
 				
-				currVect = free_IntMatrixT(currVect);
-				
 				if ((outputFile != NULL) && (fclose(outputFile) == EOF))
 					fprintf(stderr, "Unable to save data.\n");
 				
@@ -3670,16 +3666,12 @@ int main(int argc, char* argv[])
 				FREE(cycleTable);
 				FREE(possibleCycleLengths);
 				
-				FREE(currVectElements);
-				
 				for (int i = 1; i < prevCycleTuples[0][0]; i += 1)
 				{
 					FREE(prevCycleTuples[i]);
 				}
 				FREE(prevCycleTuples[0]);
 				FREE(prevCycleTuples);
-				
-				FREE(currCycleLengths);
 				
 				if (outputfilename != NULL)
 				{
@@ -3751,6 +3743,9 @@ int main(int argc, char* argv[])
 				FREE(matrixLiftOffsets[i]);
 			}
 			FREE(matrixLiftOffsets);
+			
+			FREE(currVectElements);
+			currVect = free_IntMatrixT(currVect);
 				
 			originalA = free_IntMatrixT(originalA);
 			A = free_IntMatrixT(A);
