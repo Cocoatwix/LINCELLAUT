@@ -718,7 +718,7 @@ int main(int argc, char* argv[])
 			bool fileoutput = FALSE;
 			
 			FILE* graphFile = NULL;
-			char* graphFileName;
+			char* graphFileName = NULL;
 			
 			if (argc > 2)
 			{
@@ -1807,7 +1807,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 (5/81)
+			cycmatsearch 3 9/9 6 10 14 (6/81)
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
