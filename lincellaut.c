@@ -524,6 +524,156 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to find all matrices with a particular characteristic polynomial
+		else if (! strcmp(argv[1], "allcharas"))
+		{
+			BigIntTP bigMod;
+			
+			BigIntTP** currMatElements;
+			BigIntMatrixTP currMat;
+			
+			BigIntTP* coeffs;
+			BigPolyTP targetEqn;
+			BigPolyTP tempEqn;
+			
+			bool newCycle;
+			int tempCurrCycle;
+			int numOfCycleLengths = 0;
+			int maxArraySize = 0;
+			int* cycleLengths = NULL;
+			int* cycleLengthCounts = NULL;
+			
+			BigIntTP** currVectElements;
+			BigIntMatrixTP currVect;
+			CycleInfoTP theCycle = NULL;
+			
+			int oneArr[1] = {1};
+			BigIntTP one;
+			
+			if (argc == 2)
+			{
+				printf("No characteristic polynomial was given on command line.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			
+			//Get coefficients for targetEqn
+			coeffs = malloc((argc-2)*sizeof(BigIntTP));
+			for (int i = 2; i < argc; i += 1)
+				strtoBIT(argv[i], &coeffs[i-2]);
+			
+			targetEqn = new_BigPolyT(coeffs, argc-2);
+			reduce_BigPolyT(targetEqn);
+			
+			currMatElements = new_BigIntT_array(degree(targetEqn), degree(targetEqn));
+			currMat = new_BigIntMatrixT(degree(targetEqn), degree(targetEqn));
+			
+			currVectElements = new_BigIntT_array(degree(targetEqn), 1);
+			currVect = new_BigIntMatrixT(degree(targetEqn), 1);
+			
+			one = new_BigIntT(oneArr, 1);
+			
+			printf("Target characteristic eqn: ");
+			printp(targetEqn);
+			printf("\nModulus: ");
+			printi(bigMod);
+			printf("\n~~~\n");
+			
+			//Loop through all matrices, find the ones with the correct characteristic polynomial
+			do
+			{
+				set_big_matrix(currMat, currMatElements);
+				tempEqn = chara_poly(currMat, bigMod);
+				
+				//If we found a matrix with the correct characteristic polynomial
+				if (compare_BigPolyT(tempEqn, targetEqn) == 0)
+				{
+					printbm(currMat);
+					
+					//Now, let's find cycle length counts
+					do
+					{
+						set_big_matrix(currVect, currVectElements);
+						big_floyd(currMat, currVect, bigMod, &theCycle);
+						newCycle = TRUE;
+						
+						//Try and see if we've found this cycle length before
+						for (int i = 0; i < numOfCycleLengths; i += 1)
+						{
+							if (cycleLengths[i] == omega(theCycle))
+							{
+								cycleLengthCounts[i] += 1;
+								newCycle = FALSE;
+								break;
+							}
+						}
+						
+						//If we need to add a new cycle length to our list
+						if (newCycle)
+						{
+							numOfCycleLengths += 1;
+							
+							if (maxArraySize < numOfCycleLengths)
+							{
+								cycleLengths = realloc(cycleLengths, numOfCycleLengths*sizeof(int));
+								cycleLengthCounts = realloc(cycleLengthCounts, numOfCycleLengths*sizeof(int));
+								
+								maxArraySize = numOfCycleLengths;
+							}
+							
+							cycleLengths[numOfCycleLengths-1] = omega(theCycle);
+							cycleLengthCounts[numOfCycleLengths-1] = 1;
+						}
+					}
+					while (!increment_BigIntT_array(currVectElements, degree(targetEqn), 1, one, bigMod));
+					
+					//Print out our found cycle lengths IN ORDER
+					newCycle = TRUE;
+					tempCurrCycle = 1;
+					printf("1 (%d)", cycleLengthCounts[0]);
+					while (newCycle)
+					{
+						newCycle = FALSE;
+						for (int i = 0; i < numOfCycleLengths; i += 1)
+							if (cycleLengths[i] > tempCurrCycle)
+							{
+								newCycle = TRUE;
+								tempCurrCycle = cycleLengths[i];
+								
+								printf(", %d (%d)", tempCurrCycle, cycleLengthCounts[i]);
+							}
+					}
+					printf("\n\n");
+
+					numOfCycleLengths = 0;
+				}
+				
+				tempEqn = free_BigPolyT(tempEqn);
+			}
+			while (!increment_BigIntT_array(currMatElements, degree(targetEqn), degree(targetEqn), one, bigMod));
+			
+			
+			bigMod = free_BigIntT(bigMod);
+			one    = free_BigIntT(one);
+			
+			currMatElements  = free_BigIntT_array(currMatElements, big_rows(currMat), big_rows(currMat));
+			currVectElements = free_BigIntT_array(currVectElements, big_rows(currMat), 1);
+			currMat  = free_BigIntMatrixT(currMat);
+			currVect = free_BigIntMatrixT(currVect);
+			theCycle = free_CycleInfoT(theCycle);
+			FREE(cycleLengths);
+			FREE(cycleLengthCounts);
+			
+			for (int i = 0; i < argc-2; i += 1)
+				coeffs[i] = free_BigIntT(coeffs[i]);
+			FREE(coeffs);
+			
+			targetEqn = free_BigPolyT(targetEqn);
+		}
+		
+		
 		//If we want to see how many vectors are in an IntMatrix's core
 		else if (! strcmp(argv[1], "core"))
 		{
@@ -1807,7 +1957,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 (6/81)
+			cycmatsearch 3 9/9 6 10 14 (23/81)
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -4323,6 +4473,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");

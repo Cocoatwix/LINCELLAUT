@@ -211,6 +211,43 @@ int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 }
 
 
+int compare_BigPolyT(BigPolyTP const A, BigPolyTP const B)
+/** Compares two polynomials to see if they're the same.
+    Returns 0 if they are, 1 otherwise. */
+{
+	int small = degree(A) < degree(B) ? degree(A) : degree(B);
+	int big   = degree(A) > degree(B) ? degree(A) : degree(B);
+	int r = 0;
+	
+	BigPolyTP theBig = degree(A) > degree(B) ? A : B;
+	BigIntTP zero = empty_BigIntT(1);
+	
+	small += 1;
+	big   += 1;
+	
+	//Comparing terms to see if they match
+	for (int i = 0; i < small; i += 1)
+		if (compare_BigIntT(A->coeffs[i], B->coeffs[i]) != 0)
+		{
+			r = 1;
+			break;
+		}
+		
+	//For the bigger polynomial, we ensure all the entries above the smallest
+	// on the other polynomial are zero
+	if (r == 0)
+		for (int i = small; i < big; i += 1)
+			if (compare_BigIntT(theBig->coeffs[i], zero) != 0)
+			{
+				r = 1;
+				break;
+			}
+	
+	zero = free_BigIntT(zero);
+	return r;
+}
+
+
 void printp(BigPolyTP const p)
 /** Outputs a BigPolyTP to stdout. */
 {

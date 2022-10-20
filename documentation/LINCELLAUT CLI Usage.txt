@@ -14,6 +14,9 @@ det [modulus]: This tool allows the user to calculate the determinant of the upd
 chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
+allcharas coeffs...: This tool allows the user to find all matrices with a particular characteristic polynomial defined as command line arguments. The size of the matrices is determined by the number of coefficients added, so adding zeros is required to pad the polynomial to the correct length. 
+ - The argument(s) "coeffs" specify the coefficents to use for the characteristic polynomial, entered from the constant term to the coefficient on the highest power term. For example, the characteristic polynomial 5 + x^2 + 2x^3 would be entered as "5 0 1 2".
+
 core [modulus]: This tool allows the user to calculate how many vectors are in a given matrix's core under some modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 

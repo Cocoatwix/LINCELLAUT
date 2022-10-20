@@ -25,6 +25,10 @@ BigPolyTP constant_BigPolyT(BigIntTP const);
 /** Creates an empty polynomial, returns a pointer to it. */
 BigPolyTP empty_BigPolyT();
 
+/** Ensures that the leading term of the BigPolyT
+    is nonzero. Returns 1 on success, 0 otherwise. */
+int reduce_BigPolyT(BigPolyTP);
+
 /** Returns the degree of the given polynomial. */
 int degree(BigPolyTP const);
 
@@ -40,6 +44,10 @@ BigIntTP* extract_coefficients(BigPolyTP const);
     all arguments have been properly initialised.
 		Returns 1 on success, 0 otherwise. */
 int copy_BigPolyT(BigPolyTP const, BigPolyTP);
+
+/**Compares two BigPolyTPs to see if they're equal (have the
+   same coefficients). Returns 0 if they are, 1 otherwise. */ 
+int compare_BigPolyT(BigPolyTP const, BigPolyTP const);
 
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(BigPolyTP const);
