@@ -528,13 +528,17 @@ int main(int argc, char* argv[])
 		else if (! strcmp(argv[1], "allcharas"))
 		{
 			BigIntTP bigMod;
+			BigIntTP negOne;
 			
 			BigIntTP** currMatElements;
 			BigIntMatrixTP currMat;
 			
 			BigIntTP* coeffs;
 			BigPolyTP targetEqn;
+			BigPolyTP tempPoly;
+			BigPolyTP negTargetEqn;
 			BigPolyTP tempEqn;
+			BigPolyTP negOnePoly;
 			
 			bool newCycle;
 			int tempCurrCycle;
@@ -559,6 +563,11 @@ int main(int argc, char* argv[])
 			
 			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			
+			one = new_BigIntT(oneArr, 1);
+			negOne = empty_BigIntT(1);
+			subtract_BigIntT(bigMod, one, negOne);
+			negOnePoly = new_BigPolyT(&negOne, 1);
+			
 			//Get coefficients for targetEqn
 			coeffs = malloc((argc-2)*sizeof(BigIntTP));
 			for (int i = 2; i < argc; i += 1)
@@ -567,16 +576,22 @@ int main(int argc, char* argv[])
 			targetEqn = new_BigPolyT(coeffs, argc-2);
 			reduce_BigPolyT(targetEqn);
 			
+			negTargetEqn = new_BigPolyT(&one, 1);
+			tempPoly = new_BigPolyT(&one, 1);
+			
+			multiply_BigPolyT(targetEqn, negOnePoly, tempPoly);
+			mod_BigPolyT(tempPoly, bigMod, negTargetEqn);
+			
 			currMatElements = new_BigIntT_array(degree(targetEqn), degree(targetEqn));
 			currMat = new_BigIntMatrixT(degree(targetEqn), degree(targetEqn));
 			
 			currVectElements = new_BigIntT_array(degree(targetEqn), 1);
 			currVect = new_BigIntMatrixT(degree(targetEqn), 1);
 			
-			one = new_BigIntT(oneArr, 1);
-			
 			printf("Target characteristic eqn: ");
 			printp(targetEqn);
+			printf(" or ");
+			printp(negTargetEqn);
 			printf("\nModulus: ");
 			printi(bigMod);
 			printf("\n~~~\n");
@@ -588,7 +603,8 @@ int main(int argc, char* argv[])
 				tempEqn = chara_poly(currMat, bigMod);
 				
 				//If we found a matrix with the correct characteristic polynomial
-				if (compare_BigPolyT(tempEqn, targetEqn) == 0)
+				if ((compare_BigPolyT(tempEqn, targetEqn) == 0) ||
+				    (compare_BigPolyT(tempEqn, negTargetEqn) == 0))
 				{
 					printbm(currMat);
 					
@@ -657,6 +673,7 @@ int main(int argc, char* argv[])
 			
 			bigMod = free_BigIntT(bigMod);
 			one    = free_BigIntT(one);
+			negOne = free_BigIntT(negOne);
 			
 			currMatElements  = free_BigIntT_array(currMatElements, big_rows(currMat), big_rows(currMat));
 			currVectElements = free_BigIntT_array(currVectElements, big_rows(currMat), 1);
@@ -670,7 +687,10 @@ int main(int argc, char* argv[])
 				coeffs[i] = free_BigIntT(coeffs[i]);
 			FREE(coeffs);
 			
-			targetEqn = free_BigPolyT(targetEqn);
+			targetEqn    = free_BigPolyT(targetEqn);
+			negTargetEqn = free_BigPolyT(negTargetEqn);
+			negOnePoly   = free_BigPolyT(negOnePoly);
+			tempPoly     = free_BigPolyT(tempPoly);
 		}
 		
 		
