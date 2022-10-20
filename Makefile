@@ -7,14 +7,14 @@ FLAGS = -Wall -Wextra -pedantic
 TARGET = lincellaut
 
 LIBPATH = libraries
-LIB1 = linalg
-LIB2 = cycles
-LIB3 = factors
-LIB4 = modular
-LIB5 = fibonacci
-LIB6 = bigint
-LIB7 = algebra
-LIB8 = helper
+LIB1 = helper
+LIB2 = fibonacci
+LIB3 = bigint
+LIB4 = factors
+LIB5 = modular
+LIB6 = algebra
+LIB7 = linalg
+LIB8 = cycles
 
 OBJPATH = objects
 ALLOBJS = $(OBJPATH)/$(LIB1).o 

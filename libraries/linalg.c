@@ -1091,6 +1091,79 @@ int powbm(BigIntMatrixTP const A,
 }
 
 
+int eval_BigPolyT(BigPolyTP const p, BigIntMatrixTP const A, BigIntMatrixTP result, BigIntTP const mod)
+/** Plugs A into P, stores the result in result. This assumes result has been initialised.
+    Returns 1 on success, 0 otherwise. */
+{
+	BigIntMatrixTP powMat;
+	BigIntMatrixTP tempMat;
+	BigIntMatrixTP I;
+	
+	BigIntTP* polyCoeffs; //Since we can't directly deref BigPolyTPs
+	
+	int oneArr[1] = {1};
+	BigIntTP powCount;  //For calculating powers of A
+	BigIntTP multCount; //For calculating multiples of A^k
+	BigIntTP temp;
+	BigIntTP one;
+	
+	I       = identity_BigIntMatrixT(big_rows(A));
+	powMat  = new_BigIntMatrixT(big_rows(A), big_rows(A));
+	tempMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
+	
+	powCount  = empty_BigIntT(1);
+	multCount = new_BigIntT(oneArr, 1);
+	one       = new_BigIntT(oneArr, 1);
+	temp      = empty_BigIntT(1);
+	
+	polyCoeffs = extract_coefficients(p);
+	
+	//Iterate over all coefficients, compute the relevant terms,
+	// store them in result.
+	for (int i = 0; i <= degree(p); i += 1)
+	{
+		//powbm() doesn't currently support ^0, so I have to improvise
+		if (i > 0)
+			powbm(A, powMat, powCount, mod);
+		else
+			copy_BigIntMatrixT(I, powMat);
+		
+		while (compare_BigIntT(multCount, polyCoeffs[i]) <= 0)
+		{
+			big_mat_add(result, powMat, tempMat);
+			copy_BigIntMatrixT(tempMat, result);
+			modbm(result, mod);
+			
+			add_BigIntT(multCount, one, temp);
+			copy_BigIntT(temp, multCount);
+		}
+		
+		//Resetting multCount, but using one instead of zero for convenience
+		copy_BigIntT(one, multCount);
+		
+		add_BigIntT(one, powCount, temp);
+		copy_BigIntT(temp, powCount);
+		
+		//Free coefficients as we go to save time
+		polyCoeffs[i] = free_BigIntT(polyCoeffs[i]);
+	}
+	
+	free(polyCoeffs);
+	polyCoeffs = NULL;
+	
+	powMat  = free_BigIntMatrixT(powMat);
+	tempMat = free_BigIntMatrixT(tempMat);
+	I       = free_BigIntMatrixT(I);
+	
+	powCount  = free_BigIntT(multCount);
+	multCount = free_BigIntT(powCount);
+	one       = free_BigIntT(one);
+	temp      = free_BigIntT(temp);
+	
+	return 1;
+}
+
+
 //It may be better to implement this non-recursively in the future for speed
 //This also hasn't been extensively tested yet.
 int det(IntMatrixTP M)

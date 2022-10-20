@@ -45,8 +45,8 @@ BigIntTP* extract_coefficients(BigPolyTP const);
 		Returns 1 on success, 0 otherwise. */
 int copy_BigPolyT(BigPolyTP const, BigPolyTP);
 
-/**Compares two BigPolyTPs to see if they're equal (have the
-   same coefficients). Returns 0 if they are, 1 otherwise. */ 
+/** Compares two BigPolyTPs to see if they're equal (have the
+    same coefficients). Returns 0 if they are, 1 otherwise. */ 
 int compare_BigPolyT(BigPolyTP const, BigPolyTP const);
 
 /** Outputs a BigPolyT to stdout (the console). */
@@ -86,9 +86,9 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const, BigIntTP);
 /*
 int find_factors(BigIntTP const,
                  BigIntTP const,
-								 BigIntTP const,
-								 BigIntTP const,
-			  				 BigIntTP*);
+				 BigIntTP const,
+				 BigIntTP const,
+			  	 BigIntTP*);
 */
-								 
+
 #endif //ALGEBRA_H

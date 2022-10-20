@@ -127,4 +127,10 @@ int mod_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
     The first number tells you how many factors there are. */
 BigIntTP* divisors_of_BigIntT(BigIntTP const);
 
+
+/*Can I define constants?
+int oneArr[1] = {1};
+BigIntTP const BIGINTT_ONE = new_BigIntT(oneArr, 1);
+*/
+
 #endif //BIGINT_H

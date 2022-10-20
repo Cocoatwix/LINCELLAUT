@@ -13,6 +13,7 @@ yiff day, 2022
 #include "../headers/helper.h" //bool 
 
 #include "../headers/bigint.h"
+#include "../headers/linalg.h"
 
 typedef struct bigpoly
 /** Stores a polynomial using BigIntT coefficients. 
@@ -215,15 +216,12 @@ int compare_BigPolyT(BigPolyTP const A, BigPolyTP const B)
 /** Compares two polynomials to see if they're the same.
     Returns 0 if they are, 1 otherwise. */
 {
-	int small = degree(A) < degree(B) ? degree(A) : degree(B);
-	int big   = degree(A) > degree(B) ? degree(A) : degree(B);
+	int small = A->size < B->size ? A->size : B->size;
+	int big   = A->size > B->size ? A->size : B->size;
 	int r = 0;
 	
 	BigPolyTP theBig = degree(A) > degree(B) ? A : B;
 	BigIntTP zero = empty_BigIntT(1);
-	
-	small += 1;
-	big   += 1;
 	
 	//Comparing terms to see if they match
 	for (int i = 0; i < small; i += 1)

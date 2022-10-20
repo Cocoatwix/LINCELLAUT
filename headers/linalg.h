@@ -137,6 +137,12 @@ int powbm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const);
 int modm(IntMatrixTP, int);
 int modbm(BigIntMatrixTP, BigIntTP const);
 
+/** Takes the first matrix, plugs it into the polynomial, evaluates it,
+    then stores the result in the second matrix. The function assumes
+	all relevant matrices have been initialised. Returns 1 on success,
+	0 otherwise. */
+int eval_BigPolyT(BigPolyTP const, BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const);
+
 /** Returns the determinant of a given matrix. 
     Returns zero if the matrix is nonsquare. */
 int det(IntMatrixTP const);

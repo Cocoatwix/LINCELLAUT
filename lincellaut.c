@@ -4513,6 +4513,35 @@ int main(int argc, char* argv[])
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
+		
+		/*
+		BigIntTP* c = malloc(3*sizeof(BigIntTP));
+		int oneArr[1] = {1};
+		int threeArr[1] = {3};
+		int fourArr[1] = {4};
+		c[0] = new_BigIntT(threeArr, 1);
+		c[1] = new_BigIntT(oneArr, 1);
+		c[2] = new_BigIntT(fourArr, 1);
+		BigPolyTP test = new_BigPolyT(c, 3);
+		printp(test);
+		printf("\n");
+		
+		BigIntMatrixTP A = read_BigIntMatrixT(updatefilepath);
+		BigIntMatrixTP R = new_BigIntMatrixT(3, 3);
+		BigIntTP mod;
+		SET_BIG_NUM(bigintmodstring, mod, "");
+		
+		eval_BigPolyT(test, A, R, mod);
+		printbm(R);
+		
+		for (int i = 0; i < 3; i += 1)
+			c[i] = free_BigIntT(c[i]);
+		FREE(c);
+		
+		test = free_BigPolyT(test);
+		A = free_BigIntMatrixT(A);
+		R = free_BigIntMatrixT(R);
+		*/
 	}
 	
 	//Freeing memory
