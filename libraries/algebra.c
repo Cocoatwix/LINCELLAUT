@@ -44,31 +44,34 @@ BigPolyTP free_BigPolyT(BigPolyTP p)
 BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 /** Frees an array of BigPolyT factors. */
 {
-	BigIntTP one;
-	BigIntTP temp;
-	BigIntTP indexCounter;
-	
-	int oneArr[1] = {1};
-	int index = 1;
-	
-	one = new_BigIntT(oneArr, 1);
-	indexCounter = new_BigIntT(oneArr, 1);
-	temp = empty_BigIntT(1);
-	
-	while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+	if (factors != NULL)
 	{
-		factors[index] = free_BigPolyT(factors[index]);
+		BigIntTP one;
+		BigIntTP temp;
+		BigIntTP indexCounter;
 		
-		index += 1;
-		add_BigIntT(one, indexCounter, temp);
-		copy_BigIntT(temp, indexCounter);
+		int oneArr[1] = {1};
+		int index = 1;
+		
+		one = new_BigIntT(oneArr, 1);
+		indexCounter = new_BigIntT(oneArr, 1);
+		temp = empty_BigIntT(1);
+		
+		while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+		{
+			factors[index] = free_BigPolyT(factors[index]);
+			
+			index += 1;
+			add_BigIntT(one, indexCounter, temp);
+			copy_BigIntT(temp, indexCounter);
+		}
+		factors[0] = free_BigPolyT(factors[0]);
+		free(factors);
+		
+		one  = free_BigIntT(one);
+		temp = free_BigIntT(temp);
+		indexCounter = free_BigIntT(indexCounter);
 	}
-	factors[0] = free_BigPolyT(factors[0]);
-	free(factors);
-	
-	one  = free_BigIntT(one);
-	temp = free_BigIntT(temp);
-	indexCounter = free_BigIntT(indexCounter);
 	
 	return NULL;
 }
@@ -811,7 +814,7 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 }
 
 
-BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
+BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP const mod)
 /** Factors the given BigPolyTP and returns the factors
     in a pointer. The first element in the factor will
     be a constant BigPolyTP telling how many factors there
@@ -968,6 +971,10 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP mod)
 			}
 		}
 	}
+	
+	//Now, reduce each polynomial so they have the correct degree
+	for (int i = 1; i <= numOfFactorsSmall; i += 1)
+		reduce_BigPolyT(factors[i]);
 	
 	/*
 	Store our given polynomial

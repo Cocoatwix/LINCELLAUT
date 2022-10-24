@@ -57,6 +57,10 @@ BigIntMatrixTP new_BigIntMatrixT(int, int);
 IntMatrixTP identity_IntMatrixT(int);
 BigIntMatrixTP identity_BigIntMatrixT(int);
 
+/** Sets all elements in the matrix to zero. 
+    Returns 1 on success, 0 otherwise. */
+int clear_BigIntMatrixT(BigIntMatrixTP);
+
 /** Sets the values of a column vector with elements specified
     in the given int pointer. Returns 1 on success, 0
     otherwise. */
@@ -143,6 +147,9 @@ int modbm(BigIntMatrixTP, BigIntTP const);
 	0 otherwise. */
 int eval_BigPolyT(BigPolyTP const, BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const);
 
+/** Same as eval_BigPolyT(), but the polynomial is given in factored form. */
+int eval_factored_BigPolyT(BigPolyTP* const, BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const);
+
 /** Returns the determinant of a given matrix. 
     Returns zero if the matrix is nonsquare. */
 int det(IntMatrixTP const);
@@ -163,6 +170,13 @@ int rref(IntMatrixTP, int);
 		representing the characteristic polynomial on success,
 		NULL otherwise. */
 BigPolyTP chara_poly(BigIntMatrixTP const, BigIntTP const);
+
+/** Calculates a matrix's minimum polynomial mod some
+    prime modulus. Returns a BigPolyTP array
+	representing the minimum polynomial on success,
+	NULL otherwise. Output for non-prime moduli is
+	undefined. */
+BigPolyTP* min_poly(BigIntMatrixTP const, BigIntTP const); 
 
 /** Stores the specified cycle converting matrix for the first one
     in the second one. This function assumes the second matrix

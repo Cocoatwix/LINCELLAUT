@@ -81,7 +81,7 @@ int mod_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
     Returns a pointer to all the polynomial's factors.
 		The first element is a BigPolyT constant which says
 		how many factors are in the pointer. */
-BigPolyTP* factor_BigPolyT(BigPolyTP const, BigIntTP);
+BigPolyTP* factor_BigPolyT(BigPolyTP const, BigIntTP const);
 
 /*
 int find_factors(BigIntTP const,
