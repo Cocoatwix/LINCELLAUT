@@ -442,20 +442,13 @@ int main(int argc, char* argv[])
 		//Find the characteristic equation of the update matrix
 		else if (! strcmp(argv[1], "chara"))
 		{
-			int oneArr[1] = {1};
-			
 			BigIntTP bigMod = NULL;
-			BigIntTP counter = NULL; //For displaying the factors we get
-			BigIntTP one = NULL;
-			BigIntTP temp = NULL;
-			BigIntTP numberOfTerms = NULL;
-			
-			int smallCounter = 0;
 			
 			BigIntMatrixTP bigMatrix;
 			
 			BigPolyTP bigEqn;
 			BigPolyTP* bigEqnFactors;
+			BigPolyTP* minEqn;
 			
 			//If the user provided a custom modulus
 			if (argc > 2)
@@ -487,40 +480,21 @@ int main(int argc, char* argv[])
 			bigEqn = chara_poly(bigMatrix, bigMod);
 			printf("\nCharacteristic equation: ");
 			printp(bigEqn);
+			
+			printf("\nFactored characteristic equation: ");
+			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
+			printpf(bigEqnFactors);
+			printf("\nMinimum polynomial: ");
+			minEqn = min_poly(bigMatrix, bigMod);
+			printpf(minEqn);
 			printf("\n\n");
 			
-			printf("Factored characteristic equation:\n");
-			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
-			
-			one  = new_BigIntT(oneArr, 1);
-			temp = empty_BigIntT(1);
-			numberOfTerms = empty_BigIntT(1);
-			copy_BigIntT(constant(bigEqnFactors[0]), numberOfTerms);
-			
-			for (counter = empty_BigIntT(1); 
-			     compare_BigIntT(numberOfTerms, counter) >= 0; 
-					 add_BigIntT(one, counter, temp), copy_BigIntT(temp, counter), smallCounter += 1)
-			{
-				if (smallCounter != 0)
-				{
-					printf("(");
-					printp(bigEqnFactors[smallCounter]);
-					printf(")");
-				}
-				bigEqnFactors[smallCounter] = free_BigPolyT(bigEqnFactors[smallCounter]);
-			}
-			FREE(bigEqnFactors);
-			printf("\n");
-			
 			bigMod  = free_BigIntT(bigMod);
-			counter = free_BigIntT(counter);
-			temp    = free_BigIntT(temp);
-			one     = free_BigIntT(one);
-			
-			numberOfTerms = free_BigIntT(numberOfTerms);
 			
 			bigMatrix = free_BigIntMatrixT(bigMatrix);
-			bigEqn = free_BigPolyT(bigEqn);
+			bigEqn        = free_BigPolyT(bigEqn);
+			bigEqnFactors = free_BigPolyT_factors(bigEqnFactors);
+			minEqn        = free_BigPolyT_factors(minEqn);
 		}
 		
 		
