@@ -5,10 +5,12 @@ The following is a list of all the currently available tasks within lincellaut.c
 iterate [iterations]: This tool allows you to take an initial matrix and iterate it by an update matrix multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
  - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. Using a negative integer will get LINCELLAUT to compute the inverse of the update matrix and iterate that the specified number of times (e.g. an iteration count of -3 will iterate the inverse matrix 3 times, if it exists).
 
-inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
- - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
+iterext mod maxiter coeffs... (UNFINISHED): This tool allows the user to calculate powers of a field extension defined by the given polynomial.
+ - The argument "mod" defines the modulus to use. This argument expects a positive integer greater than 1.
+ - The argument "maxiter" defines how many powers of the field extension to calculate (e.g. if maxiter = 5, then the highest power of the field extension calculated will be 5). This argument expects a positive integer.
+ - The arguments "coeffs" define the minimal polynomial of the field extension to use. For instance, if the sequence "1 2 0 5" is entered, the field extension will satisfy the equation 1 + 2x + 5x^3 = 0. 
 
-det [modulus]: This tool allows the user to calculate the determinant of the update matrix mod some modulus. 
+inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 

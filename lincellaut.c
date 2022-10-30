@@ -351,6 +351,53 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to iterate some field extension
+		else if (! strcmp(argv[1], "iterext"))
+		{
+			if (argc < 5)
+			{
+				printf(ANSI_COLOR_YELLOW "iterext " ANSI_COLOR_CYAN "mod maxiter coeffs..." ANSI_COLOR_RESET "\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			int maxIters;
+			
+			BigIntTP bigMod;
+			
+			BigIntTP* coeffs;
+			BigPolyTP extDefn;
+			
+			SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			maxIters = (int)strtol(argv[3], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read maxiter from command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			//Get coefficients for defining the field extension's properties
+			coeffs = malloc((argc-4)*sizeof(BigIntTP));
+			for (int i = 0; i < argc-4; i += 1)
+				strtoBIT(argv[4+i], &coeffs[i]);
+			
+			extDefn = new_BigPolyT(coeffs, argc-4);
+			
+			printp(extDefn);
+			printf("\n");
+			
+			
+			bigMod = free_BigIntT(bigMod);
+			
+			for (int i = 0; i < argc-4; i += 1)
+				coeffs[i] = free_BigIntT(coeffs[i]);
+			FREE(coeffs);
+			
+			extDefn = free_BigPolyT(extDefn);
+		}
+		
+		
 		//Find the inverse of the update matrix
 		else if (!strcmp(argv[1], "inverse"))
 		{
@@ -404,6 +451,7 @@ int main(int argc, char* argv[])
 		
 		
 		//If we want to calculate the determinant of our matrix
+		/*
 		else if (!strcmp(argv[1], "det"))
 		{
 			int theDet;
@@ -437,6 +485,7 @@ int main(int argc, char* argv[])
 			
 			A = free_IntMatrixT(A);
 		}
+		*/
 		
 		
 		//Find the characteristic equation of the update matrix
@@ -4464,8 +4513,9 @@ int main(int argc, char* argv[])
 		printf("Tools:\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "iterext " ANSI_COLOR_CYAN "mod maxiter coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		//printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
