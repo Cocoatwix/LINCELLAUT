@@ -1107,7 +1107,7 @@ int powbm(BigIntMatrixTP const A,
 }
 
 
-int eval_BigPolyT(BigPolyTP const p, BigIntMatrixTP const A, BigIntMatrixTP result, BigIntTP const mod)
+int evalm_BigPolyT(BigPolyTP const p, BigIntMatrixTP const A, BigIntMatrixTP result, BigIntTP const mod)
 /** Plugs A into P, stores the result in result. This assumes result has been initialised.
     Returns 1 on success, 0 otherwise. */
 {
@@ -1180,8 +1180,8 @@ int eval_BigPolyT(BigPolyTP const p, BigIntMatrixTP const A, BigIntMatrixTP resu
 }
 
 
-int eval_factored_BigPolyT(BigPolyTP* const factors, BigIntMatrixTP const A, BigIntMatrixTP result, BigIntTP const mod)
-/** Same as eval_BigPolyT(), but the polynomial is given in factored form. */
+int evalm_factored_BigPolyT(BigPolyTP* const factors, BigIntMatrixTP const A, BigIntMatrixTP result, BigIntTP const mod)
+/** Same as evalm_BigPolyT(), but the polynomial is given in factored form. */
 {
 	BigIntMatrixTP tempMat;
 	BigIntMatrixTP tempMat2;
@@ -1205,7 +1205,7 @@ int eval_factored_BigPolyT(BigPolyTP* const factors, BigIntMatrixTP const A, Big
 	while (compare_BigIntT(factorCounter, numOfFactors) <= 0)
 	{
 		clear_BigIntMatrixT(tempMat);
-		eval_BigPolyT(factors[factorCounterInt], A, tempMat, mod);
+		evalm_BigPolyT(factors[factorCounterInt], A, tempMat, mod);
 		
 		if (factorCounterInt == 1)
 			copy_BigIntMatrixT(tempMat, result);
@@ -1228,6 +1228,47 @@ int eval_factored_BigPolyT(BigPolyTP* const factors, BigIntMatrixTP const A, Big
 	
 	tempMat  = free_BigIntMatrixT(tempMat);
 	tempMat2 = free_BigIntMatrixT(tempMat2);
+	return 1;
+}
+
+
+int evali_BigPolyT(BigPolyTP const p, BigIntTP const a, BigIntTP result, BigIntTP const mod)
+/** Plugs a into p, stores result in result, mods by mod. This function assumes all the
+    relevant BigIntTs have been initialised. Returns 1 on success, 0 otherwise. */
+{
+	int oneArr[1] = {1};
+	BigIntTP tempPower = empty_BigIntT(1);
+	BigIntTP temp  = empty_BigIntT(1);
+	BigIntTP temp2 = empty_BigIntT(1);
+	BigIntTP one   = new_BigIntT(oneArr, 1);
+	
+	BigIntTP* coeffs = extract_coefficients(p);
+	
+	copy_BigIntT(temp, result);
+	copy_BigIntT(one, tempPower);
+	
+	for (int term = 0; term <= degree(p); term += 1)
+	{
+		multiply_BigIntT(tempPower, coeffs[term], temp);
+		add_BigIntT(temp, result, temp2);
+		mod_BigIntT(temp2, mod, result);
+		
+		//Get the next power of a to use for the polynomial
+		multiply_BigIntT(tempPower, a, temp);
+		mod_BigIntT(temp, mod, tempPower);
+		
+		//Free the coefficient we no longer need
+		coeffs[term] = free_BigIntT(coeffs[term]);
+	}
+	
+	tempPower = free_BigIntT(tempPower);
+	temp  = free_BigIntT(temp);
+	temp2 = free_BigIntT(temp2);
+	one   = free_BigIntT(one);
+	
+	free(coeffs);
+	coeffs = NULL;
+	
 	return 1;
 }
 
@@ -2208,7 +2249,7 @@ BigPolyTP* min_poly(BigIntMatrixTP const A, BigIntTP const mod)
 				//Now, tempPoly should hold all the factors except for the one to exclude
 				//Let's evaluate the matrix in this polynomial and see if it's zero
 				clear_BigIntMatrixT(tempMat);
-				eval_factored_BigPolyT(tempPoly, A, tempMat, mod);
+				evalm_factored_BigPolyT(tempPoly, A, tempMat, mod);
 				
 				//If the matrix is zero, we don't need the factor we removed
 				//We're storing the unneeded factors so that we can free their memory at the end

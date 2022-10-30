@@ -25,6 +25,25 @@ typedef struct bigpoly
 BigPolyT, *BigPolyTP;
 
 
+const int MAXEXTLEN = 20;
+typedef struct fieldexp
+/** Holds an algebraic expression containing field extensions. */
+{
+	//Constant/polynomial expressions representing the current state of the expression
+	BigPolyTP* expressions; 
+	
+	//List of elements contained in our expression
+	//Regular elements are represented by constant polynomials
+	//Extensions are represented by their minimal polynomial
+	BigPolyTP* elements;
+	int numOfElements;
+	
+	//Names to give field extensions
+	char**    extNames;
+}
+FieldExpT, *FieldExpTP;
+
+
 BigPolyTP free_BigPolyT(BigPolyTP p)
 /** Frees the memory of a given BigPolyT. Returns NULL. */
 {
@@ -36,6 +55,30 @@ BigPolyTP free_BigPolyT(BigPolyTP p)
 		free(p->coeffs);
 		p->coeffs = NULL;
 	}
+	
+	return NULL;
+}
+
+
+FieldExpTP free_FieldExpT(FieldExpTP e)
+/** Frees the memory of a given FieldExpT. Returns NULL. */
+{
+	if (e == NULL)
+		return NULL;
+	
+	for (int i = 0; i < e->numOfElements; i += 1)
+	{
+		e->expressions[i] = free_BigPolyT(e->expressions[i]);
+		e->elements[i]    = free_BigPolyT(e->elements[i]);
+		free(e->extNames[i]);
+		e->extNames[i] = NULL;
+	}
+	free(e->expressions);
+	e->expressions = NULL;
+	free(e->elements);
+	e->elements = NULL;
+	free(e->extNames);
+	e->extNames = NULL;
 	
 	return NULL;
 }
@@ -119,6 +162,28 @@ BigPolyTP empty_BigPolyT()
 	p->coeffs[0] = empty_BigIntT(1);
 	
 	return p;
+}
+
+
+FieldExpTP new_FieldExpT(int size)
+/** Creates a new FieldExpT object, returns a pointer to it. */
+{
+	FieldExpTP exp = malloc(sizeof(FieldExpT));
+	
+	exp->expressions = malloc(size*sizeof(BigPolyTP));
+	exp->elements    = malloc(size*sizeof(BigPolyTP));
+	exp->extNames    = malloc(size*sizeof(char*));
+	
+	for (int i = 0; i < size; i += 1)
+	{
+		exp->expressions[i] = empty_BigPolyT();
+		exp->elements[i]    = empty_BigPolyT();
+		exp->extNames[i]    = malloc((MAXEXTLEN+1)*sizeof(char));
+		exp->extNames[i][0] = '\0';
+	}
+	
+	exp->numOfElements = size;
+	return exp;
 }
 
 

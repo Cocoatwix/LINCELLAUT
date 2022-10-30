@@ -7,8 +7,14 @@
 /** Holds a polynomial datatype using BigIntT coefficients. */
 typedef struct bigpoly *BigPolyTP;
 
+/** Holds an expression containing field extensions. */
+typedef struct fieldexp *FieldExpTP;
+
 /** Frees the memory used by a BigPolyT. Returns NULL. */
 BigPolyTP free_BigPolyT(BigPolyTP);
+
+/** Frees the memory used by a FieldExpT. Returns NULL. */
+FieldExpTP free_FieldExpT(FieldExpTP);
 
 /** Frees an array of BigPolyT factors. */
 BigPolyTP* free_BigPolyT_factors(BigPolyTP*);
@@ -24,6 +30,10 @@ BigPolyTP constant_BigPolyT(BigIntTP const);
 
 /** Creates an empty polynomial, returns a pointer to it. */
 BigPolyTP empty_BigPolyT();
+
+/** Creates a new FieldExpT object with <int> unique elements, 
+    returns a pointer to it. */
+FieldExpTP new_FieldExpT(int);
 
 /** Ensures that the leading term of the BigPolyT
     is nonzero. Returns 1 on success, 0 otherwise. */

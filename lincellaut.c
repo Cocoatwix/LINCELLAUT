@@ -1951,7 +1951,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 (30/81)
+			cycmatsearch 3 9/9 6 10 14 (37/81)
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -4487,26 +4487,6 @@ int main(int argc, char* argv[])
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
-		
-		/*
-		BigIntMatrixTP A = read_BigIntMatrixT(updatefilepath);
-		BigIntMatrixTP tempA = new_BigIntMatrixT(big_rows(A), big_rows(A));
-		BigIntTP bigMod;
-		BigPolyTP* minPoly = NULL;
-		
-		SET_BIG_NUM(bigintmodstring, bigMod, "X");
-		
-		minPoly = min_poly(A, bigMod);
-		printf("Minimum polynomial: ");
-		printpf(minPoly);
-		printf("\n");
-		
-		A = free_BigIntMatrixT(A);
-		tempA = free_BigIntMatrixT(tempA);
-		bigMod = free_BigIntT(bigMod);
-		
-		minPoly = free_BigPolyT_factors(minPoly);
-		*/
 	}
 	
 	//Freeing memory
