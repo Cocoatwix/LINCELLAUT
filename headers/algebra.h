@@ -35,6 +35,21 @@ BigPolyTP empty_BigPolyT();
     returns a pointer to it. */
 FieldExpTP new_FieldExpT(int);
 
+/** Adds a new extension into our expression with given minPoly, value, and
+    name. Returns 1 on success, 0 otherwise. */
+//                fieldexp    minpoly          value            name
+int add_extension(FieldExpTP, BigPolyTP const, BigPolyTP const, char* const);
+
+/** For a field extension a, find the minimum exponent c such that
+    a^c is in the original field. In this case, the field is the
+	integers modulo the BigIntT given. This number must be prime,
+	otherwise the behaviour of this function is undefined. The 
+	BigPolyT given specifies the minimal polynomial for the field 
+	extension. 
+	Returns the exponent c on success, -1 otherwise. */
+//This function assumes the polynomial has been reduced.
+int collapse_field_extension(BigPolyTP const, BigIntTP const);
+
 /** Ensures that the leading term of the BigPolyT
     is nonzero. Returns 1 on success, 0 otherwise. */
 int reduce_BigPolyT(BigPolyTP);
@@ -64,6 +79,9 @@ void printp(BigPolyTP const);
 
 /** Prints a factored BigPolyT. */
 void printpf(BigPolyTP* const);
+
+/** Prints a field expression. */
+void printfe(FieldExpTP const);
 
 /** Same as printp and printpf, but it prints to a file stream. */
 void fprintp(FILE*, BigPolyTP const);

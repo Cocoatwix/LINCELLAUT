@@ -10,10 +10,16 @@ yiff day, 2022
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <complex.h>
+#include <string.h>
+
 #include "../headers/helper.h" //bool 
 
 #include "../headers/bigint.h"
 #include "../headers/linalg.h"
+#include "../headers/modular.h"
+
+const double PI = 3.1415926535897932384626;
 
 typedef struct bigpoly
 /** Stores a polynomial using BigIntT coefficients. 
@@ -37,6 +43,7 @@ typedef struct fieldexp
 	//Extensions are represented by their minimal polynomial
 	BigPolyTP* elements;
 	int numOfElements;
+	int numOfElementsUsed;
 	
 	//Names to give field extensions
 	char**    extNames;
@@ -183,7 +190,174 @@ FieldExpTP new_FieldExpT(int size)
 	}
 	
 	exp->numOfElements = size;
+	exp->numOfElementsUsed = 0;
 	return exp;
+}
+
+
+int add_extension(FieldExpTP extexp, BigPolyTP const minPoly, BigPolyTP const value, char* const name)
+/** Adds a new extension into our expression with given minPoly, value, and
+    name. Returns 1 on success, 0 otherwise. */
+{
+	int index = extexp->numOfElementsUsed;
+	if (index == extexp->numOfElements)
+	{
+		fprintf(stderr, "FieldExpTP is too small to add another extension.\n");
+		return 0;
+	}
+	
+	if (strlen(name) < (unsigned int)MAXEXTLEN) //I think this cast is okay...
+		strcat(extexp->extNames[index], name);
+	else
+	{
+		fprintf(stderr, "Given extension name is too long.\n");
+		strcat(extexp->extNames[index], "?");
+	}
+	
+	copy_BigPolyT(value, extexp->expressions[index]);
+	copy_BigPolyT(minPoly, extexp->elements[index]);
+	extexp->numOfElementsUsed += 1;
+	
+	return 1;
+}
+
+
+int collapse_field_extension(BigPolyTP const minPoly, BigIntTP const mod)
+/** For a field extension a, find the minimum exponent c such that
+    a^c is in the original field. In this case, the field is the
+    integers modulo the BigIntT given. The BigPolyT given specifies
+    the minimal polynomial for the field extension. 
+    Returns the exponent c on success, -1 otherwise. */
+{
+	int exponent = 1;
+	BigIntTP* minPolyCoeffs;
+	BigIntTP* rewrittenCoeffs;
+	BigIntTP* tempCoeffs;
+	BigIntTP* tempCoeffs2;
+	
+	int oneArr[1] = {1};
+	BigIntTP one;
+	BigIntTP zero;
+	BigIntTP negOne;
+	BigIntTP temp;
+	
+	BigIntTP leadingTermInv;
+	
+	bool collapsed = FALSE;
+	
+	//This function assumes minPoly has been reduced.
+		
+	one            = new_BigIntT(oneArr, 1);
+	zero           = empty_BigIntT(1);
+	negOne         = empty_BigIntT(1);
+	temp           = empty_BigIntT(1);
+	leadingTermInv = empty_BigIntT(1);
+		
+	minPolyCoeffs   = extract_coefficients(minPoly);
+	rewrittenCoeffs = malloc((minPoly->size - 1)*sizeof(BigIntTP));
+	tempCoeffs      = malloc((minPoly->size - 1)*sizeof(BigIntTP));
+	tempCoeffs2     = malloc((minPoly->size - 1)*sizeof(BigIntTP));
+	big_num_inverse(minPolyCoeffs[minPoly->size - 1], mod, leadingTermInv);
+	subtract_BigIntT(mod, one, negOne);
+	
+	//Now, go through our coefficients and negate them, then divide by the leading term
+	for (int i = 0; i < minPoly->size - 1; i += 1)
+	{
+		//Move to other side of equal sign
+		rewrittenCoeffs[i] = empty_BigIntT(1);
+		multiply_BigIntT(minPolyCoeffs[i], negOne, temp);
+		mod_BigIntT(temp, mod, rewrittenCoeffs[i]);
+		
+		//Multiply by inverse of leading term
+		multiply_BigIntT(rewrittenCoeffs[i], leadingTermInv, temp);
+		mod_BigIntT(temp, mod, rewrittenCoeffs[i]);
+	}
+	
+	//Now our relation is rewritten in a form we can use.
+	//Time to iterate repeatedly until we get a constant
+	for (int i = 0; i < minPoly->size - 1; i += 1)
+	{
+		tempCoeffs[i]  = empty_BigIntT(1);
+		tempCoeffs2[i] = empty_BigIntT(1);
+		copy_BigIntT(rewrittenCoeffs[i], tempCoeffs[i]);
+	}
+	
+	//Check to see if we have a constant
+	collapsed = TRUE;
+	for (int i = 1; i < minPoly->size - 1; i += 1)
+	{
+		if (compare_BigIntT(tempCoeffs[i], zero) != 0)
+		{
+			collapsed = FALSE;
+			break;
+		}
+	}
+	
+	//Iterate our extension until it collapses to an element in the field
+	while (!collapsed)
+	{
+		exponent += 1;
+		
+		//Iterate through all coefficients, update them
+		for (int i = 0; i < minPoly->size - 1; i += 1)
+		{
+			multiply_BigIntT(rewrittenCoeffs[i], tempCoeffs[minPoly->size - 2], temp);
+			if (i > 0) //If we're not updating the constant term
+			{
+				add_BigIntT(temp, tempCoeffs[i-1], tempCoeffs2[i]);
+				copy_BigIntT(tempCoeffs2[i], temp);
+			}
+			mod_BigIntT(temp, mod, tempCoeffs2[i]);
+		}
+		
+		//tempCoeffs2 should now hold our updated elements. Copy them to tempCoeffs
+		for (int i = 0; i < minPoly->size - 1; i += 1)
+		{
+			copy_BigIntT(tempCoeffs2[i], tempCoeffs[i]);
+			//printi(tempCoeffs[i]);
+			//printf(", ");
+		}
+		//printf("\n");
+		
+		//Check to see if we have a constant
+		collapsed = TRUE;
+		for (int i = 1; i < minPoly->size - 1; i += 1)
+		{
+			if (compare_BigIntT(tempCoeffs[i], zero) != 0)
+			{
+				collapsed = FALSE;
+				break;
+			}
+		}
+	}
+	
+	
+	for (int i = 0; i < minPoly->size; i += 1)
+	{
+		if (i < minPoly->size - 1)
+		{
+			rewrittenCoeffs[i] = free_BigIntT(rewrittenCoeffs[i]);
+			tempCoeffs[i]      = free_BigIntT(tempCoeffs[i]);
+			tempCoeffs2[i]     = free_BigIntT(tempCoeffs2[i]);
+		}
+		
+		minPolyCoeffs[i] = free_BigIntT(minPolyCoeffs[i]);
+	}
+	free(minPolyCoeffs);
+	free(rewrittenCoeffs);
+	free(tempCoeffs);
+	free(tempCoeffs2);
+	minPolyCoeffs   = NULL;
+	rewrittenCoeffs = NULL;
+	tempCoeffs      = NULL;
+	tempCoeffs2     = NULL;
+	
+	one    = free_BigIntT(one);
+	zero   = free_BigIntT(zero);
+	temp   = free_BigIntT(temp);
+	negOne = free_BigIntT(negOne);
+	
+	return exponent;
 }
 
 
@@ -385,6 +559,13 @@ void printpf(BigPolyTP* factors)
 	temp = free_BigIntT(temp);
 	one  = free_BigIntT(one);
 	indexCounter = free_BigIntT(indexCounter);
+}
+
+
+void printfe(FieldExpTP const fe)
+/** Print a FieldExpTP to stdout. */
+{
+	printf("Not implemented yet.\n");
 }
 
 

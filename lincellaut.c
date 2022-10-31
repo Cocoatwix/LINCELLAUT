@@ -362,11 +362,14 @@ int main(int argc, char* argv[])
 			}
 			
 			int maxIters;
+			int numOfCoeffs = argc-4;
 			
 			BigIntTP bigMod;
 			
 			BigIntTP* coeffs;
 			BigPolyTP extDefn;
+			
+			FieldExpTP extexp = new_FieldExpT(numOfCoeffs);
 			
 			SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
 			maxIters = (int)strtol(argv[3], &tempStr, 10);
@@ -378,23 +381,26 @@ int main(int argc, char* argv[])
 			}
 			
 			//Get coefficients for defining the field extension's properties
-			coeffs = malloc((argc-4)*sizeof(BigIntTP));
-			for (int i = 0; i < argc-4; i += 1)
+			coeffs = malloc(numOfCoeffs*sizeof(BigIntTP));
+			for (int i = 0; i < numOfCoeffs; i += 1)
 				strtoBIT(argv[4+i], &coeffs[i]);
 			
-			extDefn = new_BigPolyT(coeffs, argc-4);
+			extDefn = new_BigPolyT(coeffs, numOfCoeffs);
 			
 			printp(extDefn);
 			printf("\n");
 			
+			printf("Extension collapse number: %d\n", collapse_field_extension(extDefn, bigMod));
+			
 			
 			bigMod = free_BigIntT(bigMod);
 			
-			for (int i = 0; i < argc-4; i += 1)
+			for (int i = 0; i < numOfCoeffs; i += 1)
 				coeffs[i] = free_BigIntT(coeffs[i]);
 			FREE(coeffs);
 			
 			extDefn = free_BigPolyT(extDefn);
+			extexp = free_FieldExpT(extexp);
 		}
 		
 		
