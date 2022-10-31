@@ -27,11 +27,13 @@ typedef struct bigpoly
 {
 	int size; //Holds how many terms are in the polynomial
 	BigIntTP* coeffs; //Holds the coefficients of the polynomial
+	
+	char* variable; //The symbol used for displaying polynomials
 }
 BigPolyT, *BigPolyTP;
 
 
-const int MAXEXTLEN = 20;
+const int MAXVARLEN = 20;
 typedef struct fieldexp
 /** Holds an algebraic expression containing field extensions. */
 {
@@ -61,6 +63,9 @@ BigPolyTP free_BigPolyT(BigPolyTP p)
 		
 		free(p->coeffs);
 		p->coeffs = NULL;
+		
+		free(p->variable);
+		p->variable = NULL;
 	}
 	
 	return NULL;
@@ -141,6 +146,10 @@ BigPolyTP new_BigPolyT(BigIntTP* const coefficients, int size)
 		copy_BigIntT(coefficients[i], p->coeffs[i]);
 	}
 	
+	p->variable = malloc((MAXVARLEN+1)*sizeof(char));
+	p->variable[0] = '\0';
+	strcat(p->variable, "λ");
+	
 	return p;
 }
 
@@ -153,6 +162,10 @@ BigPolyTP constant_BigPolyT(BigIntTP const constant)
 	p->coeffs = malloc(sizeof(BigIntTP));
 	p->coeffs[0] = empty_BigIntT(1);
 	copy_BigIntT(constant, p->coeffs[0]);
+	
+	p->variable = malloc((MAXVARLEN+1)*sizeof(char));
+	p->variable[0] = '\0';
+	strcat(p->variable, "λ");
 	
 	return p;
 }
@@ -168,7 +181,28 @@ BigPolyTP empty_BigPolyT()
 	p->coeffs = malloc(sizeof(BigIntTP));
 	p->coeffs[0] = empty_BigIntT(1);
 	
+	p->variable = malloc((MAXVARLEN+1)*sizeof(char));
+	p->variable[0] = '\0';
+	strcat(p->variable, "λ");
+	
 	return p;
+}
+
+
+int set_BigPolyT_var(BigPolyTP p, char* const name)
+/** Set the name of the variable used for a polynomial. 
+    Returns 1 on success, 0 otherwise. */
+{
+	if (strlen(name) > (unsigned int)MAXVARLEN)
+	{
+		fprintf(stderr, "Given variable name is too large.\n");
+		return 0;
+	}
+	
+	//Clear variable string before setting new name
+	p->variable[0] = '\0';
+	strcat(p->variable, name);
+	return 1;
 }
 
 
@@ -185,7 +219,7 @@ FieldExpTP new_FieldExpT(int size)
 	{
 		exp->expressions[i] = empty_BigPolyT();
 		exp->elements[i]    = empty_BigPolyT();
-		exp->extNames[i]    = malloc((MAXEXTLEN+1)*sizeof(char));
+		exp->extNames[i]    = malloc((MAXVARLEN+1)*sizeof(char));
 		exp->extNames[i][0] = '\0';
 	}
 	
@@ -200,23 +234,29 @@ int add_extension(FieldExpTP extexp, BigPolyTP const minPoly, BigPolyTP const va
     name. Returns 1 on success, 0 otherwise. */
 {
 	int index = extexp->numOfElementsUsed;
+	
 	if (index == extexp->numOfElements)
 	{
 		fprintf(stderr, "FieldExpTP is too small to add another extension.\n");
 		return 0;
 	}
 	
-	if (strlen(name) < (unsigned int)MAXEXTLEN) //I think this cast is okay...
+	extexp->numOfElementsUsed += 1;
+	
+	copy_BigPolyT(value, extexp->expressions[index]);
+	copy_BigPolyT(minPoly, extexp->elements[index]);
+	
+	if (strlen(name) <= (unsigned int)MAXVARLEN) //I think this cast is okay...
+	{
 		strcat(extexp->extNames[index], name);
+		set_BigPolyT_var(extexp->expressions[index], name);
+	}
 	else
 	{
 		fprintf(stderr, "Given extension name is too long.\n");
 		strcat(extexp->extNames[index], "?");
+		set_BigPolyT_var(extexp->expressions[index], "?");
 	}
-	
-	copy_BigPolyT(value, extexp->expressions[index]);
-	copy_BigPolyT(minPoly, extexp->elements[index]);
-	extexp->numOfElementsUsed += 1;
 	
 	return 1;
 }
@@ -361,6 +401,88 @@ int collapse_field_extension(BigPolyTP const minPoly, BigIntTP const mod)
 }
 
 
+int reduce_FieldExpT(FieldExpTP exp, BigIntTP const mod)
+/** Reduces a FieldExpT by rewriting the expressions using the
+    extension relations. Returns 1 on success, 0 otherwise. */
+{
+	BigIntTP* coeffList;       //Holds extracted coeffs from exp
+	BigIntTP* rewrittenCoeffs; //Holds the relation expression
+	BigIntTP* tempCoeffs;      //Holds the relation expression for higher powers
+	BigIntTP* tempCoeffs2;     //Used for intermediate computations
+	
+	int oneArr[1] = {1};
+	BigIntTP one;
+	BigIntTP temp;
+	BigIntTP zero;
+	BigIntTP negOne;
+	BigIntTP leadingTermInv;
+	
+	int sizeOfElem;
+	
+	one            = new_BigIntT(oneArr, 1);
+	zero           = empty_BigIntT(1);
+	temp           = empty_BigIntT(1);
+	negOne         = empty_BigIntT(1);
+	leadingTermInv = empty_BigIntT(1);
+	subtract_BigIntT(mod, one, negOne);
+	
+	//Iterate over each expression we have
+	for (int elem = 0; elem < exp->numOfElementsUsed; elem += 1)
+	{
+		sizeOfElem = exp->elements[elem]->size;
+		
+		//Reduce each expression using minPolys
+		reduce_BigPolyT(exp->expressions[elem]);
+		if (exp->expressions[elem]->size >= sizeOfElem) //If we actually have stuff to reduce
+		{
+			coeffList = extract_coefficients(exp->elements[elem]);
+			rewrittenCoeffs = malloc((sizeOfElem-1)*sizeof(BigIntTP));
+			big_num_inverse(coeffList[sizeOfElem - 1], mod, leadingTermInv);
+			
+			//Move all but highest term to other side of =, divide by leading term
+			for (int i = 0; i < sizeOfElem - 1; i += 1)
+			{
+				rewrittenCoeffs[i] = empty_BigIntT(1);
+				multiply_BigIntT(coeffList[i], negOne, temp);
+				multiply_BigIntT(temp, leadingTermInv, rewrittenCoeffs[i]);
+				mod_BigIntT(rewrittenCoeffs[i], mod, temp);
+				copy_BigIntT(temp, rewrittenCoeffs[i]);
+				
+				//Print out elements to see what I'm doing
+				printi(rewrittenCoeffs[i]);
+				printf(", ");
+			}
+			printf("\n");
+			
+			//Free memory for next extension
+			for (int i = 0; i < sizeOfElem; i += 1)
+			{
+				if (i != sizeOfElem-1)
+					rewrittenCoeffs[i] = free_BigIntT(rewrittenCoeffs[i]);
+				
+				coeffList[i] = free_BigIntT(coeffList[i]);
+			}
+			free(coeffList);
+			free(rewrittenCoeffs);
+			coeffList       = NULL;
+			rewrittenCoeffs = NULL;
+			
+			copy_BigIntT(zero, leadingTermInv);
+		}
+		
+		//Take modulus of each expression
+	}
+	
+	one            = free_BigIntT(one);
+	zero           = free_BigIntT(zero);
+	temp           = free_BigIntT(zero);
+	negOne         = free_BigIntT(negOne);
+	leadingTermInv = free_BigIntT(leadingTermInv);
+	
+	return 1;
+}
+
+
 int reduce_BigPolyT(BigPolyTP p)
 /** Ensures that the leading term of the BigPolyT
     is nonzero. 
@@ -447,6 +569,9 @@ int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 	for (int i = 0; i < copyTo->size; i += 1)
 		copy_BigIntT(toCopy->coeffs[i], copyTo->coeffs[i]);
 	
+	//Copy variable name used
+	strcpy(toCopy->variable, copyTo->variable);
+	
 	//Just to be safe
 	reduce_BigPolyT(copyTo);
 	
@@ -517,13 +642,13 @@ void printp(BigPolyTP const p)
 			else if (i == 1)
 			{
 				printi(p->coeffs[1]);
-				printf("λ");
+				printf("(%s)", p->variable);
 			}
 			
 			else
 			{
 				printi(p->coeffs[i]);
-				printf("λ^%d", i);
+				printf("(%s)^%d", p->variable, i);
 			}
 		}
 	}
@@ -598,13 +723,13 @@ void fprintp(FILE* file, BigPolyTP const p)
 			else if (i == 1)
 			{
 				fprinti(file, p->coeffs[1]);
-				fprintf(file, "λ");
+				fprintf(file, "(%s)", p->variable);
 			}
 			
 			else
 			{
 				fprinti(file, p->coeffs[i]);
-				fprintf(file, "λ^%d", i);
+				fprintf(file, "(%s)^%d", p->variable, i);
 			}
 		}
 	}

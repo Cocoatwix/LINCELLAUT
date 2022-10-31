@@ -31,6 +31,10 @@ BigPolyTP constant_BigPolyT(BigIntTP const);
 /** Creates an empty polynomial, returns a pointer to it. */
 BigPolyTP empty_BigPolyT();
 
+/** Set the name of the variable used for a polynomial. 
+    Returns 1 on success, 0 otherwise. */
+int set_BigPolyT_var(BigPolyTP, char* const);
+
 /** Creates a new FieldExpT object with <int> unique elements, 
     returns a pointer to it. */
 FieldExpTP new_FieldExpT(int);
@@ -49,6 +53,10 @@ int add_extension(FieldExpTP, BigPolyTP const, BigPolyTP const, char* const);
 	Returns the exponent c on success, -1 otherwise. */
 //This function assumes the polynomial has been reduced.
 int collapse_field_extension(BigPolyTP const, BigIntTP const);
+
+/** Reduces a FieldExpT by rewriting the expressions using the
+    extension relations. Returns 1 on success, 0 otherwise. */
+int reduce_FieldExpT(FieldExpTP, BigIntTP const);
 
 /** Ensures that the leading term of the BigPolyT
     is nonzero. Returns 1 on success, 0 otherwise. */

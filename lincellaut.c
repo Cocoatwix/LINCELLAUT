@@ -371,6 +371,9 @@ int main(int argc, char* argv[])
 			
 			FieldExpTP extexp = new_FieldExpT(numOfCoeffs);
 			
+			//Test this function . . . this is the one I was working on ! ! !
+			//reduce_FieldExpT(extexp, bigMod);
+			
 			SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
 			maxIters = (int)strtol(argv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
@@ -387,6 +390,9 @@ int main(int argc, char* argv[])
 			
 			extDefn = new_BigPolyT(coeffs, numOfCoeffs);
 			
+			printp(extDefn);
+			printf("\n");
+			set_BigPolyT_var(extDefn, "φφφ");
 			printp(extDefn);
 			printf("\n");
 			
