@@ -366,10 +366,19 @@ int main(int argc, char* argv[])
 			
 			BigIntTP bigMod;
 			
+			int valArr[1] = {1};
+			BigIntTP  zero;
+			BigIntTP  one;
+			//BigIntTP  negOne;
+			BigIntTP  five;
+			
+			BigIntTP* extPolyDefn;
+			BigPolyTP extPoly;
+			
 			BigIntTP* coeffs;
 			BigPolyTP extDefn;
 			
-			FieldExpTP extexp = new_FieldExpT(numOfCoeffs);
+			FieldExpTP extexp = new_FieldExpT(2);
 			
 			//Test this function . . . this is the one I was working on ! ! !
 			//reduce_FieldExpT(extexp, bigMod);
@@ -383,6 +392,15 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
+			zero = empty_BigIntT(1);
+			one = new_BigIntT(valArr, 1);
+			valArr[0] = 5;
+			five = new_BigIntT(valArr, 1);
+			extPolyDefn = malloc(2*sizeof(BigIntTP));
+			extPolyDefn[0] = five;
+			extPolyDefn[1] = one;
+			extPoly = new_BigPolyT(extPolyDefn, 2);
+			
 			//Get coefficients for defining the field extension's properties
 			coeffs = malloc(numOfCoeffs*sizeof(BigIntTP));
 			for (int i = 0; i < numOfCoeffs; i += 1)
@@ -390,22 +408,33 @@ int main(int argc, char* argv[])
 			
 			extDefn = new_BigPolyT(coeffs, numOfCoeffs);
 			
+			//Now, add our values to extexp
+			add_extension(extexp, extDefn, extPoly, "◆");
+			set_BigPolyT_var(extDefn, "◆");
+			printf("Extension definition: ");
 			printp(extDefn);
-			printf("\n");
-			set_BigPolyT_var(extDefn, "φφφ");
-			printp(extDefn);
+			printf(" = 0\nExtension expression: ");
+			printfe(extexp);
 			printf("\n");
 			
 			printf("Extension collapse number: %d\n", collapse_field_extension(extDefn, bigMod));
 			
-			
+	
+			zero   = free_BigIntT(zero);
 			bigMod = free_BigIntT(bigMod);
+			one    = free_BigIntT(one);
+			five   = free_BigIntT(five);
+			//negOne = free_BigIntT(negOne);
+			
+			FREE(extPolyDefn);
 			
 			for (int i = 0; i < numOfCoeffs; i += 1)
 				coeffs[i] = free_BigIntT(coeffs[i]);
 			FREE(coeffs);
 			
-			extDefn = free_BigPolyT(extDefn);
+			extDefn      = free_BigPolyT(extDefn);
+			extPoly      = free_BigPolyT(extPoly);
+			
 			extexp = free_FieldExpT(extexp);
 		}
 		

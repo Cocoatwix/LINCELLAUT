@@ -235,10 +235,18 @@ int add_extension(FieldExpTP extexp, BigPolyTP const minPoly, BigPolyTP const va
 {
 	int index = extexp->numOfElementsUsed;
 	
+	//Resize FieldExpT if we have to
 	if (index == extexp->numOfElements)
 	{
-		fprintf(stderr, "FieldExpTP is too small to add another extension.\n");
-		return 0;
+		extexp->numOfElements += 1;
+		extexp->expressions = realloc(extexp->expressions, (extexp->numOfElements)*sizeof(BigPolyTP));
+		extexp->elements    = realloc(extexp->elements, (extexp->numOfElements)*sizeof(BigPolyTP));
+		extexp->extNames    = realloc(extexp->extNames, (extexp->numOfElements)*sizeof(char*));
+		
+		extexp->expressions[extexp->numOfElements - 1] = empty_BigPolyT();
+		extexp->elements[extexp->numOfElements - 1]    = empty_BigPolyT();
+		extexp->extNames[extexp->numOfElements - 1]    = malloc((MAXVARLEN+1)*sizeof(char));
+		extexp->extNames[extexp->numOfElements - 1][0] = '\0';
 	}
 	
 	extexp->numOfElementsUsed += 1;
@@ -657,6 +665,27 @@ void printp(BigPolyTP const p)
 }
 
 
+/* private */ void printp_term(BigPolyTP const p, int term)
+/** Prints a specific term in the polynomial. Used for nicely printing
+    FieldExpTs. */
+{
+	if (term == 0)
+		printi(p->coeffs[0]);
+	
+	else if (term == 1)
+	{
+		printi(p->coeffs[1]);
+		printf("(%s)", p->variable);
+	}
+	
+	else
+	{
+		printi(p->coeffs[term]);
+		printf("(%s)^%d", p->variable, term);
+	}
+}
+
+
 void printpf(BigPolyTP* factors)
 /** Prints a factorised BigPolyT to stdout. */
 {
@@ -690,7 +719,35 @@ void printpf(BigPolyTP* factors)
 void printfe(FieldExpTP const fe)
 /** Print a FieldExpTP to stdout. */
 {
-	printf("Not implemented yet.\n");
+	BigIntTP zero = empty_BigIntT(1);
+	
+	//Find the maximum number of elements 
+	int maxNumOfTerms = 0;
+	for (int elem = 0; elem < fe->numOfElementsUsed; elem += 1)
+		if (fe->expressions[elem]->size > maxNumOfTerms)
+			maxNumOfTerms = fe->expressions[elem]->size;
+	
+	for (int term = 0; term < maxNumOfTerms; term += 1) //Keep printing terms for each element until we run out
+	{
+		for (int elem = 0; elem < fe->numOfElementsUsed; elem += 1)
+		{
+			/*
+			printf("term: %d, elem: %d\n", term, elem);
+			printf("First bool: %d\n", fe->expressions[elem]->size < term);
+			printf("Second bool: %d\n", compare_BigIntT(zero, fe->expressions[elem]->coeffs[term]) != 0);
+			*/
+			if ((fe->expressions[elem]->size > term) && 
+			    (compare_BigIntT(zero, fe->expressions[elem]->coeffs[term]) != 0))
+			{
+				if ((term != 0) || (elem != 0))
+					printf(" + ");
+			
+				printp_term(fe->expressions[elem], term);
+			}
+		}
+	}
+	
+	zero = free_BigIntT(zero);
 }
 
 
