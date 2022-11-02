@@ -404,6 +404,7 @@ int main(int argc, char* argv[])
 		
 		
 		//If we want to calculate the determinant of our matrix
+		/*
 		else if (!strcmp(argv[1], "det"))
 		{
 			int theDet;
@@ -437,6 +438,7 @@ int main(int argc, char* argv[])
 			
 			A = free_IntMatrixT(A);
 		}
+		*/
 		
 		
 		//Find the characteristic equation of the update matrix
@@ -4465,7 +4467,7 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		//printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
@@ -4488,25 +4490,54 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		/*
-		BigIntMatrixTP A = read_BigIntMatrixT(updatefilepath);
-		BigIntMatrixTP tempA = new_BigIntMatrixT(big_rows(A), big_rows(A));
+		//Time to test adding extensions
+		MultiVarExtTP coolExt = new_MultiVarExtT(2);
+		
+		BigIntTP* extDefn1;
+		BigIntTP* extDefn2;
 		BigIntTP bigMod;
-		BigPolyTP* minPoly = NULL;
 		
-		SET_BIG_NUM(bigintmodstring, bigMod, "X");
+		//BigIntTP zero;
+		BigIntTP one;
+		BigIntTP two;
 		
-		minPoly = min_poly(A, bigMod);
-		printf("Minimum polynomial: ");
-		printpf(minPoly);
-		printf("\n");
+		int oneArr[1] = {1};
+		int twoArr[1] = {2};
 		
-		A = free_BigIntMatrixT(A);
-		tempA = free_BigIntMatrixT(tempA);
+		//zero = empty_BigIntT(1);
+		one  = new_BigIntT(oneArr, 1);
+		two  = new_BigIntT(twoArr, 1);
+		
+		extDefn1 = malloc(4*sizeof(BigIntTP));
+		extDefn2 = malloc(3*sizeof(BigIntTP));
+		
+		//1 + x + x^2 + x^3 = 0
+		extDefn1[0] = one;
+		extDefn1[1] = one;
+		extDefn1[2] = one;
+		extDefn1[3] = one;
+		
+		//2 + 2x + x^2 = 0
+		extDefn2[0] = two;
+		extDefn2[1] = two;
+		extDefn2[2] = one;
+		
+		SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+		
+		add_extension(coolExt, extDefn1, 4, "ex1");
+		add_extension(coolExt, extDefn2, 3, "ex2");
+		
+		printmve(coolExt);
+		
+		coolExt = free_MultiVarExtT(coolExt);
+		
 		bigMod = free_BigIntT(bigMod);
+		//zero   = free_BigIntT(zero);
+		one    = free_BigIntT(one);
+		two    = free_BigIntT(two);
 		
-		minPoly = free_BigPolyT_factors(minPoly);
-		*/
+		FREE(extDefn1);
+		FREE(extDefn2);
 	}
 	
 	//Freeing memory

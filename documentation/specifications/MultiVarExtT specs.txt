@@ -1,0 +1,6 @@
+The MultiVarExtT struct is used to represent a polynomial expression containing one or more field extensions (in this case, the field is always Z_p).
+
+Internally, this struct holds a BigIntT array of varying dimension (depending on how many field extensions are present) containing the coefficients on all possible terms, as well as a BigIntT prime modulus.
+
+
+The varying dimension BigIntT array is facilitated by the BigIntDirectorT struct, which contains either a pointer to an array of other BigIntDirectorTs, or a pointer to a BigIntT. In this way, multidimensional arrays can be created with varying dimension.

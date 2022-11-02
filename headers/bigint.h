@@ -24,6 +24,10 @@ BigIntTP new_BigIntT(int* const, int);
 		size of the struct to create. */
 BigIntTP empty_BigIntT(int);
 
+/** Returns 1 if the given BigIntT is zero,
+    0 otherwise. */
+int is_zero(BigIntTP const);
+
 /** Returns a pointer to a BigIntTP 2D array. Each
     BigIntTP will be initialised to zero.
 	Returns NULL on error. */

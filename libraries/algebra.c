@@ -10,10 +10,14 @@ yiff day, 2022
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <string.h> //For MultiVarExtT extension names
+
 #include "../headers/helper.h" //bool 
 
 #include "../headers/bigint.h"
 #include "../headers/linalg.h"
+
+const int MAXVARLEN = 20;
 
 typedef struct bigpoly
 /** Stores a polynomial using BigIntT coefficients. 
@@ -23,6 +27,35 @@ typedef struct bigpoly
 	BigIntTP* coeffs; //Holds the coefficients of the polynomial
 }
 BigPolyT, *BigPolyTP;
+
+
+/* private */ typedef struct bigintdirector
+/** This is the struct responsible for facilitating
+    multidimensional BigIntT arrays with varying dimension. */
+{
+	BigIntTP* coeffs;
+	struct bigintdirector** next;
+	
+	bool hasNext; //If TRUE, next is active. FALSE = coeffs is active.
+	int size;     //How big its array is
+}
+BigIntDirectorT, *BigIntDirectorTP;
+
+
+typedef struct multivarext
+/** Stores a representation of a multivariate field extension. */
+{
+	BigIntDirectorTP coeffs;
+	BigIntTP** extensions;   //Holds the minPolys for each of our extensions
+	int* extensionSizes;     //Holds how many numbers are in each extension's defn
+	
+	BigIntTP mod;
+	
+	int numOfExtensions;    //Holds how many extensions this struct represents
+	int numOfExtensionsSet; //How many extensions have we defined?
+	char** extNames;        //Variable names for printing out the struct
+}
+MultiVarExtT, *MultiVarExtTP;
 
 
 BigPolyTP free_BigPolyT(BigPolyTP p)
@@ -73,6 +106,70 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 		indexCounter = free_BigIntT(indexCounter);
 	}
 	
+	return NULL;
+}
+
+
+/* private */ BigIntDirectorTP free_BigIntDirectorT(BigIntDirectorTP d)
+/** Frees the memory used by a BigIntDirectorT. Returns NULL. */
+{
+	if (d == NULL)
+		return NULL;
+	
+	if (d->hasNext)
+	{
+		for (int i = 0; i < d->size; i += 1)
+			d->next[i] = free_BigIntDirectorT(d->next[i]);
+		
+		free(d->next);
+		d->next = NULL;
+	}
+	
+	else //If the director is pointing directly to a BigIntT array
+	{
+		for (int i = 0; i < d->size; i += 1)
+			d->coeffs[i] = free_BigIntT(d->coeffs[i]);
+		
+		free(d->coeffs);
+		d->coeffs = NULL;
+	}
+	
+	free(d);
+	return NULL;
+}
+
+
+MultiVarExtTP free_MultiVarExtT(MultiVarExtTP ext)
+/** Frees the memory used by a MultiVarExtT. Returns NULL. */
+{
+	ext->coeffs = free_BigIntDirectorT(ext->coeffs);
+	
+	for (int i = 0; i < ext->numOfExtensions; i += 1)
+	{
+		free(ext->extNames[i]);
+		ext->extNames[i] = NULL;
+		
+		if (ext->extensions[i] != NULL) //If we try and free before all extensions have been defined
+		{
+			for (int elem = 0; elem < ext->extensionSizes[i]; elem += 1)
+				ext->extensions[i][elem] = free_BigIntT(ext->extensions[i][elem]);
+			
+			free(ext->extensions[i]);
+			ext->extensions[i] = NULL;
+		}
+	}
+	free(ext->extNames);
+	ext->extNames = NULL;
+	
+	ext->mod = free_BigIntT(ext->mod);
+	
+	free(ext->extensions);
+	ext->extensions = NULL;
+	
+	free(ext->extensionSizes);
+	ext->extensionSizes = NULL;
+	
+	free(ext);
 	return NULL;
 }
 
@@ -151,6 +248,121 @@ int reduce_BigPolyT(BigPolyTP p)
 	}
 	
 	zero = free_BigIntT(zero);
+	return 1;
+}
+
+
+MultiVarExtTP new_MultiVarExtT(int size)
+/** Allocates space for a new MultiVarExtT, returns a
+    pointer to the object. Returns NULL on error. */
+{
+	MultiVarExtTP ext   = malloc(sizeof(MultiVarExtT));
+	ext->coeffs         = malloc(sizeof(BigIntDirectorT));
+	ext->extensions     = malloc(size*sizeof(BigIntTP*));
+	ext->mod            = empty_BigIntT(1);
+	ext->extensionSizes = malloc(size*sizeof(int));
+	ext->extNames       = malloc(size*sizeof(char*));
+	
+	for (int i = 0; i < size; i += 1)
+	{
+		ext->extNames[i]    = malloc((MAXVARLEN+1)*sizeof(char));
+		ext->extNames[i][0] = '\0';
+		
+		ext->extensions[i] = NULL;
+	}
+	
+	//Set the proper mode for our BigIntDirectorT
+	//We can only set the other members later when we add extension definitions
+	if (size == 1)
+		ext->coeffs->hasNext = FALSE;
+	else
+		ext->coeffs->hasNext = TRUE;
+	
+	ext->numOfExtensions    = size;
+	ext->numOfExtensionsSet = 0;
+	
+	return ext;
+}
+
+
+int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly, char* const name)
+/** Adds a new extension to a MultiVarExtT.
+    Returns 1 on success, 0 otherwise. */
+{
+	int index = ext->numOfExtensionsSet;
+	int coeffsIndex[index+1]; //Holds where we are in the BigIntDirectorTP mess
+	int indexUpperBound;      //Making sure that, when we add our last extension, we add BigIntTs
+	
+	BigIntDirectorTP ref;       //As we add more coefficient space, this will hold our current location in the mess
+	
+	bool moreToAdd = TRUE;
+	
+	if (index == ext->numOfExtensions)
+		return 0;
+	
+	ext->extensionSizes[index] = sizeOfMinPoly;
+	
+	ext->extensions[index] = malloc(sizeOfMinPoly*sizeof(BigIntTP));
+	for (int i = 0; i < sizeOfMinPoly; i += 1)
+	{
+		ext->extensions[index][i] = empty_BigIntT(1);
+		copy_BigIntT(minPoly[i], ext->extensions[index][i]);
+	}
+	
+	if (strlen(name) <= (long unsigned int)MAXVARLEN)
+		strcat(ext->extNames[index], name);
+	else
+		strcat(ext->extNames[index], "?"); //If the name given was too long
+	
+	//Now, we need to allocate coefficient space to accommodate the new extension
+	for (int i = 0; i < index+1; i += 1)
+		coeffsIndex[i] = 0;
+	
+	indexUpperBound = index == ext->numOfExtensions-1 ? index-1 : index;
+	
+	while (moreToAdd)
+	{
+		//Finding the next spot to add a coefficient to
+		ref = ext->coeffs;
+		for (int i = 0; i < indexUpperBound; i += 1)
+			ref = ref->next[coeffsIndex[i]];
+		
+		if (index == ext->numOfExtensions - 1) //If we're adding BigIntTs finally
+		{
+			ref->coeffs  = malloc(sizeOfMinPoly*sizeof(BigIntTP));
+			ref->hasNext = FALSE;
+			ref->size    = sizeOfMinPoly;
+			
+			for (int newint = 0; newint < sizeOfMinPoly; newint += 1)
+				ref->coeffs[newint] = empty_BigIntT(1);
+		}
+		
+		else //If we're adding more BigIntDirectorTs
+		{
+			ref->next    = malloc(sizeOfMinPoly*sizeof(BigIntDirectorTP));
+			ref->hasNext = TRUE;
+			ref->size    = sizeOfMinPoly;
+			
+			for (int newdir = 0; newdir < sizeOfMinPoly; newdir += 1)
+				ref->next[newdir] = malloc(sizeof(BigIntDirectorT));
+		}
+		
+		//Now, we need to increment our coeffsIndex so we add everything we need to
+		moreToAdd = FALSE;
+		for (int i = 0; i < index; i += 1)
+		{
+			coeffsIndex[i] += 1;
+			if (coeffsIndex[i] >= ext->extensionSizes[i])
+				coeffsIndex[i] = 0;
+			else
+			{
+				moreToAdd = TRUE;
+				break;
+			}
+		}
+	}
+	
+	ext->numOfExtensionsSet += 1;
 	return 1;
 }
 
@@ -320,6 +532,39 @@ void printpf(BigPolyTP* factors)
 	temp = free_BigIntT(temp);
 	one  = free_BigIntT(one);
 	indexCounter = free_BigIntT(indexCounter);
+}
+
+
+void printmve(MultiVarExtTP const ext)
+/** Prints a MultiVarExtTP to stdout. */
+{
+	bool printPlus;
+	
+	printf("Extension definitions:\n");
+	for (int i = 0; i < ext->numOfExtensionsSet; i += 1)
+	{
+		printPlus = FALSE;
+		for (int coeff = 0; coeff < ext->extensionSizes[i]; coeff += 1)
+		{
+			if (! is_zero(ext->extensions[i][coeff]))
+			{
+				if (printPlus)
+					printf(" + ");
+				
+				printi(ext->extensions[i][coeff]);
+				
+				if (coeff == 1) //linear
+					printf("(%s)", ext->extNames[i]);
+				
+				else if (coeff > 1)
+					printf("(%s)^%d", ext->extNames[i], coeff);
+				
+				printPlus = TRUE;
+			}
+		}
+		
+		printf(" = 0\n");
+	}
 }
 
 

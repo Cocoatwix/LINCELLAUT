@@ -7,11 +7,22 @@
 /** Holds a polynomial datatype using BigIntT coefficients. */
 typedef struct bigpoly *BigPolyTP;
 
+/** Responsible for facilitating multidimensional BigIntT arrays
+    of varying dimension. */
+//typedef struct bigintdirection *BigIntDirectionTP;
+
+/** Holds a representation of a multivariate field extension
+    polynomial expression. */
+typedef struct multivarext *MultiVarExtTP;
+
 /** Frees the memory used by a BigPolyT. Returns NULL. */
 BigPolyTP free_BigPolyT(BigPolyTP);
 
 /** Frees an array of BigPolyT factors. */
 BigPolyTP* free_BigPolyT_factors(BigPolyTP*);
+
+/** Frees the memory used by a MultiVarExtT. Returns NULL. */
+MultiVarExtTP free_MultiVarExtT(MultiVarExtTP);
 
 /** Creates a new BigPolyT with given coefficients and size,
     returns a pointer to it. */
@@ -28,6 +39,15 @@ BigPolyTP empty_BigPolyT();
 /** Ensures that the leading term of the BigPolyT
     is nonzero. Returns 1 on success, 0 otherwise. */
 int reduce_BigPolyT(BigPolyTP);
+
+/** Allocates space for a new MultiVarExtT, returns a
+    pointer to it. Returns NULL on error. */
+MultiVarExtTP new_MultiVarExtT(int);
+
+/** Adds a new extension to a MultiVarExtT.
+    Returns 1 on success, 0 otherwise. */
+//                extension      minPoly          size name
+int add_extension(MultiVarExtTP, BigIntTP* const, int, char* const);
 
 /** Returns the degree of the given polynomial. */
 int degree(BigPolyTP const);
@@ -54,6 +74,9 @@ void printp(BigPolyTP const);
 
 /** Prints a factored BigPolyT. */
 void printpf(BigPolyTP* const);
+
+/** Prints a MultiVarExtT to stdout. */
+void printmve(MultiVarExtTP const);
 
 /** Same as printp and printpf, but it prints to a file stream. */
 void fprintp(FILE*, BigPolyTP const);

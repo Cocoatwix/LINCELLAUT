@@ -8,7 +8,7 @@ iterate [iterations]: This tool allows you to take an initial matrix and iterate
 inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
-det [modulus]: This tool allows the user to calculate the determinant of the update matrix mod some modulus. 
+det [modulus] (INACTIVE): This tool allows the user to calculate the determinant of the update matrix mod some modulus. 
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 

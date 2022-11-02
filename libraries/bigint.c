@@ -83,6 +83,17 @@ BigIntTP empty_BigIntT(int zeros)
 }
 
 
+int is_zero(BigIntTP const a)
+/** Returns 1 if a is zero, 0 otherwise. */
+{
+	for (int i = 0; i < a->size; i += 1)
+		if (a->theInt[i] != 0)
+			return 0;
+		
+	return 1;
+}
+
+
 BigIntTP** new_BigIntT_array(int rows, int cols)
 /** Creates a 2D array of BigIntTs with the specified rows
     and cols, and initialised it with zeros. Returns a pointer
