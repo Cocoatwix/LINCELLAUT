@@ -4498,15 +4498,24 @@ int main(int argc, char* argv[])
 		BigIntTP bigMod;
 		
 		//BigIntTP zero;
-		BigIntTP one;
-		BigIntTP two;
+		BigIntTP one, two, six, twelve;
 		
 		int oneArr[1] = {1};
 		int twoArr[1] = {2};
+		int sixArr[1] = {6};
+		int twelveArr[1] = {12};
+		
+		//{exponent of first extension, exponent of second extension}
+		int coeff1[2] = {2, 2};
+		int coeff2[2] = {0, 1};
+		int coeff3[2] = {3, 2};
 		
 		//zero = empty_BigIntT(1);
 		one  = new_BigIntT(oneArr, 1);
 		two  = new_BigIntT(twoArr, 1);
+		
+		six = new_BigIntT(sixArr, 1);
+		twelve = new_BigIntT(twelveArr, 1);
 		
 		extDefn1 = malloc(4*sizeof(BigIntTP));
 		extDefn2 = malloc(3*sizeof(BigIntTP));
@@ -4527,7 +4536,12 @@ int main(int argc, char* argv[])
 		add_extension(coolExt, extDefn1, 4, "ex1");
 		add_extension(coolExt, extDefn2, 3, "ex2");
 		
+		set_MultiVarExtT_coefficient(coolExt, coeff1, six);
+		set_MultiVarExtT_coefficient(coolExt, coeff2, six);
+		set_MultiVarExtT_coefficient(coolExt, coeff3, twelve);
+		
 		printmve(coolExt);
+		printf("\n");
 		
 		coolExt = free_MultiVarExtT(coolExt);
 		
@@ -4535,6 +4549,8 @@ int main(int argc, char* argv[])
 		//zero   = free_BigIntT(zero);
 		one    = free_BigIntT(one);
 		two    = free_BigIntT(two);
+		six    = free_BigIntT(six);
+		twelve = free_BigIntT(twelve);
 		
 		FREE(extDefn1);
 		FREE(extDefn2);

@@ -4,3 +4,5 @@ Internally, this struct holds a BigIntT array of varying dimension (depending on
 
 
 The varying dimension BigIntT array is facilitated by the BigIntDirectorT struct, which contains either a pointer to an array of other BigIntDirectorTs, or a pointer to a BigIntT. In this way, multidimensional arrays can be created with varying dimension.
+
+(will extend this later)

@@ -291,7 +291,6 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 {
 	int index = ext->numOfExtensionsSet;
 	int coeffsIndex[index+1]; //Holds where we are in the BigIntDirectorTP mess
-	int indexUpperBound;      //Making sure that, when we add our last extension, we add BigIntTs
 	
 	BigIntDirectorTP ref;       //As we add more coefficient space, this will hold our current location in the mess
 	
@@ -318,38 +317,46 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 	for (int i = 0; i < index+1; i += 1)
 		coeffsIndex[i] = 0;
 	
-	indexUpperBound = index == ext->numOfExtensions-1 ? index-1 : index;
-	
 	while (moreToAdd)
 	{
 		//Finding the next spot to add a coefficient to
 		ref = ext->coeffs;
-		for (int i = 0; i < indexUpperBound; i += 1)
+		for (int i = 0; i < index; i += 1)
+		{
 			ref = ref->next[coeffsIndex[i]];
+		}
 		
 		if (index == ext->numOfExtensions - 1) //If we're adding BigIntTs finally
 		{
-			ref->coeffs  = malloc(sizeOfMinPoly*sizeof(BigIntTP));
-			ref->hasNext = FALSE;
-			ref->size    = sizeOfMinPoly;
+			//printf("Adding new BigIntDirectorT that is in the last layer\n");
+			if (ref->coeffs == NULL)
+			{
+				ref->coeffs  = malloc(sizeOfMinPoly*sizeof(BigIntTP));
+				ref->hasNext = FALSE;
+				ref->size    = sizeOfMinPoly;
+			}
 			
-			for (int newint = 0; newint < sizeOfMinPoly; newint += 1)
-				ref->coeffs[newint] = empty_BigIntT(1);
+			ref->coeffs[coeffsIndex[index]] = empty_BigIntT(1);
 		}
 		
 		else //If we're adding more BigIntDirectorTs
 		{
-			ref->next    = malloc(sizeOfMinPoly*sizeof(BigIntDirectorTP));
-			ref->hasNext = TRUE;
-			ref->size    = sizeOfMinPoly;
+			//printf("Adding new BigIntDirectorT that isn't in the last layer\n");
+			if (ref->next == NULL)
+			{
+				ref->next    = malloc(sizeOfMinPoly*sizeof(BigIntDirectorTP));
+				ref->coeffs  = NULL;
+				ref->hasNext = TRUE;
+				ref->size    = sizeOfMinPoly;
+			}
 			
-			for (int newdir = 0; newdir < sizeOfMinPoly; newdir += 1)
-				ref->next[newdir] = malloc(sizeof(BigIntDirectorT));
+			ref->next[coeffsIndex[index]] = malloc(sizeof(BigIntDirectorT));
+			ref->next[coeffsIndex[index]]->next = NULL;
 		}
 		
 		//Now, we need to increment our coeffsIndex so we add everything we need to
 		moreToAdd = FALSE;
-		for (int i = 0; i < index; i += 1)
+		for (int i = 0; i <= index; i += 1)
 		{
 			coeffsIndex[i] += 1;
 			if (coeffsIndex[i] >= ext->extensionSizes[i])
@@ -363,6 +370,35 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 	}
 	
 	ext->numOfExtensionsSet += 1;
+	return 1;
+}
+
+
+int set_MultiVarExtT_coefficient(MultiVarExtTP ext, int* const coeffPos, BigIntTP const coeff)
+/** Sets a particular value for the given MultiVarExtT's coefficient.
+    The MultiVarExtT must be fully set before this function can be used.
+		Returns 1 on success, 0 otherwise. */
+{
+	BigIntDirectorTP ref;
+	
+	if (ext->numOfExtensionsSet != ext->numOfExtensions)
+		return 0;
+	
+	ref = ext->coeffs;
+	
+	for (int i = 0; i < ext->numOfExtensions-1; i += 1)
+	{
+		if (coeffPos[i] >= ref->size) //Making sure we don't get any IndexErrors
+			return 0;
+		
+		ref = ref->next[coeffPos[i]];
+	}
+	
+	if (coeffPos[ext->numOfExtensions-1] >= ref->size)
+		return 0;
+	
+	copy_BigIntT(coeff, ref->coeffs[coeffPos[ext->numOfExtensions-1]]);
+	
 	return 1;
 }
 
@@ -538,6 +574,12 @@ void printpf(BigPolyTP* factors)
 void printmve(MultiVarExtTP const ext)
 /** Prints a MultiVarExtTP to stdout. */
 {
+	//Will hold which coefficient we're printing out
+	int coeffPos[ext->numOfExtensionsSet];
+	
+	BigIntDirectorTP ref;
+	BigIntTP intRef;
+	
 	bool printPlus;
 	
 	printf("Extension definitions:\n");
@@ -564,6 +606,57 @@ void printmve(MultiVarExtTP const ext)
 		}
 		
 		printf(" = 0\n");
+	}
+	
+	if (ext->numOfExtensionsSet == ext->numOfExtensions) //If we can actually print the expression
+	{
+		for (int i = 0; i < ext->numOfExtensions; i += 1)
+			coeffPos[i] = 0;
+		
+		printPlus = FALSE;
+		
+		//while we still have coefficients to iterate through
+		while (coeffPos[ext->numOfExtensions-1] < ext->extensionSizes[ext->numOfExtensions-1])
+		{
+			//Get the next coefficient to print
+			ref = ext->coeffs;
+			for (int i = 0; i < ext->numOfExtensions-1; i += 1)
+			{
+				ref = ref->next[coeffPos[i]];
+			}
+			
+			intRef = ref->coeffs[coeffPos[ext->numOfExtensions-1]];
+			
+			if (! is_zero(intRef))
+			{
+				if (printPlus)
+					printf(" + ");
+				
+				printi(intRef);
+				printPlus = TRUE;
+				
+				//Print appropriate extension names
+				for (int i = 0; i < ext->numOfExtensions; i += 1)
+				{
+					if (coeffPos[i] == 1)
+						printf("(%s)", ext->extNames[i]);
+					
+					else if (coeffPos[i] > 1)
+						printf("(%s)^%d", ext->extNames[i], coeffPos[i]);
+				}
+			}
+			
+			//Increment coeffPos to next coefficient
+			for (int i = 0; i < ext->numOfExtensions; i += 1)
+			{
+				coeffPos[i] += 1;
+				if ((coeffPos[i] >= ext->extensionSizes[i]) &&
+				    (i != ext->numOfExtensions-1))
+					coeffPos[i] = 0;
+				else
+					break;
+			}
+		}
 	}
 }
 
