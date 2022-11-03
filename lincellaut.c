@@ -4491,14 +4491,14 @@ int main(int argc, char* argv[])
 		"refer to the included documentation.\n");
 		
 		//Time to test adding extensions
-		MultiVarExtTP coolExt = new_MultiVarExtT(2);
+		MultiVarExtTP coolExt = new_MultiVarExtT(3);
 		
 		BigIntTP* extDefn1;
 		BigIntTP* extDefn2;
+		BigIntTP* extDefn3;
 		BigIntTP bigMod;
 		
-		//BigIntTP zero;
-		BigIntTP one, two, six, twelve;
+		BigIntTP zero, one, two, six, twelve;
 		
 		int oneArr[1] = {1};
 		int twoArr[1] = {2};
@@ -4506,11 +4506,11 @@ int main(int argc, char* argv[])
 		int twelveArr[1] = {12};
 		
 		//{exponent of first extension, exponent of second extension}
-		int coeff1[2] = {2, 2};
-		int coeff2[2] = {0, 1};
-		int coeff3[2] = {3, 2};
+		int coeff1[3] = {2, 2, 0};
+		int coeff2[3] = {0, 1, 1};
+		int coeff3[3] = {3, 2, 2};
 		
-		//zero = empty_BigIntT(1);
+		zero = empty_BigIntT(1);
 		one  = new_BigIntT(oneArr, 1);
 		two  = new_BigIntT(twoArr, 1);
 		
@@ -4519,6 +4519,7 @@ int main(int argc, char* argv[])
 		
 		extDefn1 = malloc(4*sizeof(BigIntTP));
 		extDefn2 = malloc(3*sizeof(BigIntTP));
+		extDefn3 = malloc(3*sizeof(BigIntTP));
 		
 		//1 + x + x^2 + x^3 = 0
 		extDefn1[0] = one;
@@ -4531,22 +4532,39 @@ int main(int argc, char* argv[])
 		extDefn2[1] = two;
 		extDefn2[2] = one;
 		
-		SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+		//2 + 6x^2 = 0
+		extDefn3[0] = two;
+		extDefn3[1] = zero;
+		extDefn3[2] = six;
 		
-		add_extension(coolExt, extDefn1, 4, "ex1");
-		add_extension(coolExt, extDefn2, 3, "ex2");
+		SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+		printf("Modulus: ");
+		printi(bigMod);
+		printf("\n");
+		
+		set_MultiVarExtT_mod(coolExt, bigMod);
+		
+		add_extension(coolExt, extDefn1, 4, "a");
+		add_extension(coolExt, extDefn2, 3, "b");
+		add_extension(coolExt, extDefn3, 3, "c");
 		
 		set_MultiVarExtT_coefficient(coolExt, coeff1, six);
 		set_MultiVarExtT_coefficient(coolExt, coeff2, six);
 		set_MultiVarExtT_coefficient(coolExt, coeff3, twelve);
 		
+		printf("Before reduction:\n");
+		printmve(coolExt);
+		printf("\n");
+		
+		reduce_MultiVarExtT(coolExt);
+		printf("After reduction:\n");
 		printmve(coolExt);
 		printf("\n");
 		
 		coolExt = free_MultiVarExtT(coolExt);
 		
 		bigMod = free_BigIntT(bigMod);
-		//zero   = free_BigIntT(zero);
+		zero   = free_BigIntT(zero);
 		one    = free_BigIntT(one);
 		two    = free_BigIntT(two);
 		six    = free_BigIntT(six);
@@ -4554,6 +4572,7 @@ int main(int argc, char* argv[])
 		
 		FREE(extDefn1);
 		FREE(extDefn2);
+		FREE(extDefn3);
 	}
 	
 	//Freeing memory

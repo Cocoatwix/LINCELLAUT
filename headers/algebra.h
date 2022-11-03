@@ -44,6 +44,10 @@ int reduce_BigPolyT(BigPolyTP);
     pointer to it. Returns NULL on error. */
 MultiVarExtTP new_MultiVarExtT(int);
 
+/** Sets the modulus value for the given MultiVarExtT.
+    Returns 1 on success, 0 otherwise. */
+int set_MultiVarExtT_mod(MultiVarExtTP, BigIntTP const);
+
 /** Adds a new extension to a MultiVarExtT.
     Returns 1 on success, 0 otherwise. */
 //                extension      minPoly          size name
@@ -53,6 +57,14 @@ int add_extension(MultiVarExtTP, BigIntTP* const, int, char* const);
     The MultiVarExtT must be fully set before this function can be used.
 	Returns 1 on success, 0 otherwise. */
 int set_MultiVarExtT_coefficient(MultiVarExtTP, int* const, BigIntTP const);
+
+/** Uses the extension definitions to reduce the given
+    MultiVarExtT. Essentially, it'll zero any terms
+	it can. 
+	This function can only be used when all extensions
+	have been set for the MultiVarExtT.
+	Returns 1 on success, 0 otherwise. */
+int reduce_MultiVarExtT(MultiVarExtTP);
 
 /** Returns the degree of the given polynomial. */
 int degree(BigPolyTP const);

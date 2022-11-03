@@ -16,6 +16,7 @@ yiff day, 2022
 
 #include "../headers/bigint.h"
 #include "../headers/linalg.h"
+#include "../headers/modular.h" //big_num_inverse()
 
 const int MAXVARLEN = 20;
 
@@ -285,6 +286,14 @@ MultiVarExtTP new_MultiVarExtT(int size)
 }
 
 
+int set_MultiVarExtT_mod(MultiVarExtTP ext, BigIntTP const bigMod)
+/** Sets the modulus value for the given MultiVarExtT.
+    Returns 1 on success, 0 otherwise. */
+{
+	return copy_BigIntT(bigMod, ext->mod);
+}
+
+
 int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly, char* const name)
 /** Adds a new extension to a MultiVarExtT.
     Returns 1 on success, 0 otherwise. */
@@ -292,7 +301,7 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 	int index = ext->numOfExtensionsSet;
 	int coeffsIndex[index+1]; //Holds where we are in the BigIntDirectorTP mess
 	
-	BigIntDirectorTP ref;       //As we add more coefficient space, this will hold our current location in the mess
+	BigIntDirectorTP ref;     //As we add more coefficient space, this will hold our current location in the mess
 	
 	bool moreToAdd = TRUE;
 	
@@ -400,6 +409,147 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP ext, int* const coeffPos, BigIntT
 	copy_BigIntT(coeff, ref->coeffs[coeffPos[ext->numOfExtensions-1]]);
 	
 	return 1;
+}
+
+
+int reduce_MultiVarExtT(MultiVarExtTP ext)
+/** Uses the extension definitions to reduce the given
+    MultiVarExtT. Returns 1 on success, 0 otherwise. */
+{
+	if (ext->numOfExtensionsSet != ext->numOfExtensions)
+		return 0;
+	
+	int currLoc[ext->numOfExtensions]; //Holds where we are in the coefficient array
+	BigIntTP* currCoeffs = NULL;
+	
+	int oneArr[1] = {1};
+	BigIntDirectorTP ref;
+	BigIntTP leadingTermInv = empty_BigIntT(1);
+	BigIntTP minPolyMult    = empty_BigIntT(1);
+	BigIntTP temp           = empty_BigIntT(1);
+	BigIntTP temp2          = empty_BigIntT(1);
+	BigIntTP one            = new_BigIntT(oneArr, 1);
+	
+	bool moreToCheck;
+	
+	for (int i = 0; i < ext->numOfExtensions; i += 1)
+		currLoc[i] = 0;
+	
+	
+	for (int focusTerm = 0; focusTerm < ext->numOfExtensions; focusTerm += 1)
+	{
+		currCoeffs = realloc(currCoeffs, (ext->extensionSizes[focusTerm])*sizeof(BigIntTP));
+		moreToCheck = TRUE;
+		
+		while (moreToCheck) //While there's still more terms to check for focusTerm's minPoly
+		{
+			do //Loop over focusTerm's full exponent range
+			{
+				//Get our set of coefficients to check
+				ref = ext->coeffs;
+				for (int i = 0; i < ext->numOfExtensions-1; i += 1)
+					ref = ref->next[currLoc[i]];
+				
+				//Taking the mod before getting the reference of our coefficient
+				mod_BigIntT(ref->coeffs[currLoc[ext->numOfExtensions-1]], ext->mod, temp);
+				copy_BigIntT(temp, ref->coeffs[currLoc[ext->numOfExtensions-1]]);
+				currCoeffs[currLoc[focusTerm]] = ref->coeffs[currLoc[ext->numOfExtensions-1]];
+				
+				currLoc[focusTerm] += 1;
+				currLoc[focusTerm] %= ext->extensionSizes[focusTerm];
+			}
+			while (currLoc[focusTerm] != 0);
+			
+			//Print out currCoeffs so I can see what the hell's happening
+			/*printf("focusTerm: %d\n", focusTerm);
+			printf("currCoeffs before changing: [");
+			for (int i = 0; i < ext->extensionSizes[focusTerm]-1; i += 1)
+			{
+				printi(currCoeffs[i]);
+				printf(", ");
+			}
+			printi(currCoeffs[ext->extensionSizes[focusTerm]-1]);
+			printf("]\n");*/
+			
+			//Now, currCoeffs should hold the coefficients we want to check for focusTerm's minPoly
+			//Because we have a list of references, we can just change the list to change the actual coeffs
+			
+			//We'll reduce the highest power term
+			if (! is_zero(currCoeffs[ext->extensionSizes[focusTerm]-1])) //If there's an actual leading term to reduce
+			{
+				//printf("Reducing...\n");
+				//Find the additive inverse
+				subtract_BigIntT(ext->mod, currCoeffs[ext->extensionSizes[focusTerm]-1], leadingTermInv);
+				
+				//Find what multiple of the minPoly is needed to reduce the leading term
+				clear_BigIntT(minPolyMult);
+				do
+				{
+					add_BigIntT(minPolyMult, one, temp2);
+					copy_BigIntT(temp2, minPolyMult);
+					
+					multiply_BigIntT(ext->extensions[focusTerm][ext->extensionSizes[focusTerm]-1], minPolyMult, temp2);
+					mod_BigIntT(temp2, ext->mod, temp);
+				}
+				while (compare_BigIntT(temp, leadingTermInv) != 0);
+				
+				//minPolyMult should now hold the correct multiple of the minPoly to eliminate the leading term
+				//Let's actually reduce the terms now
+				for (int i = 0; i < ext->extensionSizes[focusTerm]; i += 1)
+				{
+					multiply_BigIntT(ext->extensions[focusTerm][i], minPolyMult, temp);
+					add_BigIntT(temp, currCoeffs[i], temp2);
+					mod_BigIntT(temp2, ext->mod, currCoeffs[i]);
+				}
+				
+				//The leading term should now be gone, meaning the expression is as reduced as it can get
+				/*printf("currCoeffs after changing: [");
+				for (int i = 0; i < ext->extensionSizes[focusTerm]-1; i += 1)
+				{
+					printi(currCoeffs[i]);
+					printf(", ");
+				}
+				printi(currCoeffs[ext->extensionSizes[focusTerm]-1]);
+				printf("]\n");*/
+				
+				printf("focusTerm: %d\n", focusTerm);
+				printf("currLoc: [");
+				for (int i = 0; i < ext->numOfExtensions-1; i += 1)
+					printf("%d, ", currLoc[i]);
+				printf("%d]\n", currLoc[ext->numOfExtensions-1]);
+				printmve(ext);
+				printf("\n");
+			}
+			
+			//Increment currLoc
+			moreToCheck = FALSE;
+			for (int notFocus = 0; notFocus < ext->numOfExtensions; notFocus += 1)
+			{
+				if (notFocus != focusTerm)
+				{
+					currLoc[notFocus] += 1;
+					currLoc[notFocus] %= ext->extensionSizes[notFocus];
+					
+					if (currLoc[notFocus] != 0) //Once all entries return to zero, we've checked all terms
+					{
+						moreToCheck = TRUE;
+						break;
+					}
+				}
+			}
+		}
+	}
+	
+	free(currCoeffs);
+	currCoeffs = NULL;
+	
+	temp           = free_BigIntT(temp);
+	temp2          = free_BigIntT(temp2);
+	one            = free_BigIntT(one);
+	leadingTermInv = free_BigIntT(leadingTermInv);
+	minPolyMult    = free_BigIntT(minPolyMult);
+	
+	return 0;
 }
 
 

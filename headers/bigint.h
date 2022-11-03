@@ -80,7 +80,7 @@ int resize_BigIntT(BigIntTP, int);
 
 /** Copies the const BigIntT to the other BigIntT. 
     This function assumes both BigIntT structs are
-		initialised.
+	initialised.
     Returns 1 on success, 0 otherwise. */
 int copy_BigIntT(BigIntTP const, BigIntTP);
 
