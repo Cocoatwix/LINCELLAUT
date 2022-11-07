@@ -22,13 +22,13 @@ https://www.itechguides.com/powershell-array-and-add-to-array-applications-and-e
 
 $OBJPATH = "to-orbitvis/objects"
 
-$LIBS = "modular", 
-				"linalg", 
+$LIBS = "helper", 
 				"bigint", 
-				"algebra",
-				"cycles",
+				"algebra", 
+				"modular",
 				"factors",
-				"helper"
+				"linalg",
+				"cycles"
 				
 #Create an array list to hold object paths for compiling shared library
 [System.Collections.ArrayList]$OBJS = @()

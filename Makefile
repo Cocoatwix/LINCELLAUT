@@ -8,13 +8,12 @@ TARGET = lincellaut
 
 LIBPATH = libraries
 LIB1 = helper
-LIB2 = fibonacci
-LIB3 = bigint
-LIB4 = factors
-LIB5 = modular
-LIB6 = algebra
-LIB7 = linalg
-LIB8 = cycles
+LIB2 = bigint
+LIB3 = algebra
+LIB4 = modular
+LIB5 = factors
+LIB6 = linalg
+LIB7 = cycles
 
 OBJPATH = objects
 ALLOBJS = $(OBJPATH)/$(LIB1).o 
@@ -24,7 +23,6 @@ ALLOBJS += $(OBJPATH)/$(LIB4).o
 ALLOBJS += $(OBJPATH)/$(LIB5).o
 ALLOBJS += $(OBJPATH)/$(LIB6).o
 ALLOBJS += $(OBJPATH)/$(LIB7).o
-ALLOBJS += $(OBJPATH)/$(LIB8).o
 
 all:	$(TARGET)
 
@@ -56,9 +54,6 @@ $(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c | $(OBJPATH)
 	
 $(OBJPATH)/$(LIB7).o:	$(LIBPATH)/$(LIB7).c | $(OBJPATH)
 	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB7).o $(LIBPATH)/$(LIB7).c
-	
-$(OBJPATH)/$(LIB8).o:	$(LIBPATH)/$(LIB8).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB8).o $(LIBPATH)/$(LIB8).c
 	
 #Create objects directory if it doesn't already exist
 # stackoverflow.com/questions/12605051

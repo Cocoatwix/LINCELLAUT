@@ -253,6 +253,30 @@ int reduce_BigPolyT(BigPolyTP p)
 }
 
 
+int resize_BigPolyT(BigPolyTP p, int newSize)
+/** Resizes a given BigPolyT to the given size.
+    Returns 1 on success, 0 otherwise. */
+{
+	if (p->size == newSize)
+		return 1;
+	
+	//If we need to dealloc a few BigIntTs
+	if (p->size > newSize)
+		for (int i = p->size; i < newSize; i += 1)
+			p->coeffs[i] = free_BigIntT(p->coeffs[i]);
+	
+	p->coeffs = realloc(p->coeffs, newSize*sizeof(BigIntTP));
+	
+	//If we have new coefficients to initialise
+	if (p->size < newSize)
+		for (int i = p->size; i < newSize; i += 1)
+			p->coeffs[i] = empty_BigIntT(1);
+	
+	p->size = newSize;
+	return 1;
+}
+
+
 MultiVarExtTP new_MultiVarExtT(int size)
 /** Allocates space for a new MultiVarExtT, returns a
     pointer to the object. Returns NULL on error. */
@@ -647,6 +671,20 @@ int compare_BigPolyT(BigPolyTP const A, BigPolyTP const B)
 }
 
 
+int set_BigPolyT(BigPolyTP p, BigIntTP* const coeffList)
+/** Uses the given list of BigIntTs to set the polynomial's
+    coefficients. 
+		The function assumes the list is the sam length as the
+		polynomial.
+		Returns 1 on success, 0 otherwise. */
+{
+	for (int i = 0; i < p->size; i += 1)
+		copy_BigIntT(coeffList[i], p->coeffs[i]);
+	
+	return 1;
+}
+
+
 void printp(BigPolyTP const p)
 /** Outputs a BigPolyTP to stdout. */
 {
@@ -977,6 +1015,139 @@ int multiply_BigPolyT(BigPolyTP const A, BigPolyTP const B, BigPolyTP product)
 	reduce_BigPolyT(product);
 	
 	return 1;
+}
+
+
+int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, BigPolyTP remainder, BigIntTP const mod)
+/** Divides two BigPolyTs, stores the quotient in the third BigPolyT,
+    stores the remainder in the forth BigPolyT. The BigIntTP is the 
+		modulus used.
+		This function assumes a and b are reduced.
+		Returns 1 on success, 0 otherwise. */
+{
+	int oneArr[1] = {1};
+	
+	BigPolyTP tempPoly;
+	BigIntTP  temp;
+	BigIntTP  temp2;
+	BigIntTP  zero;
+	BigIntTP  one;
+	BigIntTP  negOne;
+	BigIntTP  bLeadingInv; //Holds the inverse of b's leading entry's coefficient
+	
+	BigIntTP  tempDivCoeff; //Just to simplify expressions
+	int       tempDivIndex; //Same as above
+	
+	BigIntTP* qCoeffs;    //Holds the coefficients for the quotient
+	BigIntTP* bCoeffs;    //Holds the coefficients of the polynomial b
+	BigIntTP* tempCoeffs; //Holds the working set of coefficients as we do the division
+	
+	int quotientSize = a->size - b->size + 1;
+	
+	//First, let's check and see if we even need to do any division
+	if (a->size < b->size)
+	{
+		if (remainder != NULL)
+			copy_BigPolyT(a, remainder);
+		
+		zero = empty_BigIntT(1);
+		tempPoly = constant_BigPolyT(zero);
+		copy_BigPolyT(tempPoly, quotient);
+		tempPoly = free_BigPolyT(tempPoly);
+		zero = free_BigIntT(zero);
+		
+		return 1;
+	}
+	
+	//Let's check to see if quotient and remainder 
+	// are the correct size.
+	if (quotient->size != quotientSize)
+		resize_BigPolyT(quotient, quotientSize);
+	
+	qCoeffs = malloc(quotientSize*sizeof(BigIntTP));
+	for (int i = 0; i < quotientSize; i += 1)
+		qCoeffs[i] = empty_BigIntT(1);
+	
+	tempCoeffs = extract_coefficients(a);
+	bCoeffs    = extract_coefficients(b);
+	
+	temp        = empty_BigIntT(1);
+	temp2       = empty_BigIntT(1);
+	bLeadingInv = empty_BigIntT(1);
+	big_num_inverse(bCoeffs[b->size-1], mod, bLeadingInv);
+	
+	one = new_BigIntT(oneArr, 1);
+	negOne = empty_BigIntT(1);
+	subtract_BigIntT(mod, one, negOne);
+	
+	//Now, iterate through tempCoeffs, find multiples of b that
+	// annihilate the coefficients in it, store them in qCoeffs
+	for (int c = a->size-1; c > a->size-1 - quotientSize; c -= 1) //Check this loop if things go wrong
+	{
+		//Calculate coefficient needed for next step in long division
+		multiply_BigIntT(tempCoeffs[c], bLeadingInv, temp);
+		mod_BigIntT(temp, mod, qCoeffs[quotientSize - a->size + c]); //This line might also be wrong
+		
+		tempDivCoeff = qCoeffs[quotientSize - a->size + c];
+		tempDivIndex = quotientSize - a->size + c; //This tells us what power of variable the coeff is attached to
+		
+		//Now qCoeffs[quotientSize - a->size + c] holds the coefficient for this long division step
+		//We need to see how this coefficient will affect the rest of the polynomial, not just the leading term
+		//Loop through the rest of tempCoeffs, update as necessary
+		for (int u = 0; u < b->size; u += 1)
+		{
+			multiply_BigIntT(tempDivCoeff, bCoeffs[u], temp);
+			multiply_BigIntT(temp, negOne, temp2);
+			add_BigIntT(temp2, tempCoeffs[tempDivIndex + u], temp);
+			mod_BigIntT(temp, mod, tempCoeffs[tempDivIndex + u]);
+		}
+		
+		//Now, tempCoeffs should be ready for the next division cycle
+		//I think I can just let it loop now
+	}
+	
+	//Let's print out qCoeffs and tempCoeffs to see where we're at
+	printf("Quotient: [");
+	for (int i = quotientSize-1; i >= 0; i -= 1)
+	{
+		printi(qCoeffs[i]);
+		printf(", ");
+	}
+	printf("]\n");
+	
+	printf("Remainder: [");
+	for (int i = a->size-1; i >= 0; i -= 1)
+	{
+		printi(tempCoeffs[i]);
+		printf(", ");
+	}
+	printf("]\n");
+	
+	
+	//It feels really gross to free multiple different arrays
+	// like this.
+	for (int i = 0; i < quotientSize; i += 1)
+		qCoeffs[i] = free_BigIntT(qCoeffs[1]);
+	free(qCoeffs);
+	qCoeffs = NULL;
+	
+	for (int i = 0; i < a->size; i += 1)
+		tempCoeffs[i] = free_BigIntT(tempCoeffs[i]);
+	free(tempCoeffs);
+	tempCoeffs = NULL;
+	
+	for (int i = 0; i < b->size; i += 1)
+		bCoeffs[i] = free_BigIntT(bCoeffs[i]);
+	free(bCoeffs);
+	bCoeffs = NULL;
+	
+	bLeadingInv = free_BigIntT(bLeadingInv);
+	temp        = free_BigIntT(temp);
+	one         = free_BigIntT(one);
+	negOne      = free_BigIntT(negOne);
+	temp2       = free_BigIntT(temp2);
+	
+	return 0;
 }
 
 

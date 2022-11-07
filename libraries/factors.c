@@ -4,6 +4,7 @@
 //#include <math.h>
 
 #include "../headers/bigint.h"
+#include "../headers/algebra.h"
 
 int GCD(int a, int b)
 /** Returns the GCD of the given integers.
@@ -96,6 +97,18 @@ BigIntTP big_gcd(BigIntTP const A, BigIntTP const B)
 	r       = free_BigIntT(r);
 
 	return lesser;
+}
+
+
+int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const mpd, BigPolyTP s, BigPolyTP t)
+/** Calculates the GCD of two given polynomials, stores the
+    result in the third BigPolyT given. The fourth and fifth 
+		BigPolyTs will store the polynomials s and t guaranteed by Bezout's 
+		identity, meaning gcd(a, b) = sa + tb. The BigIntT is the 
+		modulus to use.
+		Returns 1 on success, 0 otherwise. */
+{
+	return 0;
 }
 
 

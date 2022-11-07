@@ -22,7 +22,6 @@ https://stackoverflow.com/questions/3219393
 #include "headers/linalg.h" 
 #include "headers/cycles.h"  //Allows us to use Floyd's Algorithm
 #include "headers/modular.h" //Modular square roots and inverses
-#include "headers/fibonacci.h"
 #include "headers/factors.h" //For LCM()
 
 #include "headers/algebra.h"
@@ -1953,7 +1952,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 (30/81)
+			cycmatsearch 3 9/9 6 10 14 (43/81)
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -4490,89 +4489,143 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		//Time to test adding extensions
-		MultiVarExtTP coolExt = new_MultiVarExtT(3);
+		int testMode = 2;
 		
-		BigIntTP* extDefn1;
-		BigIntTP* extDefn2;
-		BigIntTP* extDefn3;
-		BigIntTP bigMod;
+		if (testMode == 0)
+		{
+			//Time to test adding extensions
+			MultiVarExtTP coolExt = new_MultiVarExtT(3);
+			
+			BigIntTP* extDefn1;
+			BigIntTP* extDefn2;
+			BigIntTP* extDefn3;
+			BigIntTP bigMod;
+			
+			BigIntTP zero, one, two, six, twelve;
+			
+			int oneArr[1] = {1};
+			int twoArr[1] = {2};
+			int sixArr[1] = {6};
+			int twelveArr[1] = {12};
+			
+			//{exponent of first extension, exponent of second extension}
+			int coeff1[3] = {2, 2, 0};
+			int coeff2[3] = {0, 1, 1};
+			int coeff3[3] = {3, 2, 2};
+			
+			zero = empty_BigIntT(1);
+			one  = new_BigIntT(oneArr, 1);
+			two  = new_BigIntT(twoArr, 1);
+			
+			six = new_BigIntT(sixArr, 1);
+			twelve = new_BigIntT(twelveArr, 1);
+			
+			extDefn1 = malloc(4*sizeof(BigIntTP));
+			extDefn2 = malloc(3*sizeof(BigIntTP));
+			extDefn3 = malloc(3*sizeof(BigIntTP));
+			
+			//1 + x + x^2 + x^3 = 0
+			extDefn1[0] = one;
+			extDefn1[1] = one;
+			extDefn1[2] = one;
+			extDefn1[3] = one;
+			
+			//2 + 2x + x^2 = 0
+			extDefn2[0] = two;
+			extDefn2[1] = two;
+			extDefn2[2] = one;
+			
+			//2 + 6x^2 = 0
+			extDefn3[0] = two;
+			extDefn3[1] = zero;
+			extDefn3[2] = six;
+			
+			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\n");
+			
+			set_MultiVarExtT_mod(coolExt, bigMod);
+			
+			add_extension(coolExt, extDefn1, 4, "a");
+			add_extension(coolExt, extDefn2, 3, "b");
+			add_extension(coolExt, extDefn3, 3, "c");
+			
+			set_MultiVarExtT_coefficient(coolExt, coeff1, six);
+			set_MultiVarExtT_coefficient(coolExt, coeff2, six);
+			set_MultiVarExtT_coefficient(coolExt, coeff3, twelve);
+			
+			printf("Before reduction:\n");
+			printmve(coolExt);
+			printf("\n");
+			
+			reduce_MultiVarExtT(coolExt);
+			printf("After reduction:\n");
+			printmve(coolExt);
+			printf("\n");
+			
+			coolExt = free_MultiVarExtT(coolExt);
+			
+			bigMod = free_BigIntT(bigMod);
+			zero   = free_BigIntT(zero);
+			one    = free_BigIntT(one);
+			two    = free_BigIntT(two);
+			six    = free_BigIntT(six);
+			twelve = free_BigIntT(twelve);
+			
+			FREE(extDefn1);
+			FREE(extDefn2);
+			FREE(extDefn3);
+		}
 		
-		BigIntTP zero, one, two, six, twelve;
-		
-		int oneArr[1] = {1};
-		int twoArr[1] = {2};
-		int sixArr[1] = {6};
-		int twelveArr[1] = {12};
-		
-		//{exponent of first extension, exponent of second extension}
-		int coeff1[3] = {2, 2, 0};
-		int coeff2[3] = {0, 1, 1};
-		int coeff3[3] = {3, 2, 2};
-		
-		zero = empty_BigIntT(1);
-		one  = new_BigIntT(oneArr, 1);
-		two  = new_BigIntT(twoArr, 1);
-		
-		six = new_BigIntT(sixArr, 1);
-		twelve = new_BigIntT(twelveArr, 1);
-		
-		extDefn1 = malloc(4*sizeof(BigIntTP));
-		extDefn2 = malloc(3*sizeof(BigIntTP));
-		extDefn3 = malloc(3*sizeof(BigIntTP));
-		
-		//1 + x + x^2 + x^3 = 0
-		extDefn1[0] = one;
-		extDefn1[1] = one;
-		extDefn1[2] = one;
-		extDefn1[3] = one;
-		
-		//2 + 2x + x^2 = 0
-		extDefn2[0] = two;
-		extDefn2[1] = two;
-		extDefn2[2] = one;
-		
-		//2 + 6x^2 = 0
-		extDefn3[0] = two;
-		extDefn3[1] = zero;
-		extDefn3[2] = six;
-		
-		SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
-		printf("Modulus: ");
-		printi(bigMod);
-		printf("\n");
-		
-		set_MultiVarExtT_mod(coolExt, bigMod);
-		
-		add_extension(coolExt, extDefn1, 4, "a");
-		add_extension(coolExt, extDefn2, 3, "b");
-		add_extension(coolExt, extDefn3, 3, "c");
-		
-		set_MultiVarExtT_coefficient(coolExt, coeff1, six);
-		set_MultiVarExtT_coefficient(coolExt, coeff2, six);
-		set_MultiVarExtT_coefficient(coolExt, coeff3, twelve);
-		
-		printf("Before reduction:\n");
-		printmve(coolExt);
-		printf("\n");
-		
-		reduce_MultiVarExtT(coolExt);
-		printf("After reduction:\n");
-		printmve(coolExt);
-		printf("\n");
-		
-		coolExt = free_MultiVarExtT(coolExt);
-		
-		bigMod = free_BigIntT(bigMod);
-		zero   = free_BigIntT(zero);
-		one    = free_BigIntT(one);
-		two    = free_BigIntT(two);
-		six    = free_BigIntT(six);
-		twelve = free_BigIntT(twelve);
-		
-		FREE(extDefn1);
-		FREE(extDefn2);
-		FREE(extDefn3);
+		else if (testMode == 1)
+		{
+			int Asize = 5;
+			int Bsize = 3;
+			
+			BigPolyTP A;
+			BigPolyTP B;
+			
+			BigIntTP* Adefn = malloc(Asize*sizeof(BigIntTP));
+			BigIntTP* Bdefn = malloc(Bsize*sizeof(BigIntTP));
+			
+			int NAsize = 11;
+			int numArr[1] = {0};
+			BigIntTP* NA = malloc(NAsize*sizeof(BigIntTP));
+			for (int i = 0; i < NAsize; i += 1)
+			{
+				NA[i] = new_BigIntT(numArr, 1);
+				numArr[0] += 1;
+			}
+			
+			//2x^4 + 6x^3 + 9x + 10
+			Adefn[4] = NA[2];
+			Adefn[3] = NA[6];
+			Adefn[2] = NA[0];
+			Adefn[1] = NA[9];
+			Adefn[0] = NA[10];
+			
+			//3x^2 + 3x + 7
+			Bdefn[2] = NA[3];
+			Bdefn[1] = NA[3];
+			Bdefn[0] = NA[7];
+			
+			A = new_BigPolyT(Adefn, Asize);
+			B = new_BigPolyT(Bdefn, Bsize);
+			
+			printf("A: ");
+			printp(A);
+			printf("\nB: ");
+			printp(B);
+			printf("\n");
+			
+			for (int i = 0; i < NAsize; i += 1)
+				NA[i] = free_BigIntT(NA[i]);
+			FREE(NA);
+			
+			A = free_BigPolyT(A);
+			B = free_BigPolyT(B);
+		}
 	}
 	
 	//Freeing memory

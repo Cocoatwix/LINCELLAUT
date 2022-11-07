@@ -40,6 +40,10 @@ BigPolyTP empty_BigPolyT();
     is nonzero. Returns 1 on success, 0 otherwise. */
 int reduce_BigPolyT(BigPolyTP);
 
+/** Resizes a given BigPolyT to the given size.
+    Returns 1 on success, 0 otherwise. */
+int resize_BigPolyT(BigPolyTP, int);
+
 /** Allocates space for a new MultiVarExtT, returns a
     pointer to it. Returns NULL on error. */
 MultiVarExtTP new_MultiVarExtT(int);
@@ -86,6 +90,11 @@ int copy_BigPolyT(BigPolyTP const, BigPolyTP);
     same coefficients). Returns 0 if they are, 1 otherwise. */ 
 int compare_BigPolyT(BigPolyTP const, BigPolyTP const);
 
+/** Uses the given list of BigIntTs to set the polynomial's
+    coefficients. 
+	Returns 1 on success, 0 otherwise. */
+int set_BigPolyT(BigPolyTP, BigIntTP* const);
+
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(BigPolyTP const);
 
@@ -110,6 +119,16 @@ int add_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
 		polynomials passed have been initialised.
 		Returns 1 on success, 0 otherwise. */
 int multiply_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
+
+/** Divides two BigPolyTs, stores the quotient in the third BigPolyT,
+    stores the remainder in the forth BigPolyT. The BigIntTP is the 
+	modulus used. This function assumes the quotient and remainder
+	have been initialised.
+	Returns 1 on success, 0 otherwise. */
+//For now, this function assumes the modulus given is prime (so we're in a field)
+//This function also assumes a and b have been reduced
+//                  a                b                a/b        remainder  modulus
+int divide_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP, BigPolyTP, BigIntTP const);
 
 /** Reduces a given polynomial by a modulus, stores the result in
     another passed polynomial. This function assumes all arguments
