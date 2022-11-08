@@ -6,6 +6,8 @@
 #include "../headers/bigint.h"
 #include "../headers/algebra.h"
 
+#include "../headers/modular.h" //big_num_inverse()
+
 int GCD(int a, int b)
 /** Returns the GCD of the given integers.
     If both integers given are zero, returns -1. */
@@ -114,6 +116,9 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 	BigIntTP  leadingTermInv;
 	BigPolyTP invPoly;
 	
+	BigPolyTP** divisionRecord = NULL; //Holds all the polynomials needed to find s and t
+	int divisionRecordSize = 0;
+	
 	A = empty_BigPolyT();
 	B = empty_BigPolyT();
 	R = empty_BigPolyT();
@@ -138,6 +143,15 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 	//Euclidian algorithm
 	do
 	{
+		divisionRecordSize += 1;
+		divisionRecord = realloc(divisionRecord, divisionRecordSize*sizeof(BigPolyTP*));
+		divisionRecord[divisionRecordSize-1] = malloc(4*sizeof(BigPolyTP));
+		for (int i = 0; i < 4; i += 1)
+			divisionRecord[divisionRecordSize-1][i] = empty_BigPolyT();
+		
+		//Finish copying values into this later
+		copy_BigPolyT(A, divisionRecord[divisionRecordSize-1][0]);
+		
 		divide_BigPolyT(A, B, tempQ, R, mod);
 		copy_BigPolyT(B, A);
 		copy_BigPolyT(R, B);
@@ -164,6 +178,18 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 	printp(A);
 	
 	//Extended Euclidian algorithm (finding polynomials guaranteed by Bezout's identity)
+	//pass
+	
+	for (int i = 0; i < divisionRecordSize; i += 1)
+	{
+		for (int j = 0; j < 4; j += 1)
+			divisionRecord[i][j] = free_BigPolyT(divisionRecord[i][j]);
+		
+		free(divisionRecord[i]);
+		divisionRecord[i] = NULL;
+	}
+	free(divisionRecord);
+	divisionRecord = NULL;
 	
 	A = free_BigPolyT(A);
 	B = free_BigPolyT(B);
