@@ -591,6 +591,14 @@ BigIntTP constant(BigPolyTP const p)
 }
 
 
+BigIntTP leading_term(BigPolyTP const p)
+/** Returns the coefficient on the leading term of p. 
+    This function assumes p has been reduced. */
+{
+	return p->coeffs[p->size - 1];
+}
+
+
 BigIntTP* extract_coefficients(BigPolyTP const p)
 /** Returns a list of the BigPolyT's coefficients, in
     order of ascending term exponents.
@@ -639,32 +647,40 @@ int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 
 int compare_BigPolyT(BigPolyTP const A, BigPolyTP const B)
 /** Compares two polynomials to see if they're the same.
-    Returns 0 if they are, 1 otherwise. */
+    Returns 0 if they're equal, a negative if the first
+		poly is smaller than the second, a positive if the
+		first poly is greater than the second. */
 {
 	int small = A->size < B->size ? A->size : B->size;
 	int big   = A->size > B->size ? A->size : B->size;
 	int r = 0;
+	int theBigIsBigger = degree(A) > degree(B) ? 1 : -1;
 	
 	BigPolyTP theBig = degree(A) > degree(B) ? A : B;
 	BigIntTP zero = empty_BigIntT(1);
 	
-	//Comparing terms to see if they match
-	for (int i = 0; i < small; i += 1)
-		if (compare_BigIntT(A->coeffs[i], B->coeffs[i]) != 0)
-		{
-			r = 1;
-			break;
-		}
-		
 	//For the bigger polynomial, we ensure all the entries above the smallest
 	// on the other polynomial are zero
+	for (int i = small; i < big; i += 1)
+	{
+		r = compare_BigIntT(zero, theBig->coeffs[i]);
+		if (r != 0)
+		{
+			r = theBigIsBigger; //O_O
+			break;
+		}
+	}
+	
+	//Comparing terms to see if they match
 	if (r == 0)
-		for (int i = small; i < big; i += 1)
-			if (compare_BigIntT(theBig->coeffs[i], zero) != 0)
-			{
-				r = 1;
+	{
+		for (int i = small-1; i >= 0; i -= 1)
+		{
+			r = compare_BigIntT(A->coeffs[i], B->coeffs[i]);
+			if (r != 0)
 				break;
-			}
+		}
+	}
 	
 	zero = free_BigIntT(zero);
 	return r;
@@ -690,23 +706,20 @@ void printp(BigPolyTP const p)
 {
 	BigIntTP zero = empty_BigIntT(1);
 	bool printPlus = FALSE;
+	bool isZero    = TRUE; //If p == 0, we should print a zero
 	
 	for (int i = 0; i < p->size; i += 1)
-	{
-		//Logic surrounding when to print a +
-		if (i != 0)
-			if (compare_BigIntT(zero, p->coeffs[i-1]) != 0) //If last number wasn't zero
-				printPlus = TRUE;
-					
+	{	
 		//Only print if coefficient isn't zero
 		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
 		{
+			isZero = FALSE;
+			
 			//Prevents a + when all other terms are zero afterwards
 			if (printPlus)
-			{
 				printf(" + ");
-				printPlus = FALSE;
-			}
+			
+			printPlus = TRUE;
 			
 			if (i == 0)
 				printi(p->coeffs[0]);
@@ -724,6 +737,9 @@ void printp(BigPolyTP const p)
 			}
 		}
 	}
+	
+	if (isZero)
+		printf("0");
 	
 	zero = free_BigIntT(zero);
 }
@@ -1044,6 +1060,8 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	
 	int quotientSize = a->size - b->size + 1;
 	
+	bool bIsZero = TRUE;
+	
 	//First, let's check and see if we even need to do any division
 	if (a->size < b->size)
 	{
@@ -1059,10 +1077,31 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 		return 1;
 	}
 	
-	//Let's check to see if quotient and remainder 
-	// are the correct size.
+	//If b == 0, exit
+	temp = empty_BigIntT(1);
+	
+	for (int i = 0; i < b->size; i += 1)
+	{
+		mod_BigIntT(b->coeffs[i], mod, temp);
+		
+		if (! is_zero(temp))
+		{
+			bIsZero = FALSE;
+			break;
+		}
+	}
+		
+	if (bIsZero) //Zero division error
+	{
+		temp = free_BigIntT(temp);
+		return 0;
+	}
+	
+	//Let's check to see if quotient is the correct size
 	if (quotient->size != quotientSize)
 		resize_BigPolyT(quotient, quotientSize);
+	
+	resize_BigPolyT(remainder, a->size);
 	
 	qCoeffs = malloc(quotientSize*sizeof(BigIntTP));
 	for (int i = 0; i < quotientSize; i += 1)
@@ -1071,7 +1110,6 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	tempCoeffs = extract_coefficients(a);
 	bCoeffs    = extract_coefficients(b);
 	
-	temp        = empty_BigIntT(1);
 	temp2       = empty_BigIntT(1);
 	bLeadingInv = empty_BigIntT(1);
 	big_num_inverse(bCoeffs[b->size-1], mod, bLeadingInv);
@@ -1106,28 +1144,17 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 		//I think I can just let it loop now
 	}
 	
-	//Let's print out qCoeffs and tempCoeffs to see where we're at
-	printf("Quotient: [");
-	for (int i = quotientSize-1; i >= 0; i -= 1)
-	{
-		printi(qCoeffs[i]);
-		printf(", ");
-	}
-	printf("]\n");
+	//Set quotient and remainder
+	set_BigPolyT(quotient, qCoeffs);
+	set_BigPolyT(remainder, tempCoeffs);
 	
-	printf("Remainder: [");
-	for (int i = a->size-1; i >= 0; i -= 1)
-	{
-		printi(tempCoeffs[i]);
-		printf(", ");
-	}
-	printf("]\n");
-	
+	reduce_BigPolyT(quotient);
+	reduce_BigPolyT(remainder);
 	
 	//It feels really gross to free multiple different arrays
 	// like this.
 	for (int i = 0; i < quotientSize; i += 1)
-		qCoeffs[i] = free_BigIntT(qCoeffs[1]);
+		qCoeffs[i] = free_BigIntT(qCoeffs[i]);
 	free(qCoeffs);
 	qCoeffs = NULL;
 	
@@ -1147,7 +1174,7 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	negOne      = free_BigIntT(negOne);
 	temp2       = free_BigIntT(temp2);
 	
-	return 0;
+	return 1;
 }
 
 

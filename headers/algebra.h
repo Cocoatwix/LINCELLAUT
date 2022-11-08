@@ -76,6 +76,9 @@ int degree(BigPolyTP const);
 /** Returns the constant term of a BigPolyTP. */
 BigIntTP constant(BigPolyTP const);
 
+/** Returns the leading term's coefficient of the given BigPolyTP. */
+BigIntTP leading_term(BigPolyTP const);
+
 /** Returns an array of the given BigPolyT's coefficients,
     sorted in ascending order of the terms' exponents.
 	Returns NULL on error. */
@@ -87,7 +90,10 @@ BigIntTP* extract_coefficients(BigPolyTP const);
 int copy_BigPolyT(BigPolyTP const, BigPolyTP);
 
 /** Compares two BigPolyTPs to see if they're equal (have the
-    same coefficients). Returns 0 if they are, 1 otherwise. */ 
+    same coefficients). 
+	Returns 0 if they're equal, a negative if the first BigPolyT 
+	is less than the second, a positive if the first BigPolyT is 
+	greater than the second. */ 
 int compare_BigPolyT(BigPolyTP const, BigPolyTP const);
 
 /** Uses the given list of BigIntTs to set the polynomial's
@@ -132,8 +138,8 @@ int divide_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP, BigPolyTP, BigI
 
 /** Reduces a given polynomial by a modulus, stores the result in
     another passed polynomial. This function assumes all arguments
-		have been properly initialised.
-		Returns 1 on success, 0 oterwise. */
+	have been properly initialised.
+	Returns 1 on success, 0 oterwise. */
 int mod_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
 
 /** Factors the given BigPolyT under the given modulus.

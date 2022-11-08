@@ -100,7 +100,7 @@ BigIntTP big_gcd(BigIntTP const A, BigIntTP const B)
 }
 
 
-int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const mpd, BigPolyTP s, BigPolyTP t)
+int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const mod, BigPolyTP s, BigPolyTP t)
 /** Calculates the GCD of two given polynomials, stores the
     result in the third BigPolyT given. The fourth and fifth 
 		BigPolyTs will store the polynomials s and t guaranteed by Bezout's 
@@ -108,6 +108,73 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 		modulus to use.
 		Returns 1 on success, 0 otherwise. */
 {
+	BigPolyTP A, B, R, tempQ, zero;
+	
+	//These are for simplifying the GCD
+	BigIntTP  leadingTermInv;
+	BigPolyTP invPoly;
+	
+	A = empty_BigPolyT();
+	B = empty_BigPolyT();
+	R = empty_BigPolyT();
+	tempQ = empty_BigPolyT();
+	zero = empty_BigPolyT();
+	
+	//Checking to see which polynomial given is greater
+	if (compare_BigPolyT(p, q) < 0) //q is bigger
+	{
+		copy_BigPolyT(q, A);
+		copy_BigPolyT(p, B);
+	}
+	else
+	{
+		copy_BigPolyT(p, A);
+		copy_BigPolyT(q, B);
+	}
+	
+	reduce_BigPolyT(A);
+	reduce_BigPolyT(B);
+	
+	//Euclidian algorithm
+	do
+	{
+		divide_BigPolyT(A, B, tempQ, R, mod);
+		copy_BigPolyT(B, A);
+		copy_BigPolyT(R, B);
+		
+		/*printf("A = ");
+		printp(A);
+		printf("\nB = ");
+		printp(B);
+		printf("\nR = ");
+		printp(R);
+		printf("\n\n"); */
+	}
+	while (compare_BigPolyT(zero, R) != 0);
+	
+	//Now, we should simplify A so that its leading term has a coefficient of 1
+	reduce_BigPolyT(A);
+	leadingTermInv = empty_BigIntT(1);
+	big_num_inverse(leading_term(A), mod, leadingTermInv);
+	
+	invPoly = constant_BigPolyT(leadingTermInv);
+	multiply_BigPolyT(A, invPoly, tempQ);
+	mod_BigPolyT(tempQ, mod, A);
+	
+	printp(A);
+	
+	//Extended Euclidian algorithm (finding polynomials guaranteed by Bezout's identity)
+	
+	A = free_BigPolyT(A);
+	B = free_BigPolyT(B);
+	R = free_BigPolyT(R);
+	
+	tempQ = free_BigPolyT(tempQ);
+	zero = free_BigPolyT(zero);
+	
+	leadingTermInv = free_BigIntT(leadingTermInv);
+	invPoly        = free_BigPolyT(invPoly);
+	
 	return 0;
 }
 
