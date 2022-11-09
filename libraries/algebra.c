@@ -17,6 +17,7 @@ yiff day, 2022
 #include "../headers/bigint.h"
 #include "../headers/linalg.h"
 #include "../headers/modular.h" //big_num_inverse()
+#include "../headers/factors.h" //poly_gcd()
 
 const int MAXVARLEN = 20;
 
@@ -1500,7 +1501,49 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 }
 
 
-BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP const mod)
+int diff_BigPolyT(BigPolyTP const p, BigPolyTP dp)
+/** Differentiates p, stores result in dp.
+    Returns 1 on success, 0 othrwise. */
+{
+	BigIntTP* coeffs = extract_coefficients(p);
+	BigIntTP  temp   = empty_BigIntT(1);
+	BigIntTP  count  = empty_BigIntT(1);
+	
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	//Derivative calculation
+	for (int i = 0; i < p->size; i += 1)
+	{
+		multiply_BigIntT(coeffs[i], count, temp);
+		copy_BigIntT(temp, coeffs[i]);
+		
+		add_BigIntT(count, one, temp);
+		copy_BigIntT(temp, count);
+	}
+	
+	//Constants get sent to zero under a derivative calculation
+	coeffs[0] = free_BigIntT(coeffs[0]);
+	coeffs += 1;
+	
+	resize_BigPolyT(dp, p->size-1);
+	set_BigPolyT(dp, coeffs);
+	
+	for (int i = 0; i < p->size-1; i += 1)
+		coeffs[i] = free_BigIntT(coeffs[i]);
+	coeffs -= 1;
+	free(coeffs);
+	coeffs = NULL;
+	
+	temp  = free_BigIntT(temp);
+	one   = free_BigIntT(one);
+	count = free_BigIntT(count);
+	
+	return 1;
+}
+
+
+BigPolyTP* old_factor_BigPolyT(BigPolyTP const A, BigIntTP const mod)
 /** Factors the given BigPolyTP and returns the factors
     in a pointer. The first element in the factor will
     be a constant BigPolyTP telling how many factors there
@@ -1707,4 +1750,78 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const A, BigIntTP const mod)
 	polyCarries   = NULL;
 	
 	return factors;
+}
+
+
+BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
+/** Factors polynomials using our brand-new knowledge gained
+    from Wikipedia! 
+		Returns an array of BigPolyTs, each one representing an
+		irreducible factor of p. The first BigPolyT in the array is
+		a constant telling how many factors are in the array. */
+{
+	//en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields#Square-free_factorization
+	
+	BigPolyTP* squareFreeFactors;
+	int numOfSquareFreeFactors = 0;
+	
+	BigPolyTP diffP;
+	BigPolyTP monicP;
+	BigPolyTP repeatedFactors;
+	
+	BigIntTP  leadingTermInv = NULL;
+	BigPolyTP invPoly = NULL;
+	
+	BigPolyTP tempPoly = NULL;
+	
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	//First, let's make sure p is monic
+	monicP = empty_BigPolyT();
+	copy_BigPolyT(p, monicP);
+	reduce_BigPolyT(monicP);
+	
+	if (compare_BigIntT(leading_term(monicP), one) != 0)
+	{
+		leadingTermInv = empty_BigIntT(1);
+		big_num_inverse(leading_term(monicP), mod, leadingTermInv);
+		invPoly = constant_BigPolyT(leadingTermInv);
+		
+		multiply_BigPolyT(monicP, invPoly, tempPoly);
+		mod_BigPolyT(tempPoly, mod, monicP);
+	}
+	
+	//Initialise terms we need for square-free factorization
+	tempPoly = empty_BigPolyT();
+	diffP    = empty_BigPolyT();
+	diff_BigPolyT(monicP, tempPoly);
+	mod_BigPolyT(tempPoly, mod, diffP);
+	
+	repeatedFactors = empty_BigPolyT();
+	poly_gcd(monicP, diffP, repeatedFactors, mod, NULL, NULL); //Repeated factors w/o multiplicity that mod divides
+	
+	//This is a good point to stop and test and make sure your program is doing what it's supposed to do!
+	printf("p = ");
+	printp(p);
+	printf("\nmonicP = ");
+	printp(monicP);
+	printf("\ndiffP = ");
+	printp(diffP);
+	printf("\nrepeatedFactors = ");
+	printp(repeatedFactors);
+	printf("\n");
+	
+	
+	diffP    = free_BigPolyT(diffP);
+	monicP   = free_BigPolyT(monicP);
+	invPoly  = free_BigPolyT(invPoly);
+	tempPoly = free_BigPolyT(tempPoly);
+	
+	repeatedFactors = free_BigPolyT(repeatedFactors);
+	
+	one            = free_BigIntT(one);
+	leadingTermInv = free_BigIntT(leadingTermInv);
+	
+	return NULL;
 }

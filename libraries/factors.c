@@ -106,35 +106,67 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 /** Calculates the GCD of two given polynomials, stores the
     result in the third BigPolyT given. The fourth and fifth 
 		BigPolyTs will store the polynomials s and t guaranteed by Bezout's 
-		identity, meaning gcd(a, b) = sa + tb. The BigIntT is the 
+		identity, meaning gcd(p, q) = sp + tq. The BigIntT is the 
 		modulus to use.
 		Returns 1 on success, 0 otherwise. */
 {
 	BigPolyTP A, B, R, tempQ, zero;
+	BigPolyTP cA, cB; //References to s and t
+	
+	/* Currently, if cA or cB is NULL, the function prevents the terms
+	 *  from Bezout's identity to be copied (to avoid crashing).
+	 *  However, the function still calculates these terms all the same.
+	 *  In the future, it would be nice to be able to tell the function
+	 *  not to do these calculations if it sees cA or cB is NULL to 
+	 *  increase speed. For now, I'm too lazy :)
+	 */
 	
 	//These are for simplifying the GCD
 	BigIntTP  leadingTermInv;
 	BigPolyTP invPoly;
 	
+	int oneArr[1] = {1};
+	BigIntTP  one;
+	BigIntTP  negOne;
+	BigPolyTP onePoly;
+	BigPolyTP negOnePoly;
+	
+	//[s or t, A or B, t or s, B or A]
+	BigPolyTP*  bezoutArray;           //Holds coefficients and stuff for finding s and t
+	
+	//[[A, B, Q, R], [A, B, Q, R], ...]
 	BigPolyTP** divisionRecord = NULL; //Holds all the polynomials needed to find s and t
 	int divisionRecordSize = 0;
 	
-	A = empty_BigPolyT();
-	B = empty_BigPolyT();
-	R = empty_BigPolyT();
+	A     = empty_BigPolyT();
+	B     = empty_BigPolyT();
+	R     = empty_BigPolyT();
 	tempQ = empty_BigPolyT();
-	zero = empty_BigPolyT();
+	zero  = empty_BigPolyT();
+	
+	one = new_BigIntT(oneArr, 1);
+	onePoly = constant_BigPolyT(one);
+	
+	negOne = empty_BigIntT(1);
+	subtract_BigIntT(mod, one, negOne);
+	negOnePoly = constant_BigPolyT(negOne);
 	
 	//Checking to see which polynomial given is greater
 	if (compare_BigPolyT(p, q) < 0) //q is bigger
 	{
 		copy_BigPolyT(q, A);
 		copy_BigPolyT(p, B);
+		
+		cA = t;
+		cB = s;
 	}
 	else
 	{
 		copy_BigPolyT(p, A);
 		copy_BigPolyT(q, B);
+		
+		cA = s;
+		cB = t;
 	}
 	
 	reduce_BigPolyT(A);
@@ -149,20 +181,15 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 		for (int i = 0; i < 4; i += 1)
 			divisionRecord[divisionRecordSize-1][i] = empty_BigPolyT();
 		
-		//Finish copying values into this later
-		copy_BigPolyT(A, divisionRecord[divisionRecordSize-1][0]);
-		
 		divide_BigPolyT(A, B, tempQ, R, mod);
+		
+		copy_BigPolyT(A, divisionRecord[divisionRecordSize-1][0]);
+		copy_BigPolyT(B, divisionRecord[divisionRecordSize-1][1]);
+		copy_BigPolyT(tempQ, divisionRecord[divisionRecordSize-1][2]);
+		copy_BigPolyT(R, divisionRecord[divisionRecordSize-1][3]);
+		
 		copy_BigPolyT(B, A);
 		copy_BigPolyT(R, B);
-		
-		/*printf("A = ");
-		printp(A);
-		printf("\nB = ");
-		printp(B);
-		printf("\nR = ");
-		printp(R);
-		printf("\n\n"); */
 	}
 	while (compare_BigPolyT(zero, R) != 0);
 	
@@ -175,10 +202,101 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 	multiply_BigPolyT(A, invPoly, tempQ);
 	mod_BigPolyT(tempQ, mod, A);
 	
-	printp(A);
+	bezoutArray = malloc(4*sizeof(BigPolyTP));
+	for (int i = 0; i < 4; i += 1)
+		bezoutArray[i] = empty_BigPolyT();
 	
-	//Extended Euclidian algorithm (finding polynomials guaranteed by Bezout's identity)
-	//pass
+	//Do some casework for getting s and t correctly
+	
+	//If B | A, meaning gcd(A, B) = B
+	if (divisionRecordSize == 1)
+	{
+		if (cA != NULL)
+			copy_BigPolyT(divisionRecord[0][3], cA);
+		if (cB != NULL)
+			copy_BigPolyT(onePoly, cB);
+	}
+	
+	else
+	{
+		//Prepare bezoutArray for extended Euclidian algorithm
+		if (divisionRecordSize >= 2)
+		{
+			copy_BigPolyT(onePoly, bezoutArray[0]);
+			copy_BigPolyT(divisionRecord[divisionRecordSize-2][0], bezoutArray[1]);
+			
+			multiply_BigPolyT(divisionRecord[divisionRecordSize-2][2], negOnePoly, tempQ);
+			mod_BigPolyT(tempQ, mod, bezoutArray[2]);
+			copy_BigPolyT(divisionRecord[divisionRecordSize-2][1], bezoutArray[3]);
+		}
+		
+		//Extended Euclidian algorithm, if needed
+		if (divisionRecordSize > 2)
+		{
+			for (int step = 3; step <= divisionRecordSize; step += 1)
+			{
+				//Change right number
+				if (step % 2 == 1)
+				{
+					//bezoutArray[3] is being used as a temp variable in this block
+					multiply_BigPolyT(bezoutArray[2], divisionRecord[divisionRecordSize-step][2], tempQ);
+					multiply_BigPolyT(tempQ, negOnePoly, bezoutArray[3]);
+					add_BigPolyT(bezoutArray[3], bezoutArray[0], tempQ);
+					mod_BigPolyT(tempQ, mod, bezoutArray[0]);
+					
+					copy_BigPolyT(divisionRecord[divisionRecordSize-step][0], bezoutArray[3]);
+				}
+				
+				//Change left number
+				else
+				{
+					//bezoutArray[1] is being used as a temp variable in this block
+					multiply_BigPolyT(bezoutArray[0], divisionRecord[divisionRecordSize-step][2], tempQ);
+					multiply_BigPolyT(tempQ, negOnePoly, bezoutArray[1]);
+					add_BigPolyT(bezoutArray[1], bezoutArray[2], tempQ);
+					mod_BigPolyT(tempQ, mod, bezoutArray[2]);
+					
+					copy_BigPolyT(divisionRecord[divisionRecordSize-step][0], bezoutArray[1]);
+				}
+			}
+		}
+		
+		//Find s and t, copy them to cA and cB
+		if (compare_BigPolyT(divisionRecord[0][0], bezoutArray[1]) == 0)
+		{
+			//Correcting s and t to match with our MONIC gcd
+			if (cA != NULL)
+			{
+				multiply_BigPolyT(bezoutArray[0], invPoly, tempQ);
+				mod_BigPolyT(tempQ, mod, cA);
+			}
+			if (cB != NULL)
+			{
+				multiply_BigPolyT(bezoutArray[2], invPoly, tempQ);
+				mod_BigPolyT(tempQ, mod, cB);
+			}
+		}
+		
+		else
+		{
+			//Correcting s and t to match with our MONIC gcd
+			if (cB != NULL)
+			{
+				multiply_BigPolyT(bezoutArray[0], invPoly, tempQ);
+				mod_BigPolyT(tempQ, mod, cB);
+			}
+			if (cA != NULL)
+			{
+				multiply_BigPolyT(bezoutArray[2], invPoly, tempQ);
+				mod_BigPolyT(tempQ, mod, cA);
+			}
+		}
+	}
+	
+	//Now, s and t should be copied into their correct variables
+	//We also need to copy the GCD itself
+	copy_BigPolyT(A, gcd);
+	
 	
 	for (int i = 0; i < divisionRecordSize; i += 1)
 	{
@@ -191,17 +309,26 @@ int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const
 	free(divisionRecord);
 	divisionRecord = NULL;
 	
+	for (int i = 0; i < 4; i += 1)
+		bezoutArray[i] = free_BigPolyT(bezoutArray[i]);
+	free(bezoutArray);
+	bezoutArray = NULL;
+	
 	A = free_BigPolyT(A);
 	B = free_BigPolyT(B);
 	R = free_BigPolyT(R);
 	
-	tempQ = free_BigPolyT(tempQ);
-	zero = free_BigPolyT(zero);
+	tempQ      = free_BigPolyT(tempQ);
+	zero       = free_BigPolyT(zero);
+	onePoly    = free_BigPolyT(onePoly);
+	negOnePoly = free_BigPolyT(negOnePoly);
 	
+	one            = free_BigIntT(one);
+	negOne         = free_BigIntT(negOne);
 	leadingTermInv = free_BigIntT(leadingTermInv);
 	invPoly        = free_BigPolyT(invPoly);
 	
-	return 0;
+	return 1;
 }
 
 

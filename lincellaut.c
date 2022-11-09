@@ -4489,7 +4489,7 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		int testMode = 2;
+		int testMode = 1;
 		
 		if (testMode == 0)
 		{
@@ -4580,15 +4580,20 @@ int main(int argc, char* argv[])
 		
 		else if (testMode == 1)
 		{
-			int Asize = 11;
-			int Bsize = 8;
+			/*int Asize = 11;
+			int Bsize = 8; */
 			
-			BigPolyTP A;
-			BigPolyTP B;
+			#define Asize 4
+			#define Bsize 5
+			
+			BigPolyTP A, dA, B;
 			
 			BigPolyTP quotient;
 			BigPolyTP remainder;
 			BigPolyTP GCD;
+			BigPolyTP s, t;
+			
+			BigPolyTP temp;
 			
 			BigIntTP* Adefn = malloc(Asize*sizeof(BigIntTP));
 			BigIntTP* Bdefn = malloc(Bsize*sizeof(BigIntTP));
@@ -4604,41 +4609,43 @@ int main(int argc, char* argv[])
 				numArr[0] += 1;
 			}
 			
-			numArr[0] = 17;
+			//modulus
+			numArr[0] = 11;
 			bigMod = new_BigIntT(numArr, 1);
 			
-			//4*x^10 + 12*x^9 + x^8 + 7*x^7 + 10*x^6 + 4*x^5 + 5*x^4 + 5*x^3 + 12*x^2 + 15 mod 17
-			Adefn[10] = NA[4];
-			Adefn[9] = NA[12];
-			Adefn[8] = NA[7];
-			Adefn[7] = NA[7];
-			Adefn[6] = NA[10];
-			Adefn[5] = NA[4];
-			Adefn[4] = NA[5];
-			Adefn[3] = NA[5];
-			Adefn[2] = NA[12];
-			Adefn[1] = NA[0];
-			Adefn[0] = NA[15];
+			//Some fun test cases
+			
+			//4*x^10 + 12*x^9 + 7*x^8 + 7*x^7 + 10*x^6 + 4*x^5 + 5*x^4 + 5*x^3 + 12*x^2 + 15 mod 17
+			//8*x^3 + 2*x^2 + 13*x + 16 mod 17
+			//x^3 + 6*x^2 + 10*x + 3 mod 11
+			int aCoeffs[Asize] = {3, 10, 6, 1};
+			for (int i = 0; i < Asize; i += 1)
+				Adefn[i] = NA[aCoeffs[i]];
 			
 			//14*x^7 + 2*x^6 + 3*x^5 + 10*x^4 + 7*x^3 + 8*x^2 + 9*x + 15 mod 17
-			Bdefn[7] = NA[14];
-			Bdefn[6] = NA[2];
-			Bdefn[5] = NA[3];
-			Bdefn[4] = NA[10];
-			Bdefn[3] = NA[7];
-			Bdefn[2] = NA[8];
-			Bdefn[1] = NA[9];
-			Bdefn[0] = NA[15];
+			//8*x^2 + 2*x + 2
+			//x^4 + 6*x^3 + x^2 + 9*x + 2 mod 11
+			int bCoeffs[Bsize] = {2, 9, 1, 6, 1};
+			for (int i = 0; i < Bsize; i += 1)
+				Bdefn[i] = NA[bCoeffs[i]];
 			
-			A = new_BigPolyT(Adefn, Asize);
-			B = new_BigPolyT(Bdefn, Bsize);
+			A  = new_BigPolyT(Adefn, Asize);
+			B  = new_BigPolyT(Bdefn, Bsize);
 			
+			dA        = empty_BigPolyT();
+			temp      = empty_BigPolyT();
 			quotient  = empty_BigPolyT();
 			remainder = empty_BigPolyT();
 			GCD       = empty_BigPolyT();
+			s         = empty_BigPolyT();
+			t         = empty_BigPolyT();
 			
 			printf("A = ");
 			printp(A);
+			printf("\nA' = ");
+			diff_BigPolyT(A, temp);
+			mod_BigPolyT(temp, bigMod, dA);
+			printp(dA);
 			printf("\nB = ");
 			printp(B);
 			printf("\n");
@@ -4649,25 +4656,42 @@ int main(int argc, char* argv[])
 			else
 			{
 				printp(quotient);
-				printf(" R ");
+				printf("  R  ");
 				printp(remainder);
 				printf("\n");
 			}
 			
-			//printf("gcd(A, B) = ");
-			poly_gcd(A, B, GCD, bigMod, NULL, NULL);
-			printf("\n");
+			printf("gcd(A, B) = ");
+			poly_gcd(A, B, GCD, bigMod, s, t);
+			printp(GCD);
+			printf("\n = (");
+			printp(s);
+			printf(")(");
+			printp(A);
+			printf(") + (");
+			printp(t);
+			printf(")(");
+			printp(B);
+			printf(")\n\n\n");
+			
+			printf("Factorisation debugging:\n");
+			factor_BigPolyT(A, bigMod);
+			
 			
 			for (int i = 0; i < NAsize; i += 1)
 				NA[i] = free_BigIntT(NA[i]);
 			FREE(NA);
 			
-			A = free_BigPolyT(A);
-			B = free_BigPolyT(B);
+			A  = free_BigPolyT(A);
+			B  = free_BigPolyT(B);
+			dA = free_BigPolyT(dA);
 			
+			temp      = free_BigPolyT(temp);
 			quotient  = free_BigPolyT(quotient);
 			remainder = free_BigPolyT(remainder);
 			GCD       = free_BigPolyT(GCD);
+			s         = free_BigPolyT(s);
+			t         = free_BigPolyT(t);
 			
 			bigMod = free_BigIntT(bigMod);
 		}

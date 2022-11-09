@@ -142,10 +142,21 @@ int divide_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP, BigPolyTP, BigI
 	Returns 1 on success, 0 oterwise. */
 int mod_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
 
+/** Differentiates the given BigPolyTP with respect to its
+    variable, stores the result in the second given BigPolyTP.
+	Returns 1 on success, 0 otherwise. */
+int diff_BigPolyT(BigPolyTP const, BigPolyTP);
+
 /** Factors the given BigPolyT under the given modulus.
     Returns a pointer to all the polynomial's factors.
 		The first element is a BigPolyT constant which says
 		how many factors are in the pointer. */
+BigPolyTP* old_factor_BigPolyT(BigPolyTP const, BigIntTP const);
+
+/** Factors polynomials under the given modulus. 
+	Returns an array of BigPolyTs, each one representing an
+	irreducible factor of the given polynomial. The first BigPolyT 
+	in the array is a constant telling how many factors are in the array. */
 BigPolyTP* factor_BigPolyT(BigPolyTP const, BigIntTP const);
 
 /*
