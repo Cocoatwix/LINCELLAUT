@@ -1080,7 +1080,6 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	
 	//If b == 0, exit
 	temp = empty_BigIntT(1);
-	
 	for (int i = 0; i < b->size; i += 1)
 	{
 		mod_BigIntT(b->coeffs[i], mod, temp);
@@ -1102,7 +1101,8 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	if (quotient->size != quotientSize)
 		resize_BigPolyT(quotient, quotientSize);
 	
-	resize_BigPolyT(remainder, a->size);
+	if (remainder != NULL)
+		resize_BigPolyT(remainder, a->size);
 	
 	qCoeffs = malloc(quotientSize*sizeof(BigIntTP));
 	for (int i = 0; i < quotientSize; i += 1)
@@ -1147,10 +1147,13 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	
 	//Set quotient and remainder
 	set_BigPolyT(quotient, qCoeffs);
-	set_BigPolyT(remainder, tempCoeffs);
-	
 	reduce_BigPolyT(quotient);
-	reduce_BigPolyT(remainder);
+	
+	if (remainder != NULL)
+	{
+		set_BigPolyT(remainder, tempCoeffs);
+		reduce_BigPolyT(remainder);
+	}
 	
 	//It feels really gross to free multiple different arrays
 	// like this.
@@ -1762,20 +1765,33 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 {
 	//en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields#Square-free_factorization
 	
-	BigPolyTP* squareFreeFactors;
+	//The factors in this array are all raised to an
+	// exponent equal to its position in the array + 1.
+	// Since there's no real need to calculate the factors
+	// to those powers, we just implicity keep track of it
+	BigPolyTP* squareFreeFactors = NULL;
 	int numOfSquareFreeFactors = 0;
 	
 	BigPolyTP diffP;
 	BigPolyTP monicP;
 	BigPolyTP repeatedFactors;
+	BigPolyTP allFactorsNoMult;
+	BigPolyTP factorsWithSpecificMult;
+	BigPolyTP isolateFactorsWithSpecificMult;
 	
 	BigIntTP  leadingTermInv = NULL;
 	BigPolyTP invPoly = NULL;
 	
+	BigIntTP counter;
+	
+	int       tempCoeffsSize = 0;
+	BigIntTP  temp;
+	BigIntTP* tempCoeffs = NULL;
 	BigPolyTP tempPoly = NULL;
 	
 	int oneArr[1] = {1};
-	BigIntTP one = new_BigIntT(oneArr, 1);
+	BigIntTP  one = new_BigIntT(oneArr, 1);
+	BigPolyTP onePoly = constant_BigPolyT(one);
 	
 	//First, let's make sure p is monic
 	monicP = empty_BigPolyT();
@@ -1795,22 +1811,107 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	//Initialise terms we need for square-free factorization
 	tempPoly = empty_BigPolyT();
 	diffP    = empty_BigPolyT();
-	diff_BigPolyT(monicP, tempPoly);
-	mod_BigPolyT(tempPoly, mod, diffP);
 	
-	repeatedFactors = empty_BigPolyT();
-	poly_gcd(monicP, diffP, repeatedFactors, mod, NULL, NULL); //Repeated factors w/o multiplicity that mod divides
+	repeatedFactors  = empty_BigPolyT();
+	allFactorsNoMult = empty_BigPolyT();
 	
-	//This is a good point to stop and test and make sure your program is doing what it's supposed to do!
-	printf("p = ");
-	printp(p);
-	printf("\nmonicP = ");
-	printp(monicP);
-	printf("\ndiffP = ");
-	printp(diffP);
-	printf("\nrepeatedFactors = ");
-	printp(repeatedFactors);
-	printf("\n");
+	factorsWithSpecificMult        = empty_BigPolyT();
+	isolateFactorsWithSpecificMult = empty_BigPolyT();
+	
+	temp    = empty_BigIntT(1);
+	counter = empty_BigIntT(1);
+	
+	//This do loop lets us run the algorithm without recursion
+	do
+	{
+		diff_BigPolyT(monicP, tempPoly);
+		mod_BigPolyT(tempPoly, mod, diffP);
+		
+		//Repeated factors w/ one less multiplicity
+		poly_gcd(monicP, diffP, repeatedFactors, mod, NULL, NULL);
+		
+		//All factors except those with multiplicity a multiple of mod, no multiplicities
+		divide_BigPolyT(monicP, repeatedFactors, allFactorsNoMult, NULL, mod);
+		
+		printf("p = ");
+		printp(p);
+		printf("\nmonicP = ");
+		printp(monicP);
+		printf("\ndiffP = ");
+		printp(diffP);
+		printf("\nrepeatedFactors = ");
+		printp(repeatedFactors);
+		printf("\nallFactorsNoMult = ");
+		printp(allFactorsNoMult);
+		printf("\n");
+		
+		//Now, we isolate all the factors with the same multiplicity
+		// in allFactorsNoMult, and shove them in squareFreeFactors
+	
+		for (int i = 0; compare_BigPolyT(onePoly, allFactorsNoMult) != 0; i += 1)
+		{
+			poly_gcd(allFactorsNoMult, repeatedFactors, isolateFactorsWithSpecificMult, mod, NULL, NULL);
+			divide_BigPolyT(allFactorsNoMult, isolateFactorsWithSpecificMult, factorsWithSpecificMult, NULL, mod);
+			
+			//Store factors with current multiplicity (i+1)
+			numOfSquareFreeFactors += 1;
+			squareFreeFactors = realloc(squareFreeFactors, numOfSquareFreeFactors*sizeof(BigPolyTP));
+			squareFreeFactors[numOfSquareFreeFactors-1] = empty_BigPolyT();
+			copy_BigPolyT(factorsWithSpecificMult, squareFreeFactors[numOfSquareFreeFactors-1]);
+			
+			//Remember that the multiplicity goes up each element in squareFreeFactors
+			// We don't actually compute the power here; we don't really need to
+			// Just keep track of it!
+			
+			//Get rid of factors in allFactorsNoMult which we've already accounted for
+			copy_BigPolyT(isolateFactorsWithSpecificMult, allFactorsNoMult);
+			
+			//Switch our attention to the next multiplicity
+			divide_BigPolyT(repeatedFactors, isolateFactorsWithSpecificMult, tempPoly, NULL, mod);
+			copy_BigPolyT(tempPoly, repeatedFactors);
+		}
+		
+		//Now, repeatedFactors now holds factors with multiplicity a multiple of mod
+		//We need to isolate these using a different method
+		if (compare_BigPolyT(repeatedFactors, onePoly) != 0)
+		{
+			//Plug x^{1/p} into repeatedFactors
+			tempCoeffsSize = 0;
+			clear_BigIntT(counter);
+			for (int j = 0; j < repeatedFactors->size; j += 1)
+			{
+				//Check to see if our term has an exponent a multiple of mod
+				mod_BigIntT(counter, mod, temp);
+				if (is_zero(temp))
+				{
+					//Shove coefficient into array
+					tempCoeffsSize += 1;
+				}
+				
+				add_BigIntT(counter, one, temp);
+				copy_BigIntT(temp, counter);
+			}
+			
+			//Make new polynomial with array of coeffs
+			//Run algorithm again
+		}
+		
+		//First, let's get a status update
+		printf("After first for-loop\n");
+		printf("repeatedFactors = ");
+		printp(repeatedFactors);
+		printf("\nallFactorsNoMult = ");
+		printp(allFactorsNoMult);
+		printf("\nsquareFreeFactors: \n");
+		for (int i = 0; i < numOfSquareFreeFactors; i += 1)
+		{
+			printf("(");
+			printp(squareFreeFactors[i]);
+			printf(")^%d", i+1);
+		}
+		printf("\n");
+	}
+	while (compare_BigPolyT(onePoly, allFactorsNoMult) != 0);
 	
 	
 	diffP    = free_BigPolyT(diffP);
@@ -1818,9 +1919,17 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	invPoly  = free_BigPolyT(invPoly);
 	tempPoly = free_BigPolyT(tempPoly);
 	
-	repeatedFactors = free_BigPolyT(repeatedFactors);
+	onePoly = free_BigPolyT(onePoly);
+	
+	//for ()
+	
+	repeatedFactors                = free_BigPolyT(repeatedFactors);
+	allFactorsNoMult               = free_BigPolyT(allFactorsNoMult);
+	factorsWithSpecificMult        = free_BigPolyT(factorsWithSpecificMult);
+	isolateFactorsWithSpecificMult = free_BigPolyT(isolateFactorsWithSpecificMult);
 	
 	one            = free_BigIntT(one);
+	temp           = free_BigIntT(temp);
 	leadingTermInv = free_BigIntT(leadingTermInv);
 	
 	return NULL;

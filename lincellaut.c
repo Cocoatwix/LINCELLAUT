@@ -4489,7 +4489,7 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		int testMode = 1;
+		int testMode = 123;
 		
 		if (testMode == 0)
 		{
@@ -4583,8 +4583,8 @@ int main(int argc, char* argv[])
 			/*int Asize = 11;
 			int Bsize = 8; */
 			
-			#define Asize 4
-			#define Bsize 5
+			#define Asize 7
+			#define Bsize 7
 			
 			BigPolyTP A, dA, B;
 			
@@ -4618,14 +4618,16 @@ int main(int argc, char* argv[])
 			//4*x^10 + 12*x^9 + 7*x^8 + 7*x^7 + 10*x^6 + 4*x^5 + 5*x^4 + 5*x^3 + 12*x^2 + 15 mod 17
 			//8*x^3 + 2*x^2 + 13*x + 16 mod 17
 			//x^3 + 6*x^2 + 10*x + 3 mod 11
-			int aCoeffs[Asize] = {3, 10, 6, 1};
+			//x^6 + 10*x^5 + 9*x^4 + 7*x^3 + 6*x^2 + 9*x + 1 mod 11
+			int aCoeffs[Asize] = {1, 9, 6, 7, 9, 10, 1};
 			for (int i = 0; i < Asize; i += 1)
 				Adefn[i] = NA[aCoeffs[i]];
 			
 			//14*x^7 + 2*x^6 + 3*x^5 + 10*x^4 + 7*x^3 + 8*x^2 + 9*x + 15 mod 17
 			//8*x^2 + 2*x + 2
 			//x^4 + 6*x^3 + x^2 + 9*x + 2 mod 11
-			int bCoeffs[Bsize] = {2, 9, 1, 6, 1};
+			//x^6 + 6*x^5 + 8*x^4 + 7*x^3 + 9*x^2 + 8*x + 3 mod 11
+			int bCoeffs[Bsize] = {3, 8, 9, 7, 8, 6, 1};
 			for (int i = 0; i < Bsize; i += 1)
 				Bdefn[i] = NA[bCoeffs[i]];
 			
