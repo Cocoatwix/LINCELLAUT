@@ -4489,7 +4489,7 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		int testMode = 123;
+		int testMode = 1;
 		
 		if (testMode == 0)
 		{
@@ -4583,7 +4583,7 @@ int main(int argc, char* argv[])
 			/*int Asize = 11;
 			int Bsize = 8; */
 			
-			#define Asize 7
+			#define Asize 12
 			#define Bsize 7
 			
 			BigPolyTP A, dA, B;
@@ -4610,7 +4610,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//modulus
-			numArr[0] = 11;
+			numArr[0] = 3;
 			bigMod = new_BigIntT(numArr, 1);
 			
 			//Some fun test cases
@@ -4619,7 +4619,8 @@ int main(int argc, char* argv[])
 			//8*x^3 + 2*x^2 + 13*x + 16 mod 17
 			//x^3 + 6*x^2 + 10*x + 3 mod 11
 			//x^6 + 10*x^5 + 9*x^4 + 7*x^3 + 6*x^2 + 9*x + 1 mod 11
-			int aCoeffs[Asize] = {1, 9, 6, 7, 9, 10, 1};
+			//x^11 + 2*x^9 + 2*x^8 + x^6 + x^5 + 2*x^3 + 2*x^2 + 1 mod 3
+			int aCoeffs[Asize] = {1, 0, 2, 2, 0, 1, 1, 0, 2, 2, 0, 1};
 			for (int i = 0; i < Asize; i += 1)
 				Adefn[i] = NA[aCoeffs[i]];
 			
