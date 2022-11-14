@@ -1182,6 +1182,101 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 }
 
 
+int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
+/** Calculates the first BigPolyT raised to the given BigIntT.
+    Stores the result in the second BigPolyT given (which is
+		assumed to have been initialised).
+		Returns 1 on success, 0 otherwise. */
+{
+	//This is my attempt at implementing exponentiation by squaring
+	
+	int returnVal = 0;
+	int numArr[1] = {1};
+	
+	BigIntTP temp    = empty_BigIntT(1);
+	BigIntTP tempPow = empty_BigIntT(1);
+	BigIntTP zero    = empty_BigIntT(1);
+	BigIntTP one     = new_BigIntT(numArr, 1);
+	BigIntTP two;
+	
+	BigPolyTP onePoly  = constant_BigPolyT(one);
+	BigPolyTP tempPoly = empty_BigPolyT();
+	
+	BigPolyTP* results = NULL; //Holds a lost of polynomials we need to multiply together to get exp
+	int numOfResults = 0;
+	
+	numArr[0] = 2;
+	two = new_BigIntT(numArr, 1);
+	
+	if (compare_BigIntT(pow, zero) == 0)
+	{
+		copy_BigPolyT(onePoly, exp);
+		returnVal = 1;
+	}
+	
+	else if (compare_BigIntT(pow, one) == 0)
+	{
+		copy_BigPolyT(p, exp);
+		returnVal = 1;
+	}
+	
+	else
+	{
+		copy_BigIntT(pow, tempPow);
+		numOfResults += 1;
+		results = realloc(results, sizeof(BigPolyTP));
+		results[0] = empty_BigPolyT();
+		
+		copy_BigPolyT(p, results[0]);
+	
+		while (compare_BigIntT(tempPow, one) > 0) //Compute the power
+		{
+			mod_BigIntT(tempPow, two, temp);
+			
+			//If tempPow is even
+			if (compare_BigIntT(temp, zero) == 0)
+			{
+				//x^{2n} = (x^{2})^{n}
+				divide_BigIntT(tempPow, two, temp);
+				copy_BigIntT(temp, tempPow);
+			}
+			
+			//If tempPow is odd
+			else
+			{
+				//x^{2n+1} = x(x^{2})^{n}
+				numOfResults += 1;
+				results = realloc(results, numOfResults*sizeof(BigPolyTP));
+				results[numOfResults-1] = empty_BigPolyT();
+				copy_BigPolyT(results[0], results[numOfResults-1]);
+				
+				subtract_BigIntT(tempPow, one, temp);
+				divide_BigIntT(temp, two, tempPow);
+			}
+			
+			//Square our current result
+			multiply_BigPolyT(results[numOfResults-1], results[numOfResults-1], tempPoly);
+			copy_BigPolyT(tempPoly, results[numOfResults-1]);
+		}
+		
+		//Now, we simply multiply all the results together to get exp
+	}
+	
+	//Dont forget to clear results!
+	
+	onePoly  = free_BigPolyT(onePoly);
+	tempPoly = free_BigPolyT(tempPoly);
+	
+	tempPow = free_BigIntT(tempPow);
+	one     = free_BigIntT(one);
+	two     = free_BigIntT(two);
+	zero    = free_BigIntT(zero);
+	temp    = free_BigIntT(temp);
+	
+	return returnVal;
+}
+
+
 int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 /** Performs a mod operation on each element of a polynomial,
     stores the result in residue. This function assumes all arguments
@@ -1778,6 +1873,14 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	int  exponentMultiple = 1;
 	int* squareFreeFactorsExponents = NULL;
 	
+	//Holds polynomials which are all products of same-degree irreducible polynomials
+	BigPolyTP* distinctDegreeFactors = NULL;
+	int numOfDistinctDegreeFactors = 0;
+	
+	BigPolyTP currSFF; //Just a pointer, no need to free
+	int* distinctDegreeFactorsExponents = NULL; //The degree given by the distinct-degree factorisation
+	int* ddfsffExponents = NULL; //The exponents carried over from the squareFreeFactors
+	
 	BigPolyTP diffP;
 	BigPolyTP monicP;
 	BigPolyTP repeatedFactors;
@@ -1789,14 +1892,19 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	BigPolyTP invPoly = NULL;
 	
 	BigIntTP counter;
+	int intCounter;
 	
 	int       tempCoeffsSize = 0;
 	BigIntTP  temp;
 	BigIntTP* tempCoeffs = NULL;
-	BigPolyTP tempPoly = NULL;
+	BigPolyTP tempPoly   = NULL;
+	BigPolyTP tempPoly2  = NULL;
 	
 	int oneArr[1] = {1};
-	BigIntTP  one = new_BigIntT(oneArr, 1);
+	int twoArr[1] = {2};
+	BigIntTP one    = new_BigIntT(oneArr, 1);
+	BigIntTP negOne = empty_BigIntT(1);
+	BigIntTP two    = new_BigIntT(twoArr, 1);
 	BigPolyTP onePoly = constant_BigPolyT(one);
 	
 	//First, let's make sure p is monic
@@ -1815,8 +1923,9 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	}
 	
 	//Initialise terms we need for square-free factorization
-	tempPoly = empty_BigPolyT();
-	diffP    = empty_BigPolyT();
+	tempPoly  = empty_BigPolyT();
+	tempPoly2 = empty_BigPolyT();
+	diffP     = empty_BigPolyT();
 	
 	repeatedFactors  = empty_BigPolyT();
 	allFactorsNoMult = empty_BigPolyT();
@@ -1966,22 +2075,82 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 		printp(squareFreeFactors[i]);
 		printf(")^%d", squareFreeFactorsExponents[i]);
 	}
-	printf("\n");
+	printf("\n\n");
+	
+	subtract_BigIntT(mod, one, temp);
+	copy_BigIntT(temp, negOne);
 	
 	//Now we have a square-free factorisation of our initial polynomial p
 	//I guess we have to factor each bit now
 	
 	//Note that the square-free polynomials need to be monic, but
 	// I'm pretty sure they always will be
+	for (int sfFactor = 0; sfFactor < numOfSquareFreeFactors; sfFactor += 1)
+	{
+		currSFF = squareFreeFactors[sfFactor];
+		printf("Factoring ");
+		printp(currSFF);
+		printf("\n");
+		
+		//Do I even need to use the BigIntTP counter here?
+		intCounter = 1;
+		copy_BigIntT(one, counter);
+		multiply_BigIntT(counter, two, temp);
+		while (degree(currSFF) >= 2*intCounter)
+		{
+			//We need to compute x^{p^counter} - x mod currSFF
+			//This requires exponentiation by squaring (to do efficiently)
+			
+			//Calculate x^p
+			if (compare_BigIntT(counter, one) == 0)
+			{
+				//We'll have to create a new polynomial here
+				if (size(mod) > 1)
+				{
+					fprintf(stderr, "Given modulus is too big for the factoring function to handle." \
+													" Any following behaviour is undefined.\n");
+				}
+				
+				//I can't access the internals of mod from here
+				//I need to make an integer version of mod
+				//Maybe make a function that extracts the integer at a particular bunch?
+				/*
+				resize_BigPolyT(tempPoly, mod->theInt[0]+1);
+				clear_BigPolyT(tempPoly); //NEED TO IMPLEMENT THIS
+				copy_BigIntT(one, tempPoly->coeffs[mod->theInt[0]]); // x^p
+				copy_BigIntT(negOne, tempPoly->coeffs[1]);           //-x
+				*/
+				
+				//tempPoly should now hold x^p - x
+			}
+			
+			else
+			{
+				subtract_BigIntT(tempPoly->coeffs[1], one, temp);
+				copy_BigIntT(temp, tempPoly->coeffs[1]);
+				
+				//tempPoly should now be x^{p^{counter-1}}
+				
+			}
+			
+			intCounter += 1;
+			add_BigIntT(counter, one, temp);
+			copy_BigIntT(temp, counter);
+			multiply_BigIntT(counter, two, temp);
+			
+			reduce_BigPolyT(currSFF);
+		}
+	}
 	
 
 	free(tempCoeffs);
 	tempCoeffs = NULL;
 	
-	diffP    = free_BigPolyT(diffP);
-	monicP   = free_BigPolyT(monicP);
-	invPoly  = free_BigPolyT(invPoly);
-	tempPoly = free_BigPolyT(tempPoly);
+	diffP     = free_BigPolyT(diffP);
+	monicP    = free_BigPolyT(monicP);
+	invPoly   = free_BigPolyT(invPoly);
+	tempPoly  = free_BigPolyT(tempPoly);
+	tempPoly2 = free_BigPolyT(tempPoly2);
 	
 	onePoly = free_BigPolyT(onePoly);
 	
@@ -1991,8 +2160,11 @@ BigPolyTP* factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	isolateFactorsWithSpecificMult = free_BigPolyT(isolateFactorsWithSpecificMult);
 	
 	one            = free_BigIntT(one);
+	negOne         = free_BigIntT(negOne);
+	two            = free_BigIntT(one);
 	temp           = free_BigIntT(temp);
 	leadingTermInv = free_BigIntT(leadingTermInv);
+	counter        = free_BigIntT(counter);
 	
 	free(squareFreeFactorsExponents);
 	squareFreeFactorsExponents = NULL;

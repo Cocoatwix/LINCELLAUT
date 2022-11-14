@@ -136,6 +136,13 @@ int multiply_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
 //                  a                b                a/b        remainder  modulus
 int divide_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP, BigPolyTP, BigIntTP const);
 
+/** Calculates the first BigPolyT raised to the given BigIntT.
+    Stores the result in the second BigPolyT given (which is
+	assumed to have been initialised).
+	Currently, this function works for nonnegative powers.
+	Returns 1 on success, 0 otherwise. */
+int pow_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
+
 /** Reduces a given polynomial by a modulus, stores the result in
     another passed polynomial. This function assumes all arguments
 	have been properly initialised.
