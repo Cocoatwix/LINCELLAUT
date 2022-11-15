@@ -194,6 +194,18 @@ int size(BigIntTP const n)
 }
 
 
+int extract_bunch(BigIntTP const n, int b)
+/** Returns the integer at the given bunch b.
+    Returns -1 on error. */
+{
+	if ((b < 0) || (b >= n->size))
+		return -1;
+	
+	else
+		return n->theInt[b];
+}
+
+
 int append_BigIntT(char* dest, BigIntTP const src)
 /** Appends a BigIntT to the given string.
     This function assumes there's enough space in the string to

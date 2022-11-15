@@ -4580,10 +4580,10 @@ int main(int argc, char* argv[])
 		
 		else if (testMode == 1)
 		{
-			#define Asize 8
-			#define Bsize 7
+			#define Asize 32
+			#define Bsize 3
 			
-			BigPolyTP A, dA, B;
+			BigPolyTP A, dA, B, Bpow;
 			
 			BigPolyTP quotient;
 			BigPolyTP remainder;
@@ -4607,7 +4607,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//modulus
-			numArr[0] = 5;
+			numArr[0] = 11;
 			bigMod = new_BigIntT(numArr, 1);
 			
 			//Some fun test cases
@@ -4618,7 +4618,10 @@ int main(int argc, char* argv[])
 			//x^6 + 10*x^5 + 9*x^4 + 7*x^3 + 6*x^2 + 9*x + 1 mod 11
 			//x^11 + 2*x^9 + 2*x^8 + x^6 + x^5 + 2*x^3 + 2*x^2 + 1 mod 3
 			//x^7 + 4*x^6 + 2*x^5 + 2*x^4 + 2*x^3 + 4*x^2 + 2*x + 3 mod 5
-			int aCoeffs[Asize] = {3, 2, 4, 2, 2, 2, 4, 1};
+			
+			//Great example for testing the different stages of the factorisation algorithm
+			//x^31 + 4*x^30 + x^29 + 8*x^28 + 4*x^27 + 7*x^26 + 8*x^25 + 9*x^24 + 3*x^23 + 9*x^22 + 9*x^21 + 6*x^20 + 6*x^19 + 10*x^18 + 3*x^17 + 9*x^16 + x^15 + 6*x^14 + 5*x^12 + 6*x^11 + x^10 + 4*x^9 + 9*x^8 + 7*x^7 + 3*x^6 + 10*x^5 + 9*x^4 + 8*x + 9
+			int aCoeffs[Asize] = {9, 8, 0, 0, 9, 10, 3, 7, 9, 4, 1, 6, 5, 0, 6, 1, 9, 3, 10, 6, 6, 9, 9, 3, 9, 8, 7, 4, 8, 1, 4, 1};
 			for (int i = 0; i < Asize; i += 1)
 				Adefn[i] = NA[aCoeffs[i]];
 			
@@ -4626,7 +4629,7 @@ int main(int argc, char* argv[])
 			//8*x^2 + 2*x + 2
 			//x^4 + 6*x^3 + x^2 + 9*x + 2 mod 11
 			//x^6 + 6*x^5 + 8*x^4 + 7*x^3 + 9*x^2 + 8*x + 3 mod 11
-			int bCoeffs[Bsize] = {3, 8, 9, 7, 8, 6, 1};
+			int bCoeffs[Bsize] = {2, 2, 8};
 			for (int i = 0; i < Bsize; i += 1)
 				Bdefn[i] = NA[bCoeffs[i]];
 			
@@ -4634,6 +4637,7 @@ int main(int argc, char* argv[])
 			B  = new_BigPolyT(Bdefn, Bsize);
 			
 			dA        = empty_BigPolyT();
+			Bpow      = empty_BigPolyT();
 			temp      = empty_BigPolyT();
 			quotient  = empty_BigPolyT();
 			remainder = empty_BigPolyT();
@@ -4673,7 +4677,12 @@ int main(int argc, char* argv[])
 			printp(t);
 			printf(")(");
 			printp(B);
-			printf(")\n\n\n");
+			printf(")\n\n");
+			
+			printf("B^2 = ");
+			pow_BigPolyT(B, NA[2], Bpow);
+			printp(Bpow);
+			printf("\n\n");
 			
 			printf("Factorisation debugging:\n");
 			factor_BigPolyT(A, bigMod);
@@ -4683,9 +4692,10 @@ int main(int argc, char* argv[])
 				NA[i] = free_BigIntT(NA[i]);
 			FREE(NA);
 			
-			A  = free_BigPolyT(A);
-			B  = free_BigPolyT(B);
-			dA = free_BigPolyT(dA);
+			A    = free_BigPolyT(A);
+			B    = free_BigPolyT(B);
+			dA   = free_BigPolyT(dA);
+			Bpow = free_BigPolyT(Bpow);
 			
 			temp      = free_BigPolyT(temp);
 			quotient  = free_BigPolyT(quotient);

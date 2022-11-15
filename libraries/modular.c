@@ -45,21 +45,24 @@ void big_num_inverse(BigIntTP const findInverse, BigIntTP const modulus, BigIntT
 	//Search for inverse
 	//Apparently the extended Euclidian algorithm can be used here
 	// Will probably implement that later
-	while (compare_BigIntT(temp, modulus) < 0)
+	if (compare_BigIntT(zero, findInverse) != 0)
 	{
-		multiply_BigIntT(temp, findInverse, temp2);
-		mod_BigIntT(temp2, modulus, temp3);
-		
-		//Check to see if this is the correct inverse
-		if (compare_BigIntT(one, temp3) == 0)
+		while (compare_BigIntT(temp, modulus) < 0)
 		{
-			copy_BigIntT(temp, result);
-			break;
+			multiply_BigIntT(temp, findInverse, temp2);
+			mod_BigIntT(temp2, modulus, temp3);
+			
+			//Check to see if this is the correct inverse
+			if (compare_BigIntT(one, temp3) == 0)
+			{
+				copy_BigIntT(temp, result);
+				break;
+			}
+			
+			//Increment temp
+			add_BigIntT(one, temp, temp3);
+			copy_BigIntT(temp3, temp);
 		}
-		
-		//Increment temp
-		add_BigIntT(one, temp, temp3);
-		copy_BigIntT(temp3, temp);
 	}
 	
 	zero  = free_BigIntT(zero);

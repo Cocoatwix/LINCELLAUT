@@ -7,6 +7,9 @@
 /** Holds a polynomial datatype using BigIntT coefficients. */
 typedef struct bigpoly *BigPolyTP;
 
+/** Holds a factored BigPolyT, essentially. */
+typedef struct bigfactors *BigFactorsTP;
+
 /** Responsible for facilitating multidimensional BigIntT arrays
     of varying dimension. */
 //typedef struct bigintdirection *BigIntDirectionTP;
@@ -101,6 +104,10 @@ int compare_BigPolyT(BigPolyTP const, BigPolyTP const);
 	Returns 1 on success, 0 otherwise. */
 int set_BigPolyT(BigPolyTP, BigIntTP* const);
 
+/** Sets all coefficients in the given polynomial
+    to zero. Returns 1 on success, 0 otherwise. */
+int clear_BigPolyT(BigPolyTP);
+
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(BigPolyTP const);
 
@@ -164,7 +171,7 @@ BigPolyTP* old_factor_BigPolyT(BigPolyTP const, BigIntTP const);
 	Returns an array of BigPolyTs, each one representing an
 	irreducible factor of the given polynomial. The first BigPolyT 
 	in the array is a constant telling how many factors are in the array. */
-BigPolyTP* factor_BigPolyT(BigPolyTP const, BigIntTP const);
+BigFactorsTP factor_BigPolyT(BigPolyTP const, BigIntTP const);
 
 /*
 int find_factors(BigIntTP const,

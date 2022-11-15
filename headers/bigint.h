@@ -46,6 +46,10 @@ int strtoBIT(char* const, BigIntTP*);
 /** Returns the size of the BigIntT passed. */
 int size(BigIntTP const);
 
+/** Returns the integer stored at the given bunch in the
+    given BigIntT. Returns -1 on error. */
+int extract_bunch(BigIntTP const, int);
+
 /** Appends a BigIntTP to a string.
     This function assumes there's enough space in the string to
 	hold the BigIntT.
