@@ -21,6 +21,9 @@ typedef struct multivarext *MultiVarExtTP;
 /** Frees the memory used by a BigPolyT. Returns NULL. */
 BigPolyTP free_BigPolyT(BigPolyTP);
 
+/** Frees the memory used by a BigFactorsT. Returns NULL. */
+BigFactorsTP free_BigFactorsT(BigFactorsTP);
+
 /** Frees an array of BigPolyT factors. */
 BigPolyTP* free_BigPolyT_factors(BigPolyTP*);
 
@@ -38,6 +41,10 @@ BigPolyTP constant_BigPolyT(BigIntTP const);
 
 /** Creates an empty polynomial, returns a pointer to it. */
 BigPolyTP empty_BigPolyT();
+
+/** Returns a pointer to an empty BigFactorsT struct.
+    Returns NULL on error. */
+BigFactorsTP empty_BigFactorsT();
 
 /** Ensures that the leading term of the BigPolyT
     is nonzero. Returns 1 on success, 0 otherwise. */
@@ -92,6 +99,14 @@ BigIntTP* extract_coefficients(BigPolyTP const);
 		Returns 1 on success, 0 otherwise. */
 int copy_BigPolyT(BigPolyTP const, BigPolyTP);
 
+/** Create a new BigFactorsT struct with given factors,
+    exponents, and size. Returns a pointer to the struct. */
+BigFactorsTP new_BigFactorsT(BigPolyTP* const, int* const, int);
+
+/** Adds a new factor to the given BigFactorsT struct. 
+    Returns 1 on success, 0 otherwise. */
+int add_factor(BigFactorsTP, BigPolyTP const, int);
+
 /** Compares two BigPolyTPs to see if they're equal (have the
     same coefficients). 
 	Returns 0 if they're equal, a negative if the first BigPolyT 
@@ -112,7 +127,10 @@ int clear_BigPolyT(BigPolyTP);
 void printp(BigPolyTP const);
 
 /** Prints a factored BigPolyT. */
-void printpf(BigPolyTP* const);
+void old_printpf(BigPolyTP* const);
+
+/** Prints a BigFactorsT to stdout. */
+void printpf(BigFactorsTP const);
 
 /** Prints a MultiVarExtT to stdout. */
 void printmve(MultiVarExtTP const);

@@ -79,6 +79,8 @@ BigPolyTP free_BigPolyT(BigPolyTP p)
 		
 		free(p->coeffs);
 		p->coeffs = NULL;
+		
+		free(p);
 	}
 	
 	return NULL;
@@ -98,6 +100,8 @@ BigFactorsTP free_BigFactorsT(BigFactorsTP f)
 		
 		free(f->exponents);
 		f->exponents = NULL;
+		
+		free(f);
 	}
 
 	return NULL;
@@ -246,6 +250,19 @@ BigPolyTP empty_BigPolyT()
 	p->coeffs[0] = empty_BigIntT(1);
 	
 	return p;
+}
+
+
+BigFactorsTP empty_BigFactorsT()
+/** Returns a pointer to an empty BigFactorsT struct.
+    Returns NULL on error. */
+{
+	BigFactorsTP F = malloc(sizeof(BigFactorsT));
+	F->size      = 0;
+	F->factors   = NULL;
+	F->exponents = NULL;
+	
+	return F;
 }
 
 
@@ -602,7 +619,7 @@ int reduce_MultiVarExtT(MultiVarExtTP ext)
 	leadingTermInv = free_BigIntT(leadingTermInv);
 	minPolyMult    = free_BigIntT(minPolyMult);
 	
-	return 0;
+	return 1;
 }
 
 
@@ -669,6 +686,43 @@ int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 	
 	//Just to be safe
 	reduce_BigPolyT(copyTo);
+	
+	return 1;
+}
+
+
+BigFactorsTP new_BigFactorsT(BigPolyTP* const fs, int* const exps, int size)
+/** Creates a new BigFactorsT struct, returns a pointer to it. */
+{
+	BigFactorsTP F = malloc(sizeof(BigFactorsT));
+	F->factors     = malloc(size*sizeof(BigPolyTP));
+	F->exponents   = malloc(size*sizeof(int));
+	F->size        = size;
+	
+	for (int i = 0; i < size; i += 1)
+	{
+		F->factors[i] = empty_BigPolyT();
+		copy_BigPolyT(fs[i], F->factors[i]);
+		
+		F->exponents[i] = exps[i];
+	}
+	
+	return F;
+}
+
+
+int add_factor(BigFactorsTP f, BigPolyTP const p, int exp)
+/** Adds a new factor to f.
+    Returns 1 on success, 0 otherwise. */
+{
+	f->size += 1;
+	
+	f->factors = realloc(f->factors, (f->size)*sizeof(BigPolyTP));
+	f->factors[f->size-1] = empty_BigPolyT();
+	copy_BigPolyT(p, f->factors[f->size-1]);
+	
+	f->exponents = realloc(f->exponents, (f->size)*sizeof(int));
+	f->exponents[f->size-1] = exp;
 	
 	return 1;
 }
@@ -789,7 +843,7 @@ void printp(BigPolyTP const p)
 }
 
 
-void printpf(BigPolyTP* factors)
+void old_printpf(BigPolyTP* factors)
 /** Prints a factorised BigPolyT to stdout. */
 {
 	BigIntTP indexCounter;
@@ -816,6 +870,18 @@ void printpf(BigPolyTP* factors)
 	temp = free_BigIntT(temp);
 	one  = free_BigIntT(one);
 	indexCounter = free_BigIntT(indexCounter);
+}
+
+
+void printpf(BigFactorsTP const f)
+/** Prints a BigFactorsT to stdout. */
+{
+	for (int i = 0; i < f->size; i += 1)
+	{
+		printf("(");
+		printp(f->factors[i]);
+		printf(")^%d", f->exponents[i]);
+	}
 }
 
 
@@ -1917,6 +1983,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 		of the given polynomial.*/
 {
 	//en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields#Factoring_algorithms
+	//en.wikipedia.org/wiki/Cantor%E2%80%93Zassenhaus_algorithm
 	
 	//The factors in this array are all raised to an
 	// exponent equal to its corresponding exponent in squareFreeFactorsExponents.
@@ -1939,7 +2006,14 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	int* ddfsffExponents = NULL; //The exponents carried over from the squareFreeFactors
 	
 	//Holds all irreducible factors of our given polynomial
-	BigFactorsTP equalDegreeFactorisation;
+	BigFactorsTP factoredP;
+	BigPolyTP*   equalDegreeFactors = NULL;
+	int numOfEqualDegreeFactors;  //Counts the number of factors we've found during equal-degree factorisation
+	int r; //The number of factors we know are in our given polynomial
+	
+	int numArr[1] = {0};
+	BigIntTP* hArr = NULL; //For creating random polynomials in the Cantor-Zassenhaus algorithm
+	BigPolyTP h;           //Random polynomial
 	
 	BigPolyTP diffP;
 	BigPolyTP monicP;
@@ -2220,15 +2294,58 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	
 	//Now, our polynomial should be split into distinct-degree factors.
 	//All that's left is to factor the reducible factors
+	factoredP = empty_BigFactorsT();
+	if (extract_bunch(mod, 0) == 2)
+		fprintf(stderr, "Given modulus is 2. Equal-degree factorisation will produce undefined results.\n");
+	
+	/* I'll make a slight modification to the algorithm given on the Wikipedia page
+	 * (courtesy of "Lecture 11: Cantor-Zassenhaus Algorithm" by Piyush P Kurur).
+	 * Before computing h^{(p^d - 1)/2} - 1, I'll first check to see whether h
+	 * already contains factors from our given f (but not all of them, since that
+	 * wouldn't help us factor it) by computing gcd(f_i, h) and checking to see whether
+	 * it equals anything but 1 or f_i (where f_i is a factor of f). 
+	 *
+	 * If we don't find any new factors, then compute the monstrosity and check
+	 * again. If we STILL don't find anything, then computing h^{(p^d - 1)/2} + 1
+	 * should guarantee that we find something.
+	 */
 	
 	for (int ddFactor = 0; ddFactor < numOfDistinctDegreeFactors; ddFactor += 1)
 	{
 		//If we find a reducible factor
 		if (degree(distinctDegreeFactors[ddFactor]) != distinctDegreeFactorsExponents[ddFactor])
 		{
+			r = degree(distinctDegreeFactors[ddFactor])/distinctDegreeFactorsExponents[ddFactor];
 			
+			numOfEqualDegreeFactors = 1;
+			equalDegreeFactors = realloc(equalDegreeFactors, sizeof(BigPolyTP));
+			equalDegreeFactors[0] = empty_BigPolyT();
+			copy_BigPolyT(distinctDegreeFactors[ddFactor], equalDegreeFactors[0]);
+			
+			//Getting hArr prepped for holding random coefficients
+			hArr = realloc(hArr, (degree(distinctDegreeFactors[ddFactor])-1)*sizeof(BigIntTP));
+			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
+				hArr[i] = empty_BigIntT(1);
+			
+			//While there are still factors to find
+			while (numOfEqualDegreeFactors < r)
+			{
+				printf("Not implemented yet!\n");
+				break;
+			}
+			
+			//Freeing ints to prepare for next factor
+			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
+				hArr[i] = free_BigIntT(hArr[i]);
 		}
+		
+		//Don't need to do anything; the factor is already irreducible
+		else
+			add_factor(factoredP, distinctDegreeFactors[ddFactor], ddfsffExponents[ddFactor]);
 	}
+	
+	free(hArr);
+	hArr = NULL;
 	
 
 	free(tempCoeffs);
@@ -2260,5 +2377,5 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	squareFreeFactorsExponents = NULL;
 	//REMEMBER TO FREE SQUAREFREEFACTORS AT SOME POINT
 	
-	return NULL;
+	return factoredP;
 }

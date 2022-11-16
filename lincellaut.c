@@ -7,14 +7,18 @@
  */
  
 /* The following resources were used as a reference:
-https://docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
-https://stackoverflow.com/questions/3219393
+docs.microsoft.com/en-us/cpp/c-language/cpp-integer-limits?view=msvc-170
+stackoverflow.com/questions/3219393
+
+stackoverflow.com/questions/1190870
 */
  
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <limits.h> //So I can get the maximum integer
+
+#include <time.h> //For seeding random numbers 
 
 #include "headers/helper.h"
 #include "headers/bigint.h" //Arbitrary precision
@@ -63,6 +67,8 @@ if (strtoBIT((str), &(bigint)) != 1) \
 
 int main(int argc, char* argv[])
 {
+	srand(time(NULL)); //Seeding random number generator
+	
 	//Check to see if MAXBUNCH for BigIntT structs is a power of ten
 	//If it isn't, warn the user
 	for (int i = 10; i < MAXBUNCH; i *= 10)
@@ -448,8 +454,8 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP bigMatrix;
 			
 			BigPolyTP bigEqn;
-			BigPolyTP* bigEqnFactors;
-			BigPolyTP* minEqn;
+			BigPolyTP* bigEqnFactors = NULL;
+			BigPolyTP* minEqn = NULL;
 			
 			//If the user provided a custom modulus
 			if (argc > 2)
@@ -483,11 +489,11 @@ int main(int argc, char* argv[])
 			printp(bigEqn);
 			
 			printf("\nFactored characteristic equation: ");
-			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
-			printpf(bigEqnFactors);
+			bigEqnFactors = old_factor_BigPolyT(bigEqn, bigMod);
+			old_printpf(bigEqnFactors);
 			printf("\nMinimum polynomial: ");
 			minEqn = min_poly(bigMatrix, bigMod);
-			printpf(minEqn);
+			old_printpf(minEqn);
 			printf("\n\n");
 			
 			bigMod  = free_BigIntT(bigMod);
@@ -2348,7 +2354,7 @@ int main(int argc, char* argv[])
 			char* outputfilename;
 			FILE* outputFile;
 			BigPolyTP  charaPoly;
-			BigPolyTP* charaPolyFactors;
+			BigPolyTP* charaPolyFactors = NULL;
 			
 			//Checking to see if the user provided a modulus on the command line
 			if (argc > 4)
@@ -2559,11 +2565,11 @@ int main(int argc, char* argv[])
 					printf(" (%d)\n", cycleLengthCounts[indexCounter-1]);
 					
 					charaPoly = chara_poly(currMat, bigMod);
-					charaPolyFactors = factor_BigPolyT(charaPoly, bigMod);
+					charaPolyFactors = old_factor_BigPolyT(charaPoly, bigMod);
 					printf("Chara poly: ");
 					printp(charaPoly);
 					printf("\nFactored chara poly: ");
-					printpf(charaPolyFactors);
+					old_printpf(charaPolyFactors);
 					printf("\n\n");
 					
 					if (outputFile != NULL)
@@ -2905,7 +2911,7 @@ int main(int argc, char* argv[])
 						big_floyd(currentMatrix, identity, mod, &theCycle);
 						
 						charaPoly  = chara_poly(currentMatrix, mod);
-						factorList = factor_BigPolyT(charaPoly, mod);
+						factorList = old_factor_BigPolyT(charaPoly, mod);
 						
 						printbm(currentMatrix);
 						printf("Cycle length: %d\n", omega(theCycle));
