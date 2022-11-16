@@ -2014,6 +2014,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	int numArr[1] = {0};
 	BigIntTP* hArr = NULL; //For creating random polynomials in the Cantor-Zassenhaus algorithm
 	BigPolyTP h;           //Random polynomial
+	BigIntTP  M;           //The exponent for the monstrosity 
 	
 	BigPolyTP diffP;
 	BigPolyTP monicP;
@@ -2037,10 +2038,10 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	BigPolyTP tempPoly2  = NULL;
 	
 	int oneArr[1] = {1};
-	//int twoArr[1] = {2};
+	int twoArr[1] = {2};
 	BigIntTP one    = new_BigIntT(oneArr, 1);
 	BigIntTP negOne = empty_BigIntT(1);
-	//BigIntTP two    = new_BigIntT(twoArr, 1);
+	BigIntTP two    = new_BigIntT(twoArr, 1);
 	BigPolyTP onePoly = constant_BigPolyT(one);
 	
 	//First, let's make sure p is monic
@@ -2310,12 +2311,29 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	 * should guarantee that we find something.
 	 */
 	
+	h = empty_BigPolyT();
+	M = empty_BigIntT(1);
+	
 	for (int ddFactor = 0; ddFactor < numOfDistinctDegreeFactors; ddFactor += 1)
 	{
 		//If we find a reducible factor
 		if (degree(distinctDegreeFactors[ddFactor]) != distinctDegreeFactorsExponents[ddFactor])
 		{
+			//Calculate M
+			copy_BigIntT(one, M);
+			for (int i = 0; i < distinctDegreeFactorsExponents[ddFactor]; i += 1)
+			{
+				multiply_BigIntT(M, mod, temp);
+				copy_BigIntT(temp, M);
+			}
+			
+			subtract_BigIntT(M, one, temp);
+			divide_BigIntT(temp, two, M);
+			
+			//M should now hold (p^d - 1) / 2
+			
 			r = degree(distinctDegreeFactors[ddFactor])/distinctDegreeFactorsExponents[ddFactor];
+			clear_BigIntT(temp);
 			
 			numOfEqualDegreeFactors = 1;
 			equalDegreeFactors = realloc(equalDegreeFactors, sizeof(BigPolyTP));
@@ -2330,13 +2348,112 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 			//While there are still factors to find
 			while (numOfEqualDegreeFactors < r)
 			{
-				printf("Not implemented yet!\n");
-				break;
+				//Generate our random polynomial h
+				for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
+				{
+					set_bunch(temp, 0, (rand() >> 2) % extract_bunch(mod, 0));
+					copy_BigIntT(temp, hArr[i]);
+				}
+				
+				resize_BigPolyT(h, degree(distinctDegreeFactors[ddFactor])-1);
+				set_BigPolyT(h, hArr);
+				reduce_BigPolyT(h);
+				
+				//h should now hold the random polynomial
+				//Now to check whether we can get any factors out of it
+				split = FALSE;
+				for (int u = 0; u < numOfEqualDegreeFactors; u += 1)
+				{
+					//Only check factors that aren't irreducible
+					if (degree(u) > distinctDegreeFactorsExponents[ddFactor])
+					{
+						poly_gcd(equalDegreeFactors[u], h, GCD, mod, NULL, NULL);
+						
+						if ((compare_BigPolyT(onePoly, GCD) != 0) && (compare_BigPolyT(equalDegreeFactors[u], GCD) != 0))
+						{
+							split = TRUE;
+							
+							//Add our new factors into the array
+							numOfEqualDegreeFactors += 1;
+							equalDegreeFactors = realloc(equalDegreeFactors, numOfEqualDegreeFactors*sizeof(BigPolyTP));
+							equalDegreeFactors[numOfEqualDegreeFactors-1] = empty_BigPolyT();
+							
+							divide_BigPolyT(equalDegreeFactors[u], GCD, tempPoly, NULL, mod);
+							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
+							
+							copy_BigPolyT(GCD, equalDegreeFactors[u]);
+						}
+					}
+				}
+				
+				if (!split) //If we didn't find a new factor, compute the monster
+				{
+					//h^{(p^d-1)/2} - 1
+					pow_BigPolyT(h, M, tempPoly);
+					divide_BigPolyT(tempPoly, distinctDegreeFactors[ddFactor], NULL, h, mod);
+					
+					add_BigIntT(h->coeffs[0], negOne, temp);
+					mod_BigPolyT(temp, mod, h->coeffs[0]);
+					
+					//Loop through factors again, see if the monster polynomial can get any factors out of it
+					for (int u = 0; u < numOfEqualDegreeFactors; u += 1)
+					{
+						poly_gcd(equalDegreeFactors[u], h, GCD, mod, NULL, NULL);
+						
+						if ((compare_BigPolyT(onePoly, GCD) != 0) && (compare_BigPolyT(equalDegreeFactors[u], GCD) != 0))
+						{
+							split = TRUE;
+							
+							//Add our new factors into the array
+							numOfEqualDegreeFactors += 1;
+							equalDegreeFactors = realloc(equalDegreeFactors, numOfEqualDegreeFactors*sizeof(BigPolyTP));
+							equalDegreeFactors[numOfEqualDegreeFactors-1] = empty_BigPolyT();
+							
+							divide_BigPolyT(equalDegreeFactors[u], GCD, tempPoly, NULL, mod);
+							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
+							
+							copy_BigPolyT(GCD, equalDegreeFactors[u]);
+						}
+					}
+				}
+				
+				if (!split) //This last polynomial is guaranteed to find at least  one new factor
+				{
+					//h^{(p^d-1)/2} + 1
+					add_BigIntT(h->coeffs[0], two, temp);
+					mod_BigIntT(temp, mod, h->coeffs[0]);
+					
+					//Loop through factors AGAIN, see if the monster polynomial can get any factors out of it
+					for (int u = 0; u < numOfEqualDegreeFactors; u += 1)
+					{
+						poly_gcd(equalDegreeFactors[u], h, GCD, mod, NULL, NULL);
+						
+						if ((compare_BigPolyT(onePoly, GCD) != 0) && (compare_BigPolyT(equalDegreeFactors[u], GCD) != 0))
+						{
+							//Add our new factors into the array
+							numOfEqualDegreeFactors += 1;
+							equalDegreeFactors = realloc(equalDegreeFactors, numOfEqualDegreeFactors*sizeof(BigPolyTP));
+							equalDegreeFactors[numOfEqualDegreeFactors-1] = empty_BigPolyT();
+							
+							divide_BigPolyT(equalDegreeFactors[u], GCD, tempPoly, NULL, mod);
+							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
+							
+							copy_BigPolyT(GCD, equalDegreeFactors[u]);
+						}
+					}
+				}
 			}
+			
+			//Now, we need to add our newly-found factors into factoredP
+			//:)
 			
 			//Freeing ints to prepare for next factor
 			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
 				hArr[i] = free_BigIntT(hArr[i]);
+			
+			//Free equal-degree factors for next time
+			for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+				equalDegreeFactors[i] = free_BigPolyT(equalDegreeFactors[i]);
 		}
 		
 		//Don't need to do anything; the factor is already irreducible
@@ -2347,6 +2464,9 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	free(hArr);
 	hArr = NULL;
 	
+	h = free_BigPolyT(h);
+	
+	M = free_BigIntT(M);
 
 	free(tempCoeffs);
 	tempCoeffs = NULL;
@@ -2368,7 +2488,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	
 	one            = free_BigIntT(one);
 	negOne         = free_BigIntT(negOne);
-	//two            = free_BigIntT(two);
+	two            = free_BigIntT(two);
 	temp           = free_BigIntT(temp);
 	leadingTermInv = free_BigIntT(leadingTermInv);
 	counter        = free_BigIntT(counter);
@@ -2376,6 +2496,9 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	free(squareFreeFactorsExponents);
 	squareFreeFactorsExponents = NULL;
 	//REMEMBER TO FREE SQUAREFREEFACTORS AT SOME POINT
+	
+	free(equalDegreeFactors);
+	equalDegreeFactors = NULL;
 	
 	return factoredP;
 }

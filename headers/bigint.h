@@ -50,6 +50,11 @@ int size(BigIntTP const);
     given BigIntT. Returns -1 on error. */
 int extract_bunch(BigIntTP const, int);
 
+/** Sets the value of a bunch to the given number.
+    Returns 1 on success, 0 otherwise. */
+//            num       pos  bunch value
+int set_bunch(BigIntTP, int, int);
+
 /** Appends a BigIntTP to a string.
     This function assumes there's enough space in the string to
 	hold the BigIntT.

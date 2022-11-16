@@ -206,6 +206,19 @@ int extract_bunch(BigIntTP const n, int b)
 }
 
 
+int set_bunch(BigIntTP n, int pos, int val)
+/** Sets the value at a particular bunch.
+    This function was made to facilitate laziness. 
+		Returns 1 on success, 0 otherwise. */
+{
+	if ((pos < 0) || (pos >= n->size))
+		return 0;
+	
+	n->theInt[pos] = val;
+	return 1;
+}
+
+
 int append_BigIntT(char* dest, BigIntTP const src)
 /** Appends a BigIntT to the given string.
     This function assumes there's enough space in the string to
