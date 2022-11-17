@@ -2154,7 +2154,7 @@ BigPolyTP* min_poly(BigIntMatrixTP const A, BigIntTP const mod)
 	charaPoly = chara_poly(A, mod);
 	if (charaPoly != NULL)
 	{
-		factoredCharaPoly = factor_BigPolyT(charaPoly, mod);
+		factoredCharaPoly = old_factor_BigPolyT(charaPoly, mod);
 		numOfFactors = constant(factoredCharaPoly[0]); //The number of factors in the array
 		
 		one  = new_BigIntT(oneArr, 1);

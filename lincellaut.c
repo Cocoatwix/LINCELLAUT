@@ -67,7 +67,7 @@ if (strtoBIT((str), &(bigint)) != 1) \
 
 int main(int argc, char* argv[])
 {
-	srand(time(NULL)); //Seeding random number generator
+	srand(123457); //Seeding random number generator
 	
 	//Check to see if MAXBUNCH for BigIntT structs is a power of ten
 	//If it isn't, warn the user

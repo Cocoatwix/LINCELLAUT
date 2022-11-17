@@ -46,10 +46,14 @@ BigIntTP free_BigIntT(BigIntTP n)
 {
 	if (n != NULL)
 	{
+		printf("Freeing theInt...\n");
 		free(n->theInt);
+		printf("Setting theInt to NULL...\n");
 		n->theInt = NULL;
+		printf("Freeing n...\n");
 		free(n);
 	}
+	printf("Freed BigIntT successfully.\n");
 	return NULL;
 }
 
@@ -58,7 +62,7 @@ BigIntTP new_BigIntT(int* const initNum, int len)
 /** Returns a pointer to an initialised
     BigIntT struct. Returns NULL on error. */
 {
-	BigIntTP newBigInt = malloc(sizeof(BigIntTP));
+	BigIntTP newBigInt = malloc(sizeof(BigIntT));
 	newBigInt->theInt  = malloc(len*sizeof(int));
 	newBigInt->size    = len;
 	
@@ -75,7 +79,7 @@ BigIntTP empty_BigIntT(int zeros)
     which has been filled with zeros and has
 		size zeros. */
 {
-	BigIntTP newBigInt = malloc(sizeof(BigIntTP));
+	BigIntTP newBigInt = malloc(sizeof(BigIntT));
 	newBigInt->size    = zeros;
 	newBigInt->theInt  = calloc(zeros, sizeof(int));
 	
@@ -346,7 +350,7 @@ int reduce_BigIntT(BigIntTP toReduce)
 	//Only spend the time reallocating if something actually changed
 	if (counter > 0)
 		toReduce->theInt = realloc(toReduce->theInt, (toReduce->size)*sizeof(int));
-	
+
 	return 1;
 }
 
@@ -694,6 +698,7 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 		add_bunches(tempLot, A->size - 1, temp);
 		copy_BigIntT(temp, tempLot);
 	}
+
 	
 	//Multiply by ten a few times to get the size perfect
 	for (int i = 0; i < num_digits(A->theInt[A->size-1])-1; i += 1)

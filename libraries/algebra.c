@@ -1303,6 +1303,8 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 		assumed to have been initialised).
 		Returns 1 on success, 0 otherwise. */
 {
+	printf("Inside pow_BigPolyT()\n");
+	
 	//This is my attempt at implementing exponentiation by squaring
 	int returnVal = 0;
 	int numArr[1] = {1};
@@ -1345,6 +1347,10 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 	
 		while (compare_BigIntT(tempPow, one) > 0) //Compute the power
 		{
+			printf("tempPow = ");
+			printi(tempPow);
+			printf("\n");
+			
 			mod_BigIntT(tempPow, two, temp);
 			
 			//If tempPow is even
@@ -1371,6 +1377,14 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 			//Square our current result
 			multiply_BigPolyT(results[0], results[0], tempPoly);
 			copy_BigPolyT(tempPoly, results[0]);
+			
+			printf("results = [");
+			for (int r = 0; r < numOfResults; r += 1)
+			{
+				printp(results[r]);
+				printf(", ");
+			}
+			printf("]\n");
 		}
 		
 		//Now, we simply multiply all the results together to get exp
@@ -1397,7 +1411,7 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 	two     = free_BigIntT(two);
 	zero    = free_BigIntT(zero);
 	temp    = free_BigIntT(temp);
-	
+
 	return returnVal;
 }
 
@@ -1985,6 +1999,13 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	//en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields#Factoring_algorithms
 	//en.wikipedia.org/wiki/Cantor%E2%80%93Zassenhaus_algorithm
 	
+	//There is some error deep within this function
+	//I'm gonna need to step through this function manually tomorrow and
+	// find where the hell the error is
+	//That's gonna be hell
+	//Can't wait till hell breaks loose
+	//                hell
+	
 	//The factors in this array are all raised to an
 	// exponent equal to its corresponding exponent in squareFreeFactorsExponents.
 	BigPolyTP* squareFreeFactors = NULL;
@@ -1999,40 +2020,40 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	//Holds polynomials which are all products of same-degree irreducible polynomials
 	BigPolyTP* distinctDegreeFactors = NULL;
 	int numOfDistinctDegreeFactors = 0;
-	bool split; //Says whether, during distinct-degree factorisation, the polynomial ever got factored
+	bool split = FALSE; //Says whether, during distinct-degree factorisation, the polynomial ever got factored
 	
 	BigPolyTP currSFF; //Just a pointer, no need to free
 	int* distinctDegreeFactorsExponents = NULL; //The degree given by the distinct-degree factorisation
 	int* ddfsffExponents = NULL; //The exponents carried over from the squareFreeFactors
 	
 	//Holds all irreducible factors of our given polynomial
-	BigFactorsTP factoredP;
+	BigFactorsTP factoredP = NULL;
 	BigPolyTP*   equalDegreeFactors = NULL;
-	int numOfEqualDegreeFactors;  //Counts the number of factors we've found during equal-degree factorisation
+	int numOfEqualDegreeFactors = 0;  //Counts the number of factors we've found during equal-degree factorisation
 	int r; //The number of factors we know are in our given polynomial
 	
 	int numArr[1] = {0};
 	BigIntTP* hArr = NULL; //For creating random polynomials in the Cantor-Zassenhaus algorithm
-	BigPolyTP h;           //Random polynomial
-	BigIntTP  M;           //The exponent for the monstrosity 
+	BigPolyTP h    = NULL; //Random polynomial
+	BigIntTP  M    = NULL; //The exponent for the monstrosity 
 	
-	BigPolyTP diffP;
-	BigPolyTP monicP;
-	BigPolyTP repeatedFactors;
-	BigPolyTP allFactorsNoMult;
-	BigPolyTP factorsWithSpecificMult;
-	BigPolyTP isolateFactorsWithSpecificMult;
+	BigPolyTP diffP                          = NULL;
+	BigPolyTP monicP                         = NULL;
+	BigPolyTP repeatedFactors                = NULL;
+	BigPolyTP allFactorsNoMult               = NULL;
+	BigPolyTP factorsWithSpecificMult        = NULL;
+	BigPolyTP isolateFactorsWithSpecificMult = NULL;
 	
-	BigPolyTP GCD;
+	BigPolyTP GCD = NULL;
 	
 	BigIntTP  leadingTermInv = NULL;
 	BigPolyTP invPoly = NULL;
 	
-	BigIntTP counter;
-	int intCounter;
+	BigIntTP counter = NULL;
+	int intCounter = 0;
 	
 	int       tempCoeffsSize = 0;
-	BigIntTP  temp;
+	BigIntTP  temp       = NULL;
 	BigIntTP* tempCoeffs = NULL;
 	BigPolyTP tempPoly   = NULL;
 	BigPolyTP tempPoly2  = NULL;
@@ -2316,6 +2337,8 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	
 	for (int ddFactor = 0; ddFactor < numOfDistinctDegreeFactors; ddFactor += 1)
 	{
+		printf("ddFactor = %d\n", ddFactor);
+		
 		//If we find a reducible factor
 		if (degree(distinctDegreeFactors[ddFactor]) != distinctDegreeFactorsExponents[ddFactor])
 		{
@@ -2330,10 +2353,18 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 			subtract_BigIntT(M, one, temp);
 			divide_BigIntT(temp, two, M);
 			
+			printf("(");
+			printi(mod);
+			printf("^%d - 1)/2 = ", distinctDegreeFactorsExponents[ddFactor]);
+			printi(M);
+			printf(" = M\n");
+			
 			//M should now hold (p^d - 1) / 2
 			
 			r = degree(distinctDegreeFactors[ddFactor])/distinctDegreeFactorsExponents[ddFactor];
 			clear_BigIntT(temp);
+			
+			printf("r = %d\n", r);
 			
 			numOfEqualDegreeFactors = 1;
 			equalDegreeFactors = realloc(equalDegreeFactors, sizeof(BigPolyTP));
@@ -2341,15 +2372,15 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 			copy_BigPolyT(distinctDegreeFactors[ddFactor], equalDegreeFactors[0]);
 			
 			//Getting hArr prepped for holding random coefficients
-			hArr = realloc(hArr, (degree(distinctDegreeFactors[ddFactor])-1)*sizeof(BigIntTP));
-			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
+			hArr = realloc(hArr, degree(distinctDegreeFactors[ddFactor])*sizeof(BigIntTP));
+			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor]); i += 1)
 				hArr[i] = empty_BigIntT(1);
 			
 			//While there are still factors to find
 			while (numOfEqualDegreeFactors < r)
 			{
 				//Generate our random polynomial h
-				for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
+				for (int i = 0; i < degree(distinctDegreeFactors[ddFactor]); i += 1)
 				{
 					set_bunch(temp, 0, (rand() >> 2) % extract_bunch(mod, 0));
 					copy_BigIntT(temp, hArr[i]);
@@ -2359,15 +2390,28 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 				set_BigPolyT(h, hArr);
 				reduce_BigPolyT(h);
 				
+				printf("h = ");
+				printp(h);
+				printf("\n");
+				
 				//h should now hold the random polynomial
 				//Now to check whether we can get any factors out of it
 				split = FALSE;
 				for (int u = 0; u < numOfEqualDegreeFactors; u += 1)
 				{
 					//Only check factors that aren't irreducible
-					if (degree(u) > distinctDegreeFactorsExponents[ddFactor])
+					if (degree(equalDegreeFactors[u]) > distinctDegreeFactorsExponents[ddFactor])
 					{
 						poly_gcd(equalDegreeFactors[u], h, GCD, mod, NULL, NULL);
+						printf("gcd(");
+						printp(equalDegreeFactors[u]);
+						printf(", ");
+						printp(h);
+						printf(") mod ");
+						printi(mod);
+						printf(" = ");
+						printp(GCD);
+						printf("\n");
 						
 						if ((compare_BigPolyT(onePoly, GCD) != 0) && (compare_BigPolyT(equalDegreeFactors[u], GCD) != 0))
 						{
@@ -2379,26 +2423,68 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 							equalDegreeFactors[numOfEqualDegreeFactors-1] = empty_BigPolyT();
 							
 							divide_BigPolyT(equalDegreeFactors[u], GCD, tempPoly, NULL, mod);
-							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
+							printp(equalDegreeFactors[u]);
+							printf(" / ");
+							printp(GCD);
+							printf(" mod ");
+							printi(mod);
+							printf(" = ");
+							printp(tempPoly);
+							printf("\n");
 							
+							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
 							copy_BigPolyT(GCD, equalDegreeFactors[u]);
 						}
 					}
 				}
 				
+				printf("equalDegreeFactors after checking with h: [");
+				for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+				{
+					printp(equalDegreeFactors[i]);
+					printf(", ");
+				}
+				printf("]\n");
+				
 				if (!split) //If we didn't find a new factor, compute the monster
 				{
 					//h^{(p^d-1)/2} - 1
+					printf("Now checking h^((p^d - 1)/2) - 1\n");
+					
+					printf("h = ");
+					printp(h);
+					printf("\nM = ");
+					printi(M);
+					printf("\ntempPoly = ");
+					printp(tempPoly);
+					printf("\n");
+					
 					pow_BigPolyT(h, M, tempPoly);
+					printf("pow_BigPolyT() completed.\n");
 					divide_BigPolyT(tempPoly, distinctDegreeFactors[ddFactor], NULL, h, mod);
 					
 					add_BigIntT(h->coeffs[0], negOne, temp);
-					mod_BigPolyT(temp, mod, h->coeffs[0]);
+					mod_BigIntT(temp, mod, h->coeffs[0]);
+					
+					printf("h^((");
+					printi(mod);
+					printf("^%d - 1)/2) - 1 = ", distinctDegreeFactorsExponents[ddFactor]);
+					printp(h);
+					printf("\n");
 					
 					//Loop through factors again, see if the monster polynomial can get any factors out of it
 					for (int u = 0; u < numOfEqualDegreeFactors; u += 1)
 					{
 						poly_gcd(equalDegreeFactors[u], h, GCD, mod, NULL, NULL);
+						printf("gcd(");
+						printp(equalDegreeFactors[u]);
+						printf(", ");
+						printp(h);
+						printf(") mod ");
+						printi(mod);
+						printf(" = ");
+						printp(GCD);
+						printf("\n");
 						
 						if ((compare_BigPolyT(onePoly, GCD) != 0) && (compare_BigPolyT(equalDegreeFactors[u], GCD) != 0))
 						{
@@ -2412,21 +2498,53 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 							divide_BigPolyT(equalDegreeFactors[u], GCD, tempPoly, NULL, mod);
 							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
 							
+							printp(equalDegreeFactors[u]);
+							printf(" / ");
+							printp(GCD);
+							printf(" mod ");
+							printi(mod);
+							printf(" = ");
+							printp(tempPoly);
+							printf("\n");
+							
 							copy_BigPolyT(GCD, equalDegreeFactors[u]);
 						}
 					}
 				}
 				
-				if (!split) //This last polynomial is guaranteed to find at least  one new factor
+				printf("equalDegreeFactors after checking with h^((p^d - 1)/2) - 1: [");
+				for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+				{
+					printp(equalDegreeFactors[i]);
+					printf(", ");
+				}
+				printf("]\n");
+				
+				if (!split) //This last polynomial is guaranteed to find at least one new factor
 				{
 					//h^{(p^d-1)/2} + 1
+					printp(h);
 					add_BigIntT(h->coeffs[0], two, temp);
 					mod_BigIntT(temp, mod, h->coeffs[0]);
+					printf("^((");
+					printi(mod);
+					printf("^%d - 1)/2) + 1 = ", distinctDegreeFactorsExponents[ddFactor]);
+					printp(h);
+					printf("\n");
 					
 					//Loop through factors AGAIN, see if the monster polynomial can get any factors out of it
 					for (int u = 0; u < numOfEqualDegreeFactors; u += 1)
 					{
 						poly_gcd(equalDegreeFactors[u], h, GCD, mod, NULL, NULL);
+						printf("gcd(");
+						printp(equalDegreeFactors[u]);
+						printf(", ");
+						printp(h);
+						printf(") mod ");
+						printi(mod);
+						printf(" = ");
+						printp(GCD);
+						printf("\n");
 						
 						if ((compare_BigPolyT(onePoly, GCD) != 0) && (compare_BigPolyT(equalDegreeFactors[u], GCD) != 0))
 						{
@@ -2437,29 +2555,59 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 							
 							divide_BigPolyT(equalDegreeFactors[u], GCD, tempPoly, NULL, mod);
 							copy_BigPolyT(tempPoly, equalDegreeFactors[numOfEqualDegreeFactors-1]);
+							printp(equalDegreeFactors[u]);
+							printf(" / ");
+							printp(GCD);
+							printf(" mod ");
+							printi(mod);
+							printf(" = ");
+							printp(tempPoly);
+							printf("\n");
 							
 							copy_BigPolyT(GCD, equalDegreeFactors[u]);
 						}
 					}
 				}
+				
+				//What does equalDegreeFactors look like after this iteration?
+				printf("equalDegreeFactors after checking with h^((p^d - 1)/2) + 1 = [");
+				for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+				{
+					printp(equalDegreeFactors[i]);
+					printf(", ");
+				}
+				printf("]\n");
 			}
 			
-			//Now, we need to add our newly-found factors into factoredP
-			//:)
-			
 			//Freeing ints to prepare for next factor
-			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor])-1; i += 1)
+			for (int i = 0; i < degree(distinctDegreeFactors[ddFactor]); i += 1)
 				hArr[i] = free_BigIntT(hArr[i]);
 			
-			//Free equal-degree factors for next time
+			//Store equal-degree factors and free them for next time
 			for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+			{
+				add_factor(factoredP, equalDegreeFactors[i], ddfsffExponents[ddFactor]);
+				printf("New irreducible factor: ");
+				printp(equalDegreeFactors[i]);
+				printf("\n");
 				equalDegreeFactors[i] = free_BigPolyT(equalDegreeFactors[i]);
+			}
 		}
 		
 		//Don't need to do anything; the factor is already irreducible
 		else
+		{
 			add_factor(factoredP, distinctDegreeFactors[ddFactor], ddfsffExponents[ddFactor]);
+			printf("Initial irreducible factor: ");
+			printp(distinctDegreeFactors[ddFactor]);
+			printf("\n");
+		}
 	}
+	
+	//Now, I guess we print out our factorisation
+	printf("Equal-degree factorisation: ");
+	printpf(factoredP);
+	printf("\n");
 	
 	free(hArr);
 	hArr = NULL;
