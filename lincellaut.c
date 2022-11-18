@@ -4653,7 +4653,7 @@ int main(int argc, char* argv[])
 			
 			printf("A = ");
 			printp(A);
-			printf("\nA' = ");
+			/*printf("\nA' = ");
 			diff_BigPolyT(A, temp);
 			mod_BigPolyT(temp, bigMod, dA);
 			printp(dA);
@@ -4688,8 +4688,9 @@ int main(int argc, char* argv[])
 			printf("B^2 = ");
 			pow_BigPolyT(B, NA[2], Bpow);
 			printp(Bpow);
-			printf("\n\n");
+			printf("\n\n"); */
 			
+			printf("\n");
 			printf("Factorisation debugging:\n");
 			factor_BigPolyT(A, bigMod);
 			

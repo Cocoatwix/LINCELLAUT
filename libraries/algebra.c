@@ -287,7 +287,7 @@ int reduce_BigPolyT(BigPolyTP p)
 	if (newSize != p->size)
 	{
 		//Freeing the coefficients we don't need anymore
-		for (int i = p->size-1; i >= newSize; i -= 1)
+		for (int i = newSize; i < p->size; i += 1)
 			p->coeffs[i] = free_BigIntT(p->coeffs[i]);
 		
 		p->size = newSize;
@@ -308,7 +308,7 @@ int resize_BigPolyT(BigPolyTP p, int newSize)
 	
 	//If we need to dealloc a few BigIntTs
 	if (p->size > newSize)
-		for (int i = p->size; i < newSize; i += 1)
+		for (int i = newSize; i < p->size; i += 1)
 			p->coeffs[i] = free_BigIntT(p->coeffs[i]);
 	
 	p->coeffs = realloc(p->coeffs, newSize*sizeof(BigIntTP));
@@ -626,7 +626,11 @@ int reduce_MultiVarExtT(MultiVarExtTP ext)
 int degree(BigPolyTP const p)
 /** Returns the degree of a BigPolyTP. */
 {
-	return p->size - 1;
+	for (int i = p->size-1; i >= 0; i -= 1)
+		if (!is_zero(p->coeffs[i]))
+			return i;
+	
+	return 0;
 }
 
 
@@ -773,7 +777,7 @@ int compare_BigPolyT(BigPolyTP const A, BigPolyTP const B)
 int set_BigPolyT(BigPolyTP p, BigIntTP* const coeffList)
 /** Uses the given list of BigIntTs to set the polynomial's
     coefficients. 
-		The function assumes the list is the sam length as the
+		The function assumes the list is the same length as the
 		polynomial.
 		Returns 1 on success, 0 otherwise. */
 {
@@ -1054,25 +1058,14 @@ int add_BigPolyT(BigPolyTP const A, BigPolyTP const B, BigPolyTP sum)
     This function assumes sum has been initialised.
 		Returns 1 on success, 0 otherwise. */
 {
-	int bigSize = (A->size > B->size) ? A->size : B->size;
+	int bigSize   = (A->size > B->size) ? A->size : B->size;
 	int smallSize = (A->size < B->size) ? A->size : B->size;
 	
-	BigIntTP temp = empty_BigIntT(1);
+	BigIntTP  temp = empty_BigIntT(1);
 	
 	//Making sure our sum is ready to take new terms
-	if (sum->size > bigSize)
-		for (int i = bigSize; i < sum->size; i += 1)
-			sum->coeffs[i] = free_BigIntT(sum->coeffs[i]);
-		
-	if (sum->size != bigSize)
-		sum->coeffs = realloc(sum->coeffs, bigSize*sizeof(BigIntTP));
-	
-	if (sum->size < bigSize)
-		for (int i = sum->size; i < bigSize; i += 1)
-			sum->coeffs[i] = empty_BigIntT(1);
-			
-	sum->size = bigSize;
-	
+	resize_BigPolyT(sum, bigSize);
+
 	//Iterate over both polynomials, add them
 	for (int a = 0; a < smallSize; a += 1)
 	{
@@ -1106,23 +1099,10 @@ int multiply_BigPolyT(BigPolyTP const A, BigPolyTP const B, BigPolyTP product)
 	
 	//Preparing product to hold the new polynomial
 	if (product->size != A->size + B->size - 1)
-	{
-		//Super inefficient, but prevents errors
-		//Will change later
-		for (int i = 0; i < product->size; i += 1)
-			product->coeffs[i] = free_BigIntT(product->coeffs[i]);
-		
-		product->size = A->size + B->size - 1;
-		product->coeffs = realloc(product->coeffs, (product->size)*sizeof(BigIntTP));
-		
-		for (int i = 0; i < product->size; i += 1)
-			product->coeffs[i] = empty_BigIntT(1);
-	}
+		resize_BigPolyT(product, A->size + B->size - 1);
 	
 	//Zeroing out all coefficients
-	else
-		for (int i = 0; i < product->size; i += 1)
-			copy_BigIntT(temp, product->coeffs[i]);
+	clear_BigPolyT(product);
 	
 	//Iterate through both polynomials, multiply them through
 	for (int a = 0; a < A->size; a += 1)
@@ -1233,11 +1213,11 @@ int divide_BigPolyT(BigPolyTP const a, BigPolyTP const b, BigPolyTP quotient, Bi
 	
 	//Now, iterate through tempCoeffs, find multiples of b that
 	// annihilate the coefficients in it, store them in qCoeffs
-	for (int c = a->size-1; c > a->size-1 - quotientSize; c -= 1) //Check this loop if things go wrong
+	for (int c = a->size-1; c >= b->size-1; c -= 1)
 	{
 		//Calculate coefficient needed for next step in long division
 		multiply_BigIntT(tempCoeffs[c], bLeadingInv, temp);
-		mod_BigIntT(temp, mod, qCoeffs[quotientSize - a->size + c]); //This line might also be wrong
+		mod_BigIntT(temp, mod, qCoeffs[quotientSize - a->size + c]);
 		
 		tempDivCoeff = qCoeffs[quotientSize - a->size + c];
 		tempDivIndex = quotientSize - a->size + c; //This tells us what power of variable the coeff is attached to
@@ -1318,7 +1298,7 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 	BigPolyTP onePoly  = constant_BigPolyT(one);
 	BigPolyTP tempPoly = empty_BigPolyT();
 	
-	BigPolyTP* results = NULL; //Holds a lost of polynomials we need to multiply together to get exp
+	BigPolyTP* results = NULL; //Holds a list of polynomials we need to multiply together to get exp
 	int numOfResults = 0;
 	
 	numArr[0] = 2;
@@ -1378,13 +1358,13 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 			multiply_BigPolyT(results[0], results[0], tempPoly);
 			copy_BigPolyT(tempPoly, results[0]);
 			
-			printf("results = [");
+			printf("results = \n");
 			for (int r = 0; r < numOfResults; r += 1)
 			{
 				printp(results[r]);
-				printf(", ");
+				printf("\n");
 			}
-			printf("]\n");
+			printf("\n");
 		}
 		
 		//Now, we simply multiply all the results together to get exp
@@ -1394,7 +1374,7 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 			multiply_BigPolyT(exp, results[i], tempPoly);
 			copy_BigPolyT(tempPoly, exp);
 		}
-			
+
 		returnVal = 1;
 	}
 	
@@ -1423,18 +1403,8 @@ int mod_BigPolyT(BigPolyTP const A, BigIntTP const mod, BigPolyTP residue)
 		Returns 1 on success, 0 otherwise. */
 {
 	//Preparing residue to hold what it needs to hold
-	if (residue->size > A->size)
-		for (int i = A->size; i < residue->size; i += 1)
-			residue->coeffs[i] = free_BigIntT(residue->coeffs[i]);
-		
 	if (residue->size != A->size)
-		residue->coeffs = realloc(residue->coeffs, (A->size)*sizeof(BigIntTP));
-	
-	if (residue->size < A->size)
-		for (int i = residue->size; i < A->size; i += 1)
-			residue->coeffs[i] = empty_BigIntT(1);
-	
-	residue->size = A->size;
+		resize_BigPolyT(residue, A->size);
 	
 	//Now, perform the modulo operation
 	for (int i = 0; i < A->size; i += 1)
@@ -1768,7 +1738,7 @@ int diff_BigPolyT(BigPolyTP const p, BigPolyTP dp)
 	
 	for (int i = 0; i < p->size-1; i += 1)
 		coeffs[i] = free_BigIntT(coeffs[i]);
-	coeffs -= 1;
+	coeffs -= 1; 
 	free(coeffs);
 	coeffs = NULL;
 	
@@ -1990,89 +1960,46 @@ BigPolyTP* old_factor_BigPolyT(BigPolyTP const A, BigIntTP const mod)
 }
 
 
-BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
-/** Factors polynomials using our brand-new knowledge gained
-    from Wikipedia! 
-		Returns a BigFactorsT, representing the factorisation
-		of the given polynomial.*/
+/* private */ int square_free_factor_BigPolyT(BigPolyTP const p, 
+                                              BigIntTP const mod,
+                                              BigPolyTP** squareFreeFactors, 
+																							int** squareFreeFactorsExponents)
+/** Returns numOfSquareFreeFactors. */
 {
-	//en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields#Factoring_algorithms
-	//en.wikipedia.org/wiki/Cantor%E2%80%93Zassenhaus_algorithm
-	
-	//There is some error deep within this function
-	//I'm gonna need to step through this function manually tomorrow and
-	// find where the hell the error is
-	//That's gonna be hell
-	//Can't wait till hell breaks loose
-	//                hell
-	
-	//The factors in this array are all raised to an
-	// exponent equal to its corresponding exponent in squareFreeFactorsExponents.
-	BigPolyTP* squareFreeFactors = NULL;
 	int numOfSquareFreeFactors = 0;
 	
 	//These help keep track of the correct exponents for the 
 	// factors in squareFreeFactors
 	int  previousExponentMultiple = 1;
 	int  exponentMultiple = 1;
-	int* squareFreeFactorsExponents = NULL;
-	
-	//Holds polynomials which are all products of same-degree irreducible polynomials
-	BigPolyTP* distinctDegreeFactors = NULL;
-	int numOfDistinctDegreeFactors = 0;
-	bool split = FALSE; //Says whether, during distinct-degree factorisation, the polynomial ever got factored
-	
-	BigPolyTP currSFF; //Just a pointer, no need to free
-	int* distinctDegreeFactorsExponents = NULL; //The degree given by the distinct-degree factorisation
-	int* ddfsffExponents = NULL; //The exponents carried over from the squareFreeFactors
-	
-	//Holds all irreducible factors of our given polynomial
-	BigFactorsTP factoredP = NULL;
-	BigPolyTP*   equalDegreeFactors = NULL;
-	int numOfEqualDegreeFactors = 0;  //Counts the number of factors we've found during equal-degree factorisation
-	int r; //The number of factors we know are in our given polynomial
-	
-	int numArr[1] = {0};
-	BigIntTP* hArr = NULL; //For creating random polynomials in the Cantor-Zassenhaus algorithm
-	BigPolyTP h    = NULL; //Random polynomial
-	BigIntTP  M    = NULL; //The exponent for the monstrosity 
-	
-	BigPolyTP diffP                          = NULL;
-	BigPolyTP monicP                         = NULL;
-	BigPolyTP repeatedFactors                = NULL;
-	BigPolyTP allFactorsNoMult               = NULL;
-	BigPolyTP factorsWithSpecificMult        = NULL;
-	BigPolyTP isolateFactorsWithSpecificMult = NULL;
-	
-	BigPolyTP GCD = NULL;
-	
-	BigIntTP  leadingTermInv = NULL;
-	BigPolyTP invPoly = NULL;
-	
-	BigIntTP counter = NULL;
-	int intCounter = 0;
-	
-	int       tempCoeffsSize = 0;
-	BigIntTP  temp       = NULL;
-	BigIntTP* tempCoeffs = NULL;
-	BigPolyTP tempPoly   = NULL;
-	BigPolyTP tempPoly2  = NULL;
 	
 	int oneArr[1] = {1};
-	int twoArr[1] = {2};
-	BigIntTP one    = new_BigIntT(oneArr, 1);
-	BigIntTP negOne = empty_BigIntT(1);
-	BigIntTP two    = new_BigIntT(twoArr, 1);
-	BigPolyTP onePoly = constant_BigPolyT(one);
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	BigIntTP temp           = empty_BigIntT(1);
+	BigIntTP counter        = empty_BigIntT(1);
+	BigIntTP leadingTermInv = new_BigIntT(oneArr, 1);
+	
+	//For plugging x^{1/mod} into polynomials
+	int       tempCoeffsSize;
+	BigIntTP* tempCoeffs = NULL;
+	
+	BigPolyTP diffP                          = empty_BigPolyT();
+	BigPolyTP monicP                         = empty_BigPolyT();
+	BigPolyTP invPoly                        = NULL;
+	BigPolyTP onePoly                        = constant_BigPolyT(one);
+	BigPolyTP tempPoly                       = empty_BigPolyT();
+	BigPolyTP repeatedFactors                = empty_BigPolyT();
+	BigPolyTP allFactorsNoMult               = empty_BigPolyT();
+	BigPolyTP factorsWithSpecificMult        = empty_BigPolyT();
+	BigPolyTP isolateFactorsWithSpecificMult = empty_BigPolyT();
 	
 	//First, let's make sure p is monic
-	monicP = empty_BigPolyT();
 	copy_BigPolyT(p, monicP);
 	reduce_BigPolyT(monicP);
 	
 	if (compare_BigIntT(leading_term(monicP), one) != 0)
 	{
-		leadingTermInv = empty_BigIntT(1);
 		big_num_inverse(leading_term(monicP), mod, leadingTermInv);
 		invPoly = constant_BigPolyT(leadingTermInv);
 		
@@ -2080,26 +2007,11 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 		mod_BigPolyT(tempPoly, mod, monicP);
 	}
 	
-	//Initialise terms we need for square-free factorization
-	tempPoly  = empty_BigPolyT();
-	tempPoly2 = empty_BigPolyT();
-	diffP     = empty_BigPolyT();
-	
-	repeatedFactors  = empty_BigPolyT();
-	allFactorsNoMult = empty_BigPolyT();
-	
-	factorsWithSpecificMult        = empty_BigPolyT();
-	isolateFactorsWithSpecificMult = empty_BigPolyT();
-	
-	GCD = empty_BigPolyT();
-	
-	temp    = empty_BigIntT(1);
-	counter = empty_BigIntT(1);
-	
+	//Get derivative
 	diff_BigPolyT(monicP, tempPoly);
 	mod_BigPolyT(tempPoly, mod, diffP);
 	
-	//Repeated factors w/ one less multiplicity
+	//Repeated factors w/ one less multiplicity (except those with a multiplicity a multiple of mod)
 	poly_gcd(monicP, diffP, repeatedFactors, mod, NULL, NULL);
 	
 	//All factors except those with multiplicity a multiple of mod, no multiplicities
@@ -2110,7 +2022,6 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	{
 		//Now, we isolate all the factors with the same multiplicity
 		// in allFactorsNoMult, and shove them in squareFreeFactors
-	
 		for (int i = 0; compare_BigPolyT(onePoly, allFactorsNoMult) != 0; i += 1)
 		{
 			poly_gcd(allFactorsNoMult, repeatedFactors, isolateFactorsWithSpecificMult, mod, NULL, NULL);
@@ -2121,17 +2032,17 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 			{
 				numOfSquareFreeFactors += 1;
 				
-				squareFreeFactors = realloc(squareFreeFactors, numOfSquareFreeFactors*sizeof(BigPolyTP));
-				squareFreeFactors[numOfSquareFreeFactors-1] = empty_BigPolyT();
-				copy_BigPolyT(factorsWithSpecificMult, squareFreeFactors[numOfSquareFreeFactors-1]);
+				(*squareFreeFactors) = realloc((*squareFreeFactors), numOfSquareFreeFactors*sizeof(BigPolyTP));
+				(*squareFreeFactors)[numOfSquareFreeFactors-1] = empty_BigPolyT();
+				copy_BigPolyT(factorsWithSpecificMult, (*squareFreeFactors)[numOfSquareFreeFactors-1]);
 				
-				squareFreeFactorsExponents = realloc(squareFreeFactorsExponents, numOfSquareFreeFactors*sizeof(int));
-				squareFreeFactorsExponents[numOfSquareFreeFactors-1] = (i+1)*exponentMultiple;
+				(*squareFreeFactorsExponents) = realloc((*squareFreeFactorsExponents), numOfSquareFreeFactors*sizeof(int));
+				(*squareFreeFactorsExponents)[numOfSquareFreeFactors-1] = (i+1)*exponentMultiple;
 			}
 			
 			//Remember that the multiplicity goes up each element in squareFreeFactors
 			// We don't actually compute the power here; we don't really need to
-			// Just keep track of it!
+			// Just keep track of it in squareFreeFactorsExponents!
 			
 			//Get rid of factors in allFactorsNoMult which we've already accounted for
 			copy_BigPolyT(isolateFactorsWithSpecificMult, allFactorsNoMult);
@@ -2184,7 +2095,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 			diff_BigPolyT(monicP, tempPoly);
 			mod_BigPolyT(tempPoly, mod, diffP);
 			
-			//Repeated factors w/ one less multiplicity
+			//Repeated factors w/ one less multiplicity (except those with a multiplicity a multiple of mod)
 			poly_gcd(monicP, diffP, repeatedFactors, mod, NULL, NULL);
 			
 			//All factors except those with multiplicity a multiple of mod, no multiplicities
@@ -2193,35 +2104,71 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	}
 	while (compare_BigPolyT(onePoly, allFactorsNoMult) != 0);
 	
-	printf("\nsquareFreeFactors: \n");
-	for (int i = 0; i < numOfSquareFreeFactors; i += 1)
-	{
-		printf("(");
-		printp(squareFreeFactors[i]);
-		printf(")^%d", squareFreeFactorsExponents[i]);
-	}
-	printf("\n\n");
+	free(tempCoeffs);
 	
-	subtract_BigIntT(mod, one, temp);
-	copy_BigIntT(temp, negOne);
+	one = free_BigIntT(one);
 	
-	//Now we have a square-free factorisation of our initial polynomial p
-	//I guess we have to factor each bit now
+	temp           = free_BigIntT(temp);
+	counter        = free_BigIntT(counter);
+	leadingTermInv = free_BigIntT(leadingTermInv);
+	
+	diffP                          = free_BigPolyT(diffP);
+	monicP                         = free_BigPolyT(monicP);
+	invPoly                        = free_BigPolyT(invPoly);
+	onePoly                        = free_BigPolyT(onePoly);
+	tempPoly                       = free_BigPolyT(tempPoly);
+	repeatedFactors                = free_BigPolyT(repeatedFactors);
+	allFactorsNoMult               = free_BigPolyT(allFactorsNoMult);
+	factorsWithSpecificMult        = free_BigPolyT(factorsWithSpecificMult);
+	isolateFactorsWithSpecificMult = free_BigPolyT(isolateFactorsWithSpecificMult);
+	
+	return numOfSquareFreeFactors;
+}
+
+
+/* private */ int distinct_degree_factor_BigPolyT(BigPolyTP** squareFreeFactors,
+                                                  int numOfSquareFreeFactors,
+																									int* const squareFreeFactorsExponents,
+                                                  BigIntTP const mod,
+																									BigPolyTP** distinctDegreeFactors,
+																									int** distinctDegreeFactorsExponents,
+																									int** distinctDegreeFactorsDegrees)
+/** Returns numOfDistinctDegreeFactors. */
+{
+	int numOfDistinctDegreeFactors = 0;
+	
+	bool split;
+	
+	int oneArr[1] = {1};
+	BigIntTP one    = new_BigIntT(oneArr, 1);
+	BigIntTP temp   = empty_BigIntT(1);
+	BigIntTP negOne = empty_BigIntT(1);
+	
+	subtract_BigIntT(mod, one, negOne);
+	
+	BigPolyTP currSFF; //Holds the current square-free factor we're factorising
+	BigPolyTP GCD = empty_BigPolyT();
+	
+	BigPolyTP onePoly   = constant_BigPolyT(one);
+	BigPolyTP tempPoly  = empty_BigPolyT();
+	BigPolyTP tempPoly2 = empty_BigPolyT();
+	
+	//We have a square-free factorisation of our initial polynomial p
+	//We have to factor each bit now
 	
 	//Note that the square-free polynomials need to be monic, but
 	// I'm pretty sure they always will be
 	for (int sfFactor = 0; sfFactor < numOfSquareFreeFactors; sfFactor += 1)
 	{
 		split = FALSE;
-		currSFF = squareFreeFactors[sfFactor];
+		currSFF = (*squareFreeFactors)[sfFactor];
 
-		intCounter = 1;
-		while (degree(currSFF) >= 2*intCounter)
+		for (int currDegree = 1; degree(currSFF) >= 2*currDegree; currDegree += 1)
 		{
 			//We need to compute x^{p^counter} - x mod currSFF
 			
 			//Calculate x^p
-			if (intCounter == 1)
+			if (currDegree == 1)
 			{
 				//We'll have to create a new polynomial here
 				if (size(mod) > 1)
@@ -2263,43 +2210,147 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 				
 				//Keeping track of factors and exponents here
 				numOfDistinctDegreeFactors += 1;
-				distinctDegreeFactors = realloc(distinctDegreeFactors, numOfDistinctDegreeFactors*sizeof(BigPolyTP));
-				distinctDegreeFactors[numOfDistinctDegreeFactors-1] = empty_BigPolyT();
-				copy_BigPolyT(GCD, distinctDegreeFactors[numOfDistinctDegreeFactors-1]);
+				(*distinctDegreeFactors) = realloc((*distinctDegreeFactors), numOfDistinctDegreeFactors*sizeof(BigPolyTP));
+				(*distinctDegreeFactors)[numOfDistinctDegreeFactors-1] = empty_BigPolyT();
+				copy_BigPolyT(GCD, (*distinctDegreeFactors)[numOfDistinctDegreeFactors-1]);
 				
-				distinctDegreeFactorsExponents = realloc(distinctDegreeFactorsExponents, numOfDistinctDegreeFactors*sizeof(int));
-				distinctDegreeFactorsExponents[numOfDistinctDegreeFactors-1] = intCounter;
+				(*distinctDegreeFactorsDegrees) = realloc((*distinctDegreeFactorsDegrees), numOfDistinctDegreeFactors*sizeof(int));
+				(*distinctDegreeFactorsDegrees)[numOfDistinctDegreeFactors-1] = currDegree;
 				
-				ddfsffExponents = realloc(ddfsffExponents, numOfDistinctDegreeFactors*sizeof(int));
-				ddfsffExponents[numOfDistinctDegreeFactors-1] = squareFreeFactorsExponents[sfFactor];
+				(*distinctDegreeFactorsExponents) = realloc((*distinctDegreeFactorsExponents), numOfDistinctDegreeFactors*sizeof(int));
+				(*distinctDegreeFactorsExponents)[numOfDistinctDegreeFactors-1] = squareFreeFactorsExponents[sfFactor];
 				
 				divide_BigPolyT(currSFF, GCD, tempPoly2, NULL, mod);
 				copy_BigPolyT(tempPoly2, currSFF);
 				reduce_BigPolyT(currSFF);
 			}
-			
-			intCounter += 1;
 		}
 		
 		//Add the remaining bit of currSFF into our list of factors
 		if ((compare_BigPolyT(currSFF, onePoly) != 0) || (!split))
 		{
 			numOfDistinctDegreeFactors += 1;
-			distinctDegreeFactors = realloc(distinctDegreeFactors, numOfDistinctDegreeFactors*sizeof(BigPolyTP));
-			distinctDegreeFactors[numOfDistinctDegreeFactors-1] = empty_BigPolyT();
-			copy_BigPolyT(currSFF, distinctDegreeFactors[numOfDistinctDegreeFactors-1]);
+			(*distinctDegreeFactors) = realloc((*distinctDegreeFactors), numOfDistinctDegreeFactors*sizeof(BigPolyTP));
+			(*distinctDegreeFactors)[numOfDistinctDegreeFactors-1] = empty_BigPolyT();
+			copy_BigPolyT(currSFF, (*distinctDegreeFactors)[numOfDistinctDegreeFactors-1]);
 
-			distinctDegreeFactorsExponents = realloc(distinctDegreeFactorsExponents, numOfDistinctDegreeFactors*sizeof(int));
+			(*distinctDegreeFactorsDegrees) = realloc((*distinctDegreeFactorsDegrees), numOfDistinctDegreeFactors*sizeof(int));
 			
 			if (compare_BigPolyT(currSFF, onePoly) != 0)
-				distinctDegreeFactorsExponents[numOfDistinctDegreeFactors-1] = degree(currSFF); //Should be okay since currSFF is always reduced
+				(*distinctDegreeFactorsDegrees)[numOfDistinctDegreeFactors-1] = degree(currSFF);
 			else
-				distinctDegreeFactorsExponents[numOfDistinctDegreeFactors-1] = 1; 
+				(*distinctDegreeFactorsDegrees)[numOfDistinctDegreeFactors-1] = 1; 
 			
-			ddfsffExponents = realloc(ddfsffExponents, numOfDistinctDegreeFactors*sizeof(int));
-			ddfsffExponents[numOfDistinctDegreeFactors-1] = squareFreeFactorsExponents[sfFactor];
+			(*distinctDegreeFactorsExponents) = realloc((*distinctDegreeFactorsExponents), numOfDistinctDegreeFactors*sizeof(int));
+			(*distinctDegreeFactorsExponents)[numOfDistinctDegreeFactors-1] = squareFreeFactorsExponents[sfFactor];
 		}
 	}
+	
+	one    = free_BigIntT(one);
+	temp   = free_BigIntT(temp);
+	negOne = free_BigIntT(negOne);
+	
+	GCD       = free_BigPolyT(GCD);
+	onePoly   = free_BigPolyT(onePoly);
+	tempPoly  = free_BigPolyT(tempPoly);
+	tempPoly2 = free_BigPolyT(tempPoly2);
+	
+	return numOfDistinctDegreeFactors;
+}
+
+
+/* private */ int equal_degree_factor_BigPolyT(BigPolyTP* distinctDegreeFactors,
+                                               int numOfDistinctDegreeFactors,
+																							 int* distinctDegreeFactorsExponents,
+																							 int* distinctDegreeFactorsDegrees,
+																							 BigIntTP const mod,
+																							 BigPolyTP** equalDegreeFactors,
+																							 int** equalDegreeFactorsExponents)
+/** Returns numOfEqualDegreeFactors. */
+{
+	int numOfEqualDegreeFactors = 0;
+	
+	return numOfEqualDegreeFactors;
+}
+
+
+BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
+/** Factors polynomials using our brand-new knowledge gained
+    from Wikipedia! 
+		Returns a BigFactorsT, representing the factorisation
+		of the given polynomial.*/
+{
+	//en.wikipedia.org/wiki/Factorization_of_polynomials_over_finite_fields#Factoring_algorithms
+	//en.wikipedia.org/wiki/Cantor%E2%80%93Zassenhaus_algorithm
+	
+	//The factors in this array are all raised to an
+	// exponent equal to its corresponding exponent in squareFreeFactorsExponents.
+	BigPolyTP* squareFreeFactors = NULL;
+	int numOfSquareFreeFactors = 0;
+	
+	//Holds the exponents attached to squareFreeFactors
+	int* squareFreeFactorsExponents = NULL;
+	
+	//Holds polynomials which are all products of same-degree irreducible polynomials
+	BigPolyTP* distinctDegreeFactors = NULL;
+	int numOfDistinctDegreeFactors = 0;
+	bool split = FALSE; //Says whether, during distinct-degree factorisation, the polynomial ever got factored
+
+	int* distinctDegreeFactorsDegrees = NULL; //The degree given by the distinct-degree factorisation
+	int* distinctDegreeFactorsExponents = NULL; //The exponents carried over from the squareFreeFactors
+	
+	//Holds all irreducible factors of our given polynomial
+	BigFactorsTP factoredP = NULL;
+	BigPolyTP*   equalDegreeFactors = NULL;
+	int numOfEqualDegreeFactors = 0;  //Counts the number of factors we've found during equal-degree factorisation
+	int r; //The number of factors we know are in our given polynomial
+	
+	BigIntTP* hArr = NULL; //For creating random polynomials in the Cantor-Zassenhaus algorithm
+	BigPolyTP h    = NULL; //Random polynomial
+	BigIntTP  M    = NULL; //The exponent for the monstrosity 
+	
+	BigPolyTP GCD = NULL;
+	
+	BigIntTP  temp       = empty_BigIntT(1);
+	BigPolyTP tempPoly   = NULL;
+	BigPolyTP tempPoly2  = NULL;
+	
+	int oneArr[1] = {1};
+	int twoArr[1] = {2};
+	BigIntTP one    = new_BigIntT(oneArr, 1);
+	BigIntTP negOne = empty_BigIntT(1);
+	BigIntTP two    = new_BigIntT(twoArr, 1);
+	BigPolyTP onePoly = constant_BigPolyT(one);
+	
+	//Square-free factorisation
+	squareFreeFactors = malloc(sizeof(BigPolyTP));
+	squareFreeFactorsExponents = malloc(sizeof(int));
+	
+	numOfSquareFreeFactors = square_free_factor_BigPolyT(p, mod, &squareFreeFactors, &squareFreeFactorsExponents);
+	
+	subtract_BigIntT(mod, one, temp);
+	copy_BigIntT(temp, negOne);
+	
+	printf("\nsquareFreeFactors: \n");
+	for (int i = 0; i < numOfSquareFreeFactors; i += 1)
+	{
+		printf("(");
+		printp(squareFreeFactors[i]);
+		printf(")^%d", squareFreeFactorsExponents[i]);
+	}
+	printf("\n\n");
+	
+	distinctDegreeFactors = malloc(sizeof(BigPolyTP));
+	distinctDegreeFactorsExponents = malloc(sizeof(int));
+	distinctDegreeFactorsDegrees = malloc(sizeof(int));
+	
+	numOfDistinctDegreeFactors = distinct_degree_factor_BigPolyT(&squareFreeFactors,
+                                                               numOfSquareFreeFactors,
+																									             squareFreeFactorsExponents,
+                                                               mod,
+																									             &distinctDegreeFactors,
+																									             &distinctDegreeFactorsExponents,
+																									             &distinctDegreeFactorsDegrees);
 	
 	//Now, our polynomial should be split into distinct-degree factors
 	printf("\ndistinctDegreeFactors:\n");
@@ -2307,12 +2358,23 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	{
 		printf("(");
 		printp(distinctDegreeFactors[i]);
-		printf(")^%d", ddfsffExponents[i]);
+		printf(")^%d", distinctDegreeFactorsExponents[i]);
 	}
-	printf("\ndistinctDegreeFactorsExponents:\n");
+	printf("\ndistinctDegreeFactorsDegrees:\n");
 	for (int i = 0; i < numOfDistinctDegreeFactors; i += 1)
-		printf("(%d)", distinctDegreeFactorsExponents[i]);
+		printf("(%d)", distinctDegreeFactorsDegrees[i]);
 	printf("\n\n");
+	
+	//We don't need the square-free stuff anymore, so free it
+	for (int i = 0; i < numOfSquareFreeFactors; i += 1)
+		squareFreeFactors[i] = free_BigPolyT(squareFreeFactors[i]);
+	free(squareFreeFactors);
+	free(squareFreeFactorsExponents);
+	squareFreeFactors = NULL;
+	squareFreeFactorsExponents = NULL;
+	
+	
+		/* ~~~BROKEN HERE~~~ */
 	
 	//Now, our polynomial should be split into distinct-degree factors.
 	//All that's left is to factor the reducible factors
@@ -2386,7 +2448,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 					copy_BigIntT(temp, hArr[i]);
 				}
 				
-				resize_BigPolyT(h, degree(distinctDegreeFactors[ddFactor])-1);
+				resize_BigPolyT(h, degree(distinctDegreeFactors[ddFactor]));
 				set_BigPolyT(h, hArr);
 				reduce_BigPolyT(h);
 				
@@ -2586,7 +2648,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 			//Store equal-degree factors and free them for next time
 			for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
 			{
-				add_factor(factoredP, equalDegreeFactors[i], ddfsffExponents[ddFactor]);
+				add_factor(factoredP, equalDegreeFactors[i], distinctDegreeFactorsExponents[ddFactor]);
 				printf("New irreducible factor: ");
 				printp(equalDegreeFactors[i]);
 				printf("\n");
@@ -2597,7 +2659,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 		//Don't need to do anything; the factor is already irreducible
 		else
 		{
-			add_factor(factoredP, distinctDegreeFactors[ddFactor], ddfsffExponents[ddFactor]);
+			add_factor(factoredP, distinctDegreeFactors[ddFactor], distinctDegreeFactorsExponents[ddFactor]);
 			printf("Initial irreducible factor: ");
 			printp(distinctDegreeFactors[ddFactor]);
 			printf("\n");
@@ -2616,21 +2678,10 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	
 	M = free_BigIntT(M);
 
-	free(tempCoeffs);
-	tempCoeffs = NULL;
-	
-	diffP     = free_BigPolyT(diffP);
-	monicP    = free_BigPolyT(monicP);
-	invPoly   = free_BigPolyT(invPoly);
 	tempPoly  = free_BigPolyT(tempPoly);
 	tempPoly2 = free_BigPolyT(tempPoly2);
 	
 	onePoly = free_BigPolyT(onePoly);
-	
-	repeatedFactors                = free_BigPolyT(repeatedFactors);
-	allFactorsNoMult               = free_BigPolyT(allFactorsNoMult);
-	factorsWithSpecificMult        = free_BigPolyT(factorsWithSpecificMult);
-	isolateFactorsWithSpecificMult = free_BigPolyT(isolateFactorsWithSpecificMult);
 	
 	GCD = free_BigPolyT(GCD);
 	
@@ -2638,8 +2689,6 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	negOne         = free_BigIntT(negOne);
 	two            = free_BigIntT(two);
 	temp           = free_BigIntT(temp);
-	leadingTermInv = free_BigIntT(leadingTermInv);
-	counter        = free_BigIntT(counter);
 	
 	free(squareFreeFactorsExponents);
 	squareFreeFactorsExponents = NULL;

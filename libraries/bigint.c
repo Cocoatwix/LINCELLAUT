@@ -46,14 +46,10 @@ BigIntTP free_BigIntT(BigIntTP n)
 {
 	if (n != NULL)
 	{
-		printf("Freeing theInt...\n");
 		free(n->theInt);
-		printf("Setting theInt to NULL...\n");
 		n->theInt = NULL;
-		printf("Freeing n...\n");
 		free(n);
 	}
-	printf("Freed BigIntT successfully.\n");
 	return NULL;
 }
 
