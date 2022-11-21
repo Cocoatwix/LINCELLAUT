@@ -294,6 +294,10 @@ int reduce_BigPolyT(BigPolyTP p)
 		p->coeffs = realloc(p->coeffs, (p->size)*sizeof(BigIntTP));
 	}
 	
+	//Now, we should also reduce the coefficients in the polynomial
+	for (int i = 0; i < p->size; i += 1)
+		reduce_BigIntT(p->coeffs[i]);
+	
 	zero = free_BigIntT(zero);
 	return 1;
 }
@@ -673,7 +677,7 @@ int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 	if (copyTo->size > toCopy->size)
 		for (int i = toCopy->size; i < copyTo->size; i += 1)
 			copyTo->coeffs[i] = free_BigIntT(copyTo->coeffs[i]);
-		
+	
 	if (copyTo->size != toCopy->size)
 		copyTo->coeffs = realloc(copyTo->coeffs, (toCopy->size)*sizeof(BigIntTP));
 	
@@ -1283,8 +1287,6 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 		assumed to have been initialised).
 		Returns 1 on success, 0 otherwise. */
 {
-	printf("Inside pow_BigPolyT()\n");
-	
 	//This is my attempt at implementing exponentiation by squaring
 	int returnVal = 0;
 	int numArr[1] = {1};
@@ -1295,8 +1297,9 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 	BigIntTP one     = new_BigIntT(numArr, 1);
 	BigIntTP two;
 	
-	BigPolyTP onePoly  = constant_BigPolyT(one);
-	BigPolyTP tempPoly = empty_BigPolyT();
+	BigPolyTP onePoly   = constant_BigPolyT(one);
+	BigPolyTP tempPoly  = empty_BigPolyT();
+	BigPolyTP tempPoly2 = empty_BigPolyT();
 	
 	BigPolyTP* results = NULL; //Holds a list of polynomials we need to multiply together to get exp
 	int numOfResults = 0;
@@ -1362,29 +1365,36 @@ int pow_BigPolyT(BigPolyTP const p, BigIntTP const pow, BigPolyTP exp)
 			for (int r = 0; r < numOfResults; r += 1)
 			{
 				printp(results[r]);
-				printf("\n");
+				printf(" w/ size %d\n", results[r]->size);
 			}
 			printf("\n");
 		}
+		
+		printf("pow_BigPolyT finished with while-loop\n");
 		
 		//Now, we simply multiply all the results together to get exp
 		copy_BigPolyT(onePoly, exp);
 		for (int i = 0; i < numOfResults; i += 1)
 		{
+			printf("i = %d\n", i);
 			multiply_BigPolyT(exp, results[i], tempPoly);
+			printf("\nmultiplication successful\n");
 			copy_BigPolyT(tempPoly, exp);
+			printf("copying successful\n");
 		}
 
 		returnVal = 1;
 	}
 	
+	//Checking to see if we can free each result
 	for (int i = 0; i < numOfResults; i += 1)
 		results[i] = free_BigPolyT(results[i]);
 	free(results);
 	results = NULL;
 	
-	onePoly  = free_BigPolyT(onePoly);
-	tempPoly = free_BigPolyT(tempPoly);
+	onePoly   = free_BigPolyT(onePoly);
+	tempPoly  = free_BigPolyT(tempPoly);
+	tempPoly2 = free_BigPolyT(tempPoly2);
 	
 	tempPow = free_BigIntT(tempPow);
 	one     = free_BigIntT(one);
@@ -2340,8 +2350,6 @@ BigPolyTP* old_factor_BigPolyT(BigPolyTP const A, BigIntTP const mod)
 	
 	BigIntTP* hArr = NULL; //Holds coefficients for h
 	
-	return -1;
-	
 	//Our polynomial should be split into distinct-degree factors.
 	//All that's left is to factor the reducible factors
 	if (extract_bunch(mod, 0) == 2)
@@ -2648,18 +2656,33 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 																							           &equalDegreeFactors,
 																							           &equalDegreeFactorsExponents);
 	
-	
-	
-	
-	/*
 	//Now, I guess we print out our factorisation
 	printf("Equal-degree factorisation: ");
-	printpf(factoredP);
+	for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+	{
+		printf("(");
+		printp(equalDegreeFactors[i]);
+		printf(")^%d", equalDegreeFactorsExponents[i]);
+	}
 	printf("\n");
 	
+	for (int i = 0; i < numOfDistinctDegreeFactors; i += 1)
+		distinctDegreeFactors[i] = free_BigPolyT(distinctDegreeFactors[i]);
+	free(distinctDegreeFactors);
+	distinctDegreeFactors = NULL;
+	
+	free(distinctDegreeFactorsExponents);
+	distinctDegreeFactorsExponents = NULL;
+	free(distinctDegreeFactorsDegrees);
+	distinctDegreeFactorsDegrees = NULL;
+	
+	for (int i = 0; i < numOfEqualDegreeFactors; i += 1)
+		equalDegreeFactors[i] = free_BigPolyT(equalDegreeFactors[i]);
 	free(equalDegreeFactors);
 	equalDegreeFactors = NULL;
-	*/
+	
+	free(equalDegreeFactorsExponents);
+	equalDegreeFactorsExponents = NULL;
 	
 	return NULL;
 }

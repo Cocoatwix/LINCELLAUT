@@ -29,6 +29,10 @@ all:	$(TARGET)
 verbose:	FLAGS += -DVERBOSE
 verbose:	$(TARGET)
 
+#valgrind --leak-check=yes --track-origins=yes -s ./lincellaut
+memdebug:	FLAGS += -g -O0
+memdebug:	$(TARGET)
+
 #The -lm is included at the end of the command to avoid linker problems
 # stackoverflow.com/questions/11336477
 $(TARGET):	$(TARGET).c $(ALLOBJS)

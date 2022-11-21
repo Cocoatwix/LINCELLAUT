@@ -254,7 +254,7 @@ void printi(BigIntTP const n)
 			power += 1;
 		}
 		
-		for (int i = n->size-1; i >= 0; i -= 1)
+		for (int i = (n->size)-1; i >= 0; i -= 1)
 		{
 			if (i != n->size-1)
 				for (int d = 0; d < power - num_digits(n->theInt[i]); d += 1)
@@ -454,7 +454,6 @@ int compare_BigIntT(BigIntTP const AA, BigIntTP const BB)
 	//Freeing created pointers, if needed
 	if (A != AA)
 		A = free_BigIntT(A);
-	
 	if (B != BB)
 		B = free_BigIntT(B);
 	
@@ -594,6 +593,26 @@ int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
 			sum->theInt[i+1] += 1;
 		
 		sum->theInt[i] += (A->theInt[i] + B->theInt[i]) % MAXBUNCH; 
+		
+		if ((A->size <= i) || (B->size <= i) || (sum->size <= i+1))
+		{
+			printf("Invalid read!!!!! :o\n");
+			printf("A = ");
+			printi(A);
+			printf("\nB = ");
+			printi(B);
+			printf("\nsum = ");
+			printi(sum);
+			printf("\ni = %d\n", i);
+			printf("A->size = %d\n", A->size);
+			printf("B->size = %d\n", B->size);
+			printf("sum->size = %d\n", sum->size);
+			if (A == smol)
+				printf("A is smol\n");
+			else
+				printf("B is smol\n");
+			getchar();
+		}
 	}
 	
 	//Add extra bunches that weren't added above
@@ -686,6 +705,11 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	
 	//Prepare our variables for the multiplication
 	clear_BigIntT(product);
+	
+	//This is required to prevent indexing errors in add_BigPolyT() later in this function
+	// Without it, a zero with extra bunches can appear, throwing off bunch indexing
+	reduce_BigIntT(product);
+	
 	copy_BigIntT(B, tempLot);
 
 	//Prepare to add B a bunch of times
@@ -738,6 +762,8 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 	zero    = free_BigIntT(zero);
 	tempLot = free_BigIntT(tempLot);
 	temp    = free_BigIntT(temp);
+	
+	reduce_BigIntT(product);
 	
 	return 1;
 }

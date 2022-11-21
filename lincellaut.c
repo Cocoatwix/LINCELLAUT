@@ -1958,7 +1958,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 (49/81)
+			cycmatsearch 3 9/9 6 10 14 (54/81)
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -4653,6 +4653,7 @@ int main(int argc, char* argv[])
 			
 			printf("A = ");
 			printp(A);
+			
 			/*printf("\nA' = ");
 			diff_BigPolyT(A, temp);
 			mod_BigPolyT(temp, bigMod, dA);
@@ -4690,10 +4691,83 @@ int main(int argc, char* argv[])
 			printp(Bpow);
 			printf("\n\n"); */
 			
+			/*
 			printf("\n");
 			printf("Factorisation debugging:\n");
 			factor_BigPolyT(A, bigMod);
+			*/
 			
+			/*
+			//Testing whether multiply_BigIntT is the problem...
+			int Aarr[5] = {98717696, 30229936, 67530990, 52030601, 1457200};
+			int Barr[1] = {21576};
+			
+			BigIntTP Anum = new_BigIntT(Aarr, 5);
+			BigIntTP Bnum = new_BigIntT(Barr, 1);
+			BigIntTP Cnum = empty_BigIntT(1);
+			
+			printf("\n");
+			printi(Anum);
+			printf(" * ");
+			printi(Bnum);
+			printf(" = \n");
+			multiply_BigIntT(Anum, Bnum, Cnum);
+			printi(Cnum);
+			printf("\n");
+			
+			Anum = free_BigIntT(Anum);
+			Bnum = free_BigIntT(Bnum);
+			*/
+			
+			printf("\nTesting whether pow_BigPolyT is the problem...\n");
+			BigIntTP hArr[4] = {NA[1], NA[7], NA[6], NA[2]};
+			BigPolyTP h = new_BigPolyT(hArr, 4);
+			BigPolyTP powTest = empty_BigPolyT();
+			BigPolyTP powTest2 = empty_BigPolyT();
+			BigPolyTP onePoly = constant_BigPolyT(NA[1]);
+			
+			int sixtyArr[1] = {60};
+			BigIntTP sixty = new_BigIntT(sixtyArr, 1);
+			
+			printf("sixty = ");
+			printi(sixty);
+			printf("\nh = ");
+			printp(h);
+			printf("\npowTest = ");
+			printp(powTest);
+			/*
+			printf("\nComputing h^60 manually...\n");
+			copy_BigPolyT(onePoly, powTest);
+
+			reduce_BigPolyT(h);
+			
+			for (int i = 0; i < 60; i += 1)
+			{
+				printf("i = %d\n", i);
+				reduce_BigPolyT(powTest);
+				reduce_BigPolyT(powTest2);
+				multiply_BigPolyT(powTest, h, powTest2);
+				copy_BigPolyT(powTest2, powTest);
+			}
+			
+			printf("Manual multiplication successful\n");
+			
+			h = free_BigPolyT(h);
+			powTest = free_BigPolyT(powTest);
+			powTest2 = free_BigPolyT(powTest2);
+			sixty = free_BigIntT(sixty);
+			*/
+			
+			pow_BigPolyT(h, sixty, powTest);
+			printf("\nh^60 = ");
+			printp(powTest);
+			printf("\n");
+			
+			h = free_BigPolyT(h);
+			powTest = free_BigPolyT(powTest);
+			powTest2 = free_BigPolyT(powTest2);
+			sixty = free_BigIntT(sixty);
+			onePoly = free_BigPolyT(onePoly);
 			
 			for (int i = 0; i < NAsize; i += 1)
 				NA[i] = free_BigIntT(NA[i]);
@@ -4704,12 +4778,17 @@ int main(int argc, char* argv[])
 			dA   = free_BigPolyT(dA);
 			Bpow = free_BigPolyT(Bpow);
 			
+			FREE(Adefn);
+			FREE(Bdefn);
+			
 			temp      = free_BigPolyT(temp);
 			quotient  = free_BigPolyT(quotient);
 			remainder = free_BigPolyT(remainder);
 			GCD       = free_BigPolyT(GCD);
 			s         = free_BigPolyT(s);
 			t         = free_BigPolyT(t);
+			
+			onePoly = free_BigPolyT(onePoly);
 			
 			bigMod = free_BigIntT(bigMod);
 		}
