@@ -107,6 +107,15 @@ BigFactorsTP new_BigFactorsT(BigPolyTP* const, int* const, int);
     Returns 1 on success, 0 otherwise. */
 int add_factor(BigFactorsTP, BigPolyTP const, int);
 
+/** Returns a BigPolyTP array containing all the
+    factors in the given BigFactorsT. The factor will
+	appear as many times as its exponent demands. */
+BigPolyTP* extract_factors(BigFactorsTP const);
+
+/** Returns the number of factors in the given BigFactorsTP,
+    taking into account repeated roots. */
+int count_factors(BigFactorsTP const);
+
 /** Compares two BigPolyTPs to see if they're equal (have the
     same coefficients). 
 	Returns 0 if they're equal, a negative if the first BigPolyT 

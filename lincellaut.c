@@ -67,7 +67,7 @@ if (strtoBIT((str), &(bigint)) != 1) \
 
 int main(int argc, char* argv[])
 {
-	srand(123457); //Seeding random number generator
+	srand(time(NULL)); //Seeding random number generator
 	
 	//Check to see if MAXBUNCH for BigIntT structs is a power of ten
 	//If it isn't, warn the user
@@ -454,7 +454,7 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP bigMatrix;
 			
 			BigPolyTP bigEqn;
-			BigPolyTP* bigEqnFactors = NULL;
+			BigFactorsTP bigEqnFactors = NULL;
 			BigPolyTP* minEqn = NULL;
 			
 			//If the user provided a custom modulus
@@ -489,8 +489,8 @@ int main(int argc, char* argv[])
 			printp(bigEqn);
 			
 			printf("\nFactored characteristic equation: ");
-			bigEqnFactors = old_factor_BigPolyT(bigEqn, bigMod);
-			old_printpf(bigEqnFactors);
+			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
+			printpf(bigEqnFactors);
 			printf("\nMinimum polynomial: ");
 			minEqn = min_poly(bigMatrix, bigMod);
 			old_printpf(minEqn);
@@ -498,9 +498,9 @@ int main(int argc, char* argv[])
 			
 			bigMod  = free_BigIntT(bigMod);
 			
-			bigMatrix = free_BigIntMatrixT(bigMatrix);
+			bigMatrix     = free_BigIntMatrixT(bigMatrix);
 			bigEqn        = free_BigPolyT(bigEqn);
-			bigEqnFactors = free_BigPolyT_factors(bigEqnFactors);
+			bigEqnFactors = free_BigFactorsT(bigEqnFactors);
 			minEqn        = free_BigPolyT_factors(minEqn);
 		}
 		
@@ -4495,7 +4495,7 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		int testMode = 1;
+		int testMode = -1;
 		
 		if (testMode == 0)
 		{
@@ -4586,8 +4586,10 @@ int main(int argc, char* argv[])
 		
 		else if (testMode == 1)
 		{
-			#define Asize 32
+			#define Asize 47
 			#define Bsize 3
+			
+			BigFactorsTP finally;
 			
 			BigPolyTP A, dA, B, Bpow;
 			
@@ -4613,7 +4615,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//modulus
-			numArr[0] = 11;
+			numArr[0] = 7;
 			bigMod = new_BigIntT(numArr, 1);
 			
 			//Some fun test cases
@@ -4627,7 +4629,8 @@ int main(int argc, char* argv[])
 			
 			//Great example for testing the different stages of the factorisation algorithm
 			//x^31 + 4*x^30 + x^29 + 8*x^28 + 4*x^27 + 7*x^26 + 8*x^25 + 9*x^24 + 3*x^23 + 9*x^22 + 9*x^21 + 6*x^20 + 6*x^19 + 10*x^18 + 3*x^17 + 9*x^16 + x^15 + 6*x^14 + 5*x^12 + 6*x^11 + x^10 + 4*x^9 + 9*x^8 + 7*x^7 + 3*x^6 + 10*x^5 + 9*x^4 + 8*x + 9
-			int aCoeffs[Asize] = {9, 8, 0, 0, 9, 10, 3, 7, 9, 4, 1, 6, 5, 0, 6, 1, 9, 3, 10, 6, 6, 9, 9, 3, 9, 8, 7, 4, 8, 1, 4, 1};
+			//x^46 + 3*x^45 + 4*x^44 + 3*x^43 + 4*x^42 + 3*x^41 + x^40 + x^39 + 4*x^37 + 2*x^36 + x^34 + x^33 + 3*x^32 + x^31 + x^30 + 2*x^29 + 3*x^28 + 2*x^27 + 2*x^26 + x^25 + 4*x^24 + 3*x^22 + 4*x^21 + x^20 + 2*x^19 + 4*x^18 + 2*x^17 + 4*x^15 + x^14 + x^13 + x^12 + x^11 + 2*x^10 + x^7 + 2*x^3 + 3*x^2 + x + 3 mod 5
+			int aCoeffs[Asize] = {3, 1, 3, 2, 0, 0, 0, 1, 0, 0, 2, 1, 1, 1, 1, 4, 0, 2, 4, 2, 1, 4, 3, 0, 4, 1, 2, 2, 3, 2, 1, 1, 3, 1, 1, 0, 2, 4, 0, 1, 1, 3, 4, 3, 4, 3, 1};
 			for (int i = 0; i < Asize; i += 1)
 				Adefn[i] = NA[aCoeffs[i]];
 			
@@ -4654,48 +4657,11 @@ int main(int argc, char* argv[])
 			printf("A = ");
 			printp(A);
 			
-			/*printf("\nA' = ");
-			diff_BigPolyT(A, temp);
-			mod_BigPolyT(temp, bigMod, dA);
-			printp(dA);
-			printf("\nB = ");
-			printp(B);
+			finally = factor_BigPolyT(A, bigMod);
+			printf("\nFactored A = ");
+			printpf(finally);
 			printf("\n");
 			
-			printf("\nA/B = ");
-			if (divide_BigPolyT(A, B, quotient, remainder, bigMod) == 0)
-				printf("E\n");
-			else
-			{
-				printp(quotient);
-				printf("  R  ");
-				printp(remainder);
-				printf("\n");
-			}
-			
-			printf("gcd(A, B) = ");
-			poly_gcd(A, B, GCD, bigMod, s, t);
-			printp(GCD);
-			printf("\n = (");
-			printp(s);
-			printf(")(");
-			printp(A);
-			printf(") + (");
-			printp(t);
-			printf(")(");
-			printp(B);
-			printf(")\n\n");
-			
-			printf("B^2 = ");
-			pow_BigPolyT(B, NA[2], Bpow);
-			printp(Bpow);
-			printf("\n\n"); */
-			
-			/*
-			printf("\n");
-			printf("Factorisation debugging:\n");
-			factor_BigPolyT(A, bigMod);
-			*/
 			
 			/*
 			//Testing whether multiply_BigIntT is the problem...
@@ -4719,6 +4685,7 @@ int main(int argc, char* argv[])
 			Bnum = free_BigIntT(Bnum);
 			*/
 			
+			/*
 			printf("\nTesting whether pow_BigPolyT is the problem...\n");
 			BigIntTP hArr[4] = {NA[1], NA[7], NA[6], NA[2]};
 			BigPolyTP h = new_BigPolyT(hArr, 4);
@@ -4735,28 +4702,6 @@ int main(int argc, char* argv[])
 			printp(h);
 			printf("\npowTest = ");
 			printp(powTest);
-			/*
-			printf("\nComputing h^60 manually...\n");
-			copy_BigPolyT(onePoly, powTest);
-
-			reduce_BigPolyT(h);
-			
-			for (int i = 0; i < 60; i += 1)
-			{
-				printf("i = %d\n", i);
-				reduce_BigPolyT(powTest);
-				reduce_BigPolyT(powTest2);
-				multiply_BigPolyT(powTest, h, powTest2);
-				copy_BigPolyT(powTest2, powTest);
-			}
-			
-			printf("Manual multiplication successful\n");
-			
-			h = free_BigPolyT(h);
-			powTest = free_BigPolyT(powTest);
-			powTest2 = free_BigPolyT(powTest2);
-			sixty = free_BigIntT(sixty);
-			*/
 			
 			pow_BigPolyT(h, sixty, powTest);
 			printf("\nh^60 = ");
@@ -4768,6 +4713,9 @@ int main(int argc, char* argv[])
 			powTest2 = free_BigPolyT(powTest2);
 			sixty = free_BigIntT(sixty);
 			onePoly = free_BigPolyT(onePoly);
+			*/
+			
+			finally = free_BigFactorsT(finally);
 			
 			for (int i = 0; i < NAsize; i += 1)
 				NA[i] = free_BigIntT(NA[i]);
@@ -4787,8 +4735,6 @@ int main(int argc, char* argv[])
 			GCD       = free_BigPolyT(GCD);
 			s         = free_BigPolyT(s);
 			t         = free_BigPolyT(t);
-			
-			onePoly = free_BigPolyT(onePoly);
 			
 			bigMod = free_BigIntT(bigMod);
 		}
