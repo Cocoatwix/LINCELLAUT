@@ -4495,7 +4495,7 @@ int main(int argc, char* argv[])
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
 		
-		int testMode = -1;
+		int testMode = 0;
 		
 		//MultiVarExtT testing
 		if (testMode == 0)
@@ -4503,6 +4503,7 @@ int main(int argc, char* argv[])
 			//Time to test adding extensions
 			MultiVarExtTP coolExt1 = new_MultiVarExtT(3);
 			MultiVarExtTP coolExt2 = new_MultiVarExtT(3);
+			MultiVarExtTP extHold  = new_MultiVarExtT(3);
 			MultiVarExtTP coolExt3 = new_MultiVarExtT(4);
 			
 			BigIntTP* extDefn1;
@@ -4563,14 +4564,20 @@ int main(int argc, char* argv[])
 			set_MultiVarExtT_mod(coolExt1, bigMod);
 			set_MultiVarExtT_mod(coolExt2, bigMod);
 			set_MultiVarExtT_mod(coolExt3, bigMod);
+			set_MultiVarExtT_mod(extHold, bigMod);
 			
 			add_extension(coolExt1, extDefn1, 4, "a");
 			add_extension(coolExt1, extDefn2, 3, "b");
 			add_extension(coolExt1, extDefn3, 3, "c");
 			
+			
 			add_extension(coolExt2, extDefn1, 4, "a");
 			add_extension(coolExt2, extDefn2, 3, "b");
 			add_extension(coolExt2, extDefn3, 3, "c");
+			
+			add_extension(extHold, extDefn1, 4, "a");
+			add_extension(extHold, extDefn2, 3, "b");
+			add_extension(extHold, extDefn3, 3, "c");
 			
 			add_extension(coolExt3, extDefn1, 4, "a");
 			add_extension(coolExt3, extDefn2, 3, "b");
@@ -4613,9 +4620,13 @@ int main(int argc, char* argv[])
 			printmve(coolExt2);
 			printf("\n");
 			
+			printf("\nMultiplying coolExt1 and coolExt2...\n");
+			mult_sim_MultiVarExtT(coolExt1, coolExt2, extHold);
+			
 			coolExt1 = free_MultiVarExtT(coolExt1);
 			coolExt2 = free_MultiVarExtT(coolExt2);
 			coolExt3 = free_MultiVarExtT(coolExt3);
+			extHold  = free_MultiVarExtT(extHold);
 			
 			bigMod = free_BigIntT(bigMod);
 			

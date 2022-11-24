@@ -2834,10 +2834,32 @@ int inc_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP b)
 int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVarExtTP product)
 /** Calculates a*b, stores the product in product. a, b, and product must have the
     same extensions in the same order, and they all must be fully set.
-		DON'T do any modular reduction.
 		Returns 1 on success, 0 otherwise. */ 
 {
+	int oneArr[1] = {1};
+	BigIntTP one;
+	BigIntTP zero;
+	BigIntTP temp;
+	BigIntTP negOne;
+	BigIntTP leadingTermInv;
+	
+	//extensionReductions[extension][power][number]
+	BigIntTP*** extensionReductions;
+	
+	 //Holds what power each reduction starts at
+	 //e.g. If the first reduction for x is x^3 = x^2 + 7,
+	 // then its corresponding entry is 3 in this list
+	int* extensionReductionsPowers;
+	int* numOfExtensionReductions; //How many reductions we have saved for each extension 
+	
+	bool allSearched = FALSE;
+	BigIntDirectorTP ref;
+	int refLoc[b->numOfExtensions];
+	
 	//Firstly, we need to check whether we can multiply these
+	if (compare_BigIntT(a->mod, b->mod) != 0)
+		return 0;
+	
 	if ((a->numOfExtensions != a->numOfExtensionsSet) || 
 	    (b->numOfExtensions != b->numOfExtensionsSet) ||
 			(product->numOfExtensions != product->numOfExtensionsSet))
@@ -2868,11 +2890,114 @@ int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVar
 		}
 	}
 	
+	copy_BigIntT(b->mod, product->mod);
+	
 	//Now, I need to get a list of each extension's "reduction form"
 	// e.g. if 2a^2 + 2a + 6 = 0, then we want a^2 = -3 - a as a list of BigIntTPs
 	// This is so that we can properly deal with products that give high-power extensions
 	// (above what we can hold in product)
+	one = new_BigIntT(oneArr, 1);
+	zero = empty_BigIntT(1);
+	temp = empty_BigIntT(1);
+	negOne = empty_BigIntT(1);
+	subtract_BigIntT(b->mod, one, negOne);
+	leadingTermInv = empty_BigIntT(1);
 	
+	extensionReductionsPowers = malloc(b->numOfExtensions*sizeof(int));
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+		extensionReductionsPowers[i] = b->extensionSizes[i]-1;
+	
+	numOfExtensionReductions = calloc(b->numOfExtensions, sizeof(int));
+	
+	extensionReductions = malloc(b->numOfExtensions*sizeof(BigIntTP**));
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+	{
+		extensionReductions[i] = malloc(sizeof(BigIntTP*));
+		extensionReductions[i][0] = malloc((b->extensionSizes[i]-1)*sizeof(BigIntTP));
+		numOfExtensionReductions[i] += 1;
+		
+		//Find the inverse of the coefficient on the leading term so 
+		// we can find our reduction expressions
+		big_num_inverse(b->extensions[i][b->extensionSizes[i]-1], b->mod, leadingTermInv);
+		
+		for (int coeff = 0; coeff < b->extensionSizes[i]-1; coeff += 1)
+		{
+			extensionReductions[i][0][coeff] = empty_BigIntT(1);
+			multiply_BigIntT(b->extensions[i][coeff], negOne, temp);
+			multiply_BigIntT(temp, leadingTermInv, extensionReductions[i][0][coeff]);
+			mod_BigIntT(extensionReductions[i][0][coeff], b->mod, temp);
+			copy_BigIntT(temp, extensionReductions[i][0][coeff]);
+		}
+	}
+	
+	//print out the reductions and related data to make sure we're doing this right
+	/*
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+	{
+		printf("Extension #%d's reduction: ", i);
+		for (int coeff = 0; coeff < b->extensionSizes[i]-1; coeff += 1)
+		{
+			printi(extensionReductions[i][0][coeff]);
+			printf(" ");
+		}
+		printf("\nThis represents the %d power of the extension\n", extensionReductionsPowers[i]);
+	} */
+	
+	//Zero out all the entries in product before we start multiplying
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+		refLoc[i] = 0;
+	
+	while (!allSearched)
+	{
+		ref = product->coeffs;
+		for (int i = 0; i < b->numOfExtensions-1; i += 1)
+			ref = ref->next[refLoc[i]];
+		
+		copy_BigIntT(zero, ref->coeffs[refLoc[b->numOfExtensions-1]]); 
+		
+		allSearched = TRUE;
+		for (int i = 0; i < b->numOfExtensions; i += 1)
+		{
+			refLoc[i] += 1;
+			if (refLoc[i] >= b->extensionSizes[i])
+				refLoc[i] = 0;
+			else
+			{
+				allSearched = FALSE;
+				break;
+			}
+		}
+	}
+	
+	
+	
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+	{
+		for (int j = 0; j < numOfExtensionReductions[i]; j += 1)
+		{
+			for (int k = 0; k < (b->extensionSizes[i]-1); k += 1)
+				extensionReductions[i][j][k] = free_BigIntT(extensionReductions[i][j][k]);
+			
+			free(extensionReductions[i][j]);
+			extensionReductions[i][j] = NULL;
+		}
+		free(extensionReductions[i]);
+		extensionReductions[i] = NULL;
+	}
+	free(extensionReductions);
+	extensionReductions = NULL;
+	
+	free(numOfExtensionReductions);
+	numOfExtensionReductions = NULL;
+	
+	free(extensionReductionsPowers);
+	extensionReductionsPowers = NULL;
+	
+	one = free_BigIntT(one);
+	temp = free_BigIntT(temp);
+	zero = free_BigIntT(zero);
+	negOne = free_BigIntT(negOne);
+	leadingTermInv = free_BigIntT(leadingTermInv);
 	
 	return 0;
 }
