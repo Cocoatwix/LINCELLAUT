@@ -332,7 +332,7 @@ MultiVarExtTP new_MultiVarExtT(int size)
     pointer to the object. Returns NULL on error. */
 {
 	MultiVarExtTP ext   = malloc(sizeof(MultiVarExtT));
-	ext->coeffs         = malloc(sizeof(BigIntDirectorT));
+	ext->coeffs         = calloc(1, sizeof(BigIntDirectorT));
 	ext->extensions     = malloc(size*sizeof(BigIntTP*));
 	ext->mod            = empty_BigIntT(1);
 	ext->extensionSizes = malloc(size*sizeof(int));
@@ -352,6 +352,8 @@ MultiVarExtTP new_MultiVarExtT(int size)
 		ext->coeffs->hasNext = FALSE;
 	else
 		ext->coeffs->hasNext = TRUE;
+	
+	ext->coeffs->next = NULL; //Preventing dereference errors?
 	
 	ext->numOfExtensions    = size;
 	ext->numOfExtensionsSet = 0;
@@ -417,6 +419,7 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 				ref->coeffs  = malloc(sizeOfMinPoly*sizeof(BigIntTP));
 				ref->hasNext = FALSE;
 				ref->size    = sizeOfMinPoly;
+				ref->next    = NULL;
 			}
 			
 			ref->coeffs[coeffsIndex[index]] = empty_BigIntT(1);
@@ -433,7 +436,7 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 				ref->size    = sizeOfMinPoly;
 			}
 			
-			ref->next[coeffsIndex[index]] = malloc(sizeof(BigIntDirectorT));
+			ref->next[coeffsIndex[index]] = calloc(1, sizeof(BigIntDirectorT));
 			ref->next[coeffsIndex[index]]->next = NULL;
 		}
 		
@@ -467,10 +470,12 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP ext, int* const coeffPos, BigIntT
 	if (ext->numOfExtensionsSet != ext->numOfExtensions)
 		return 0;
 	
+	
 	ref = ext->coeffs;
 	
 	for (int i = 0; i < ext->numOfExtensions-1; i += 1)
 	{
+		//printf("i = %d, ext->numOfExtensions-1 = %d\n", i, ext->numOfExtensions-1);
 		if (coeffPos[i] >= ref->size) //Making sure we don't get any IndexErrors
 			return 0;
 		
@@ -584,7 +589,7 @@ int reduce_MultiVarExtT(MultiVarExtTP ext)
 					printf(", ");
 				}
 				printi(currCoeffs[ext->extensionSizes[focusTerm]-1]);
-				printf("]\n");*/
+				printf("]\n");
 				
 				printf("focusTerm: %d\n", focusTerm);
 				printf("currLoc: [");
@@ -592,7 +597,7 @@ int reduce_MultiVarExtT(MultiVarExtTP ext)
 					printf("%d, ", currLoc[i]);
 				printf("%d]\n", currLoc[ext->numOfExtensions-1]);
 				printmve(ext);
-				printf("\n");
+				printf("\n"); */
 			}
 			
 			//Increment currLoc
@@ -2739,4 +2744,135 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const p, BigIntTP const mod)
 	equalDegreeFactorsExponents = NULL;
 	
 	return factoredP;
+}
+
+
+int inc_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP b)
+/** Computes a+b, stores the result in b.
+    This function assumes a and b have the same size and the
+		same extensions added in the same order.
+		The MultiVarExtTs also have to be fully set.
+		DON'T try and do any modular reduction during the addition.
+		Returns 1 on success, 0 otherwise. */
+{
+	bool moreToAdd = TRUE;
+	int currPos[b->numOfExtensions];
+	
+	BigIntTP temp;
+	
+	BigIntDirectorTP aRef, bRef; //Holds nodes as we traverse through the MultiVarExtTs
+	
+	//If the MultiVarExtTs aren't fully set
+	if ((a->numOfExtensions != a->numOfExtensionsSet) ||
+	    (b->numOfExtensions != b->numOfExtensionsSet))
+		return 0;
+		
+	//If the MultiVarExtTs aren't the same size
+	if (a->numOfExtensions != b->numOfExtensions)
+		return 0;
+	
+	//Check to see if each MultiVarExtT has the same extensions
+	// in the same order.
+	//In the future, I'd like this function to be able to add them even
+	// if the ordering of the extensions is different, but I'm too
+	// lazy right now
+	for (int i = 0; i < a->numOfExtensions; i += 1)
+	{
+		if (a->extensionSizes[i] != b->extensionSizes[i])
+			return 0;
+		
+		//Make sure the extension definitions are the same
+		for (int extCoeff = 0; extCoeff < a->extensionSizes[i]; extCoeff += 1)
+			if (compare_BigIntT(a->extensions[i][extCoeff], b->extensions[i][extCoeff]) != 0)
+				return 0;
+	}
+	
+	//If we get to this point in the function, the two MultiVarExtTs
+	// should be similar enough to add with this function
+	temp = empty_BigIntT(1);
+	
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+		currPos[i] = 0;
+	
+	while (moreToAdd)
+	{
+		aRef = a->coeffs;
+		bRef = b->coeffs;
+		for (int i = 0; i < b->numOfExtensions - 1; i += 1)
+		{
+			aRef = aRef->next[currPos[i]];
+			bRef = bRef->next[currPos[i]];
+		}
+		
+		//Now, we can get at the actual coefficients
+		add_BigIntT(aRef->coeffs[currPos[b->numOfExtensions-1]], 
+		            bRef->coeffs[currPos[b->numOfExtensions-1]],
+								temp);
+								
+		copy_BigIntT(temp, bRef->coeffs[currPos[b->numOfExtensions-1]]);
+		
+		//Now, increment our position
+		moreToAdd = FALSE;
+		for (int i = 0; i < b->numOfExtensions; i += 1)
+		{
+			currPos[i] += 1;
+			if (currPos[i] >= b->extensionSizes[i])
+				currPos[i] = 0;
+			else
+			{
+				moreToAdd = TRUE;
+				break;
+			}
+		}
+	}
+	
+	temp = free_BigIntT(temp);
+	return 1;
+}
+
+
+int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVarExtTP product)
+/** Calculates a*b, stores the product in product. a, b, and product must have the
+    same extensions in the same order, and they all must be fully set.
+		DON'T do any modular reduction.
+		Returns 1 on success, 0 otherwise. */ 
+{
+	//Firstly, we need to check whether we can multiply these
+	if ((a->numOfExtensions != a->numOfExtensionsSet) || 
+	    (b->numOfExtensions != b->numOfExtensionsSet) ||
+			(product->numOfExtensions != product->numOfExtensionsSet))
+		return 0;
+		
+	if (a->numOfExtensions != b->numOfExtensions)
+		return 0;
+	
+	if (b->numOfExtensions != product->numOfExtensions)
+		return 0;
+	
+	//At some point, I need to make this check extensions in any order
+	for (int i = 0; i < b->numOfExtensions; i += 1)
+	{
+		if (b->extensionSizes[i] != a->extensionSizes[i])
+			return 0;
+		
+		if (b->extensionSizes[i] != product->extensionSizes[i])
+			return 0;
+		
+		for (int extCoeff = 0; extCoeff < b->extensionSizes[i]; extCoeff += 1)
+		{
+			if (compare_BigIntT(a->extensions[i][extCoeff], b->extensions[i][extCoeff]) != 0)
+				return 0;
+			
+			if (compare_BigIntT(b->extensions[i][extCoeff], product->extensions[i][extCoeff]) != 0)
+				return 0;
+		}
+	}
+	
+	//Now, I need to get a list of each extension's "reduction form"
+	// e.g. if 2a^2 + 2a + 6 = 0, then we want a^2 = -3 - a as a list of BigIntTPs
+	// This is so that we can properly deal with products that give high-power extensions
+	// (above what we can hold in product)
+	
+	
+	return 0;
 }

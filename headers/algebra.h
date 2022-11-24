@@ -200,6 +200,24 @@ BigPolyTP* old_factor_BigPolyT(BigPolyTP const, BigIntTP const);
 	in the array is a constant telling how many factors are in the array. */
 BigFactorsTP factor_BigPolyT(BigPolyTP const, BigIntTP const);
 
+/** Adds two MultiVarExtTs together, assuming they have the same size
+    and the same extensions (in the same order). Stores the result
+	in the second MultiVarExtT.
+	The MultiVarExtTs also have to be fully set.
+	This function DOES NOT concern itself with taking
+	any sort of modular reduction during addition. Use
+	reduce_MultiVarExtT() for that.
+	Returns 1 on success, 0 otherwise. */
+int inc_sim_MultiVarExtT(MultiVarExtTP const, MultiVarExtTP);
+
+/** Multiplies two MultiVarExtTs with the same extensions together, stores the
+    result in the third MultiVarExtTP given. All MultiVarExtTs must have the
+	same extensions in the same order, and must be fully set (i.e. can set
+	coefficients). This function DOES NOT perform any sort of modular
+	reduction. Use reduce_MultiVarExtT() for that.
+	Returns 1 on success, 0 otherwise. */
+int mult_sim_MultiVarExtT(MultiVarExtTP const, MultiVarExtTP const, MultiVarExtTP);
+
 /*
 int find_factors(BigIntTP const,
                  BigIntTP const,

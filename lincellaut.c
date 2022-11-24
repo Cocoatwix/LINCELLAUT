@@ -4497,93 +4497,138 @@ int main(int argc, char* argv[])
 		
 		int testMode = -1;
 		
+		//MultiVarExtT testing
 		if (testMode == 0)
 		{
 			//Time to test adding extensions
-			MultiVarExtTP coolExt = new_MultiVarExtT(3);
+			MultiVarExtTP coolExt1 = new_MultiVarExtT(3);
+			MultiVarExtTP coolExt2 = new_MultiVarExtT(3);
+			MultiVarExtTP coolExt3 = new_MultiVarExtT(4);
 			
 			BigIntTP* extDefn1;
 			BigIntTP* extDefn2;
 			BigIntTP* extDefn3;
+			BigIntTP* extDefn4;
 			BigIntTP bigMod;
 			
-			BigIntTP zero, one, two, six, twelve;
+			#define nasize 17
+			int numArr[1] = {0};
+			BigIntTP NA[nasize];
+			for (int i = 0; i < nasize; i += 1)
+			{
+				NA[i] = new_BigIntT(numArr, 1);
+				numArr[0] += 1;
+			}
+			bigMod = new_BigIntT(numArr, 1);
 			
-			int oneArr[1] = {1};
-			int twoArr[1] = {2};
-			int sixArr[1] = {6};
-			int twelveArr[1] = {12};
-			
-			//{exponent of first extension, exponent of second extension}
+			//{exponent of first extension, exponent of second extension, ...}
 			int coeff1[3] = {2, 2, 0};
 			int coeff2[3] = {0, 1, 1};
 			int coeff3[3] = {3, 2, 2};
 			
-			zero = empty_BigIntT(1);
-			one  = new_BigIntT(oneArr, 1);
-			two  = new_BigIntT(twoArr, 1);
-			
-			six = new_BigIntT(sixArr, 1);
-			twelve = new_BigIntT(twelveArr, 1);
+			int specialCoeff1[4] = {0, 1, 2, 2};
+			int specialCoeff2[4] = {1, 1, 2, 2};
+			int specialCoeff3[4] = {0, 1, 0, 0};
 			
 			extDefn1 = malloc(4*sizeof(BigIntTP));
 			extDefn2 = malloc(3*sizeof(BigIntTP));
 			extDefn3 = malloc(3*sizeof(BigIntTP));
+			extDefn4 = malloc(3*sizeof(BigIntTP));
 			
-			//1 + x + x^2 + x^3 = 0
-			extDefn1[0] = one;
-			extDefn1[1] = one;
-			extDefn1[2] = one;
-			extDefn1[3] = one;
+			//1 + 3*x + x^2 + x^3 = 0
+			extDefn1[0] = NA[1];
+			extDefn1[1] = NA[3];
+			extDefn1[2] = NA[1];
+			extDefn1[3] = NA[1];
 			
-			//2 + 2x + x^2 = 0
-			extDefn2[0] = two;
-			extDefn2[1] = two;
-			extDefn2[2] = one;
+			//2 + 9x + x^2 = 0
+			extDefn2[0] = NA[2];
+			extDefn2[1] = NA[9];
+			extDefn2[2] = NA[1];
 			
 			//2 + 6x^2 = 0
-			extDefn3[0] = two;
-			extDefn3[1] = zero;
-			extDefn3[2] = six;
+			extDefn3[0] = NA[2];
+			extDefn3[1] = NA[0];
+			extDefn3[2] = NA[6];
 			
-			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			//1 + x + 8x^2 = 0
+			extDefn4[0] = NA[1];
+			extDefn4[1] = NA[1];
+			extDefn4[2] = NA[8];
+			
 			printf("Modulus: ");
 			printi(bigMod);
 			printf("\n");
 			
-			set_MultiVarExtT_mod(coolExt, bigMod);
+			set_MultiVarExtT_mod(coolExt1, bigMod);
+			set_MultiVarExtT_mod(coolExt2, bigMod);
+			set_MultiVarExtT_mod(coolExt3, bigMod);
 			
-			add_extension(coolExt, extDefn1, 4, "a");
-			add_extension(coolExt, extDefn2, 3, "b");
-			add_extension(coolExt, extDefn3, 3, "c");
+			add_extension(coolExt1, extDefn1, 4, "a");
+			add_extension(coolExt1, extDefn2, 3, "b");
+			add_extension(coolExt1, extDefn3, 3, "c");
 			
-			set_MultiVarExtT_coefficient(coolExt, coeff1, six);
-			set_MultiVarExtT_coefficient(coolExt, coeff2, six);
-			set_MultiVarExtT_coefficient(coolExt, coeff3, twelve);
+			add_extension(coolExt2, extDefn1, 4, "a");
+			add_extension(coolExt2, extDefn2, 3, "b");
+			add_extension(coolExt2, extDefn3, 3, "c");
 			
-			printf("Before reduction:\n");
-			printmve(coolExt);
+			add_extension(coolExt3, extDefn1, 4, "a");
+			add_extension(coolExt3, extDefn2, 3, "b");
+			add_extension(coolExt3, extDefn3, 3, "c");
+			add_extension(coolExt3, extDefn4, 3, "d");
+			
+			printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
+			printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
+			printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
+			
+			printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
+			printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
+			printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
+			
+			printf(":|\n");
+			printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
+			printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
+			printf("coolExt3 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]));
+			
+			reduce_MultiVarExtT(coolExt1);
+			printf("coolExt1:\n");
+			printmve(coolExt1);
 			printf("\n");
 			
-			reduce_MultiVarExtT(coolExt);
-			printf("After reduction:\n");
-			printmve(coolExt);
+			reduce_MultiVarExtT(coolExt2);
+			printf("coolExt2:\n");
+			printmve(coolExt2);
 			printf("\n");
 			
-			coolExt = free_MultiVarExtT(coolExt);
+			printf("coolExt3 before reduction:\n");
+			printmve(coolExt3);
+			reduce_MultiVarExtT(coolExt3);
+			printf("\ncoolExt3 after reduction:\n");
+			printmve(coolExt3);
+			
+			printf("\nCan coolExt1 and coolExt3 add? %d\n", inc_sim_MultiVarExtT(coolExt1, coolExt3));
+			printf("\nCan coolExt1 and coolExt2 add? %d\n", inc_sim_MultiVarExtT(coolExt1, coolExt2));
+			
+			printf("coolExt2 after adding to it coolExt1:\n");
+			printmve(coolExt2);
+			printf("\n");
+			
+			coolExt1 = free_MultiVarExtT(coolExt1);
+			coolExt2 = free_MultiVarExtT(coolExt2);
+			coolExt3 = free_MultiVarExtT(coolExt3);
 			
 			bigMod = free_BigIntT(bigMod);
-			zero   = free_BigIntT(zero);
-			one    = free_BigIntT(one);
-			two    = free_BigIntT(two);
-			six    = free_BigIntT(six);
-			twelve = free_BigIntT(twelve);
 			
 			FREE(extDefn1);
 			FREE(extDefn2);
 			FREE(extDefn3);
+			FREE(extDefn4);
+			
+			for (int i = 0; i < nasize; i += 1)
+				NA[i] = free_BigIntT(NA[i]);
 		}
 		
+		//factor_BigPolyT() testing
 		else if (testMode == 1)
 		{
 			#define Asize 47
@@ -4661,59 +4706,6 @@ int main(int argc, char* argv[])
 			printf("\nFactored A = ");
 			printpf(finally);
 			printf("\n");
-			
-			
-			/*
-			//Testing whether multiply_BigIntT is the problem...
-			int Aarr[5] = {98717696, 30229936, 67530990, 52030601, 1457200};
-			int Barr[1] = {21576};
-			
-			BigIntTP Anum = new_BigIntT(Aarr, 5);
-			BigIntTP Bnum = new_BigIntT(Barr, 1);
-			BigIntTP Cnum = empty_BigIntT(1);
-			
-			printf("\n");
-			printi(Anum);
-			printf(" * ");
-			printi(Bnum);
-			printf(" = \n");
-			multiply_BigIntT(Anum, Bnum, Cnum);
-			printi(Cnum);
-			printf("\n");
-			
-			Anum = free_BigIntT(Anum);
-			Bnum = free_BigIntT(Bnum);
-			*/
-			
-			/*
-			printf("\nTesting whether pow_BigPolyT is the problem...\n");
-			BigIntTP hArr[4] = {NA[1], NA[7], NA[6], NA[2]};
-			BigPolyTP h = new_BigPolyT(hArr, 4);
-			BigPolyTP powTest = empty_BigPolyT();
-			BigPolyTP powTest2 = empty_BigPolyT();
-			BigPolyTP onePoly = constant_BigPolyT(NA[1]);
-			
-			int sixtyArr[1] = {60};
-			BigIntTP sixty = new_BigIntT(sixtyArr, 1);
-			
-			printf("sixty = ");
-			printi(sixty);
-			printf("\nh = ");
-			printp(h);
-			printf("\npowTest = ");
-			printp(powTest);
-			
-			pow_BigPolyT(h, sixty, powTest);
-			printf("\nh^60 = ");
-			printp(powTest);
-			printf("\n");
-			
-			h = free_BigPolyT(h);
-			powTest = free_BigPolyT(powTest);
-			powTest2 = free_BigPolyT(powTest2);
-			sixty = free_BigIntT(sixty);
-			onePoly = free_BigPolyT(onePoly);
-			*/
 			
 			finally = free_BigFactorsT(finally);
 			

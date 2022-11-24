@@ -1,0 +1,432 @@
+
+%Reference articles for styling:
+% tex.stackexchange.com/questions/628300
+% tex.stackexchange.com/questions/79134
+% tex.stackexchange.com/questions/103508
+
+% http://tug.ctan.org/tex-archive/macros/latex/contrib/nicematrix/nicematrix.pdf
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=3cm]{geometry}
+\usepackage[parfill]{parskip}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+\usepackage{amsmath}
+\usepackage{nicematrix} %Used for adding dividers in complicated matrices
+
+\usepackage{natbib}
+
+\begin{document}
+	\section{Intro}
+	For a given linear cellular automata (LCA) with a module of the form $\mathds{Z}_{n}^L$ and a matrix $A$ from $\mathds{Z}_{n}^{L \times L}$ (the set of all $L$ by $L$ 
+	matrices with entries in $\mathds{Z}_n$), it's useful to know the cycle lengths of all the vectors under iteration by $A$. The \emph{cycle length} of a vector $\vec{v}$ 
+	is defined to be the smallest positive integer $\omega$ such that
+	\[
+		A^{\tau + \omega}\vec{v} \, \equiv A^{\tau + 2\omega}\vec{v}
+	\]
+	for the smallest possible nonnegative integer $\tau$, which is called the \emph{transient length} of the vector. We'll also refer to the cycle length of the matrix 
+	itself, which is defined as the smallest positive integer $\omega$ such that
+	\[
+		A^{\tau + \omega} \equiv A^{\tau + 2\omega}
+	\]
+	for the smallest possible nonnegative integer $\tau$, which is the transient length of the matrix.
+	
+	Note that transient lengths are nonzero only if $A$ is not invertible. For the majority of this file, we'll only be considering invertible matrices, so we won't need to
+	worry about transient lengths (i.e. all transient lengths will be zero). When $\tau$ is zero, the above relations become much simpler:
+	\begin{align*}
+		         A^{\tau + \omega}\vec{v} \, & \equiv A^{\tau + 2\omega}\vec{v} \\
+		\implies A^{\omega}\vec{v}        \, & \equiv A^{2\omega}\vec{v}        \\
+		\implies \vec{v}                  \, & \equiv A^{\omega}\vec{v}
+	\end{align*}
+	and
+	\begin{align*}
+		         A^{\tau + \omega} \, & \equiv A^{\tau + 2\omega} \\
+		\implies A^{\omega}        \, & \equiv A^{2\omega}        \\
+		\implies I                 \, & \equiv A^{\omega}
+	\end{align*}
+	where $I$ is the $L \times L$ identity matrix.
+	
+	This file will also refer to multiplying vectors by the matrix $A$ as \emph{iterating} the vector. For instance, iterating a vector twice refers to multiplying a vector
+	by $A^2$. A vector \emph{iterating to itself} refers to when multiplying a vector by some power of the matrix $A$ produces the same vector, i.e.
+	\[
+		A^c\vec{v} \, \equiv \vec{v}
+	\]
+	where $c$ is some integer.
+	
+	It's often useful to find vectors of particular cycle lengths for analysis or comparison purposes. One way to do this would simply be to iterate a bunch of vectors 
+	until one with the cycle length of interest is found. However, depending on the size of the system and on the computational resources available, this could take a very 
+	long time. Is there a more efficient way to do this?
+	
+	A few different methods exist that make working with the cycle lengths of vectors easier (particularly in \citet{Patterson2008}), but this document aims to detail a
+	different approach. Consider the module $\mathds{Z}_{p}^L$ and some matrix $A$ in $\mathds{Z}_{p}^{L \times L}$. If we assume $A$ is invertible, that the cycle length 
+	of $A$ is 30, and that $\vec{v}$ is some vector in $\mathds{Z}_{p}^L$, then the vector
+	\[
+		(I + A^{6} + A^{12} + A^{18} + A^{24})\vec{v}
+	\]
+	has a cycle length that divides 6. Why? If we were to multiply this vector by $A^6$, we'd get
+	\begin{align*}
+		       & \ A^{6}(I + A^{6} + A^{12} + A^{18} + A^{24})\vec{v} \\
+		\equiv & \ (A^{6} + A^{12} + A^{18} + A^{24} + A^{30})\vec{v} \\
+		\equiv & \ (A^{6} + A^{12} + A^{18} + A^{24} + I)\vec{v}      \\
+		\equiv & \ (I + A^{6} + A^{12} + A^{18} + A^{24})\vec{v}
+	\end{align*}
+	
+	Multiplying this vector by $A^6$ gets us back to the original vector, meaning its cycle length must divide 6, since a vector with a cycle length that doesn't divide 6 
+	wouldn't iterate to itself after 6 iterations.  We can't immediately conclude its cycle length is 6 since this same relation would hold if the vector also had a 
+	cycle length of 1, 2, or 3. However, the fact that we can take any vector from the module, multiply it by this relatively simple matrix expression, and get a vector 
+	whose cycle length is narrowed down to a few specific values, is certainly noteworthy. The rest of this file will try and make sense of these matrix expressions, and 
+	how we might be able to use them to deduce properties of the vectors in the module.
+	
+	\section{Cycle Converting Matrices}
+	Given a module $\mathds{Z}_{n}^{L}$ and an invertible matrix $A \in \mathds{Z}_{n}^{L \times L}$ with cycle length $\omega$, a \emph{cycle converting matrix} (CCM) 
+	\emph{from $\alpha$ to $\beta$} is a matrix $C$ of the form
+	\[
+		C_{\alpha \rightarrow \beta} = \sum_{i \, = \, 0}^{\alpha - \beta} A^{\beta i}
+	\]
+	where $\alpha$ and $\beta$ are factors of $\omega$ (or $\omega$ itself), and $\alpha \geq \beta$. This file will sometimes refer to $\beta$ as the \emph{target cycle 
+	length} of the CCM. The reason for the restrictions on $\alpha$ and $\beta$ is straightforward. If $\alpha$ or $\beta$ weren't factors of $\omega$, then vectors with 
+	those cycle lengths couldn't exist under iteration by $A$. In other words, all vectors in $\mathds{Z}_{n}^L$ must have cycle lengths that divide $\omega$. 
+	
+	Since $A$ is invertible, we know $A^{\omega} \equiv I$. If the cycle length $p$ of some vector $\vec{v}$ wasn't a factor of $\omega$, there would be some $\epsilon < p$ 
+	where $\omega = np + \epsilon$, meaning
+	\begin{alignat*}{4}
+		         & A^{\omega}\vec{v}        \  & \equiv & \ A^{np + \epsilon}\vec{v}  \\
+		\implies & A^{\omega}\vec{v}        \  & \equiv & \ A^{np}A^{\epsilon}\vec{v} \\
+		\implies & A^{-np}A^{\omega}\vec{v} \  & \equiv & \ A^{\epsilon}\vec{v}       \\
+		\implies & A^{-np}I\vec{v}          \  & \equiv & \ A^{\epsilon}\vec{v}       \\
+		\implies & A^{-np}\vec{v}           \  & \equiv & \ A^{\epsilon}\vec{v}       \\
+		\implies & A^{-np}A^{2np}\vec{v}    \  & \equiv & \ A^{\epsilon}\vec{v}       \\
+		\implies & A^{np}\vec{v}            \  & \equiv & \ A^{\epsilon}\vec{v}       \\
+		\implies & \vec{v}                  \  & \equiv & \ A^{\epsilon}\vec{v}
+	\end{alignat*}
+	so $p$ can't be the cycle length of $\vec{v}$ since there's a smaller positive integer which satisfies the same property. This process can be repeated until the cycle
+	length of $\vec{v}$ is a factor of the matrix's cycle length. So $\alpha$ and $\beta$ must be factors of $\omega$ simply because those are the only cycle lengths which
+	are possible.
+	
+	The second restriction, $\alpha \geq \beta$, is a result of the fact that adding iterations of the same vector can never result in a vector with a higher cycle length,
+	so CCMs can't ever increase the cycle length of a given vector. To see why, imagine a general vector $\vec{w}$ which is a linear combination of iterations of some
+	other vector $\vec{v}$:
+	\[
+		\vec{w} \equiv x_{0}\vec{v} + x_{1}A\vec{v} + x_{2}A^{2}\vec{v} + \cdots
+	\]
+	If the cycle length of $\vec{v}$ is $p$, then
+	\begin{align*}
+		A^{p}\vec{w} & \equiv x_{0}A^{p}\vec{v} + x_{1}AA^{p}\vec{v} + x_{2}A^{2}A^{p}\vec{v} + \cdots \\
+		             & \equiv x_{0}\vec{v} + x_{1}A\vec{v} + x_{2}A^{2}\vec{v} + \cdots                \\
+					 & \equiv \vec{w}
+	\end{align*}
+	so the cycle length of $\vec{w}$ must divide $p$, therefore it's unable to go above $p$.
+	
+	Now understanding the restrictions, how do CCMs behave? Consider the example from earlier, where our matrix $A$ is invertible and has a cycle length of 30. Let's say we
+	have a vector $\vec{v}$ that has a cycle length of 10. Using this vector, we can find a vector whose cycle length divides 5 by using the CCM:
+	\[
+		C_{10 \rightarrow 5} = I + A^{5}
+	\]
+	The vector $C_{10 \rightarrow 5}\vec{v}$ must now have a cycle length that divides 5 since
+	\begin{align*}
+	           & \, A^{5}C_{10 \rightarrow 5}\vec{v} \\
+		\equiv & \, A^{5}(I + A^{5})\vec{v}          \\
+		\equiv & \, A^{5}\vec{v} + A^{10}\vec{v}     \\
+		\equiv & \, A^{5}\vec{v} + \vec{v}           \\
+		\equiv & \, (A^{5} + I)\vec{v}               \\
+		\equiv & \, C_{10 \rightarrow 5}\vec{v}
+	\end{align*}
+	
+	In general, whenever we're given a vector with a known cycle length, we can use a CCM to "convert" the vector to one whose cycle length divides a smaller number. If 
+	we're given a vector whose cycle length we don't know, we at least know its cycle length divides the cycle length of the matrix, so a CCM of the form 
+	$C_{\omega \rightarrow \alpha}$ can be used, where $\omega$ is the cycle length of the matrix $A$.
+	
+	Unfortunately, in practice, using CCMs isn't as straightforward as we'd like. For starters, the zero vector exists. The cycle length of $\vec{0}$ is always 1, meaning 
+	its cycle length divides any other cycle length. What this means is that, when multiplying a vector by a CCM, it's possible that we'll end up converting it to the zero
+	vector, which isn't very useful. Even worse, what's stopping the CCM itself from being the zero matrix? 
+	
+	As a simple example, consider the matrix $A = 
+	\begin{bmatrix}
+		\begin{smallmatrix}
+			1 & 1 \\
+			1 & 0
+		\end{smallmatrix}
+	\end{bmatrix}$ modulo 5. This matrix has a cycle length of 20. Under iteration by this matrix, 4 vectors have a cycle length of 4 (the eigenvectors of this matrix).
+	Forming $C_{20 \rightarrow 4}$, we see
+	\[
+		C_{20 \rightarrow 4} \equiv 
+		\begin{bmatrix}
+			1 & 0 \\
+			0 & 1
+		\end{bmatrix} + 
+		\begin{bmatrix}
+			0 & 3 \\
+			3 & 2
+		\end{bmatrix} + 
+		\begin{bmatrix}
+			4 & 1 \\
+			1 & 3
+		\end{bmatrix} + 
+		\begin{bmatrix}
+			3 & 4 \\
+			4 & 4
+		\end{bmatrix} + 
+		\begin{bmatrix}
+			2 & 2 \\
+			2 & 0
+		\end{bmatrix} \equiv 0 \mod{5}
+	\]
+	meaning we can't use the CCM to find any of these vectors; every vector we try will be sent to $\vec{0}$. While this example is extremely specific, it shows that CCMs 
+	do have the potential to become the zero matrix, even when vectors with the given cycle length exist. This raises an interesting question: when do CCMs become zero?
+	What do these zeros mean? 
+	
+	As another example, consider the matrix $A = 
+	\begin{bmatrix}
+		\begin{smallmatrix}
+			4 & 5 \\
+			1 & 1
+		\end{smallmatrix}
+	\end{bmatrix}$ modulo 7. This matrix has a cycle length of 6. 6 vectors have a cycle length of 3. Computing $C_{6 \rightarrow 3}$, we get
+	\[
+		C_{6 \rightarrow 3} \equiv 
+		\begin{bmatrix}
+			1 & 0 \\
+			0 & 1
+		\end{bmatrix} +
+		\begin{bmatrix}
+			4 & 4 \\
+			5 & 3
+		\end{bmatrix} = 
+		\begin{bmatrix}
+			5 & 4 \\
+			5 & 4
+		\end{bmatrix} \mod{7}
+	\]
+	From the CCM, we see that all vectors with cycle lengths that divide 3 must lie along the span of the vector
+	$\begin{bmatrix}
+		\begin{smallmatrix}
+			1 \\
+			1
+		\end{smallmatrix}
+	\end{bmatrix}$. The span of this vector has 7 vectors in it. Not including the zero vector, that gives us all 6 vectors with a cycle length of 3. Unlike in the
+	previous example, this CCM gives us a lot of info. What's different between these two cases? What causes the CCM to give "unjustified" results in the first example,
+	but not in the second?
+	
+	\section{CCMs, Eigenvectors, and Prime Moduli}
+	The general case of CCMs is difficult to deal with, so let's restrict our attention to prime moduli for the time being. Prime moduli have a number of useful properties
+	which allow us to make sense of why CCMs behave the way they do.
+	
+	Let's consider the case where $A$ is invertible, the modulus is prime, and where the module in question has an eigenbasis (a basis of eigenvectors under iteration by
+	$A$). If we let $\vec{u}_1$, $\vec{u}_2$, $\cdots$ represent a set of linearly-independent eigenvectors, then we can write our matrix $A$ as
+	\[
+	\arraycolsep=0.33cm
+		A = \begin{bNiceArray}{*{2}{c:}c}
+			a_{1,1}\vec{u}_1 + a_{1,2}\vec{u}_2 + \cdots & a_{2,1}\vec{u}_1 + a_{2,2}\vec{u}_2 + \cdots & \cdots
+		\end{bNiceArray}
+	\]
+	where each column vector of $A$ is represented as a linear combination of eigenvectors. For the next step, it's useful to write each eigenvector as an eigenvector 
+	multiplied by an eigenvalue. Because $\vec{u}_1$, $\vec{u}_2$, $\cdots$ are an arbitrary collection of eigenvectors, we can easily rewrite the matrix $A$ as
+	\[
+	\arraycolsep=0.33cm
+		A = \begin{bNiceArray}{*{2}{c:}c}
+			\lambda_{1}a_{1,1}\vec{u}_1 + \lambda_{2}a_{1,2}\vec{u}_2 + \cdots & \lambda_{1}a_{2,1}\vec{u}_1 + \lambda_{2}a_{2,2}\vec{u}_2 + \cdots & \cdots
+		\end{bNiceArray}
+	\]
+	
+	Now, if we let $\alpha$ be some factor of the matrix's cycle length $\omega$, then we can write $C_{\omega \rightarrow \alpha}$ as
+	\begin{align*}
+		C_{\omega \rightarrow \alpha} & \equiv I + A^{\alpha} + A^{2\alpha} + \cdots + A^{\omega - \alpha}                      \\
+		                              & \equiv A^{-1}A + A^{\alpha - 1}A + A^{2\alpha - 1}A + \cdots + A^{\omega - \alpha - 1}A
+	\end{align*}
+	Because the column vectors of $A$ are composed of eigenvectors, these multiplications can be carried out fairly easily:
+	\begin{align*}
+		A^{-1}A & \equiv A^{-1}\begin{bNiceArray}{*{2}{c:}c}
+			\lambda_{1}a_{1,1}\vec{u}_1 + \lambda_{2}a_{1,2}\vec{u}_2 + \cdots & \lambda_{1}a_{2,1}\vec{u}_1 + \lambda_{2}a_{2,2}\vec{u}_2 + \cdots & \cdots
+		\end{bNiceArray} \\
+		& \equiv \begin{bNiceArray}{*{2}{c:}c}
+			a_{1,1}\vec{u}_1 + a_{1,2}\vec{u}_2 + \cdots & a_{2,1}\vec{u}_1 + a_{2,2}\vec{u}_2 + \cdots & \cdots
+		\end{bNiceArray}
+	\end{align*}
+	\begin{align*}
+		A^{\alpha - 1}A & \equiv A^{\alpha - 1}\begin{bNiceArray}{*{2}{c:}c}
+			\lambda_{1}a_{1,1}\vec{u}_1 + \lambda_{2}a_{1,2}\vec{u}_2 + \cdots & \lambda_{1}a_{2,1}\vec{u}_1 + \lambda_{2}a_{2,2}\vec{u}_2 + \cdots & \cdots
+		\end{bNiceArray} \\
+		& \equiv \begin{bNiceArray}{*{2}{c:}c}
+			\lambda_{1}^{\alpha}a_{1,1}\vec{u}_1 + \lambda_{2}^{\alpha}a_{1,2}\vec{u}_2 + \cdots & 
+			\lambda_{1}^{\alpha}a_{2,1}\vec{u}_1 + \lambda_{2}^{\alpha}a_{2,2}\vec{u}_2 + \cdots & 
+			\cdots
+		\end{bNiceArray}
+	\end{align*}
+	\begin{center}
+		$\vdots$
+	\end{center}
+	
+	Each term in this sequence will be the same collection of terms for each column vector, just with the powers of the eigenvalues changed. Adding all these terms
+	together will give us $C_{\omega \rightarrow \alpha}$. To make this easier, let's only focus on the first column vector. The other column vectors of 
+	$C_{\omega \rightarrow \alpha}$ will be created similarly. The first column vector will look something like:
+	\begin{align*}
+		       & \, a_{1,1}\vec{u}_1 + a_{1,2}\vec{u}_2 + \cdots + \lambda_{1}^{\alpha}a_{1,1}\vec{u}_1 + \lambda_{2}^{\alpha}a_{1,2}\vec{u}_2 + \cdots \\
+		\equiv & \, a_{1,1}(1 + \lambda_{1}^{\alpha} + \lambda_{1}^{2\alpha} + \cdots)\vec{u}_{1} + 
+				    a_{1,2}(1 + \lambda_{2}^{\alpha} + \lambda_{2}^{2\alpha} + \cdots)\vec{u}_{2} + \cdots 
+	\end{align*}
+	Our column vector for $C_{\omega \rightarrow \alpha}$ becomes a comparatively simple sum of eigenvectors. Again, let's further hone our attention to the eigenvalue sums
+	attached to each eigenvector, say the one for $\vec{u}_{1}$:
+	\[
+		1 + \lambda_{1}^{\alpha} + \lambda_{1}^{2\alpha} + \cdots + \lambda_{1}^{\omega - \alpha}
+	\]
+	Algebraically, this expression tells us a lot about how each eigenvector will behave when creating a CCM. Firstly, if our eigenvector's cycle length doesn't divide the 
+	target cycle length of the CCM ($\alpha$ in this case), this expression will evaluate to zero. For instance, let's say our eigenvector $\vec{u}_{1}$ has a cycle 
+	length of 6. If our matrix $A$ had a cycle length of 24, then calculating $C_{24 \rightarrow 4}$ would give expressions similar to
+	\[
+		(1 + \lambda_{1}^{4} + \lambda_{1}^{8} + \cdots + \lambda_{1}^{20})\vec{u}_{1}
+	\]
+	If we were to iterate this vector 4 times, it should cycle back to itself. However, we know the cycle length of $\vec{u}_{1}$ is 6, and 6 doesn't divide 4, so
+	this vector couldn't possibly have a cycle length of 4. Furthermore, this vector is a multiple of $\vec{u}_{1}$, so whatever vector we end up with, it'll still be on the
+	span of eigenvectors with eigenvalue $\lambda_{1}$. However, under a prime moduli, all vectors along the span of an eigenvector (except for $\vec{0}$) must have the
+	same cycle length. If they didn't, it would contradict the fact that multiples of a given vector can never have a greater cycle length than the original vector (due to
+	linearity). Therefore, because our eigenvector has a cycle length that doesn't divide our target cycle length, the only vector it can convert to that's consistent with
+	the algebraic expression we get is the zero vector.
+	
+	This holds generally: if we try to convert an eigenvector to a cycle length other than one that its cycle length divides, the expression will evaluate to zero. However,
+	this isn't the only time these expressions can become zero. Even if the target cycle length is a multiple of an eigenvector's cycle length, the expression can still 
+	evaluate to zero if the cycle length of the matrix $A$ has a multiple of the prime modulus in it.
+	
+	As an example, we'll again consider the matrix $A = 
+	\begin{bmatrix}
+		\begin{smallmatrix}
+			1 & 1 \\
+			1 & 0
+		\end{smallmatrix}
+	\end{bmatrix}$ modulo 5. This matrix has a cycle length of 20, which is $5 \times 4$. Conveniently, this matrix has a set of eigenvectors along the span of
+	$\begin{bmatrix}
+		\begin{smallmatrix}
+			1 \\
+			2
+		\end{smallmatrix}
+	\end{bmatrix}$ with cycle lengths of 4 and an eigenvalue of 3. If we were to compute $C_{20 \rightarrow 4}$, we'd get expressions similar to
+	\begin{align*}
+		       & \, (1 + 3^{4} + 3^{8} + 3^{12} + 3^{16})\vec{u}_{1} \\
+		\equiv & \, (1 + 1 + 1 + 1 + 1)\vec{u}_{1}                   \\
+		\equiv & \, (5)\vec{u}_{1}                                   \\
+		\equiv & \, (0)\vec{u}_{1}                                   \\
+		\equiv & \, \vec{0} \mod{5}
+	\end{align*}
+	
+	When the target cycle length matches the eigenvector's cycle length, the $\lambda$ term turns into a sum of ones. If the cycle length of the matrix $A$ is a multiple
+	of the prime modulus used, and the target cycle length isn't, then the sum will always contain a multiple of the prime number of ones, meaning it'll evaluate to
+	zero. For LCAs with an eigenbasis, this phenomenon explains entirely why the CCMs sometimes evaluate to zero, even when vectors with the desired cycle lengths exist.
+	For this particular example, there's a little more going on, since there isn't an eigenbasis under the matrix 
+	$\begin{bmatrix}
+		\begin{smallmatrix}
+			1 & 1 \\
+			1 & 0
+		\end{smallmatrix}
+	\end{bmatrix}$ modulo 5. However, this particular matrix serves as a useful example for many of the quirks of CCMs, so it was an easy example to use.
+	
+	Putting this all together, we see that, for prime moduli and LCAs with an eigenbasis, the behaviour of CCMs boils down to how the cycle lengths of the eigenvectors
+	relate to the target cycle length, and whether the matrix has a multiple of the prime modulus in its cycle length. If an eigenvector's cycle length doesn't divide the
+	target cycle length, it'll disappear from the CCM's column vectors. If it does divide the target cycle length, it'll appear only if either the matrix doesn't have
+	a factor of the prime in its cycle length, or both the matrix's cycle length has a factor of the prime, and the target cycle length has the same number of factors of
+	the prime (as in this case, the $\lambda$ term won't have a multiple of the prime number of ones).
+	
+	This gives a rough idea as to why CCMs are able to "convert" vectors to particular cycle lengths. By creating a matrix with only particular eigenvectors in its column
+	vectors--specifically those eigenvectors with cycle lengths that divide the target cycle length--, one can multiply a vector by that matrix and guarantee that the 
+	resulting vector is a linear combination of eigenvectors, all with cycle lengths that divide the target cycle length. Therefore, that linear combination must also have
+	a cycle length that divides the target cycle length due to linearity.
+	
+	This doesn't leave us with a full description of CCM behaviour, but it's a starting point. The next section will dive a little deeper into when CCMs evaluate to zero.
+	
+	\section{CCMs and Minimal Polynomials}
+	If a matrix $A$ has a cycle length which contains a factor of the prime modulus, it's possible for the matrix's CCMs to evaluate to zero (or, at least, some of the CCM's
+	column vectors) even when vectors of the target cycle length exist. It turns out that there's a semi-surprising link between a matrix's minimal polynomial and its cycle
+	length, particularly when a factor of the prime is present in the cycle length.
+	
+	For reference, the minimal polynomial of a matrix $A$ is the monic polynomial $\mu(x)$ of least degree such that
+	\[
+		\mu(A) \equiv 0
+	\]
+	By determining the "order" of the factors of the minimal polynomial (see \citet{Patterson2008}), the cycle lengths of all the vectors in the module can be determined.
+	It can also be used to determine the cycle length of the matrix itself by determining the maximal cycle length (see \citet{Mendivil2012}). 
+	
+	In essence, the process of determining the order of the factors of the minimal polynomial involves determining the smallest positive integer $c$ such that, for your
+	factor $f(\lambda)$:
+	\[
+		f(\lambda) \ | \ \lambda^{c} - 1
+	\]
+	
+	Using this idea, we can make a relatively simple conclusion about the cycle length of our matrix $A$ when there's a repeated factor in the form $\lambda - x$ in the
+	minimal polynomial. Let's assume $\lambda - x$ divides $\lambda^{c} - 1$. Performing polynomial division, we see
+	\[
+		\frac{\lambda^{c} - 1}{\lambda - x} = \lambda^{c-1} + x\lambda^{c-2} + x^{2}\lambda^{c-3} + \cdots + x^{c-2}\lambda + x^{c-1} \iff x^{c} \equiv 1
+	\]
+	In order for $(\lambda - x)^{2}$ to divide $\lambda^{c} - 1$, $\lambda - x$ must divide the quotient above. Assuming that it does divide, we see
+	\[
+		\frac{\sum_{i \, = 0}^{c-1} x^{i}\lambda^{c-1-i}}{\lambda - x} = \lambda^{c-2} + 2x\lambda^{c-3} + 3x^{2}\lambda^{c-4} + \cdots + 
+		                                                                 (c-2)x^{c-3}\lambda + (c-1)x^{c-2}
+	\]
+	which is true only when
+	\[
+		(1-c)x^{c-1} \equiv x^{c-1}
+	\]
+	Simplifying the congruence we get, we see
+	\[
+		c \equiv np \quad \text{for } n \in \mathds{W}
+	\]
+	where $p$ is our prime modulus. This means that, when we have a repeated linear factor in our minimal polynomial, the order of our minimal polynomial,
+	which ends up being the cycle length of our matrix $A$, must be a multiple of the prime modulus used. 
+	
+	So, when our minimal polynomial has repeated linear terms, the CCMs of the matrix $A$ are likely to be "unjustified" in the sense that they evaluate to zero even when
+	vectors of the target cycle length exist. Unfortunately, proving this relation in the other direction is a lot harder (i.e. if the CCMs of the matrix are unjustified,
+	then the minimal polynomial must have a repeated linear root). If this other direction could be proved, it would serve as the basis for understanding when CCMs can and
+	can't be used to gain insights on the cycle lengths of vectors under some update matrix $A$.
+	
+	\section{CCMs and Prime-powered Moduli}
+	Up to now, we've focused our attention on when the modulus used is prime. How do CCMs behave when the modulus is a prime-power? Unlike in the prime case, we can't
+	make use of minimal polynomials (as they don't really work in composite moduli), nor can we rely on the nice properties of the integers mod $p$ (which forms a field
+	rather than a ring). However, there are a few observations which can be made.
+	
+	First, it's helpful to define lift matrices. Given a matrix $A \in \mathds{Z}_{p^{k-h}}^{L \times L}$, a \emph{lift} of the matrix $A$ in mod $p^k$ is any matrix $M$ in 
+	the form
+	\[
+		M = A + p^{k-1}B_{1} + p^{k-2}B_{2} + \cdots + p^{k-h}B_{k-h} \text{ for matrices } B_{i} \in \mathds{Z}_{p}^{L \times L}
+	\]
+	On their own, these matrices have a lot of nice properties which make analysing prime-powered LCAs easier. One particularly useful property is that every matrix in
+	$\mathds{Z}_{p^k}^{L \times L}$ is a lift of some matrix in $\mathds{Z}_{p}^{L \times L}$. Another useful property (which arises entirely out of the arithmetic 
+	relationship between $\mathds{Z}_{p^{k-1}}$ and $\mathds{Z}_{p^{k}}$) is that, for invertible matrices $A \in \mathds{Z}_{p^{k-1}}^{L \times L}$ and their corresponding 
+	lifts $M_{i} \in \mathds{Z}_{p^k}^{L \times L}$,
+	\begin{equation}
+		\label{imp:liftToTheOmega}
+		A^{\omega} \equiv I \text{ mod } p^{k-1} \implies M_{i}^{\omega} \equiv I + p^{k-1}B \text{ mod } p^{k} \text{ for some matrix } B \in \mathds{Z}_{p}^{L \times L}
+	\end{equation}
+	This property can be used to deduce the form of particular CCMs under prime-powered moduli.
+	
+	Say we're given a matrix $A \in \mathds{Z}_{p^{k-1}}^{L \times L}$ that has cycle length $\omega$, and a lift of this matrix $M \in \mathds{Z}_{p^{k}}^{L \times L}$
+	with cycle length $p\omega$. It may seem overly restricting to assign the cycle lengths in this manner, but this is actually the most common relationship between a
+	matrix in $\mathds{Z}_{p^{k-1}}^{L \times L}$ and its lift in $\mathds{Z}_{p^{k}}^{L \times L}$. In fact, it's one of only two possibilities. The other possible
+	cycle length for $M$ is $\omega$ itself. These being the only two possibilities are a direct result from implication \ref{imp:liftToTheOmega}. In any case, given these
+	two matrices, calculating $C_{p\omega \rightarrow \omega}$ for $M$ results in the following:
+	\begin{align*}
+		C_{p\omega \rightarrow \omega} & \equiv \sum_{i \, = \, 0}^{p\omega - \omega} M^i \\
+		                               & \equiv \sum_{i \, = \, 0}^{p\omega - \omega} (I + ip^{k-1}B), \ B \in \mathds{Z}_{p}^{L \times L} \\
+									   & \equiv pI + p^{k-1}(\frac{p(p-1)}{2})B \\
+	\end{align*}
+	Assuming $p$ is an odd prime:
+	\begin{align*}
+		& \equiv pI + p^{k}(\frac{p-1}{2})B \\
+		& \equiv pI \mod{p^{k}}
+	\end{align*}
+	
+	So, if $p \neq 2$, then for any invertible matrix $M \in \mathds{Z}_{p^{k}}^{L \times L}$ which has cycle length $p\omega$, and which is the lift of a matrix in 
+	$\mathds{Z}_{p^{k-1}}^{L \times L}$ with cycle length $\omega$, the CCM $C_{p\omega \rightarrow \omega} = pI$. This result is very similar to Lemma 1 in 
+	\citet{Mendivil2012}, though Mendivil's result arises through the lens of analysing vectors, while the result here arises through analysing matrices (specifically CCMs).
+	
+	This result exposes a sort of "blind spot" for CCMs under prime-powered moduli. The column space of the matrix $pI$ represents the set of all vectors which are 
+	"embedded" into higher prime-power moduli from lower prime-power moduli; the behaviour of these vectors mimics the behaviour of LCAs under lower-powered moduli. The
+	fact that the CCM will always give this matrix in these scenarios suggests that CCMs are unable to see certain types of vectors under prime-powered moduli.
+	
+	\textbf{Note: I'll most likely add more to this document once I've had more time to look into CCM behaviour when an eigenbasis doesn't exist.}
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+	
+\end{document}
