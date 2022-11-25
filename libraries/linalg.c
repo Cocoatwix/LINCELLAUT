@@ -43,6 +43,14 @@ typedef struct bigintmatrix
 } 
 BigIntMatrixT, *BigIntMatrixTP;
 
+typedef struct multivarextmatrix
+/** Matrix of MultiVarExtTPs. */
+{
+	MultiVarExtTP** matrix;
+	int m;
+	int n;
+} MultiVarExtMatrixT, *MultiVarExtMatrixTP;
+
 
 int rows(IntMatrixTP M)
 /** Returns the number of rows in a given matrix. */
@@ -280,6 +288,21 @@ BigIntMatrixTP free_BigIntMatrixT(BigIntMatrixTP M)
 	free(M->matrix);
 	free(M);
 
+	return NULL;
+}
+
+
+MultiVarExtMatrixTP free_MultiVarExtMatrixT(MultiVarExtMatrixTP a)
+/** Frees the memory used by a MultiVarExtMatrixT. Returns NULL. */
+{
+	if (a != NULL)
+	{
+		for (int row = 0; row < a->m; row += 1)
+		{
+			for (int col = 0; col < a->n; col += 1)
+				return NULL;
+		}
+	}
 	return NULL;
 }
 

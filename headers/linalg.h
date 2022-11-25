@@ -14,6 +14,9 @@ typedef struct intmatrix *IntMatrixTP;
 /** IntMatrixT, but for BigIntT numbers. */
 typedef struct bigintmatrix *BigIntMatrixTP;
 
+/** Matrix of MultiVarExtTs. */
+typedef struct multivarextmatrix *MultiVarExtMatrixTP;
+
 /** Used for determining how to print vectors to the console/files. */
 typedef enum vt {row, col} VectorTypeE;
 

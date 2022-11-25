@@ -173,37 +173,37 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 }
 
 
-MultiVarExtTP free_MultiVarExtT(MultiVarExtTP ext)
+void* free_MultiVarExtT(void* ext)
 /** Frees the memory used by a MultiVarExtT. Returns NULL. */
 {
-	ext->coeffs = free_BigIntDirectorT(ext->coeffs);
+	((MultiVarExtTP)ext)->coeffs = free_BigIntDirectorT(((MultiVarExtTP)ext)->coeffs);
 	
-	for (int i = 0; i < ext->numOfExtensions; i += 1)
+	for (int i = 0; i < ((MultiVarExtTP)ext)->numOfExtensions; i += 1)
 	{
-		free(ext->extNames[i]);
-		ext->extNames[i] = NULL;
+		free(((MultiVarExtTP)ext)->extNames[i]);
+		((MultiVarExtTP)ext)->extNames[i] = NULL;
 		
-		if (ext->extensions[i] != NULL) //If we try and free before all extensions have been defined
+		if (((MultiVarExtTP)ext)->extensions[i] != NULL) //If we try and free before all extensions have been defined
 		{
-			for (int elem = 0; elem < ext->extensionSizes[i]; elem += 1)
-				ext->extensions[i][elem] = free_BigIntT(ext->extensions[i][elem]);
+			for (int elem = 0; elem < ((MultiVarExtTP)ext)->extensionSizes[i]; elem += 1)
+				((MultiVarExtTP)ext)->extensions[i][elem] = free_BigIntT(((MultiVarExtTP)ext)->extensions[i][elem]);
 			
-			free(ext->extensions[i]);
-			ext->extensions[i] = NULL;
+			free(((MultiVarExtTP)ext)->extensions[i]);
+			((MultiVarExtTP)ext)->extensions[i] = NULL;
 		}
 	}
-	free(ext->extNames);
-	ext->extNames = NULL;
+	free(((MultiVarExtTP)ext)->extNames);
+	((MultiVarExtTP)ext)->extNames = NULL;
 	
-	ext->mod = free_BigIntT(ext->mod);
+	((MultiVarExtTP)ext)->mod = free_BigIntT(((MultiVarExtTP)ext)->mod);
 	
-	free(ext->extensions);
-	ext->extensions = NULL;
+	free(((MultiVarExtTP)ext)->extensions);
+	((MultiVarExtTP)ext)->extensions = NULL;
 	
-	free(ext->extensionSizes);
-	ext->extensionSizes = NULL;
+	free(((MultiVarExtTP)ext)->extensionSizes);
+	((MultiVarExtTP)ext)->extensionSizes = NULL;
 	
-	free(ext);
+	free(((MultiVarExtTP)ext));
 	return NULL;
 }
 

@@ -28,7 +28,7 @@ BigFactorsTP free_BigFactorsT(BigFactorsTP);
 BigPolyTP* free_BigPolyT_factors(BigPolyTP*);
 
 /** Frees the memory used by a MultiVarExtT. Returns NULL. */
-MultiVarExtTP free_MultiVarExtT(MultiVarExtTP);
+void* free_MultiVarExtT(void*);
 
 /** Creates a new BigPolyT with given coefficients and size,
     returns a pointer to it. */

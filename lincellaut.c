@@ -4462,6 +4462,315 @@ int main(int argc, char* argv[])
 			
 			A = free_BigIntMatrixT(A);
 		}
+		
+		else if (! strcmp(argv[1], "test"))
+		{
+			int testMode = 2;
+		
+			#define nasize 7
+			int numArr[1] = {0};
+			BigIntTP NA[nasize];
+			for (int i = 0; i < nasize; i += 1)
+			{
+				NA[i] = new_BigIntT(numArr, 1);
+				numArr[0] += 1;
+			}
+			BigIntTP bigMod = new_BigIntT(numArr, 1);
+			
+			//MultiVarExtT testing
+			if (testMode == 0)
+			{
+				//Time to test adding extensions
+				MultiVarExtTP coolExt1 = new_MultiVarExtT(3);
+				MultiVarExtTP coolExt2 = new_MultiVarExtT(3);
+				MultiVarExtTP extHold  = new_MultiVarExtT(3);
+				MultiVarExtTP coolExt3 = new_MultiVarExtT(4);
+				
+				BigIntTP* extDefn1;
+				BigIntTP* extDefn2;
+				BigIntTP* extDefn3;
+				BigIntTP* extDefn4;
+				
+				//{exponent of first extension, exponent of second extension, ...}
+				int coeff1[3] = {2, 2, 0};
+				int coeff2[3] = {0, 1, 1};
+				int coeff3[3] = {3, 2, 2};
+				
+				int specialCoeff1[4] = {0, 1, 2, 2};
+				int specialCoeff2[4] = {1, 1, 2, 2};
+				int specialCoeff3[4] = {0, 1, 0, 0};
+				
+				extDefn1 = malloc(4*sizeof(BigIntTP));
+				extDefn2 = malloc(3*sizeof(BigIntTP));
+				extDefn3 = malloc(3*sizeof(BigIntTP));
+				extDefn4 = malloc(3*sizeof(BigIntTP));
+				
+				//1 + 3*x + x^2 + x^3 = 0
+				extDefn1[0] = NA[1];
+				extDefn1[1] = NA[3];
+				extDefn1[2] = NA[1];
+				extDefn1[3] = NA[1];
+				
+				//2 + 9x + x^2 = 0
+				extDefn2[0] = NA[2];
+				extDefn2[1] = NA[9];
+				extDefn2[2] = NA[1];
+				
+				//2 + 6x^2 = 0
+				extDefn3[0] = NA[2];
+				extDefn3[1] = NA[0];
+				extDefn3[2] = NA[6];
+				
+				//1 + x + 8x^2 = 0
+				extDefn4[0] = NA[1];
+				extDefn4[1] = NA[1];
+				extDefn4[2] = NA[8];
+				
+				printf("Modulus: ");
+				printi(bigMod);
+				printf("\n");
+				
+				set_MultiVarExtT_mod(coolExt1, bigMod);
+				set_MultiVarExtT_mod(coolExt2, bigMod);
+				set_MultiVarExtT_mod(coolExt3, bigMod);
+				set_MultiVarExtT_mod(extHold, bigMod);
+				
+				add_extension(coolExt1, extDefn1, 4, "a");
+				add_extension(coolExt1, extDefn2, 3, "b");
+				add_extension(coolExt1, extDefn3, 3, "c");
+				
+				
+				add_extension(coolExt2, extDefn1, 4, "a");
+				add_extension(coolExt2, extDefn2, 3, "b");
+				add_extension(coolExt2, extDefn3, 3, "c");
+				
+				add_extension(extHold, extDefn1, 4, "a");
+				add_extension(extHold, extDefn2, 3, "b");
+				add_extension(extHold, extDefn3, 3, "c");
+				
+				add_extension(coolExt3, extDefn1, 4, "a");
+				add_extension(coolExt3, extDefn2, 3, "b");
+				add_extension(coolExt3, extDefn3, 3, "c");
+				add_extension(coolExt3, extDefn4, 3, "d");
+				
+				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
+				printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
+				printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
+				
+				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
+				printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
+				printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
+				
+				printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
+				printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
+				printf("coolExt3 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]));
+				
+				printf("coolExt1 before reduction:\n");
+				printmve(coolExt1);
+				reduce_MultiVarExtT(coolExt1);
+				printf("\ncoolExt1:\n");
+				printmve(coolExt1);
+				printf("\n");
+				
+				reduce_MultiVarExtT(coolExt2);
+				printf("coolExt2:\n");
+				printmve(coolExt2);
+				printf("\n");
+				
+				/*
+				printf("coolExt3 before reduction:\n");
+				printmve(coolExt3);
+				reduce_MultiVarExtT(coolExt3);
+				printf("\ncoolExt3 after reduction:\n");
+				printmve(coolExt3);
+				
+				printf("\nCan coolExt1 and coolExt3 add? %d\n", inc_sim_MultiVarExtT(coolExt1, coolExt3));
+				printf("\nCan coolExt1 and coolExt2 add? %d\n", inc_sim_MultiVarExtT(coolExt1, coolExt2));
+				
+				printf("coolExt2 after adding to it coolExt1:\n");
+				printmve(coolExt2);
+				printf("\n");
+				*/
+				
+				printf("\nMultiplying coolExt1 and coolExt2...\n");
+				mult_sim_MultiVarExtT(coolExt1, coolExt2, extHold);
+				
+				printf("extHold before reducing:\n");
+				printmve(extHold);
+				printf("\nextHold after reducing:\n");
+				reduce_MultiVarExtT(extHold);
+				printmve(extHold);
+				printf("\n");
+				
+				coolExt1 = free_MultiVarExtT(coolExt1);
+				coolExt2 = free_MultiVarExtT(coolExt2);
+				coolExt3 = free_MultiVarExtT(coolExt3);
+				extHold  = free_MultiVarExtT(extHold);
+				
+				bigMod = free_BigIntT(bigMod);
+				
+				FREE(extDefn1);
+				FREE(extDefn2);
+				FREE(extDefn3);
+				FREE(extDefn4);
+			}
+			
+			//factor_BigPolyT() testing
+			else if (testMode == 1)
+			{
+				#define Asize 47
+				#define Bsize 3
+				
+				BigFactorsTP finally;
+				
+				BigPolyTP A, dA, B, Bpow;
+				
+				BigPolyTP quotient;
+				BigPolyTP remainder;
+				BigPolyTP GCD;
+				BigPolyTP s, t;
+				
+				BigPolyTP temp;
+				
+				BigIntTP* Adefn = malloc(Asize*sizeof(BigIntTP));
+				BigIntTP* Bdefn = malloc(Bsize*sizeof(BigIntTP));
+				
+				BigIntTP bigMod;
+				
+				int NAsize = 17;
+				int numArr[1] = {0};
+				BigIntTP* NA = malloc(NAsize*sizeof(BigIntTP));
+				for (int i = 0; i < NAsize; i += 1)
+				{
+					NA[i] = new_BigIntT(numArr, 1);
+					numArr[0] += 1;
+				}
+				
+				//modulus
+				numArr[0] = 7;
+				bigMod = new_BigIntT(numArr, 1);
+				
+				//Some fun test cases
+				
+				//4*x^10 + 12*x^9 + 7*x^8 + 7*x^7 + 10*x^6 + 4*x^5 + 5*x^4 + 5*x^3 + 12*x^2 + 15 mod 17
+				//8*x^3 + 2*x^2 + 13*x + 16 mod 17
+				//x^3 + 6*x^2 + 10*x + 3 mod 11
+				//x^6 + 10*x^5 + 9*x^4 + 7*x^3 + 6*x^2 + 9*x + 1 mod 11
+				//x^11 + 2*x^9 + 2*x^8 + x^6 + x^5 + 2*x^3 + 2*x^2 + 1 mod 3
+				//x^7 + 4*x^6 + 2*x^5 + 2*x^4 + 2*x^3 + 4*x^2 + 2*x + 3 mod 5
+				
+				//Great example for testing the different stages of the factorisation algorithm
+				//x^31 + 4*x^30 + x^29 + 8*x^28 + 4*x^27 + 7*x^26 + 8*x^25 + 9*x^24 + 3*x^23 + 9*x^22 + 9*x^21 + 6*x^20 + 6*x^19 + 10*x^18 + 3*x^17 + 9*x^16 + x^15 + 6*x^14 + 5*x^12 + 6*x^11 + x^10 + 4*x^9 + 9*x^8 + 7*x^7 + 3*x^6 + 10*x^5 + 9*x^4 + 8*x + 9
+				//x^46 + 3*x^45 + 4*x^44 + 3*x^43 + 4*x^42 + 3*x^41 + x^40 + x^39 + 4*x^37 + 2*x^36 + x^34 + x^33 + 3*x^32 + x^31 + x^30 + 2*x^29 + 3*x^28 + 2*x^27 + 2*x^26 + x^25 + 4*x^24 + 3*x^22 + 4*x^21 + x^20 + 2*x^19 + 4*x^18 + 2*x^17 + 4*x^15 + x^14 + x^13 + x^12 + x^11 + 2*x^10 + x^7 + 2*x^3 + 3*x^2 + x + 3 mod 5
+				int aCoeffs[Asize] = {3, 1, 3, 2, 0, 0, 0, 1, 0, 0, 2, 1, 1, 1, 1, 4, 0, 2, 4, 2, 1, 4, 3, 0, 4, 1, 2, 2, 3, 2, 1, 1, 3, 1, 1, 0, 2, 4, 0, 1, 1, 3, 4, 3, 4, 3, 1};
+				for (int i = 0; i < Asize; i += 1)
+					Adefn[i] = NA[aCoeffs[i]];
+				
+				//14*x^7 + 2*x^6 + 3*x^5 + 10*x^4 + 7*x^3 + 8*x^2 + 9*x + 15 mod 17
+				//8*x^2 + 2*x + 2
+				//x^4 + 6*x^3 + x^2 + 9*x + 2 mod 11
+				//x^6 + 6*x^5 + 8*x^4 + 7*x^3 + 9*x^2 + 8*x + 3 mod 11
+				int bCoeffs[Bsize] = {2, 2, 8};
+				for (int i = 0; i < Bsize; i += 1)
+					Bdefn[i] = NA[bCoeffs[i]];
+				
+				A  = new_BigPolyT(Adefn, Asize);
+				B  = new_BigPolyT(Bdefn, Bsize);
+				
+				dA        = empty_BigPolyT();
+				Bpow      = empty_BigPolyT();
+				temp      = empty_BigPolyT();
+				quotient  = empty_BigPolyT();
+				remainder = empty_BigPolyT();
+				GCD       = empty_BigPolyT();
+				s         = empty_BigPolyT();
+				t         = empty_BigPolyT();
+				
+				printf("A = ");
+				printp(A);
+				
+				finally = factor_BigPolyT(A, bigMod);
+				printf("\nFactored A = ");
+				printpf(finally);
+				printf("\n");
+				
+				finally = free_BigFactorsT(finally);
+				
+				A    = free_BigPolyT(A);
+				B    = free_BigPolyT(B);
+				dA   = free_BigPolyT(dA);
+				Bpow = free_BigPolyT(Bpow);
+				
+				FREE(Adefn);
+				FREE(Bdefn);
+				
+				temp      = free_BigPolyT(temp);
+				quotient  = free_BigPolyT(quotient);
+				remainder = free_BigPolyT(remainder);
+				GCD       = free_BigPolyT(GCD);
+				s         = free_BigPolyT(s);
+				t         = free_BigPolyT(t);
+				
+				bigMod = free_BigIntT(bigMod);
+			}
+			
+			else if (testMode == 2)
+			{
+				int voidArraySize = 3;
+				void** voidArray = malloc(voidArraySize*sizeof(void*));
+				
+				void* (*freeFunction) (void*) = free_MultiVarExtT;
+				
+				//i^2 + 1 = 0
+				BigIntTP iDefn[3] = {NA[1], NA[0], NA[1]};
+				
+				for (int i = 0; i < voidArraySize; i += 1)
+				{
+					voidArray[i] = new_MultiVarExtT(1);
+					add_extension(voidArray[i], iDefn, 3, "i");
+					set_MultiVarExtT_mod(voidArray[i], bigMod);
+					reduce_MultiVarExtT(voidArray[i]);
+				}
+				
+				int coeff0[1] = {0};
+				int coeff1[1] = {1};
+				int coeff2[1] = {2};
+				
+				//i-1
+				set_MultiVarExtT_coefficient(voidArray[0], coeff0, NA[2]);
+				set_MultiVarExtT_coefficient(voidArray[0], coeff1, NA[1]);
+				set_MultiVarExtT_coefficient(voidArray[0], coeff2, NA[3]);
+				
+				//3i+3
+				set_MultiVarExtT_coefficient(voidArray[1], coeff0, NA[3]);
+				set_MultiVarExtT_coefficient(voidArray[1], coeff1, NA[3]);
+				
+				printf("ext1:\n");
+				printmve(voidArray[0]);
+				printf("\n");
+				
+				printf("\next2:\n");
+				printmve(voidArray[1]);
+				printf("\n");
+				
+				printf("Attempting to use void pointers for multiplication...\n");
+				mult_sim_MultiVarExtT(voidArray[0], voidArray[1], voidArray[2]);
+				
+				printf("Product:\n");
+				printmve(voidArray[2]);
+				printf("\n");
+				
+				for (int i = 0; i < voidArraySize; i += 1)
+					voidArray[i] = freeFunction(voidArray[i]);
+				FREE(voidArray);
+				voidArray = NULL;
+			}
+			
+			for (int i = 0; i < nasize; i += 1)
+				NA[i] = free_BigIntT(NA[i]);
+			
+			bigMod = free_BigIntT(bigMod);
+		}
 	}
 	
 	else
@@ -4494,263 +4803,6 @@ int main(int argc, char* argv[])
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
-		
-		int testMode = 0;
-		
-		//MultiVarExtT testing
-		if (testMode == 0)
-		{
-			//Time to test adding extensions
-			MultiVarExtTP coolExt1 = new_MultiVarExtT(3);
-			MultiVarExtTP coolExt2 = new_MultiVarExtT(3);
-			MultiVarExtTP extHold  = new_MultiVarExtT(3);
-			MultiVarExtTP coolExt3 = new_MultiVarExtT(4);
-			
-			BigIntTP* extDefn1;
-			BigIntTP* extDefn2;
-			BigIntTP* extDefn3;
-			BigIntTP* extDefn4;
-			BigIntTP bigMod;
-			
-			#define nasize 17
-			int numArr[1] = {0};
-			BigIntTP NA[nasize];
-			for (int i = 0; i < nasize; i += 1)
-			{
-				NA[i] = new_BigIntT(numArr, 1);
-				numArr[0] += 1;
-			}
-			bigMod = new_BigIntT(numArr, 1);
-			
-			//{exponent of first extension, exponent of second extension, ...}
-			int coeff1[3] = {2, 2, 0};
-			int coeff2[3] = {0, 1, 1};
-			int coeff3[3] = {3, 2, 2};
-			
-			int specialCoeff1[4] = {0, 1, 2, 2};
-			int specialCoeff2[4] = {1, 1, 2, 2};
-			int specialCoeff3[4] = {0, 1, 0, 0};
-			
-			extDefn1 = malloc(4*sizeof(BigIntTP));
-			extDefn2 = malloc(3*sizeof(BigIntTP));
-			extDefn3 = malloc(3*sizeof(BigIntTP));
-			extDefn4 = malloc(3*sizeof(BigIntTP));
-			
-			//1 + 3*x + x^2 + x^3 = 0
-			extDefn1[0] = NA[1];
-			extDefn1[1] = NA[3];
-			extDefn1[2] = NA[1];
-			extDefn1[3] = NA[1];
-			
-			//2 + 9x + x^2 = 0
-			extDefn2[0] = NA[2];
-			extDefn2[1] = NA[9];
-			extDefn2[2] = NA[1];
-			
-			//2 + 6x^2 = 0
-			extDefn3[0] = NA[2];
-			extDefn3[1] = NA[0];
-			extDefn3[2] = NA[6];
-			
-			//1 + x + 8x^2 = 0
-			extDefn4[0] = NA[1];
-			extDefn4[1] = NA[1];
-			extDefn4[2] = NA[8];
-			
-			printf("Modulus: ");
-			printi(bigMod);
-			printf("\n");
-			
-			set_MultiVarExtT_mod(coolExt1, bigMod);
-			set_MultiVarExtT_mod(coolExt2, bigMod);
-			set_MultiVarExtT_mod(coolExt3, bigMod);
-			set_MultiVarExtT_mod(extHold, bigMod);
-			
-			add_extension(coolExt1, extDefn1, 4, "a");
-			add_extension(coolExt1, extDefn2, 3, "b");
-			add_extension(coolExt1, extDefn3, 3, "c");
-			
-			
-			add_extension(coolExt2, extDefn1, 4, "a");
-			add_extension(coolExt2, extDefn2, 3, "b");
-			add_extension(coolExt2, extDefn3, 3, "c");
-			
-			add_extension(extHold, extDefn1, 4, "a");
-			add_extension(extHold, extDefn2, 3, "b");
-			add_extension(extHold, extDefn3, 3, "c");
-			
-			add_extension(coolExt3, extDefn1, 4, "a");
-			add_extension(coolExt3, extDefn2, 3, "b");
-			add_extension(coolExt3, extDefn3, 3, "c");
-			add_extension(coolExt3, extDefn4, 3, "d");
-			
-			printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
-			printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
-			printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
-			
-			printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
-			printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
-			printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
-			
-			printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
-			printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
-			printf("coolExt3 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]));
-			
-			printf("coolExt1 before reduction:\n");
-			printmve(coolExt1);
-			reduce_MultiVarExtT(coolExt1);
-			printf("\ncoolExt1:\n");
-			printmve(coolExt1);
-			printf("\n");
-			
-			reduce_MultiVarExtT(coolExt2);
-			printf("coolExt2:\n");
-			printmve(coolExt2);
-			printf("\n");
-			
-			/*
-			printf("coolExt3 before reduction:\n");
-			printmve(coolExt3);
-			reduce_MultiVarExtT(coolExt3);
-			printf("\ncoolExt3 after reduction:\n");
-			printmve(coolExt3);
-			
-			printf("\nCan coolExt1 and coolExt3 add? %d\n", inc_sim_MultiVarExtT(coolExt1, coolExt3));
-			printf("\nCan coolExt1 and coolExt2 add? %d\n", inc_sim_MultiVarExtT(coolExt1, coolExt2));
-			
-			printf("coolExt2 after adding to it coolExt1:\n");
-			printmve(coolExt2);
-			printf("\n");
-			*/
-			
-			printf("\nMultiplying coolExt1 and coolExt2...\n");
-			mult_sim_MultiVarExtT(coolExt1, coolExt2, extHold);
-			
-			printf("extHold before reducing:\n");
-			printmve(extHold);
-			printf("\nextHold after reducing:\n");
-			reduce_MultiVarExtT(extHold);
-			printmve(extHold);
-			printf("\n");
-			
-			coolExt1 = free_MultiVarExtT(coolExt1);
-			coolExt2 = free_MultiVarExtT(coolExt2);
-			coolExt3 = free_MultiVarExtT(coolExt3);
-			extHold  = free_MultiVarExtT(extHold);
-			
-			bigMod = free_BigIntT(bigMod);
-			
-			FREE(extDefn1);
-			FREE(extDefn2);
-			FREE(extDefn3);
-			FREE(extDefn4);
-			
-			for (int i = 0; i < nasize; i += 1)
-				NA[i] = free_BigIntT(NA[i]);
-		}
-		
-		//factor_BigPolyT() testing
-		else if (testMode == 1)
-		{
-			#define Asize 47
-			#define Bsize 3
-			
-			BigFactorsTP finally;
-			
-			BigPolyTP A, dA, B, Bpow;
-			
-			BigPolyTP quotient;
-			BigPolyTP remainder;
-			BigPolyTP GCD;
-			BigPolyTP s, t;
-			
-			BigPolyTP temp;
-			
-			BigIntTP* Adefn = malloc(Asize*sizeof(BigIntTP));
-			BigIntTP* Bdefn = malloc(Bsize*sizeof(BigIntTP));
-			
-			BigIntTP bigMod;
-			
-			int NAsize = 17;
-			int numArr[1] = {0};
-			BigIntTP* NA = malloc(NAsize*sizeof(BigIntTP));
-			for (int i = 0; i < NAsize; i += 1)
-			{
-				NA[i] = new_BigIntT(numArr, 1);
-				numArr[0] += 1;
-			}
-			
-			//modulus
-			numArr[0] = 7;
-			bigMod = new_BigIntT(numArr, 1);
-			
-			//Some fun test cases
-			
-			//4*x^10 + 12*x^9 + 7*x^8 + 7*x^7 + 10*x^6 + 4*x^5 + 5*x^4 + 5*x^3 + 12*x^2 + 15 mod 17
-			//8*x^3 + 2*x^2 + 13*x + 16 mod 17
-			//x^3 + 6*x^2 + 10*x + 3 mod 11
-			//x^6 + 10*x^5 + 9*x^4 + 7*x^3 + 6*x^2 + 9*x + 1 mod 11
-			//x^11 + 2*x^9 + 2*x^8 + x^6 + x^5 + 2*x^3 + 2*x^2 + 1 mod 3
-			//x^7 + 4*x^6 + 2*x^5 + 2*x^4 + 2*x^3 + 4*x^2 + 2*x + 3 mod 5
-			
-			//Great example for testing the different stages of the factorisation algorithm
-			//x^31 + 4*x^30 + x^29 + 8*x^28 + 4*x^27 + 7*x^26 + 8*x^25 + 9*x^24 + 3*x^23 + 9*x^22 + 9*x^21 + 6*x^20 + 6*x^19 + 10*x^18 + 3*x^17 + 9*x^16 + x^15 + 6*x^14 + 5*x^12 + 6*x^11 + x^10 + 4*x^9 + 9*x^8 + 7*x^7 + 3*x^6 + 10*x^5 + 9*x^4 + 8*x + 9
-			//x^46 + 3*x^45 + 4*x^44 + 3*x^43 + 4*x^42 + 3*x^41 + x^40 + x^39 + 4*x^37 + 2*x^36 + x^34 + x^33 + 3*x^32 + x^31 + x^30 + 2*x^29 + 3*x^28 + 2*x^27 + 2*x^26 + x^25 + 4*x^24 + 3*x^22 + 4*x^21 + x^20 + 2*x^19 + 4*x^18 + 2*x^17 + 4*x^15 + x^14 + x^13 + x^12 + x^11 + 2*x^10 + x^7 + 2*x^3 + 3*x^2 + x + 3 mod 5
-			int aCoeffs[Asize] = {3, 1, 3, 2, 0, 0, 0, 1, 0, 0, 2, 1, 1, 1, 1, 4, 0, 2, 4, 2, 1, 4, 3, 0, 4, 1, 2, 2, 3, 2, 1, 1, 3, 1, 1, 0, 2, 4, 0, 1, 1, 3, 4, 3, 4, 3, 1};
-			for (int i = 0; i < Asize; i += 1)
-				Adefn[i] = NA[aCoeffs[i]];
-			
-			//14*x^7 + 2*x^6 + 3*x^5 + 10*x^4 + 7*x^3 + 8*x^2 + 9*x + 15 mod 17
-			//8*x^2 + 2*x + 2
-			//x^4 + 6*x^3 + x^2 + 9*x + 2 mod 11
-			//x^6 + 6*x^5 + 8*x^4 + 7*x^3 + 9*x^2 + 8*x + 3 mod 11
-			int bCoeffs[Bsize] = {2, 2, 8};
-			for (int i = 0; i < Bsize; i += 1)
-				Bdefn[i] = NA[bCoeffs[i]];
-			
-			A  = new_BigPolyT(Adefn, Asize);
-			B  = new_BigPolyT(Bdefn, Bsize);
-			
-			dA        = empty_BigPolyT();
-			Bpow      = empty_BigPolyT();
-			temp      = empty_BigPolyT();
-			quotient  = empty_BigPolyT();
-			remainder = empty_BigPolyT();
-			GCD       = empty_BigPolyT();
-			s         = empty_BigPolyT();
-			t         = empty_BigPolyT();
-			
-			printf("A = ");
-			printp(A);
-			
-			finally = factor_BigPolyT(A, bigMod);
-			printf("\nFactored A = ");
-			printpf(finally);
-			printf("\n");
-			
-			finally = free_BigFactorsT(finally);
-			
-			for (int i = 0; i < NAsize; i += 1)
-				NA[i] = free_BigIntT(NA[i]);
-			FREE(NA);
-			
-			A    = free_BigPolyT(A);
-			B    = free_BigPolyT(B);
-			dA   = free_BigPolyT(dA);
-			Bpow = free_BigPolyT(Bpow);
-			
-			FREE(Adefn);
-			FREE(Bdefn);
-			
-			temp      = free_BigPolyT(temp);
-			quotient  = free_BigPolyT(quotient);
-			remainder = free_BigPolyT(remainder);
-			GCD       = free_BigPolyT(GCD);
-			s         = free_BigPolyT(s);
-			t         = free_BigPolyT(t);
-			
-			bigMod = free_BigIntT(bigMod);
-		}
 	}
 	
 	//Freeing memory
