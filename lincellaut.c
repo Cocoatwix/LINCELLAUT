@@ -4592,13 +4592,14 @@ int main(int argc, char* argv[])
 			printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
 			printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
 			
-			printf(":|\n");
 			printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
 			printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
 			printf("coolExt3 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]));
 			
+			printf("coolExt1 before reduction:\n");
+			printmve(coolExt1);
 			reduce_MultiVarExtT(coolExt1);
-			printf("coolExt1:\n");
+			printf("\ncoolExt1:\n");
 			printmve(coolExt1);
 			printf("\n");
 			
@@ -4607,6 +4608,7 @@ int main(int argc, char* argv[])
 			printmve(coolExt2);
 			printf("\n");
 			
+			/*
 			printf("coolExt3 before reduction:\n");
 			printmve(coolExt3);
 			reduce_MultiVarExtT(coolExt3);
@@ -4619,9 +4621,17 @@ int main(int argc, char* argv[])
 			printf("coolExt2 after adding to it coolExt1:\n");
 			printmve(coolExt2);
 			printf("\n");
+			*/
 			
 			printf("\nMultiplying coolExt1 and coolExt2...\n");
 			mult_sim_MultiVarExtT(coolExt1, coolExt2, extHold);
+			
+			printf("extHold before reducing:\n");
+			printmve(extHold);
+			printf("\nextHold after reducing:\n");
+			reduce_MultiVarExtT(extHold);
+			printmve(extHold);
+			printf("\n");
 			
 			coolExt1 = free_MultiVarExtT(coolExt1);
 			coolExt2 = free_MultiVarExtT(coolExt2);

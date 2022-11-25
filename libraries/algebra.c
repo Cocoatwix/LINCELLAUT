@@ -475,7 +475,6 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP ext, int* const coeffPos, BigIntT
 	
 	for (int i = 0; i < ext->numOfExtensions-1; i += 1)
 	{
-		//printf("i = %d, ext->numOfExtensions-1 = %d\n", i, ext->numOfExtensions-1);
 		if (coeffPos[i] >= ref->size) //Making sure we don't get any IndexErrors
 			return 0;
 		
@@ -2856,6 +2855,17 @@ int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVar
 	BigIntDirectorTP ref;
 	int refLoc[b->numOfExtensions];
 	
+	//Holds where we are in a and b during the multiplication
+	BigIntDirectorTP aRef, bRef;
+	int aLoc[b->numOfExtensions];
+	int bLoc[b->numOfExtensions];
+	
+	bool withinBounds;
+	int numOfNewCoeffs  = 0;
+	BigIntTP* newCoeffs = NULL; //Holds new coefficients to add to product
+	int** newLocations  = NULL; //Holds the places where the new coefficients go
+	
+	
 	//Firstly, we need to check whether we can multiply these
 	if (compare_BigIntT(a->mod, b->mod) != 0)
 		return 0;
@@ -2930,22 +2940,13 @@ int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVar
 		}
 	}
 	
-	//print out the reductions and related data to make sure we're doing this right
-	/*
-	for (int i = 0; i < b->numOfExtensions; i += 1)
-	{
-		printf("Extension #%d's reduction: ", i);
-		for (int coeff = 0; coeff < b->extensionSizes[i]-1; coeff += 1)
-		{
-			printi(extensionReductions[i][0][coeff]);
-			printf(" ");
-		}
-		printf("\nThis represents the %d power of the extension\n", extensionReductionsPowers[i]);
-	} */
-	
 	//Zero out all the entries in product before we start multiplying
 	for (int i = 0; i < b->numOfExtensions; i += 1)
+	{
+		aLoc[i]   = 0;
+		bLoc[i]   = 0;
 		refLoc[i] = 0;
+	}
 	
 	while (!allSearched)
 	{
@@ -2965,6 +2966,214 @@ int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVar
 			{
 				allSearched = FALSE;
 				break;
+			}
+		}
+	}
+	
+	//I'm developing a real bad habit of making monstrous macros
+	//God save me :)
+	#define DEBUGPRINT(Z) printf("newLocations: ["); \
+			for (int i = 0; i < (Z); i += 1) \
+			{ \
+				printf("["); \
+				for (int j = 0; j < b->numOfExtensions; j += 1) \
+					(j == b->numOfExtensions-1) ? printf("%d]", newLocations[i][j]) : printf("%d, ", newLocations[i][j]); \
+				(i == (Z)-1) ? printf("]\n") : printf(", "); \
+			} \
+			printf("newCoeffs: ["); \
+			for (int i = 0; i < (Z); i += 1) \
+			{ \
+				printi(newCoeffs[i]); \
+				(i == (Z)-1) ? printf("]\n") : printf(", "); \
+			} \
+			printf("\n")
+	
+	//Now, we start the multiplication
+	allSearched = FALSE;
+	while (!allSearched)
+	{
+		//Calculate the product
+		aRef = a->coeffs;
+		bRef = b->coeffs;
+		for (int i = 0; i < b->numOfExtensions-1; i += 1)
+		{
+			aRef = aRef->next[aLoc[i]];
+			bRef = bRef->next[bLoc[i]];
+		}
+		
+		multiply_BigIntT(aRef->coeffs[aLoc[b->numOfExtensions-1]], 
+		                 bRef->coeffs[bLoc[b->numOfExtensions-1]],
+										 temp);
+
+		//If there's something noteworthy to add to product
+		if (compare_BigIntT(temp, zero) != 0)
+		{
+			numOfNewCoeffs = 1;
+			newCoeffs = realloc(newCoeffs, sizeof(BigIntTP));
+			newLocations = realloc(newLocations, sizeof(int*));
+			
+			newLocations[0] = malloc(b->numOfExtensions*sizeof(int));
+			for (int i = 0; i < b->numOfExtensions; i += 1)
+				newLocations[0][i] = aLoc[i] + bLoc[i];
+			
+			newCoeffs[0] = empty_BigIntT(1);
+			mod_BigIntT(temp, b->mod, newCoeffs[0]);
+			
+			//Now, we iterate through our list of locations repeatedly until they're all
+			// rewritten as locations within bounds
+			// (esentially, we're using the extension definitions to reduce the terms to
+			//  things within the bounds of product)
+			withinBounds = FALSE;
+			while (!withinBounds)
+			{
+				withinBounds = TRUE; //within bounds until proven otherwise
+				
+				for (int L = 0; L < numOfNewCoeffs; L += 1)
+				{
+					for (int ext = 0; ext < b->numOfExtensions; ext += 1)
+					{
+						if (newLocations[L][ext] >= b->extensionSizes[ext]-1)
+						{
+							withinBounds = FALSE;
+							printf("trouble\n");
+							DEBUGPRINT(numOfNewCoeffs);
+							
+							//Now we have to check whether we have the correct reduction to rewrite our term
+							if (newLocations[L][ext] > extensionReductionsPowers[ext] + numOfExtensionReductions[ext] - 1)
+							{
+								printf("we don't have the right reduction\n");
+								//We need to generate a new extensionReduction
+								//I don't think it's ever possible for newLocations[L][ext] to be 2 above what we have,
+								// so we probably only need to ever generate one extra extension
+								
+								numOfExtensionReductions[ext] += 1;
+								extensionReductions[ext] = realloc(extensionReductions[ext], numOfExtensionReductions[ext]*sizeof(BigIntTP*));
+								extensionReductions[ext][numOfExtensionReductions[ext]-1] = malloc((b->extensionSizes[ext]-1)*sizeof(BigIntTP));
+								
+								for (int i = 0; i < b->extensionSizes[ext]-1; i += 1)
+								{
+									extensionReductions[ext][numOfExtensionReductions[ext]-1][i] = empty_BigIntT(1);
+									
+									multiply_BigIntT(extensionReductions[ext][numOfExtensionReductions[ext]-2][b->extensionSizes[ext]-2], 
+									                 extensionReductions[ext][0][i],
+																	 temp);
+									if (i > 0)
+									{
+										add_BigIntT(temp, 
+										            extensionReductions[ext][numOfExtensionReductions[ext]-2][i-1],
+																extensionReductions[ext][numOfExtensionReductions[ext]-1][i]);
+										copy_BigIntT(extensionReductions[ext][numOfExtensionReductions[ext]-1][i], temp);
+									}
+									
+									mod_BigIntT(temp, b->mod, extensionReductions[ext][numOfExtensionReductions[ext]-1][i]);
+								}
+							}
+							
+							printf("we should now have the right reduction. let's check if we do...\n");
+							printf("reduction = [");
+							for (int i = 0; i < b->extensionSizes[ext]-1; i += 1)
+							{
+								printi(extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][i]);
+								(i == b->extensionSizes[ext]-2) ? printf("]\n") : printf(", ");
+							}
+							printf("\n");
+							
+							printf("numOfNewCoeffs = %d\n", numOfNewCoeffs);
+							
+							//We should now have the reduction we need
+							//Now, rewrite the term as multiple terms with lower exponents
+							newLocations = realloc(newLocations, (numOfNewCoeffs+newLocations[L][ext]-1)*sizeof(int*));
+							newCoeffs    = realloc(newCoeffs, (numOfNewCoeffs+newLocations[L][ext]-1)*sizeof(BigIntTP));
+							
+							printf("memory allocation okay\n");
+							
+							for (int i = numOfNewCoeffs; i < numOfNewCoeffs+b->extensionSizes[ext]-2; i += 1)
+							{
+								printf("i = %d\n", i);
+								//Taking coefficient on entire term, distributing it to new terms created by reduction
+								newCoeffs[i] = empty_BigIntT(1);
+								multiply_BigIntT(newCoeffs[L], 
+								                 extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][i-numOfNewCoeffs+1],
+																 temp);
+								mod_BigIntT(temp, b->mod, newCoeffs[i]);
+								
+								//Generate new location corresponding to new term
+								newLocations[i] = malloc(b->numOfExtensions*sizeof(int));
+								for (int p = 0; p < b->numOfExtensions; p += 1)
+								{
+									newLocations[i][p] = (p == ext) ? i-numOfNewCoeffs+1 : newLocations[L][p];
+								}
+							}
+							
+							numOfNewCoeffs += b->extensionSizes[ext]-2;
+							//Now, we need to overwrite the old location and coefficient
+							
+							multiply_BigIntT(newCoeffs[L], extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][0], temp);
+							mod_BigIntT(temp, b->mod, newCoeffs[L]);
+							
+							newLocations[L][ext] = 0;
+							
+							//Break out of for-loops
+							L = numOfNewCoeffs;
+							ext = b->numOfExtensions;
+						}
+					}
+				}
+			}
+			
+			//Okay, this whole block is a lot, so I'd like to print some stuff out 
+			// before carrying out the actual multiplication
+			DEBUGPRINT(numOfNewCoeffs);
+			
+			//Now, it's time to properly add the new coefficients to product
+			for (int c = 0; c < numOfNewCoeffs; c += 1)
+			{
+				ref = product->coeffs;
+				for (int t = 0; t < b->numOfExtensions-1; t += 1)
+					ref = ref->next[newLocations[c][t]];
+				
+				add_BigIntT(ref->coeffs[newLocations[c][b->numOfExtensions-1]], newCoeffs[c], temp);
+				mod_BigIntT(temp, b->mod, ref->coeffs[newLocations[c][b->numOfExtensions-1]]);
+			}
+			
+			
+			//Free newLocations and newCoeffs for next loop
+			for (int i = 0; i < numOfNewCoeffs; i += 1)
+			{
+				free(newLocations[i]);
+				newLocations[i] = NULL;
+				
+				newCoeffs[i] = free_BigIntT(newCoeffs[i]);
+			}
+		}
+		
+		//Increment aLoc
+		allSearched = TRUE;
+		for (int i = 0; i < b->numOfExtensions; i += 1)
+		{
+			aLoc[i] += 1;
+			if (aLoc[i] >= b->extensionSizes[i])
+				aLoc[i] = 0;
+			else
+			{
+				allSearched = FALSE;
+				break;
+			}
+		}
+		
+		//If we incremented through all of a, increment bLoc
+		if (allSearched)
+		{
+			for (int i = 0; i < b->numOfExtensions; i += 1)
+			{
+				bLoc[i] += 1;
+				if (bLoc[i] >= b->extensionSizes[i])
+					bLoc[i] = 0;
+				else
+				{
+					allSearched = FALSE;
+					break;
+				}
 			}
 		}
 	}
@@ -2993,11 +3202,17 @@ int mult_sim_MultiVarExtT(MultiVarExtTP const a, MultiVarExtTP const b, MultiVar
 	free(extensionReductionsPowers);
 	extensionReductionsPowers = NULL;
 	
+	free(newCoeffs);
+	newCoeffs = NULL;
+	
+	free(newLocations);
+	newLocations = NULL;
+	
 	one = free_BigIntT(one);
 	temp = free_BigIntT(temp);
 	zero = free_BigIntT(zero);
 	negOne = free_BigIntT(negOne);
 	leadingTermInv = free_BigIntT(leadingTermInv);
 	
-	return 0;
+	return 1;
 }
