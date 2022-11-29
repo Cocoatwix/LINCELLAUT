@@ -32,12 +32,12 @@ void* free_MultiVarExtT(void*);
 
 /** Creates a new BigPolyT with given coefficients and size,
     returns a pointer to it. */
-BigPolyTP new_BigPolyT(BigIntTP* const, int);
+BigPolyTP new_BigPolyT(const BigIntTP*, int);
 
 /** Creates a constant polynomial with the given BigIntTP
     as the constant term. Returns a pointer to the new
 		constant. */
-BigPolyTP constant_BigPolyT(BigIntTP const);
+BigPolyTP constant_BigPolyT(const BigIntTP);
 
 /** Creates an empty polynomial, returns a pointer to it. */
 BigPolyTP empty_BigPolyT();
@@ -60,12 +60,12 @@ MultiVarExtTP new_MultiVarExtT(int);
 
 /** Sets the modulus value for the given MultiVarExtT.
     Returns 1 on success, 0 otherwise. */
-int set_MultiVarExtT_mod(MultiVarExtTP, BigIntTP const);
+int set_MultiVarExtT_mod(MultiVarExtTP, const BigIntTP);
 
 /** Adds a new extension to a MultiVarExtT.
     Returns 1 on success, 0 otherwise. */
 //                extension      minPoly          size name
-int add_extension(MultiVarExtTP, BigIntTP* const, int, char* const);
+int add_extension(MultiVarExtTP, const BigIntTP*, int, const char*);
 
 /** Removes the most recent extension from the
     given MultiVarExtT.
@@ -75,7 +75,7 @@ int remove_extension(MultiVarExtTP);
 /** Sets a particular value for the given MultiVarExtT's coefficient.
     The MultiVarExtT must be fully set before this function can be used.
 	Returns 1 on success, 0 otherwise. */
-int set_MultiVarExtT_coefficient(MultiVarExtTP, int* const, BigIntTP const);
+int set_MultiVarExtT_coefficient(MultiVarExtTP, const int*, const BigIntTP);
 
 /** Uses the extension definitions to reduce the given
     MultiVarExtT. Essentially, it'll zero any terms
@@ -86,23 +86,23 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP, int* const, BigIntTP const);
 int reduce_MultiVarExtT(MultiVarExtTP);
 
 /** Returns the degree of the given polynomial. */
-int degree(BigPolyTP const);
+int degree(const BigPolyTP);
 
 /** Returns the constant term of a BigPolyTP. */
-BigIntTP constant(BigPolyTP const);
+BigIntTP constant(const BigPolyTP);
 
 /** Returns the leading term's coefficient of the given BigPolyTP. */
-BigIntTP leading_term(BigPolyTP const);
+BigIntTP leading_term(const BigPolyTP);
 
 /** Returns an array of the given BigPolyT's coefficients,
     sorted in ascending order of the terms' exponents.
 	Returns NULL on error. */
-BigIntTP* extract_coefficients(BigPolyTP const);
+BigIntTP* extract_coefficients(const BigPolyTP);
 
 /** Copies a polynomial into another. This function assumes
     all arguments have been properly initialised.
 		Returns 1 on success, 0 otherwise. */
-int copy_BigPolyT(BigPolyTP const, BigPolyTP);
+int copy_BigPolyT(const BigPolyTP, BigPolyTP);
 
 /** Copies a MultiVarExtT into another MultiVarExtT.
     Both MultiVarExtTs must have the same number of 
@@ -113,64 +113,64 @@ int copy_MultiVarExtT(const MultiVarExtTP, MultiVarExtTP);
 
 /** Create a new BigFactorsT struct with given factors,
     exponents, and size. Returns a pointer to the struct. */
-BigFactorsTP new_BigFactorsT(BigPolyTP* const, int* const, int);
+BigFactorsTP new_BigFactorsT(const BigPolyTP*, const int*, int);
 
 /** Adds a new factor to the given BigFactorsT struct. 
     Returns 1 on success, 0 otherwise. */
-int add_factor(BigFactorsTP, BigPolyTP const, int);
+int add_factor(BigFactorsTP, const BigPolyTP, int);
 
 /** Returns a BigPolyTP array containing all the
     factors in the given BigFactorsT. The factor will
 	appear as many times as its exponent demands. */
-BigPolyTP* extract_factors(BigFactorsTP const);
+BigPolyTP* extract_factors(const BigFactorsTP);
 
 /** Returns the number of factors in the given BigFactorsTP,
     taking into account repeated roots. */
-int count_factors(BigFactorsTP const);
+int count_factors(const BigFactorsTP);
 
 /** Compares two BigPolyTPs to see if they're equal (have the
     same coefficients). 
 	Returns 0 if they're equal, a negative if the first BigPolyT 
 	is less than the second, a positive if the first BigPolyT is 
 	greater than the second. */ 
-int compare_BigPolyT(BigPolyTP const, BigPolyTP const);
+int compare_BigPolyT(const BigPolyTP, const BigPolyTP);
 
 /** Uses the given list of BigIntTs to set the polynomial's
     coefficients. 
 	Returns 1 on success, 0 otherwise. */
-int set_BigPolyT(BigPolyTP, BigIntTP* const);
+int set_BigPolyT(BigPolyTP, const BigIntTP*);
 
 /** Sets all coefficients in the given polynomial
     to zero. Returns 1 on success, 0 otherwise. */
 int clear_BigPolyT(BigPolyTP);
 
 /** Outputs a BigPolyT to stdout (the console). */
-void printp(BigPolyTP const);
+void printp(const BigPolyTP);
 
 /** Prints a factored BigPolyT. */
-void old_printpf(BigPolyTP* const);
+void old_printpf(const BigPolyTP*);
 
 /** Prints a BigFactorsT to stdout. */
-void printpf(BigFactorsTP const);
+void printpf(const BigFactorsTP);
 
 /** Prints a MultiVarExtT to stdout. */
-void printmve(MultiVarExtTP const);
+void printmve(const MultiVarExtTP);
 
 /** Same as printp and printpf, but it prints to a file stream. */
-void fprintp(FILE*, BigPolyTP const);
-void fprintpf(FILE*, BigPolyTP* const);
+void fprintp(FILE*, const BigPolyTP);
+void fprintpf(FILE*, const BigPolyTP*);
 
 /** Adds the first two polynomials, stores the sum in the third.
     This function assumes all polynomials passed have been
 		initialised.
     Returns 1 on success, 0 otherwise. */
-int add_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
+int add_BigPolyT(const BigPolyTP, const BigPolyTP, BigPolyTP);
 
 /** Multiples the first two polynomials given, stores the
     product in the third BigPolyTP. This function assumes all 
 		polynomials passed have been initialised.
 		Returns 1 on success, 0 otherwise. */
-int multiply_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
+int multiply_BigPolyT(const BigPolyTP, const BigPolyTP, BigPolyTP);
 
 /** Divides two BigPolyTs, stores the quotient in the third BigPolyT,
     stores the remainder in the forth BigPolyT. The BigIntTP is the 
@@ -180,37 +180,37 @@ int multiply_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP);
 //For now, this function assumes the modulus given is prime (so we're in a field)
 //This function also assumes a and b have been reduced
 //                  a                b                a/b        remainder  modulus
-int divide_BigPolyT(BigPolyTP const, BigPolyTP const, BigPolyTP, BigPolyTP, BigIntTP const);
+int divide_BigPolyT(const BigPolyTP, const BigPolyTP, BigPolyTP, BigPolyTP, const BigIntTP);
 
 /** Calculates the first BigPolyT raised to the given BigIntT.
     Stores the result in the second BigPolyT given (which is
 	assumed to have been initialised).
 	Currently, this function works for nonnegative powers.
 	Returns 1 on success, 0 otherwise. */
-int pow_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
+int pow_BigPolyT(const BigPolyTP, const BigIntTP, BigPolyTP);
 
 /** Reduces a given polynomial by a modulus, stores the result in
     another passed polynomial. This function assumes all arguments
 	have been properly initialised.
 	Returns 1 on success, 0 oterwise. */
-int mod_BigPolyT(BigPolyTP const, BigIntTP const, BigPolyTP);
+int mod_BigPolyT(const BigPolyTP, const BigIntTP, BigPolyTP);
 
 /** Differentiates the given BigPolyTP with respect to its
     variable, stores the result in the second given BigPolyTP.
 	Returns 1 on success, 0 otherwise. */
-int diff_BigPolyT(BigPolyTP const, BigPolyTP);
+int diff_BigPolyT(const BigPolyTP, BigPolyTP);
 
 /** Factors the given BigPolyT under the given modulus.
     Returns a pointer to all the polynomial's factors.
 		The first element is a BigPolyT constant which says
 		how many factors are in the pointer. */
-BigPolyTP* old_factor_BigPolyT(BigPolyTP const, BigIntTP const);
+BigPolyTP* old_factor_BigPolyT(const BigPolyTP, const BigIntTP);
 
 /** Factors polynomials under the given modulus. 
 	Returns an array of BigPolyTs, each one representing an
 	irreducible factor of the given polynomial. The first BigPolyT 
 	in the array is a constant telling how many factors are in the array. */
-BigFactorsTP factor_BigPolyT(BigPolyTP const, BigIntTP const);
+BigFactorsTP factor_BigPolyT(const BigPolyTP, const BigIntTP);
 
 /** Adds two MultiVarExtTs together, assuming they have the same size
     and the same extensions (in the same order). Stores the result
@@ -220,7 +220,7 @@ BigFactorsTP factor_BigPolyT(BigPolyTP const, BigIntTP const);
 	any sort of modular reduction during addition. Use
 	reduce_MultiVarExtT() for that.
 	Returns 1 on success, 0 otherwise. */
-int inc_sim_MultiVarExtT(MultiVarExtTP const, MultiVarExtTP);
+int inc_sim_MultiVarExtT(const MultiVarExtTP, MultiVarExtTP);
 
 /** Multiplies two MultiVarExtTs with the same extensions together, stores the
     result in the third MultiVarExtTP given. All MultiVarExtTs must have the
@@ -228,7 +228,7 @@ int inc_sim_MultiVarExtT(MultiVarExtTP const, MultiVarExtTP);
 	coefficients). 
 	This function assumes the modulus used is a prime.
 	Returns 1 on success, 0 otherwise. */
-int mult_sim_MultiVarExtT(MultiVarExtTP const, MultiVarExtTP const, MultiVarExtTP);
+int mult_sim_MultiVarExtT(const MultiVarExtTP, const MultiVarExtTP, MultiVarExtTP);
 
 /*
 int find_factors(BigIntTP const,
