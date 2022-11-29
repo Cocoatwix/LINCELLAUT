@@ -152,20 +152,29 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 	
 	if (d->hasNext)
 	{
-		for (int i = 0; i < d->size; i += 1)
-			d->next[i] = free_BigIntDirectorT(d->next[i]);
-		
-		free(d->next);
-		d->next = NULL;
+		//Only free if it hasn't already been freed
+		// (using remove_extension may free this memory)
+		if (d->next != NULL)
+		{
+			for (int i = 0; i < d->size; i += 1)
+				d->next[i] = free_BigIntDirectorT(d->next[i]);
+			
+			free(d->next);
+			d->next = NULL;
+		}
 	}
 	
 	else //If the director is pointing directly to a BigIntT array
 	{
-		for (int i = 0; i < d->size; i += 1)
-			d->coeffs[i] = free_BigIntT(d->coeffs[i]);
-		
-		free(d->coeffs);
-		d->coeffs = NULL;
+		//Only free if there's actually BigIntTs to free
+		if (d->coeffs != NULL)
+		{
+			for (int i = 0; i < d->size; i += 1)
+				d->coeffs[i] = free_BigIntT(d->coeffs[i]);
+			
+			free(d->coeffs);
+			d->coeffs = NULL;
+		}
 	}
 	
 	free(d);
@@ -176,34 +185,37 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 void* free_MultiVarExtT(void* ext)
 /** Frees the memory used by a MultiVarExtT. Returns NULL. */
 {
-	((MultiVarExtTP)ext)->coeffs = free_BigIntDirectorT(((MultiVarExtTP)ext)->coeffs);
-	
-	for (int i = 0; i < ((MultiVarExtTP)ext)->numOfExtensions; i += 1)
+	if (ext != NULL)
 	{
-		free(((MultiVarExtTP)ext)->extNames[i]);
-		((MultiVarExtTP)ext)->extNames[i] = NULL;
+		((MultiVarExtTP)ext)->coeffs = free_BigIntDirectorT(((MultiVarExtTP)ext)->coeffs);
 		
-		if (((MultiVarExtTP)ext)->extensions[i] != NULL) //If we try and free before all extensions have been defined
+		for (int i = 0; i < ((MultiVarExtTP)ext)->numOfExtensions; i += 1)
 		{
-			for (int elem = 0; elem < ((MultiVarExtTP)ext)->extensionSizes[i]; elem += 1)
-				((MultiVarExtTP)ext)->extensions[i][elem] = free_BigIntT(((MultiVarExtTP)ext)->extensions[i][elem]);
+			free(((MultiVarExtTP)ext)->extNames[i]);
+			((MultiVarExtTP)ext)->extNames[i] = NULL;
 			
-			free(((MultiVarExtTP)ext)->extensions[i]);
-			((MultiVarExtTP)ext)->extensions[i] = NULL;
+			if (((MultiVarExtTP)ext)->extensions[i] != NULL) //If we try and free before all extensions have been defined
+			{
+				for (int elem = 0; elem < ((MultiVarExtTP)ext)->extensionSizes[i]; elem += 1)
+					((MultiVarExtTP)ext)->extensions[i][elem] = free_BigIntT(((MultiVarExtTP)ext)->extensions[i][elem]);
+				
+				free(((MultiVarExtTP)ext)->extensions[i]);
+				((MultiVarExtTP)ext)->extensions[i] = NULL;
+			}
 		}
+		free(((MultiVarExtTP)ext)->extNames);
+		((MultiVarExtTP)ext)->extNames = NULL;
+		
+		((MultiVarExtTP)ext)->mod = free_BigIntT(((MultiVarExtTP)ext)->mod);
+		
+		free(((MultiVarExtTP)ext)->extensions);
+		((MultiVarExtTP)ext)->extensions = NULL;
+		
+		free(((MultiVarExtTP)ext)->extensionSizes);
+		((MultiVarExtTP)ext)->extensionSizes = NULL;
+		
+		free(((MultiVarExtTP)ext));
 	}
-	free(((MultiVarExtTP)ext)->extNames);
-	((MultiVarExtTP)ext)->extNames = NULL;
-	
-	((MultiVarExtTP)ext)->mod = free_BigIntT(((MultiVarExtTP)ext)->mod);
-	
-	free(((MultiVarExtTP)ext)->extensions);
-	((MultiVarExtTP)ext)->extensions = NULL;
-	
-	free(((MultiVarExtTP)ext)->extensionSizes);
-	((MultiVarExtTP)ext)->extensionSizes = NULL;
-	
-	free(((MultiVarExtTP)ext));
 	return NULL;
 }
 
@@ -439,7 +451,7 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 			ref->next[coeffsIndex[index]] = calloc(1, sizeof(BigIntDirectorT));
 			ref->next[coeffsIndex[index]]->next = NULL;
 		}
-		
+
 		//Now, we need to increment our coeffsIndex so we add everything we need to
 		moreToAdd = FALSE;
 		for (int i = 0; i <= index; i += 1)
@@ -456,6 +468,80 @@ int add_extension(MultiVarExtTP ext, BigIntTP* const minPoly, int sizeOfMinPoly,
 	}
 	
 	ext->numOfExtensionsSet += 1;
+	return 1;
+}
+
+
+int remove_extension(MultiVarExtTP a)
+/** Removes the most recent extension from a.
+    Returns 1 on success, 0 otherwise. */
+{
+	if (a->numOfExtensionsSet == 0)
+		return 0;
+	
+	bool moreToFree = TRUE;
+	int currLoc[a->numOfExtensionsSet];
+	BigIntDirectorTP ref;
+	
+	for (int i = 0; i < a->numOfExtensionsSet; i += 1)
+		currLoc[i] = 0;
+	
+	
+	//Free individual elements in the BigIntDirectorTP mess
+	while (moreToFree)
+	{
+		ref = a->coeffs;
+		
+		for (int i = 0; i < a->numOfExtensionsSet-1; i += 1)
+			ref = ref->next[currLoc[i]];
+		
+		if (a->numOfExtensionsSet == a->numOfExtensions)
+			ref->coeffs[currLoc[a->numOfExtensionsSet-1]] = free_BigIntT(ref->coeffs[currLoc[a->numOfExtensionsSet-1]]);
+		
+		else
+			ref->next[currLoc[a->numOfExtensionsSet-1]] = free_BigIntDirectorT(ref->next[currLoc[a->numOfExtensionsSet-1]]);
+		
+		
+		moreToFree = FALSE;
+		for (int i = 0; i < a->numOfExtensionsSet; i += 1)
+		{
+			currLoc[i] += 1;
+			if (currLoc[i] >= a->extensionSizes[i])
+				currLoc[i] = 0;
+			else
+			{
+				moreToFree = TRUE;
+				break;
+			}
+		}
+	}
+	
+	//Now, free the arrays
+	ref = a->coeffs;	
+	for (int i = 0; i < a->numOfExtensionsSet-1; i += 1)
+		ref = ref->next[currLoc[i]];
+	
+	if (a->numOfExtensionsSet == a->numOfExtensions)
+	{
+		free(ref->coeffs);
+		ref->coeffs = NULL;
+	}
+	else
+	{
+		free(ref->next);
+		ref->next = NULL;
+	}
+	
+	for (int i = 0; i < a->extensionSizes[a->numOfExtensionsSet-1]; i += 1)
+		a->extensions[a->numOfExtensionsSet-1][i] = free_BigIntT(a->extensions[a->numOfExtensionsSet-1][i]);
+	free(a->extensions[a->numOfExtensionsSet-1]);
+	a->extensions[a->numOfExtensionsSet-1] = NULL;
+	
+	a->extNames[a->numOfExtensionsSet-1][0] = '\0';
+	
+	a->extensionSizes[a->numOfExtensionsSet-1] = 0;
+	a->numOfExtensionsSet -= 1;
+	
 	return 1;
 }
 
@@ -699,6 +785,99 @@ int copy_BigPolyT(BigPolyTP const toCopy, BigPolyTP copyTo)
 	//Just to be safe
 	reduce_BigPolyT(copyTo);
 	
+	return 1;
+}
+
+
+int copy_MultiVarExtT(const MultiVarExtTP toCopy, MultiVarExtTP copyTo)
+/** Copies toCopy into copyTo. The MultiVarExtTs must have the
+    same number of extensions for this to work. The function
+		assumes copyTo has been initalised. 
+		Returns 1 on success, 0 otherwise. */
+{
+	bool moreToSet = TRUE;
+	int temp;
+	int extensionIndexToRemove = -1;
+	int currLoc[toCopy->numOfExtensionsSet];
+	BigIntDirectorTP ref1;
+	BigIntDirectorTP ref2;
+	
+	if (toCopy->numOfExtensions != copyTo->numOfExtensions)
+		return 0;
+	
+	//Iterate through all extensions to see how many are the
+	// same between them
+	for (int ext = 0; ext < copyTo->numOfExtensionsSet; ext += 1)
+	{
+		//If the two extensions are comparable
+		if (toCopy->extensionSizes[ext] == copyTo->extensionSizes[ext])
+		{
+			for (int num = 0; num < copyTo->extensionSizes[ext]; num += 1)
+			{
+				if (compare_BigIntT(toCopy->extensions[ext][num], copyTo->extensions[ext][num]) != 0)
+				{
+					extensionIndexToRemove = ext;
+					break;
+				}
+			}
+			
+			if (extensionIndexToRemove != -1)
+				break;
+		}
+		
+		//Uproot everything from this extension onward
+		else
+		{
+			extensionIndexToRemove = ext;
+			break;
+		}
+	}
+	
+	//If we need to uproot some extension definitions
+	temp = copyTo->numOfExtensionsSet;
+	if (extensionIndexToRemove != -1)
+		for (int i = extensionIndexToRemove; i < temp; i += 1)
+			remove_extension(copyTo);
+		
+	//Now, copy extension definitions from toCopy to copyTo
+	for (int i = copyTo->numOfExtensionsSet; i < toCopy->numOfExtensionsSet; i += 1)
+		add_extension(copyTo, toCopy->extensions[i], toCopy->extensionSizes[i], toCopy->extNames[i]);
+	
+	//Now, if toCopy is fully set, copy the terms as well
+	if (toCopy->numOfExtensions == toCopy->numOfExtensionsSet)
+	{
+		for (int i = 0; i < toCopy->numOfExtensionsSet; i += 1)
+			currLoc[i] = 0;
+		
+		while (moreToSet)
+		{
+			ref1 = toCopy->coeffs;
+			ref2 = copyTo->coeffs;
+			for (int i = 0; i < toCopy->numOfExtensionsSet-1; i += 1)
+			{
+				ref1 = ref1->next[currLoc[i]];
+				ref2 = ref2->next[currLoc[i]];
+			}
+			
+			copy_BigIntT(ref1->coeffs[currLoc[toCopy->numOfExtensionsSet-1]],
+			             ref2->coeffs[currLoc[toCopy->numOfExtensionsSet-1]]);
+									 
+			moreToSet = FALSE;
+			for (int i = 0; i < toCopy->numOfExtensionsSet; i += 1)
+			{
+				currLoc[i] += 1;
+				if (currLoc[i] >= toCopy->extensionSizes[i])
+					currLoc[i] = 0;
+				else
+				{
+					moreToSet = TRUE;
+					break;
+				}
+			}
+		}
+	}
+	
+	//toCopy should now be fully copied into copyTo
 	return 1;
 }
 

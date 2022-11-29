@@ -14,8 +14,8 @@ typedef struct intmatrix *IntMatrixTP;
 /** IntMatrixT, but for BigIntT numbers. */
 typedef struct bigintmatrix *BigIntMatrixTP;
 
-/** Matrix of MultiVarExtTs. */
-typedef struct multivarextmatrix *MultiVarExtMatrixTP;
+/** Matrix of some generic objects. */
+typedef struct genericmatrix *GenericMatrixTP;
 
 /** Used for determining how to print vectors to the console/files. */
 typedef enum vt {row, col} VectorTypeE;
@@ -31,7 +31,7 @@ int big_cols(BigIntMatrixTP);
 
 /** What's the element at the given indices in the matrix? */
 int element(IntMatrixTP const, int, int);
-BigIntTP big_element(BigIntMatrixTP const, int, int);
+BigIntTP big_element(const BigIntMatrixTP, int, int);
 
 /** Increments an array of ints by a given inc. Used for
     incrementing through all possible matrices or vectors.
@@ -45,15 +45,21 @@ bool increment_int_array(int**, int, int, int, int);
 //                                array  row  col       increment         modulus
 bool increment_BigIntT_array(BigIntTP**, int, int, BigIntTP const, BigIntTP const);
 
+/** Specifies the free function to use with the given
+    GenericMatrixTP. Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_freeFunction(GenericMatrixTP, void* (*)(void*));
+
 /** Frees the memory of a matrix. Returns NULL. 
     Also returns NULL if the argument is NULL. */
-IntMatrixTP free_IntMatrixT(IntMatrixTP);
-BigIntMatrixTP free_BigIntMatrixT(BigIntMatrixTP);
+IntMatrixTP     free_IntMatrixT(IntMatrixTP);
+BigIntMatrixTP  free_BigIntMatrixT(BigIntMatrixTP);
+GenericMatrixTP free_GenericMatrixT(GenericMatrixTP); 
 
 /** Creates a new empty matrix of given size. 
     Returns a pointer to the matrix on success, NULL otherwise. */
-IntMatrixTP new_IntMatrixT(int, int);
-BigIntMatrixTP new_BigIntMatrixT(int, int);
+IntMatrixTP     new_IntMatrixT(int, int);
+BigIntMatrixTP  new_BigIntMatrixT(int, int);
+GenericMatrixTP new_GenericMatrixT(int, int);
 
 /** Creates a new identity matrix of given size and
     returns a pointer to the matrix. Returns NULL on error. */
@@ -69,11 +75,29 @@ int clear_BigIntMatrixT(BigIntMatrixTP);
     otherwise. */
 int set_column(IntMatrixTP, int* const);
 
+/** Sets the initialisation value to use with a
+    GenericMatrixT's init function.
+	Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_initValue(GenericMatrixTP, int);
+
+/** Sets the function a GenericMatrixT uses to initialise
+    elements of its matrix. 
+	Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_initFunction(GenericMatrixTP, void* (*)());
+
+/** Sets the function a GenericMatrixT uses to copy
+    elements of its matrix to other elements. 
+	Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_copyFunction(GenericMatrixTP, void* (*)(void*, void*));
+
 /** Sets the values of a matrix to the
-    values supplied in the 2D array. Returns 1 on success,
-	0 otherwise. */
+    values supplied in the 2D array. 
+	These functions assume the given arrays are
+	the correct size for the matrix.
+	Returns 1 on success, 0 otherwise. */
 int set_matrix(IntMatrixTP, int** const);
 int set_big_matrix(BigIntMatrixTP, BigIntTP** const);
+int set_GenericMatrixT(GenericMatrixTP, const void***);
 
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
@@ -100,9 +124,11 @@ int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2,
 /** Prints a given matrix to the console. */
 void printm(IntMatrixTP const);
 void printbm(BigIntMatrixTP const);
+void printgm(GenericMatrixTP const);
 
 void printm_row(IntMatrixTP const);
 void printbm_row(BigIntMatrixTP const); //<0 0 0>
+void printgm_row(GenericMatrixTP const);
 
 /** Same as functions above, but they print to a file stream. */
 void fprintm(FILE*, IntMatrixTP const);

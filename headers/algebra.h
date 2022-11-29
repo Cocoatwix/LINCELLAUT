@@ -67,6 +67,11 @@ int set_MultiVarExtT_mod(MultiVarExtTP, BigIntTP const);
 //                extension      minPoly          size name
 int add_extension(MultiVarExtTP, BigIntTP* const, int, char* const);
 
+/** Removes the most recent extension from the
+    given MultiVarExtT.
+	Returns 1 on success, 0 otherwise. */
+int remove_extension(MultiVarExtTP);
+
 /** Sets a particular value for the given MultiVarExtT's coefficient.
     The MultiVarExtT must be fully set before this function can be used.
 	Returns 1 on success, 0 otherwise. */
@@ -98,6 +103,13 @@ BigIntTP* extract_coefficients(BigPolyTP const);
     all arguments have been properly initialised.
 		Returns 1 on success, 0 otherwise. */
 int copy_BigPolyT(BigPolyTP const, BigPolyTP);
+
+/** Copies a MultiVarExtT into another MultiVarExtT.
+    Both MultiVarExtTs must have the same number of 
+	extensions. The function assumes the second
+	MultiVarExtT has been initialised. 
+	Returns 1 on success, 0 otherwise. */
+int copy_MultiVarExtT(const MultiVarExtTP, MultiVarExtTP);
 
 /** Create a new BigFactorsT struct with given factors,
     exponents, and size. Returns a pointer to the struct. */

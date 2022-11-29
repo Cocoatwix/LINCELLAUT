@@ -43,13 +43,19 @@ typedef struct bigintmatrix
 } 
 BigIntMatrixT, *BigIntMatrixTP;
 
-typedef struct multivarextmatrix
-/** Matrix of MultiVarExtTPs. */
+typedef struct genericmatrix
+/** Matrix of some generic object. */
 {
-	MultiVarExtTP** matrix;
+	void*** matrix;
 	int m;
 	int n;
-} MultiVarExtMatrixT, *MultiVarExtMatrixTP;
+	
+	int initValue; //For feeding into the initialisation function
+	
+	void* (*freeFunction)(void*);
+	void* (*initFunction)(int);
+	void* (*copyFunction)(const void*, void*);
+} GenericMatrixT, *GenericMatrixTP;
 
 
 int rows(IntMatrixTP M)
@@ -240,7 +246,7 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 }
 
 
-BigIntTP big_element(BigIntMatrixTP const M, int row, int col)
+BigIntTP big_element(const BigIntMatrixTP M, int row, int col)
 /** Returns the BigIntTP contained within M at the 
     specified location. Returns NULL if the specified index
 		is out of bounds of the given matrix. */
@@ -292,16 +298,38 @@ BigIntMatrixTP free_BigIntMatrixT(BigIntMatrixTP M)
 }
 
 
-MultiVarExtMatrixTP free_MultiVarExtMatrixT(MultiVarExtMatrixTP a)
-/** Frees the memory used by a MultiVarExtMatrixT. Returns NULL. */
+int set_GenericMatrixT_freeFunction(GenericMatrixTP a, void* (*theFunction)(void*))
+/** Sets the free function to be used for a specific 
+    GenericMatrixT. Returns 1 on success, 0 otherwise. */
+{
+	a->freeFunction = theFunction;
+	return 1;
+}
+
+
+GenericMatrixTP free_GenericMatrixT(GenericMatrixTP a)
+/** Frees the memory used by a GenericMatrixT. Returns NULL. */
 {
 	if (a != NULL)
 	{
+		if (a->freeFunction == NULL)
+			fprintf(stderr, "No free function provided to GenericMatrixT. Memory may not free correctly.\n");
+		
 		for (int row = 0; row < a->m; row += 1)
 		{
 			for (int col = 0; col < a->n; col += 1)
-				return NULL;
+				if (a->freeFunction != NULL)
+					a->matrix[row][col] = a->freeFunction(a->matrix[row][col]);
+			
+			free(a->matrix[row]);
+			a->matrix[row] = NULL;
 		}
+		free(a->matrix);
+		a->matrix = NULL;
+		
+		a->freeFunction = NULL;
+		a->initFunction = NULL;
+		a->copyFunction = NULL;
 	}
 	return NULL;
 }
@@ -352,6 +380,28 @@ BigIntMatrixTP new_BigIntMatrixT(int r, int c)
 	newMat->n = c;
 	
 	return newMat;
+}
+
+
+GenericMatrixTP new_GenericMatrixT(int r, int c)
+/** Creates a new GenericMatrixT with dimensions
+    r by c. Returns a pointer to this new matrix. */
+{
+	GenericMatrixTP a = malloc(sizeof(GenericMatrixT));
+	a->m = r;
+	a->n = c;
+	
+	a->matrix = malloc(r*sizeof(void**));
+	for (int i = 0; i < r; i += 1)
+		a->matrix[i] = malloc(c*sizeof(void*));
+	
+	a->initValue = 0;
+	
+	a->freeFunction = NULL;
+	a->initFunction = NULL;
+	a->copyFunction = NULL;
+	
+	return a;
 }
 
 
@@ -418,6 +468,36 @@ int set_column(IntMatrixTP v, int* const elements)
 }
 
 
+int set_GenericMatrixT_initFunction(GenericMatrixTP a, void* (*f)(int))
+/** Sets the initialisation function for a GenericMatrixT
+    (what it uses to initalise new elements of its matrix).
+		Returns 1 on success, 0 otherwise. */
+{
+	a->initFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_initValue(GenericMatrixTP a, int v)
+/** Sets the initialisation value for a GenericMatrixT's
+    initialisation function.
+		Returns 1 on success, 0 otherwise. */
+{
+	a->initValue = v;
+	return 1;
+}
+
+
+int set_GenericMatrixT_copyFunction(GenericMatrixTP a, void* (*f)(const void*, void*))
+/** Sets the copying function for a GenericMatrixT
+    (what it uses to copy elements to elements of its matrix).
+		Returns 1 on success, 0 otherwise. */
+{
+	a->copyFunction = f;
+	return 1;
+}
+
+
 int set_matrix(IntMatrixTP A, int** const arr)
 /* Using the given array, sets the matrix of a given
    initialised IntMatrixT. Returns 1 on success, 0 otherwise. 
@@ -442,6 +522,26 @@ int set_big_matrix(BigIntMatrixTP A, BigIntTP** const arr)
 		for (int y = 0; y < A->n; y += 1)
 			copy_BigIntT(arr[x][y], A->matrix[x][y]);
 		
+	return 1;
+}
+
+
+int set_GenericMatrixT(GenericMatrixTP a, const void*** arr)
+/** Sets the matrix of a given GenericMatrixT.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((a->copyFunction == NULL) || (a->initFunction == NULL))
+		return 0;
+	
+	for (int row = 0; row < a->m; row += 1)
+	{
+		for (int col = 0; col < a->n; col += 1)
+		{
+			a->matrix[row][col] = a->initFunction(a->initValue);
+			a->copyFunction(arr[row][col], a->matrix[row][col]);
+		}
+	}
+	
 	return 1;
 }
 
@@ -919,6 +1019,20 @@ void fprintbm_nopad(FILE* file, BigIntMatrixTP const M)
 		}
 		fprintf(file, "\n");
 	}
+}
+
+
+void printgm(GenericMatrixTP const a)
+/** Prints a generic matrix to stdout. */
+{
+	printf("Not implemented yet.\n");
+}
+
+
+void printgm_row(GenericMatrixTP const a)
+/** Prints a generic matrix as a row vector. */
+{
+	printf("Not implemented yet.\n");
 }
 
 

@@ -11,12 +11,13 @@
 #define FREE(v) free(v); v = NULL
 
 //For differentiating what type of matrix a CycleInfoT is holding
-typedef enum {IntMatrixE, BigIntMatrixE} MatrixTypeT;
+typedef enum {IntMatrixE, BigIntMatrixE, GenericMatrixE} MatrixTypeT;
 
-typedef union genericmatrix
+typedef union genericmatrixtype
 {
-	IntMatrixTP intmat;
-	BigIntMatrixTP bigintmat;
+	IntMatrixTP     intmat;
+	BigIntMatrixTP  bigintmat;
+	GenericMatrixTP genericmat;
 }
 MatrixT, *MatrixTP;
 
@@ -51,6 +52,13 @@ CycleInfoTP free_CycleInfoT(CycleInfoTP c)
 			case (BigIntMatrixE):
 			{
 				c->inCycle->bigintmat = free_BigIntMatrixT(c->inCycle->bigintmat);
+				break;
+			}
+			
+			//This case probably won't be used, but it's good to have it here regardless
+			case (GenericMatrixE):
+			{
+				c->inCycle->genericmat = free_GenericMatrixT(c->inCycle->genericmat);
 				break;
 			}
 		}
@@ -95,30 +103,33 @@ void printcycle(CycleInfoTP c, VectorTypeE e)
 		case (IntMatrixE):
 		{
 			if (e == col)
-			{
 				printm(c->inCycle->intmat);
-				break;
-			}
+
 			else if (e == row)
-			{
 				printm_row(c->inCycle->intmat);
-				break;
-			}
+
 			break;
 		}
 		
 		case (BigIntMatrixE):
 		{
 			if (e == col)
-			{
 				printbm(c->inCycle->bigintmat);
-				break;
-			}
+
 			else if (e == row)
-			{
 				printbm_row(c->inCycle->bigintmat);
-				break;
-			}
+
+			break;
+		}
+		
+		case (GenericMatrixE):
+		{
+			if (e == col)
+				printgm(c->inCycle->genericmat);
+
+			else if (e == row)
+				printgm_row(c->inCycle->genericmat);
+
 			break;
 		}
 	}

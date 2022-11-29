@@ -4465,9 +4465,9 @@ int main(int argc, char* argv[])
 		
 		else if (! strcmp(argv[1], "test"))
 		{
-			int testMode = 2;
+			int testMode = 0;
 		
-			#define nasize 7
+			#define nasize 17
 			int numArr[1] = {0};
 			BigIntTP NA[nasize];
 			for (int i = 0; i < nasize; i += 1)
@@ -4535,29 +4535,86 @@ int main(int argc, char* argv[])
 				set_MultiVarExtT_mod(coolExt3, bigMod);
 				set_MultiVarExtT_mod(extHold, bigMod);
 				
+				
 				add_extension(coolExt1, extDefn1, 4, "a");
 				add_extension(coolExt1, extDefn2, 3, "b");
 				add_extension(coolExt1, extDefn3, 3, "c");
 				
+				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
+				printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
+				printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
+				
+				printf("\ncoolExt1 after adding all extensions:\n");
+				printmve(coolExt1);
+				printf("\ncoolExt1 after removing one extension:\n");
+				remove_extension(coolExt1);
+				printmve(coolExt1);
+				printf("\ncoolExt1 after removing two extensions:\n");
+				remove_extension(coolExt1);
+				printmve(coolExt1);
+				printf("\ncoolExt1 after removing three extensions:\n");
+				remove_extension(coolExt1);
+				printmve(coolExt1);
+				printf("\nCan we remove a fourth extension? %d\n", remove_extension(coolExt1));
+				
+				printf("\nNow, let's try adding extensions back in a different order...\n");
+				printf("coolExt1 after adding c:\n");
+				add_extension(coolExt1, extDefn3, 3, "c");
+				printmve(coolExt1);
+				printf("\ncoolExt1 after adding a:\n");
+				add_extension(coolExt1, extDefn1, 4, "a");
+				printmve(coolExt1);
+				printf("\ncoolExt1 after adding b:\n");
+				add_extension(coolExt1, extDefn2, 3, "b");
+				printmve(coolExt1);
+				printf("\nAdding terms...\n");
+				printf("coolExt1 4th set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[1]));
+				printf("coolExt1 5th set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[10]));
+				printf("coolExt1 after adding terms:\n");
+				printmve(coolExt1);
+				printf("\ncoolExt1 after reducing:\n");
+				reduce_MultiVarExtT(coolExt1);
+				printmve(coolExt1);
+				printf("\nRemoving two extensions again...\n");
+				remove_extension(coolExt1);
+				remove_extension(coolExt1);
+				printf("\ncoolExt1 after removing two extensions:\n");
+				printmve(coolExt1);
+				printf("\nAdding the extensions back in reverse order...");
+				add_extension(coolExt1, extDefn2, 3, "b");
+				add_extension(coolExt1, extDefn1, 4, "a");
+				printf("coolExt1 6th set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[1]));
+				printf("coolExt1 7th set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[10]));
+				printf("\ncoolExt1 after adding back extensions:\n");
+				printmve(coolExt1);
 				
 				add_extension(coolExt2, extDefn1, 4, "a");
 				add_extension(coolExt2, extDefn2, 3, "b");
 				add_extension(coolExt2, extDefn3, 3, "c");
 				
-				add_extension(extHold, extDefn1, 4, "a");
+				
+				/*add_extension(extHold, extDefn1, 4, "a");
 				add_extension(extHold, extDefn2, 3, "b");
 				add_extension(extHold, extDefn3, 3, "c");
 				
 				add_extension(coolExt3, extDefn1, 4, "a");
 				add_extension(coolExt3, extDefn2, 3, "b");
 				add_extension(coolExt3, extDefn3, 3, "c");
-				add_extension(coolExt3, extDefn4, 3, "d");
+				add_extension(coolExt3, extDefn4, 3, "d");*/
 				
-				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
-				printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
-				printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
+				printf("\ncoolExt2:\n");
+				printmve(coolExt2);
+				printf("\nCopying coolExt1 into coolExt2...\n");
+				copy_MultiVarExtT(coolExt1, coolExt2);
+				printf("coolExt1:\n");
+				printmve(coolExt1);
+				printf("\ncoolExt2:\n");
+				printmve(coolExt2);
+				printf("\n");
 				
-				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
+				goto FREESTUFF;
+				
+				printf("coolExt2 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
 				printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
 				printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
 				
@@ -4602,6 +4659,7 @@ int main(int argc, char* argv[])
 				printmve(extHold);
 				printf("\n");
 				
+				FREESTUFF:
 				coolExt1 = free_MultiVarExtT(coolExt1);
 				coolExt2 = free_MultiVarExtT(coolExt2);
 				coolExt3 = free_MultiVarExtT(coolExt3);
@@ -4714,12 +4772,15 @@ int main(int argc, char* argv[])
 				bigMod = free_BigIntT(bigMod);
 			}
 			
+			/*
 			else if (testMode == 2)
 			{
-				int voidArraySize = 3;
-				void** voidArray = malloc(voidArraySize*sizeof(void*));
-				
-				void* (*freeFunction) (void*) = free_MultiVarExtT;
+				int voidArraySize = 2;
+				GenericMatrixTP gen = new_GenericMatrixT(voidArraySize, voidArraySize);
+				set_GenericMatrixT_freeFunction(gen, free_MultiVarExtT);
+				set_GenericMatrixT_initValue(gen, 1);
+				set_GenericMatrixT_initFunction(gen, new_MultiVarExtT);
+				set_GenericMatrixT_copyFunction(gen, copy_MultiVarExtT);
 				
 				//i^2 + 1 = 0
 				BigIntTP iDefn[3] = {NA[1], NA[0], NA[1]};
@@ -4765,6 +4826,7 @@ int main(int argc, char* argv[])
 				FREE(voidArray);
 				voidArray = NULL;
 			}
+			*/
 			
 			for (int i = 0; i < nasize; i += 1)
 				NA[i] = free_BigIntT(NA[i]);
