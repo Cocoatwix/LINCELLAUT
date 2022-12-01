@@ -46,7 +46,7 @@ int GCD(int a, int b)
 }
 
 
-BigIntTP big_gcd(BigIntTP const A, BigIntTP const B)
+BigIntTP big_gcd(const BigIntTP A, const BigIntTP B)
 /** Same as GCD(), but for BigIntTs. */
 {
 	BigIntTP zero = empty_BigIntT(1);
@@ -104,7 +104,7 @@ BigIntTP big_gcd(BigIntTP const A, BigIntTP const B)
 }
 
 
-int poly_gcd(BigPolyTP const p, BigPolyTP const q, BigPolyTP gcd, BigIntTP const mod, BigPolyTP s, BigPolyTP t)
+int poly_gcd(const BigPolyTP p, const BigPolyTP q, BigPolyTP gcd, const BigIntTP mod, BigPolyTP s, BigPolyTP t)
 /** Calculates the GCD of two given polynomials, stores the
     result in the third BigPolyT given. The fourth and fifth 
 		BigPolyTs will store the polynomials s and t guaranteed by Bezout's 

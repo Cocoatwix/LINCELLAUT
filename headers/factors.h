@@ -10,7 +10,7 @@ int GCD(int, int);
 
 /** Returns a pointer to a BigIntT representing the GCD of the
     two given arguments. */
-BigIntTP big_gcd(BigIntTP const, BigIntTP const);
+BigIntTP big_gcd(const BigIntTP, const BigIntTP);
 
 /** Calculates the GCD of two given polynomials, stores the
     result in the third BigPolyT given. The fourth and fifth 
@@ -18,7 +18,7 @@ BigIntTP big_gcd(BigIntTP const, BigIntTP const);
 	identity, meaning gcd(a, b) = sa + tb. The BigIntT is the 
 	modulus to use.
 	Returns 1 on success, 0 otherwise. */
-int poly_gcd(BigPolyTP const, BigPolyTP const, BigPolyTP, BigIntTP const, BigPolyTP, BigPolyTP);
+int poly_gcd(const BigPolyTP, const BigPolyTP, BigPolyTP, const BigIntTP, BigPolyTP, BigPolyTP);
 
 /** Returns the least common multiple of the two arguments. */
 int LCM(int, int);

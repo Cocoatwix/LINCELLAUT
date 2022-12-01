@@ -4669,6 +4669,10 @@ int main(int argc, char* argv[])
 				printp(minMonicPoly);
 				printf("\n");
 				getchar();
+				
+				//We've found our minimal polynomial(s)
+				//Now to see if all other annihilating polynomials are
+				// multiples of them.
 			}
 			while (!increment_BigIntT_array(currMatElements, matSize, matSize, one, currMod));
 			

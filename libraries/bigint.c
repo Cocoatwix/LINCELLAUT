@@ -54,7 +54,7 @@ BigIntTP free_BigIntT(BigIntTP n)
 }
 
 
-BigIntTP new_BigIntT(int* const initNum, int len)
+BigIntTP new_BigIntT(const int* initNum, int len)
 /** Returns a pointer to an initialised
     BigIntT struct. Returns NULL on error. */
 {
@@ -83,7 +83,7 @@ BigIntTP empty_BigIntT(int zeros)
 }
 
 
-int is_zero(BigIntTP const a)
+int is_zero(const BigIntTP a)
 /** Returns 1 if a is zero, 0 otherwise. */
 {
 	for (int i = 0; i < a->size; i += 1)
@@ -127,7 +127,7 @@ BigIntTP** free_BigIntT_array(BigIntTP** arr, int rows, int cols)
 }
 
 
-int strtoBIT(char* const numStr, BigIntTP* theBig)
+int strtoBIT(const char* numStr, BigIntTP* theBig)
 /** Takes a numerical string and creates a BigIntT
     struct using it, storing it in theBig. 
 		
@@ -187,14 +187,14 @@ int strtoBIT(char* const numStr, BigIntTP* theBig)
 }
 
 
-int size(BigIntTP const n)
+int size(const BigIntTP n)
 /** Returns the size of the BigIntT passed. */
 {
 	return n->size;
 }
 
 
-int extract_bunch(BigIntTP const n, int b)
+int extract_bunch(const BigIntTP n, int b)
 /** Returns the integer at the given bunch b.
     Returns -1 on error. */
 {
@@ -219,7 +219,7 @@ int set_bunch(BigIntTP n, int pos, int val)
 }
 
 
-int append_BigIntT(char* dest, BigIntTP const src)
+int append_BigIntT(char* dest, const BigIntTP src)
 /** Appends a BigIntT to the given string.
     This function assumes there's enough space in the string to
 		hold the BigIntT.
@@ -239,7 +239,7 @@ int append_BigIntT(char* dest, BigIntTP const src)
 }
 
 
-void printi(BigIntTP const n)
+void printi(const BigIntTP n)
 /** Prints a BigIntT struct to the screen as a normal int would. */
 {
 	int power = 0;
@@ -266,7 +266,7 @@ void printi(BigIntTP const n)
 }
 
 
-void printi_pad(BigIntTP const n)
+void printi_pad(const BigIntTP n)
 /** Same as printi(), except zero padding is added. */
 {
 	int power = 0;
@@ -378,7 +378,7 @@ int resize_BigIntT(BigIntTP toResize, int newSize)
 }
 
 
-int copy_BigIntT(BigIntTP const setTo, BigIntTP toSet)
+int copy_BigIntT(const BigIntTP setTo, BigIntTP toSet)
 /** Copies setTo to toSet and returns 1 on completion.
     Returns 0 on error. */
 {
@@ -397,7 +397,7 @@ int copy_BigIntT(BigIntTP const setTo, BigIntTP toSet)
 }
 
 
-int compare_BigIntT(BigIntTP const AA, BigIntTP const BB)
+int compare_BigIntT(const BigIntTP AA, const BigIntTP BB)
 /** Returns negative if A < B, 0 if A == B, positive if A > B */
 {
 	BigIntTP A, B;
@@ -461,7 +461,7 @@ int compare_BigIntT(BigIntTP const AA, BigIntTP const BB)
 }
 
 
-int add_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
+int add_bunches(const BigIntTP n, int numOfBunches, BigIntTP result)
 /** Add numOfBunches bunches to n and store the result in result.
     This function assumes result has been initialised.
 		
@@ -483,7 +483,7 @@ int add_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
 }
 
 
-int subtract_bunches(BigIntTP const n, int numOfBunches, BigIntTP result)
+int subtract_bunches(const BigIntTP n, int numOfBunches, BigIntTP result)
 /** Subtracts numOfBunches bunches to n and stores the result in result.
     This function assumes result has been initialised.
 		
@@ -560,7 +560,7 @@ int divide_by_ten(BigIntTP n)
 }
 
 
-int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
+int add_BigIntT(const BigIntTP A, const BigIntTP B, BigIntTP sum)
 /** Computes A + B and stores the result in sum. This function assumes
     sum has been initialised.
 		Returns 1 on success, 0 otherwise. */
@@ -631,7 +631,7 @@ int add_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP sum)
 }
 
 
-int subtract_BigIntT(BigIntTP const subFrom, BigIntTP const toSub, BigIntTP difference)
+int subtract_BigIntT(const BigIntTP subFrom, const BigIntTP toSub, BigIntTP difference)
 /** Calculates subFrom - toSub, stores result in difference. 
     Returns 1 on success, 0 on error. 
 		
@@ -682,7 +682,7 @@ int subtract_BigIntT(BigIntTP const subFrom, BigIntTP const toSub, BigIntTP diff
 }
 
 
-int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
+int multiply_BigIntT(const BigIntTP A, const BigIntTP B, BigIntTP product)
 /** Multiples A and B, stores the product in product.
     Returns 1 on success, 0 otherwise. */
 {
@@ -769,7 +769,7 @@ int multiply_BigIntT(BigIntTP const A, BigIntTP const B, BigIntTP product)
 }
 
 
-int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP quotient)
+int divide_BigIntT(const BigIntTP toDivide, const BigIntTP divideBy, BigIntTP quotient)
 /** Divides the first BigIntT by the second, and stores the
     result in the third BigIntT. This function assumes
 		all BigIntT structs have been initialised.
@@ -898,7 +898,7 @@ int divide_BigIntT(BigIntTP const toDivide, BigIntTP const divideBy, BigIntTP qu
 }
 
 
-int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
+int mod_BigIntT(const BigIntTP toMod, const BigIntTP modulus, BigIntTP residue)
 /** Calculates toMod % modulus and stores it in residue.
     Returns 1 on success, 0 otherwise. */
 {
@@ -953,7 +953,7 @@ int mod_BigIntT(BigIntTP const toMod, BigIntTP const modulus, BigIntTP residue)
 }
 
 
-BigIntTP* divisors_of_BigIntT(BigIntTP const toFactor)
+BigIntTP* divisors_of_BigIntT(const BigIntTP toFactor)
 /** Returns an array of every possible factor of the given BigIntT.
     The first number says how many factors are contained in the array. */
 {

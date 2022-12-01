@@ -41,13 +41,13 @@ void visit_points(IntMatrixTP, int, int);
 /** Performs Floyd's Cycle Detection Algorithm on the
     given setup, returns info about the cycle. 
 		Returns NULL on error. */
-CycleInfoTP floyd(IntMatrixTP const, IntMatrixTP const, int);
+CycleInfoTP floyd(const IntMatrixTP, const IntMatrixTP, int);
 
 /** Same as floyd(), except with BigIntMatrixT structs.
     Returns 1 on success, 0 otherwise. */
-int big_floyd(BigIntMatrixTP const, 
-              BigIntMatrixTP const, 
-			  BigIntTP const,
+int big_floyd(const BigIntMatrixTP, 
+              const BigIntMatrixTP, 
+			  const BigIntTP,
 			  CycleInfoTP*);
 
 /** Creates a .iteration file containing a single iteration of

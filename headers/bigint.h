@@ -17,7 +17,7 @@ BigIntTP free_BigIntT(BigIntTP);
 /** Returns a pointer to a new BigIntT struct,
     initialised with the bunches specified in the
 		int* pointer and with int bunches. */
-BigIntTP new_BigIntT(int* const, int);
+BigIntTP new_BigIntT(const int*, int);
 
 /** Returns a pointer to a new BigIntT struct that's
     initialised with zeros. The argument specifies the
@@ -26,7 +26,7 @@ BigIntTP empty_BigIntT(int);
 
 /** Returns 1 if the given BigIntT is zero,
     0 otherwise. */
-int is_zero(BigIntTP const);
+int is_zero(const BigIntTP);
 
 /** Returns a pointer to a BigIntTP 2D array. Each
     BigIntTP will be initialised to zero.
@@ -41,14 +41,14 @@ BigIntTP** free_BigIntT_array(BigIntTP**, int, int);
     in the given BigIntTP. The BigIntTP is assumed NOT
 		to have been initialised, only declared.
 		Returns 1 on success, 0 otherwise. */
-int strtoBIT(char* const, BigIntTP*);
+int strtoBIT(const char*, BigIntTP*);
 
 /** Returns the size of the BigIntT passed. */
-int size(BigIntTP const);
+int size(const BigIntTP);
 
 /** Returns the integer stored at the given bunch in the
     given BigIntT. Returns -1 on error. */
-int extract_bunch(BigIntTP const, int);
+int extract_bunch(const BigIntTP, int);
 
 /** Sets the value of a bunch to the given number.
     Returns 1 on success, 0 otherwise. */
@@ -59,16 +59,16 @@ int set_bunch(BigIntTP, int, int);
     This function assumes there's enough space in the string to
 	hold the BigIntT.
     Returns 1 on success, 0 otherwise. */
-int append_BigIntT(char*, BigIntTP const);
+int append_BigIntT(char*, const BigIntTP);
 
 /** Prints a BigIntT struct as an integer would be printed.
     This function does not print a newline or spaces
 		around the number. */
-void printi(BigIntTP const);
+void printi(const BigIntTP);
 
 /** Same as printi, except zero padding is added 
     to the beginning of the number. */
-void printi_pad(BigIntTP const);
+void printi_pad(const BigIntTP);
 
 /** Same as printi, but outputs to a file stream. */
 void fprinti(FILE*, BigIntTP);
@@ -91,18 +91,18 @@ int resize_BigIntT(BigIntTP, int);
     This function assumes both BigIntT structs are
 	initialised.
     Returns 1 on success, 0 otherwise. */
-int copy_BigIntT(BigIntTP const, BigIntTP);
+int copy_BigIntT(const BigIntTP, BigIntTP);
 
 /** Returns negative if the first BigIntT is smaller than the
     second, 0 if they're equal, positive otherwise. This function
 		assumes both BigIntT structs are initialised. */
-int compare_BigIntT(BigIntTP const, BigIntTP const);
+int compare_BigIntT(const BigIntTP, const BigIntTP);
 
 /** Adds the first two BigIntT structs together and
     stores the result in the third BigIntT. This function
 		assumes the third BigIntT has been initialised.
 		Returns 1 on success, 0 otherwise. */
-int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+int add_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Subtracts the second BigIntT from the first BigIntT,
     stores result in the third BigIntT. Note that
@@ -111,13 +111,13 @@ int add_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 		number.
 		This function assumes all BigIntT structs are initialised.
 		Returns 1 on success, 0 otherwise. */
-int subtract_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+int subtract_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Multiples the first BigIntTP but the second, and stores the
     product in the third. This function assumes all three 
 		BigIntTP structs have been initialised.
 		Returns 1 on success, 0 otherwise. */
-int multiply_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+int multiply_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Divides the first BigIntT by the second, and stores the
     result in the third BigIntT. This function assumes
@@ -128,17 +128,17 @@ int multiply_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
 		mod_BigIntT to obtain the remainder.
 		
 		Returns 1 on success, 0 otherwise. */
-int divide_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+int divide_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Computes first BigIntT mod second BigIntT, stores
     result in third BigIntT, which assumes the third
 		BigInt has been initialised.
 		Returns 1 on success, 0 otherwise. */
-int mod_BigIntT(BigIntTP const, BigIntTP const, BigIntTP);
+int mod_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Returns an array pf all the possible factors of the given BigIntTP. 
     The first number tells you how many factors there are. */
-BigIntTP* divisors_of_BigIntT(BigIntTP const);
+BigIntTP* divisors_of_BigIntT(const BigIntTP);
 
 
 #endif //BIGINT_H

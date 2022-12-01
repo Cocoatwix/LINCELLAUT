@@ -30,7 +30,7 @@ int cols(IntMatrixTP);
 int big_cols(BigIntMatrixTP);
 
 /** What's the element at the given indices in the matrix? */
-int element(IntMatrixTP const, int, int);
+int element(const IntMatrixTP, int, int);
 BigIntTP big_element(const BigIntMatrixTP, int, int);
 
 /** Increments an array of ints by a given inc. Used for
@@ -43,7 +43,7 @@ bool increment_int_array(int**, int, int, int, int);
     incrementing through all possible matrices or vectors.
 	Returns TRUE if array rolls over, FALSE otherwise. */
 //                                array  row  col       increment         modulus
-bool increment_BigIntT_array(BigIntTP**, int, int, BigIntTP const, BigIntTP const);
+bool increment_BigIntT_array(BigIntTP**, int, int, const BigIntTP, const BigIntTP);
 
 /** Specifies the free function to use with the given
     GenericMatrixTP. Returns 1 on success, 0 otherwise. */
@@ -73,7 +73,7 @@ int clear_BigIntMatrixT(BigIntMatrixTP);
 /** Sets the values of a column vector with elements specified
     in the given int pointer. Returns 1 on success, 0
     otherwise. */
-int set_column(IntMatrixTP, int* const);
+int set_column(IntMatrixTP, const int*);
 
 /** Sets the initialisation value to use with a
     GenericMatrixT's init function.
@@ -97,48 +97,48 @@ int set_GenericMatrixT_copyFunction(GenericMatrixTP, void* (*)(void*, void*));
 	Returns 1 on success, 0 otherwise. */
 int set_matrix(IntMatrixTP, int** const);
 int set_big_matrix(BigIntMatrixTP, BigIntTP** const);
-int set_GenericMatrixT(GenericMatrixTP, const void***);
+int set_GenericMatrixT(GenericMatrixTP, void** *const);
 
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
-IntMatrixTP read_IntMatrixT(char* const);
-BigIntMatrixTP read_BigIntMatrixT(char* const);
+IntMatrixTP read_IntMatrixT(const char*);
+BigIntMatrixTP read_BigIntMatrixT(const char*);
 
 /** Copies the values of the first matrix's matrix to the second. 
     Returns 1 on success, 0 otherwise. */
-int copy_IntMatrixT(IntMatrixTP const, IntMatrixTP);
-int copy_BigIntMatrixT(BigIntMatrixTP const, BigIntMatrixTP);
+int copy_IntMatrixT(const IntMatrixTP, IntMatrixTP);
+int copy_BigIntMatrixT(const BigIntMatrixTP, BigIntMatrixTP);
 
 /** Returns 1 if the given matrix is diagonal, 0 otherwise. */
 int is_diagonal(IntMatrixTP);
 
 /** Compares two matrices to see if they're equal.
     Returns 1 if they are, 0 otherwise. */
-int compare_IntMatrixT(IntMatrixTP const, IntMatrixTP const);
-int compare_BigIntMatrixT(BigIntMatrixTP const, BigIntMatrixTP const);
+int compare_IntMatrixT(const IntMatrixTP, const IntMatrixTP);
+int compare_BigIntMatrixT(const BigIntMatrixTP, const BigIntMatrixTP);
 
 /** Compares the given column of the two matrices, returns 1 if they're 
     equal. Returns 0 otherwise. */
-int compare_BigIntMatrixT_cols(BigIntMatrixTP const M1, BigIntMatrixTP const M2, int);
+int compare_BigIntMatrixT_cols(const BigIntMatrixTP, const BigIntMatrixTP, int);
 
 /** Prints a given matrix to the console. */
-void printm(IntMatrixTP const);
-void printbm(BigIntMatrixTP const);
-void printgm(GenericMatrixTP const);
+void printm(const IntMatrixTP);
+void printbm(const BigIntMatrixTP);
+void printgm(const GenericMatrixTP);
 
-void printm_row(IntMatrixTP const);
-void printbm_row(BigIntMatrixTP const); //<0 0 0>
-void printgm_row(GenericMatrixTP const);
+void printm_row(const IntMatrixTP);
+void printbm_row(const BigIntMatrixTP); //<0 0 0>
+void printgm_row(const GenericMatrixTP);
 
 /** Same as functions above, but they print to a file stream. */
-void fprintm(FILE*, IntMatrixTP const);
-void fprintbm(FILE*, BigIntMatrixTP const);
+void fprintm(FILE*, const IntMatrixTP);
+void fprintbm(FILE*, const BigIntMatrixTP);
 
-void fprintm_row(FILE*, IntMatrixTP const);
-void fprintbm_row(FILE*, BigIntMatrixTP const); //<0 0 0>
+void fprintm_row(FILE*, const IntMatrixTP);
+void fprintbm_row(FILE*, const BigIntMatrixTP); //<0 0 0>
 
 /** Same as function above, except no zero padding is added. */
-void fprintbm_nopad(FILE*, BigIntMatrixTP const);
+void fprintbm_nopad(FILE*, const BigIntMatrixTP);
 
 /** Searches a given BigIntMatrixTP array for a matrix equivalent to the one
     passed in, then returns the refernece to it. If the given matrix isn't
@@ -147,48 +147,48 @@ void fprintbm_nopad(FILE*, BigIntMatrixTP const);
 	
 	This function assumes all the matrices in the catalogue are of the same dimensions. */
 //                                         catalogue      length  matrix to find
-BigIntMatrixTP BigIntMatrixT_catalogue_get(BigIntMatrixTP**, int*, BigIntMatrixTP const);
+BigIntMatrixTP BigIntMatrixT_catalogue_get(BigIntMatrixTP**, int*, const BigIntMatrixTP);
 
 /** Adds two matrices together, stores result in third matrix.
     Returns 1 on success, 0 otherwise. */
-int big_mat_add(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
+int big_mat_add(const BigIntMatrixTP, const BigIntMatrixTP, BigIntMatrixTP);
 
 /** Multiples two matrices together, stores result in a third matrix. 
     Returns 1 on success, 0 otherwise. */
-int mat_mul(IntMatrixTP const, IntMatrixTP const, IntMatrixTP);
-int big_mat_mul(BigIntMatrixTP const, BigIntMatrixTP const, BigIntMatrixTP);
+int mat_mul(const IntMatrixTP, const IntMatrixTP, IntMatrixTP);
+int big_mat_mul(const BigIntMatrixTP, const BigIntMatrixTP, BigIntMatrixTP);
 
 /** Calculates powers of first matrix, stores result in second
     matrix. Currently, they only work for positive powers.
 	First int is the power, second is the modulus.
 	Returns 1 on success, 0 otherwise. */
 //int powm(IntMatrixTP const, IntMatrixTP, int, int);
-int powbm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const);
+int powbm(const BigIntMatrixTP, BigIntMatrixTP, const BigIntTP, const BigIntTP);
 
 /** Applies a modulus to every element of a given matrix. 
     Returns 1 on success, 0 otherwise. */
 int modm(IntMatrixTP, int);
-int modbm(BigIntMatrixTP, BigIntTP const);
+int modbm(BigIntMatrixTP, const BigIntTP);
 
 /** Takes the first matrix, plugs it into the polynomial, evaluates it,
     then stores the result in the second matrix. The function assumes
 	all relevant matrices have been initialised. Returns 1 on success,
 	0 otherwise. */
-int eval_BigPolyT(BigPolyTP const, BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const);
+int eval_BigPolyT(const BigPolyTP, const BigIntMatrixTP, BigIntMatrixTP, const BigIntTP);
 
 /** Same as eval_BigPolyT(), but the polynomial is given in factored form. */
-int eval_factored_BigPolyT(BigPolyTP* const, BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const);
+int eval_factored_BigPolyT(const BigPolyTP*, const BigIntMatrixTP, BigIntMatrixTP, const BigIntTP);
 
 /** Returns the determinant of a given matrix. 
     Returns zero if the matrix is nonsquare. */
-int det(IntMatrixTP const);
+int det(const IntMatrixTP);
 
 /** Returns the inverse of a given matrix with given modulus, if it exists.
     Returns NULL otherwise. */
-IntMatrixTP inverse(IntMatrixTP const, int);
+IntMatrixTP inverse(const IntMatrixTP, int);
 
 /** Same as inverse(), but for BigIntMatrixTs. */
-BigIntMatrixTP big_inverse(BigIntMatrixTP const, BigIntTP const);
+BigIntMatrixTP big_inverse(const BigIntMatrixTP, const BigIntTP);
 
 /** Reduces the given IntMatrixTP to its reduced row
     echelon form. Returns 1 on success, 0 otherwise. */
@@ -198,21 +198,21 @@ int rref(IntMatrixTP, int);
     mod some modulus. Returns a BigPolyTP
 	representing the characteristic polynomial on success,
 	NULL otherwise. */
-BigPolyTP chara_poly(BigIntMatrixTP const, BigIntTP const);
+BigPolyTP chara_poly(const BigIntMatrixTP, const BigIntTP);
 
 /** Calculates a matrix's minimum polynomial mod some
     prime modulus. Returns a BigPolyTP array
 	representing the minimum polynomial on success,
 	NULL otherwise. Output for non-prime moduli is
 	undefined. */
-BigPolyTP* min_poly(BigIntMatrixTP const, BigIntTP const); 
+BigPolyTP* min_poly(const BigIntMatrixTP, const BigIntTP); 
 
 /** Stores the specified cycle converting matrix for the first one
     in the second one. This function assumes the second matrix
 	has been initialised to the zero matrix.
 	Returns 1 on success, 0 otherwise. */
 //                     A                 CCM            from              to          modulus     
-int ccm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const, BigIntTP const);
+int ccm(const BigIntMatrixTP, BigIntMatrixTP, const BigIntTP, const BigIntTP, const BigIntTP);
 
 
 
@@ -224,13 +224,13 @@ int ccm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const, Bi
 		exist. 
 		
 		This currently only works for 2x2 matrices. */
-//int* eigenvalues(IntMatrixTP const, int);
+//int* eigenvalues(const IntMatrixTP, int);
 
 /** Returns an eigenvector of the given matrix, eigenvalue, and
     modulus. It is assumed the given eigenvalue is valid for the
 		given system. 
 		
 		Currently only works for 2x2 matrices. */
-//IntMatrixTP eigenvector(IntMatrixTP const, int, int);
+//IntMatrixTP eigenvector(const IntMatrixTP, int, int);
 
 #endif //LINALG_H

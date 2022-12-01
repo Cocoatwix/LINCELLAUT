@@ -318,7 +318,7 @@ void visit_points(IntMatrixTP F, int modulus, int iterations)
 
 
 //Moderately finished
-CycleInfoTP floyd(IntMatrixTP const F, IntMatrixTP const s_0, int modulus)
+CycleInfoTP floyd(const IntMatrixTP F, const IntMatrixTP s_0, int modulus)
 /** Uses Floyd's Cycle Detection Algorithm to calculate the 
     transient length and cycle length of some given set up.
 		s_0 is the starting vector. F is the update rule.
@@ -469,9 +469,9 @@ CycleInfoTP floyd(IntMatrixTP const F, IntMatrixTP const s_0, int modulus)
 }
 
 
-int big_floyd(BigIntMatrixTP const F, 
-              BigIntMatrixTP const s_0, 
-							BigIntTP const modulus,
+int big_floyd(const BigIntMatrixTP F, 
+              const BigIntMatrixTP s_0, 
+							const BigIntTP modulus,
 							CycleInfoTP* info)
 /** Same as floyd(), but for BigIntMatrixT structs.
 		
