@@ -1264,6 +1264,8 @@ int eval_BigPolyT(BigPolyTP const p, BigIntMatrixTP const A, BigIntMatrixTP resu
 	powMat  = new_BigIntMatrixT(big_rows(A), big_rows(A));
 	tempMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
 	
+	copy_BigIntMatrixT(tempMat, result); //Clear result before doing anything
+	
 	powCount  = empty_BigIntT(1);
 	multCount = new_BigIntT(oneArr, 1);
 	one       = new_BigIntT(oneArr, 1);
@@ -1280,6 +1282,7 @@ int eval_BigPolyT(BigPolyTP const p, BigIntMatrixTP const A, BigIntMatrixTP resu
 			powbm(A, powMat, powCount, mod);
 		else
 			copy_BigIntMatrixT(I, powMat);
+	
 		
 		while (compare_BigIntT(multCount, polyCoeffs[i]) <= 0)
 		{

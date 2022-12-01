@@ -196,8 +196,8 @@ int rref(IntMatrixTP, int);
 
 /** Calculates a matrix's characteristic polynomial
     mod some modulus. Returns a BigPolyTP
-		representing the characteristic polynomial on success,
-		NULL otherwise. */
+	representing the characteristic polynomial on success,
+	NULL otherwise. */
 BigPolyTP chara_poly(BigIntMatrixTP const, BigIntTP const);
 
 /** Calculates a matrix's minimum polynomial mod some
@@ -209,8 +209,8 @@ BigPolyTP* min_poly(BigIntMatrixTP const, BigIntTP const);
 
 /** Stores the specified cycle converting matrix for the first one
     in the second one. This function assumes the second matrix
-		has been initialised to the zero matrix.
-		Returns 1 on success, 0 otherwise. */
+	has been initialised to the zero matrix.
+	Returns 1 on success, 0 otherwise. */
 //                     A                 CCM            from              to          modulus     
 int ccm(BigIntMatrixTP const, BigIntMatrixTP, BigIntTP const, BigIntTP const, BigIntTP const);
 

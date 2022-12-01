@@ -2,7 +2,49 @@ The MultiVarExtT struct is used to represent a polynomial expression containing 
 
 Internally, this struct holds a BigIntT array of varying dimension (depending on how many field extensions are present) containing the coefficients on all possible terms, as well as a BigIntT prime modulus.
 
+The varying dimension BigIntT array is facilitated by the BigIntDirectorT struct, which contains either a pointer to an array of other BigIntDirectorTs, or a pointer to a BigIntT. In this way, BigIntDirectorTs act as a sort of tree structure, with the leaf nodes representing the coefficients on its corresponding term.
 
-The varying dimension BigIntT array is facilitated by the BigIntDirectorT struct, which contains either a pointer to an array of other BigIntDirectorTs, or a pointer to a BigIntT. In this way, multidimensional arrays can be created with varying dimension.
+The key feature of MultiVarExtTs is being able to reduce the expression it's representing based on the definitions of the field extensions given.
 
-(will extend this later)
+The following describes the various members of the struct.
+
+
+coeffs - This is a BigIntDirectorT pointer pointing to the tree structure which contains all the MultiVarExtT's coefficients. Layers of this tree are added each time add_extension() is used, up until the maximum size of the MultiVarExtT has been reached. The last call to add_extension() places BigIntTs as the leaf nodes of the tree, each one representing a coefficient in the MultiVarExtT's expression. Because of this, MultiVarExtTs can't store an actual expression until all its field extensions have been defined.
+
+Once all extensions have been defined, properly traversing the tree will allow the user to extract the coefficients they want. For instance, if our given MultiVarExtT contains two extensions, "a" and "b", the coefficient attached to the (a)(b^2) term in our MultiVarExtT can be accessed with:
+
+->coeffs->next[1]->coeffs[2];
+
+Each next layer of the tree is traversed with ->next, until the leaf nodes are reached, at which point ->coeffs is used. This difference is to distinguish between the two different types used; ->next returns a BigIntDirectorT pointer, while ->coeffs (at the last layer) returns a BigIntT pointer.
+
+
+extensions - This is a 2D array of BigIntTs containing the definitions for the MultiVarExtT's field extensions. If our MultiVarExtT has two field extensions "a" and "b" defined as
+
+a^2 + 1 = 0
+b^2 + 2b + 3 = 0
+
+then extensions will look something like
+
+[[1, 0, 1], [3, 2, 1]]
+
+where each array of BigIntTs represents the coefficients in the defining polynomial of its respective extension in order from constant to highest-power term.
+
+Note that, for each field extension's definition, the MultiVarExtT can hold one higher term than is in the definition. In other words, if "a" is defined using a quadratic expression (as above), then the MultiVarExtT can hold terms that contain as high as cubic (a^3) terms containing "a". If "a" had been defined using a quintic (a^5), then the MultiVarExtT could hold terms containing up to a sixth degree (a^6) "a" term. And so on.
+
+
+extensionSizes - This is an integer array of size numOfExtensions. Each integer represents how many BigIntTs are in its corresponding extension's definition within extensions. This is kept solely for indexing purposes.
+
+
+mod - A BigIntT representing the modulus used for the MultiVarExtT.
+
+
+numOfExtensions - The number of extensions the given MultiVarExtT can hold. An integer.
+
+
+numOfExtensionsSet - The number of extensions currently defined for the MultiVarExtT. This number must equal numOfExtensions before any coefficients can be set in coeffs. An integer.
+
+
+extNames - A list of strings representing the names of the extensions. These are used whenever a MultiVarExtT is printed using printmve().
+
+
+Refer to algebra.h for a list of interfacing functions for this structure.

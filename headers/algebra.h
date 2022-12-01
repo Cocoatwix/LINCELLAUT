@@ -101,7 +101,7 @@ BigIntTP* extract_coefficients(const BigPolyTP);
 
 /** Copies a polynomial into another. This function assumes
     all arguments have been properly initialised.
-		Returns 1 on success, 0 otherwise. */
+	Returns 1 on success, 0 otherwise. */
 int copy_BigPolyT(const BigPolyTP, BigPolyTP);
 
 /** Copies a MultiVarExtT into another MultiVarExtT.
