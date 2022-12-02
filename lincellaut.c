@@ -4470,6 +4470,8 @@ int main(int argc, char* argv[])
 		{
 			int matSize;
 			int maxPower;
+			int currPower;
+			int polySize;
 			BigIntTP bigMod = NULL;
 			BigIntTP currMod = NULL;
 			BigIntTP** currMatElements = NULL;
@@ -4483,13 +4485,19 @@ int main(int argc, char* argv[])
 			BigIntTP* annilPolyCoeffs = NULL;
 			BigPolyTP annilPoly       = NULL;
 			
+			BigPolyTP remainderPoly = NULL;
+			BigPolyTP zeroPoly      = NULL;
+			
 			int oneArr[1] = {1};
 			BigIntTP one;
 			BigIntTP temp;
+			BigIntTP coeffCompare;
 			
 			BigIntMatrixTP zeroMat = NULL;
 			BigIntMatrixTP tempMat = NULL;
 			
+			char* outputFileName = NULL;
+			FILE* outputFile = NULL;
 			
 			maxPower = (int)strtol(argv[2], &tempStr, 10);
 			if (tempStr[0] != '\0')
@@ -4507,9 +4515,17 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
-			if (argc > 4)
+			polySize = (int)strtol(argv[4], &tempStr, 10);
+			if (tempStr[0] != '\0')
 			{
-				SET_BIG_NUM(argv[4], bigMod, "Unable to read modulus from command line.");
+				fprintf(stderr, "Unable to read polynomial size from command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (argc > 5)
+			{
+				SET_BIG_NUM(argv[5], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -4517,13 +4533,23 @@ int main(int argc, char* argv[])
 			}
 			
 			//Check to see if the user wants to resume computation
-			if ((argc > 5) && (! strcmp(argv[5], "TRUE")))
+			if ((argc > 6) && (! strcmp(argv[6], "TRUE")))
 			{
 				currMat = read_BigIntMatrixT(resumefilepath);
 				if (currMat == NULL)
 				{
 					fprintf(stderr, "Unable to read resume matrix from %s.\n", resumefilepath);
 					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+				
+				if ((big_rows(currMat) != big_cols(currMat)) || (big_rows(currMat) != matSize))
+				{
+					fprintf(stderr, "Resume matrix given isn't the correct dimensions specified.\n");
+					FREE_VARIABLES;
+					currMat = free_BigIntMatrixT(currMat);
+					bigMod = free_BigIntT(bigMod);
+					
 					return EXIT_FAILURE;
 				}
 				
@@ -4537,7 +4563,6 @@ int main(int argc, char* argv[])
 						copy_BigIntT(big_element(currMat, i, j), currMatElements[i][j]);
 					}
 				}
-				
 			}
 			
 			else
@@ -4553,15 +4578,41 @@ int main(int argc, char* argv[])
 				}
 			}
 			
+			//If the user wants a file output
+			if ((argc > 7) && (!strcmp(argv[7], "TRUE")))
+			{
+				printf(":)\n");
+				outputFileName = malloc(MAXSTRLEN*sizeof(char));
+				outputFileName[0] = '\0';
+				
+				//Let's hope there's enough space in the string for all this!
+				strcat(outputFileName, "oddminpolysearch ");
+				strcat(outputFileName, argv[2]);
+				strcat(outputFileName, " ");
+				strcat(outputFileName, argv[3]);
+				strcat(outputFileName, " ");
+				strcat(outputFileName, argv[4]);
+				strcat(outputFileName, " ");
+				append_BigIntT(outputFileName, bigMod);
+				strcat(outputFileName, ".txt");	
+				
+				outputFile = fopen(outputFileName, "w");
+				if (outputFile == NULL)
+					fprintf(stderr, "Unable to create file %s. COntinuing without saving...\n", outputFileName);
+				
+			}
+			
 			one  = new_BigIntT(oneArr, 1);
 			temp = empty_BigIntT(1);
+			
+			zeroPoly = constant_BigPolyT(temp);
 			
 			currMod = empty_BigIntT(1);
 			copy_BigIntT(bigMod, currMod);
 			
-			minPolyCoeffs   = malloc((matSize+1)*sizeof(BigIntTP));
-			annilPolyCoeffs = malloc((matSize+1)*sizeof(BigIntTP));
-			for (int i = 0; i < matSize+1; i += 1)
+			minPolyCoeffs   = malloc(polySize*sizeof(BigIntTP));
+			annilPolyCoeffs = malloc(polySize*sizeof(BigIntTP));
+			for (int i = 0; i < polySize; i += 1)
 			{
 				minPolyCoeffs[i]   = empty_BigIntT(1);
 				annilPolyCoeffs[i] = empty_BigIntT(1);
@@ -4575,119 +4626,245 @@ int main(int argc, char* argv[])
 			zeroMat = new_BigIntMatrixT(matSize, matSize);
 			
 			//Loops over all matrices under current modulus
-			do
+			for (currPower = 1; currPower <= maxPower; currPower += 1)
 			{
-				/*
-				printf("[");
-				for (int i = 0; i < matSize; i += 1)
+				if (outputFile != NULL)
 				{
-					printf("[");
-					for (int j = 0; j < matSize; j += 1)
+					fprintf(outputFile, "~~Mod ");
+					fprinti(outputFile, currMod);
+					fprintf(outputFile, "~~\n");
+					if (fclose(outputFile) == EOF)
 					{
-						printi(currMatElements[i][j]);
-						(j == matSize-1) ? printf("]") : printf(", ");
+						fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+						outputFile = NULL;
 					}
-					(i == matSize-1) ? printf("]\n") : printf("\n ");
-				}*/
-				
-				set_big_matrix(currMat, currMatElements);
-				resize_BigPolyT(minPoly, matSize+1);
-				resize_BigPolyT(minMonicPoly, matSize+1);
-				
-				//Find minimal polynomial
-				
-				for (int i = 0; i < matSize+1; i += 1)
-				{
-					clear_BigIntT(minPolyCoeffs[i]);
-					clear_BigIntT(annilPolyCoeffs[i]);
+					else
+					{
+						outputFile = fopen(outputFileName, "a");
+						if (outputFile == NULL)
+							fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+					}
 				}
 				
-				foundMin   = FALSE;
-				foundMonic = FALSE;
-				while ((!foundMin) || (!foundMonic))
+				do
 				{
-					for (int i = 0; i < matSize+1; i += 1)
+					set_big_matrix(currMat, currMatElements);
+					resize_BigPolyT(minPoly, polySize);
+					resize_BigPolyT(minMonicPoly, polySize);
+					
+					//Find minimal polynomial
+					
+					for (int i = 0; i < polySize; i += 1)
 					{
-						add_BigIntT(minPolyCoeffs[i], one, temp);
-						if (compare_BigIntT(temp, currMod) == 0)
-							clear_BigIntT(minPolyCoeffs[i]);
-						else
-						{
-							copy_BigIntT(temp, minPolyCoeffs[i]);
-							break;
-						}
+						clear_BigIntT(minPolyCoeffs[i]);
+						clear_BigIntT(annilPolyCoeffs[i]);
 					}
 					
-					if (!foundMin)
+					foundMin   = FALSE;
+					foundMonic = FALSE;
+					while ((!foundMin) || (!foundMonic))
 					{
-						set_BigPolyT(minPoly, minPolyCoeffs);
-						set_BigPolyT(minMonicPoly, minPolyCoeffs);
-						eval_BigPolyT(minPoly, currMat, tempMat, currMod);
-					}
-					else if (!foundMonic)
-					{
-						set_BigPolyT(minMonicPoly, minPolyCoeffs);
-						eval_BigPolyT(minMonicPoly, currMat, tempMat, currMod);
-					}
-					
-					//If we've found our minimum polynomial for currMat
-					if (compare_BigIntMatrixT(tempMat, zeroMat))
-					{
-						if (!foundMin)
+						for (int i = 0; i < polySize; i += 1)
 						{
-							reduce_BigPolyT(minPoly);
-							foundMin = TRUE;
+							add_BigIntT(minPolyCoeffs[i], one, temp);
+							if (compare_BigIntT(temp, currMod) == 0)
+								clear_BigIntT(minPolyCoeffs[i]);
+							else
+							{
+								copy_BigIntT(temp, minPolyCoeffs[i]);
+								break;
+							}
 						}
 						
-						//Check to see if polynomial is monic
-						if (!foundMonic)
+						if (!foundMin)
 						{
-							for (int i = matSize; i >= 0; i -= 1)
+							set_BigPolyT(minPoly, minPolyCoeffs);
+							set_BigPolyT(minMonicPoly, minPolyCoeffs);
+							eval_BigPolyT(minPoly, currMat, tempMat, currMod);
+						}
+						else if (!foundMonic)
+						{
+							set_BigPolyT(minMonicPoly, minPolyCoeffs);
+							eval_BigPolyT(minMonicPoly, currMat, tempMat, currMod);
+						}
+						
+						//If we've found our minimum polynomial for currMat
+						if (compare_BigIntMatrixT(tempMat, zeroMat))
+						{
+							if (!foundMin)
 							{
-								if (!is_zero(minPolyCoeffs[i]))
+								reduce_BigPolyT(minPoly);
+								foundMin = TRUE;
+							}
+							
+							//Check to see if polynomial is monic
+							if (!foundMonic)
+							{
+								for (int i = polySize-1; i >= 0; i -= 1)
 								{
-									if (compare_BigIntT(one, minPolyCoeffs[i]) == 0)
+									if (!is_zero(minPolyCoeffs[i]))
 									{
-										reduce_BigPolyT(minMonicPoly);
-										foundMonic = TRUE;
+										if (compare_BigIntT(one, minPolyCoeffs[i]) == 0)
+										{
+											reduce_BigPolyT(minMonicPoly);
+											foundMonic = TRUE;
+										}
+										
+										break;
 									}
-									
-									break;
 								}
 							}
 						}
 					}
+					
+					//For checking annihilating polynomials, we'll only check
+					// monic polynomials of size polySize
+					for (int c = 0; c < polySize-1; c += 1)
+						copy_BigIntT(currMod, annilPolyCoeffs[c]);
+					
+					//We've found our minimal polynomial(s)
+					//Now to see if all other annihilating polynomials are
+					// multiples of them.
+					
+					//foundMin and foundMonic are now gonna be used to keep track of
+					// whether we've found a polynomial that's annihilating
+					foundMin = FALSE;
+					foundMonic = FALSE;
+					
+					remainderPoly = empty_BigPolyT();
+					coeffCompare = empty_BigIntT(1);
+					
+					//First, we should check whether our first monic polynomial divides the first annihilating polynomial
+					copy_BigPolyT(minMonicPoly, annilPoly);
+					while ((!foundMin) || (!foundMonic))
+					{
+						//Check to see if annilPoly is an annihilating polynomial
+						eval_BigPolyT(annilPoly, currMat, tempMat, currMod);
+						if (compare_BigIntMatrixT(tempMat, zeroMat))
+						{
+							if (!foundMin)
+							{
+								//Check if annilPoly is a multiple of minPoly
+								divide_BigPolyT(annilPoly, minPoly, NULL, remainderPoly, currMod);
+								if (compare_BigPolyT(remainderPoly, zeroPoly) != 0)
+									foundMin = TRUE;
+							}
+							
+							if (!foundMonic)
+							{
+								//Check if annilPoly is a multiple of minMonicPoly
+								divide_BigPolyT(annilPoly, minMonicPoly, NULL, remainderPoly, currMod);
+								if (compare_BigPolyT(remainderPoly, zeroPoly) != 0)
+									foundMonic = TRUE;
+							}
+							
+							if ((foundMin) && (foundMonic))
+							{
+								printf("\ncurrMat:\n");
+								printbm(currMat);
+								printf("Minimal poly: ");
+								printp(minPoly);
+								printf("\nMonic poly: ");
+								printp(minMonicPoly);
+								printf("\n");
+								printp(annilPoly);
+								printf(" is not a multiple of ");
+								printp(minPoly);
+								printf("\n");
+								printp(annilPoly);
+								printf(" is not a multiple of ");
+								printp(minMonicPoly);
+								printf("\n");
+								
+								if (outputFile != NULL)
+								{
+									fprintbm(outputFile, currMat);
+									fprintf(outputFile, "Minimal poly: ");
+									fprintp(outputFile, minPoly);
+									fprintf(outputFile, "\nMonic poly: ");
+									fprintp(outputFile, minMonicPoly);
+									fprintf(outputFile, "\n");
+									fprintp(outputFile, minPoly);
+									fprintf(outputFile, " !| ");
+									fprintp(outputFile, annilPoly);
+									fprintf(outputFile, "\n");
+									fprintp(outputFile, minMonicPoly);
+									fprintf(outputFile, " !| ");
+									fprintp(outputFile, annilPoly);
+									fprintf(outputFile, "\n\n");
+									
+									if (fclose(outputFile) == EOF)
+									{
+										fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+										outputFile = NULL;
+									}
+									else
+									{
+										outputFile = fopen(outputFileName, "a");
+										if (outputFile == NULL)
+											fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+									}
+								}
+							}
+						}
+						
+						//Increment annilPolyCoeffs
+						for (int i = 0; i < polySize; i += 1)
+						{
+							add_BigIntT(annilPolyCoeffs[i], one, temp);
+							if (i != polySize-1)
+								copy_BigIntT(currMod, coeffCompare);
+							else
+								add_BigIntT(one, one, coeffCompare);
+							
+							if (compare_BigIntT(temp, coeffCompare) >= 0)
+							{
+								clear_BigIntT(annilPolyCoeffs[i]);
+								if (i == polySize-1)
+								{
+									foundMin = TRUE;
+									foundMonic = TRUE;
+								}
+							}
+							else
+							{
+								copy_BigIntT(temp, annilPolyCoeffs[i]);
+								break;
+							}
+						}
+						
+						//Geez, I love spending CPU cycles on this :)
+						resize_BigPolyT(annilPoly, polySize);
+						set_BigPolyT(annilPoly, annilPolyCoeffs);
+						reduce_BigPolyT(annilPoly);
+					}
 				}
+				while (!increment_BigIntT_array(currMatElements, matSize, matSize, one, currMod));
 				
-				printf("currMat:\n");
-				printbm(currMat);
-				printf("\nMod: ");
-				printi(currMod);
-				printf("\nFound minimal poly: ");
-				printp(minPoly);
-				printf("\nFound monic poly: ");
-				printp(minMonicPoly);
-				printf("\n");
-				getchar();
-				
-				//We've found our minimal polynomial(s)
-				//Now to see if all other annihilating polynomials are
-				// multiples of them.
+				//Get next power of the modulus
+				multiply_BigIntT(currMod, bigMod, temp);
+				copy_BigIntT(temp, currMod);
 			}
-			while (!increment_BigIntT_array(currMatElements, matSize, matSize, one, currMod));
+			
+			if (outputFile != NULL)
+			{
+				if (fclose(outputFile) == EOF)
+					fprintf(stderr, "Output file may not have saved correctly.\n");
+			}
 			
 			bigMod  = free_BigIntT(bigMod);
 			currMatElements = free_BigIntT_array(currMatElements, matSize, matSize);
 			currMat = free_BigIntMatrixT(currMat);
 			
-			one     = free_BigIntT(one);
-			temp    = free_BigIntT(temp);
-			currMod = free_BigIntT(currMod);
+			one          = free_BigIntT(one);
+			temp         = free_BigIntT(temp);
+			currMod      = free_BigIntT(currMod);
+			coeffCompare = free_BigIntT(coeffCompare);
 			
 			tempMat = free_BigIntMatrixT(tempMat);
 			zeroMat = free_BigIntMatrixT(zeroMat);
 			
-			for (int i = 0; i < matSize+1; i += 1)
+			for (int i = 0; i < polySize; i += 1)
 			{
 				minPolyCoeffs[i]   = free_BigIntT(minPolyCoeffs[i]);
 				annilPolyCoeffs[i] = free_BigIntT(annilPolyCoeffs[i]);
@@ -4698,6 +4875,14 @@ int main(int argc, char* argv[])
 			minPoly      = free_BigPolyT(minPoly);
 			minMonicPoly = free_BigPolyT(minMonicPoly);
 			annilPoly    = free_BigPolyT(annilPoly);
+			
+			remainderPoly = free_BigPolyT(remainderPoly);
+			zeroPoly      = free_BigPolyT(zeroPoly);
+			
+			if (outputFileName != NULL)
+			{
+				FREE(outputFileName);
+			}
 		}
 		
 		
@@ -5101,7 +5286,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "oddminpolsearch " ANSI_COLOR_CYAN "maxPower size [modulus] [resume]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "oddminpolsearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");
