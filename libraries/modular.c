@@ -28,7 +28,7 @@ int num_inverse(int a, int modulus)
 }
 
 
-void big_num_inverse(BigIntTP const findInverse, BigIntTP const modulus, BigIntTP result)
+void big_num_inverse(const BigIntTP findInverse, const BigIntTP modulus, BigIntTP result)
 /** Same as num_inverse, but for BigIntTs. Stores result in result (must be initialised).
     Stores 0 on error or if inverse doesn't exist. */
 {

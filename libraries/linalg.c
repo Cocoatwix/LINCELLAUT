@@ -54,7 +54,8 @@ typedef struct genericmatrix
 	
 	void* (*freeFunction)(void*);
 	void* (*initFunction)(int);
-	void* (*copyFunction)(const void*, void*);
+	int   (*copyFunction)(const void*, void*);
+	void  (*printFunction)(const void*); 
 } GenericMatrixT, *GenericMatrixTP;
 
 
@@ -330,6 +331,7 @@ GenericMatrixTP free_GenericMatrixT(GenericMatrixTP a)
 		a->freeFunction = NULL;
 		a->initFunction = NULL;
 		a->copyFunction = NULL;
+		a->printFunction = NULL;
 	}
 	return NULL;
 }
@@ -393,13 +395,14 @@ GenericMatrixTP new_GenericMatrixT(int r, int c)
 	
 	a->matrix = malloc(r*sizeof(void**));
 	for (int i = 0; i < r; i += 1)
-		a->matrix[i] = malloc(c*sizeof(void*));
+		a->matrix[i] = calloc(c, sizeof(void*));
 	
 	a->initValue = 0;
 	
 	a->freeFunction = NULL;
 	a->initFunction = NULL;
 	a->copyFunction = NULL;
+	a->printFunction = NULL;
 	
 	return a;
 }
@@ -488,12 +491,33 @@ int set_GenericMatrixT_initValue(GenericMatrixTP a, int v)
 }
 
 
-int set_GenericMatrixT_copyFunction(GenericMatrixTP a, void* (*f)(const void*, void*))
+int set_GenericMatrixT_copyFunction(GenericMatrixTP a, int (*f)(const void*, void*))
 /** Sets the copying function for a GenericMatrixT
     (what it uses to copy elements to elements of its matrix).
 		Returns 1 on success, 0 otherwise. */
 {
 	a->copyFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_printFunction(GenericMatrixTP a, void (*f)(const void*))
+/** Sets the function a will use to print elements of its matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	a->printFunction = f;
+	return 1;
+}
+
+
+int init_GenericMatrixT(GenericMatrixTP a)
+/** Uses the previously supplied init function to initialise
+    the values of the matrix. Returns 1 on success, 0 otherwise. */
+{
+	for (int i = 0; i < a->m; i += 1)
+		for (int j = 0; j < a->n; j += 1)
+			a->matrix[i][j] = a->initFunction(a->initValue);
+
 	return 1;
 }
 
@@ -1026,7 +1050,15 @@ void fprintbm_nopad(FILE* file, const BigIntMatrixTP M)
 void printgm(const GenericMatrixTP a)
 /** Prints a generic matrix to stdout. */
 {
-	printf("Not implemented yet.\n");
+	for (int i = 0; i < a->m; i += 1)
+	{
+		for (int j = 0; j < a->n; j += 1)
+		{
+			a->printFunction(a->matrix[i][j]);
+			(j == a->n-1) ? printf("\n") : printf(", ");
+		}
+	}
+	printf("\n");
 }
 
 

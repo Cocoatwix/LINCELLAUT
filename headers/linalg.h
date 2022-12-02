@@ -83,12 +83,20 @@ int set_GenericMatrixT_initValue(GenericMatrixTP, int);
 /** Sets the function a GenericMatrixT uses to initialise
     elements of its matrix. 
 	Returns 1 on success, 0 otherwise. */
-int set_GenericMatrixT_initFunction(GenericMatrixTP, void* (*)());
+int set_GenericMatrixT_initFunction(GenericMatrixTP, void* (*)(int));
 
 /** Sets the function a GenericMatrixT uses to copy
     elements of its matrix to other elements. 
 	Returns 1 on success, 0 otherwise. */
-int set_GenericMatrixT_copyFunction(GenericMatrixTP, void* (*)(void*, void*));
+int set_GenericMatrixT_copyFunction(GenericMatrixTP, int (*)(const void*, void*));
+
+/** Sets the print function the GenericMatrixT will use to print out
+    elements of its matrix. Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_printFunction(GenericMatrixTP, void (*)(const void*));
+
+/** Uses the supplied initFunction to initialise the values in the
+    matrix. Returns 1 on success, 0 otherwise. */
+int init_GenericMatrixT(GenericMatrixTP);
 
 /** Sets the values of a matrix to the
     values supplied in the 2D array. 

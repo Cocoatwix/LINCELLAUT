@@ -339,7 +339,7 @@ int resize_BigPolyT(BigPolyTP p, int newSize)
 }
 
 
-MultiVarExtTP new_MultiVarExtT(int size)
+void* new_MultiVarExtT(int size)
 /** Allocates space for a new MultiVarExtT, returns a
     pointer to the object. Returns NULL on error. */
 {
@@ -789,32 +789,37 @@ int copy_BigPolyT(const BigPolyTP toCopy, BigPolyTP copyTo)
 }
 
 
-int copy_MultiVarExtT(const MultiVarExtTP toCopy, MultiVarExtTP copyTo)
+int copy_MultiVarExtT(const void* toCopy, void* copyTo)
 /** Copies toCopy into copyTo. The MultiVarExtTs must have the
     same number of extensions for this to work. The function
 		assumes copyTo has been initalised. 
 		Returns 1 on success, 0 otherwise. */
 {
+	//Yes, yes, I should have created variables of the correct type
+	// and casted the pointers to them instead of manually casting each
+	// instance of toCopy and copyTo.
+	// I realised after the fact and am too lazy to undo everything
+	
 	bool moreToSet = TRUE;
 	int temp;
 	int extensionIndexToRemove = -1;
-	int currLoc[toCopy->numOfExtensionsSet];
+	int currLoc[((MultiVarExtTP)toCopy)->numOfExtensionsSet];
 	BigIntDirectorTP ref1;
 	BigIntDirectorTP ref2;
 	
-	if (toCopy->numOfExtensions != copyTo->numOfExtensions)
+	if (((MultiVarExtTP)toCopy)->numOfExtensions != ((MultiVarExtTP)copyTo)->numOfExtensions)
 		return 0;
 	
 	//Iterate through all extensions to see how many are the
 	// same between them
-	for (int ext = 0; ext < copyTo->numOfExtensionsSet; ext += 1)
+	for (int ext = 0; ext < ((MultiVarExtTP)copyTo)->numOfExtensionsSet; ext += 1)
 	{
 		//If the two extensions are comparable
-		if (toCopy->extensionSizes[ext] == copyTo->extensionSizes[ext])
+		if (((MultiVarExtTP)toCopy)->extensionSizes[ext] == ((MultiVarExtTP)copyTo)->extensionSizes[ext])
 		{
-			for (int num = 0; num < copyTo->extensionSizes[ext]; num += 1)
+			for (int num = 0; num < ((MultiVarExtTP)copyTo)->extensionSizes[ext]; num += 1)
 			{
-				if (compare_BigIntT(toCopy->extensions[ext][num], copyTo->extensions[ext][num]) != 0)
+				if (compare_BigIntT(((MultiVarExtTP)toCopy)->extensions[ext][num], ((MultiVarExtTP)copyTo)->extensions[ext][num]) != 0)
 				{
 					extensionIndexToRemove = ext;
 					break;
@@ -834,39 +839,44 @@ int copy_MultiVarExtT(const MultiVarExtTP toCopy, MultiVarExtTP copyTo)
 	}
 	
 	//If we need to uproot some extension definitions
-	temp = copyTo->numOfExtensionsSet;
+	temp = ((MultiVarExtTP)copyTo)->numOfExtensionsSet;
 	if (extensionIndexToRemove != -1)
 		for (int i = extensionIndexToRemove; i < temp; i += 1)
-			remove_extension(copyTo);
+			remove_extension((MultiVarExtTP)copyTo);
 		
 	//Now, copy extension definitions from toCopy to copyTo
-	for (int i = copyTo->numOfExtensionsSet; i < toCopy->numOfExtensionsSet; i += 1)
-		add_extension(copyTo, toCopy->extensions[i], toCopy->extensionSizes[i], toCopy->extNames[i]);
+	for (int i = ((MultiVarExtTP)copyTo)->numOfExtensionsSet; i < ((MultiVarExtTP)toCopy)->numOfExtensionsSet; i += 1)
+	{
+		add_extension(((MultiVarExtTP)copyTo), 
+	                ((MultiVarExtTP)toCopy)->extensions[i], 
+									((MultiVarExtTP)toCopy)->extensionSizes[i], 
+									((MultiVarExtTP)toCopy)->extNames[i]);
+	}
 	
 	//Now, if toCopy is fully set, copy the terms as well
-	if (toCopy->numOfExtensions == toCopy->numOfExtensionsSet)
+	if (((MultiVarExtTP)toCopy)->numOfExtensions == ((MultiVarExtTP)toCopy)->numOfExtensionsSet)
 	{
-		for (int i = 0; i < toCopy->numOfExtensionsSet; i += 1)
+		for (int i = 0; i < ((MultiVarExtTP)toCopy)->numOfExtensionsSet; i += 1)
 			currLoc[i] = 0;
 		
 		while (moreToSet)
 		{
-			ref1 = toCopy->coeffs;
-			ref2 = copyTo->coeffs;
-			for (int i = 0; i < toCopy->numOfExtensionsSet-1; i += 1)
+			ref1 = ((MultiVarExtTP)toCopy)->coeffs;
+			ref2 = ((MultiVarExtTP)copyTo)->coeffs;
+			for (int i = 0; i < ((MultiVarExtTP)toCopy)->numOfExtensionsSet-1; i += 1)
 			{
 				ref1 = ref1->next[currLoc[i]];
 				ref2 = ref2->next[currLoc[i]];
 			}
 			
-			copy_BigIntT(ref1->coeffs[currLoc[toCopy->numOfExtensionsSet-1]],
-			             ref2->coeffs[currLoc[toCopy->numOfExtensionsSet-1]]);
+			copy_BigIntT(ref1->coeffs[currLoc[((MultiVarExtTP)toCopy)->numOfExtensionsSet-1]],
+			             ref2->coeffs[currLoc[((MultiVarExtTP)toCopy)->numOfExtensionsSet-1]]);
 									 
 			moreToSet = FALSE;
-			for (int i = 0; i < toCopy->numOfExtensionsSet; i += 1)
+			for (int i = 0; i < ((MultiVarExtTP)toCopy)->numOfExtensionsSet; i += 1)
 			{
 				currLoc[i] += 1;
-				if (currLoc[i] >= toCopy->extensionSizes[i])
+				if (currLoc[i] >= ((MultiVarExtTP)toCopy)->extensionSizes[i])
 					currLoc[i] = 0;
 				else
 				{
@@ -879,7 +889,7 @@ int copy_MultiVarExtT(const MultiVarExtTP toCopy, MultiVarExtTP copyTo)
 	
 	//toCopy should now be fully copied into copyTo
 	//Now, just copy the modulus
-	copy_BigIntT(toCopy->mod, copyTo->mod);
+	copy_BigIntT(((MultiVarExtTP)toCopy)->mod, ((MultiVarExtTP)copyTo)->mod);
 	
 	return 1;
 }
@@ -1151,6 +1161,71 @@ void printmve(const MultiVarExtTP ext)
 		
 		printf(" = 0\n");
 	}
+	
+	if (ext->numOfExtensionsSet == ext->numOfExtensions) //If we can actually print the expression
+	{
+		for (int i = 0; i < ext->numOfExtensions; i += 1)
+			coeffPos[i] = 0;
+		
+		printPlus = FALSE;
+		
+		//while we still have coefficients to iterate through
+		while (coeffPos[ext->numOfExtensions-1] < ext->extensionSizes[ext->numOfExtensions-1])
+		{
+			//Get the next coefficient to print
+			ref = ext->coeffs;
+			for (int i = 0; i < ext->numOfExtensions-1; i += 1)
+			{
+				ref = ref->next[coeffPos[i]];
+			}
+			
+			intRef = ref->coeffs[coeffPos[ext->numOfExtensions-1]];
+			
+			if (! is_zero(intRef))
+			{
+				if (printPlus)
+					printf(" + ");
+				
+				printi(intRef);
+				printPlus = TRUE;
+				
+				//Print appropriate extension names
+				for (int i = 0; i < ext->numOfExtensions; i += 1)
+				{
+					if (coeffPos[i] == 1)
+						printf("(%s)", ext->extNames[i]);
+					
+					else if (coeffPos[i] > 1)
+						printf("(%s)^%d", ext->extNames[i], coeffPos[i]);
+				}
+			}
+			
+			//Increment coeffPos to next coefficient
+			for (int i = 0; i < ext->numOfExtensions; i += 1)
+			{
+				coeffPos[i] += 1;
+				if ((coeffPos[i] >= ext->extensionSizes[i]) &&
+				    (i != ext->numOfExtensions-1))
+					coeffPos[i] = 0;
+				else
+					break;
+			}
+		}
+	}
+}
+
+
+void printmve_row(const void* voidExt)
+/** Same as printmve(), but only prints the extression. */
+{
+	MultiVarExtTP ext = (MultiVarExtTP)voidExt;
+	
+	bool printPlus;
+	int coeffPos[ext->numOfExtensions];
+	
+	BigIntDirectorTP ref;
+	BigIntTP intRef;
+	
 	
 	if (ext->numOfExtensionsSet == ext->numOfExtensions) //If we can actually print the expression
 	{

@@ -56,7 +56,7 @@ int resize_BigPolyT(BigPolyTP, int);
 
 /** Allocates space for a new MultiVarExtT, returns a
     pointer to it. Returns NULL on error. */
-MultiVarExtTP new_MultiVarExtT(int);
+void* new_MultiVarExtT(int);
 
 /** Sets the modulus value for the given MultiVarExtT.
     Returns 1 on success, 0 otherwise. */
@@ -109,7 +109,7 @@ int copy_BigPolyT(const BigPolyTP, BigPolyTP);
 	extensions. The function assumes the second
 	MultiVarExtT has been initialised. 
 	Returns 1 on success, 0 otherwise. */
-int copy_MultiVarExtT(const MultiVarExtTP, MultiVarExtTP);
+int copy_MultiVarExtT(const void*, void*);
 
 /** Create a new BigFactorsT struct with given factors,
     exponents, and size. Returns a pointer to the struct. */
@@ -155,6 +155,10 @@ void printpf(const BigFactorsTP);
 
 /** Prints a MultiVarExtT to stdout. */
 void printmve(const MultiVarExtTP);
+
+/** Prints only a MultiVarExtT's expression,
+    not its extension definitions. */
+void printmve_row(const void*);
 
 /** Same as printp and printpf, but it prints to a file stream. */
 void fprintp(FILE*, const BigPolyTP);

@@ -4904,11 +4904,29 @@ int main(int argc, char* argv[])
 			//MultiVarExtT testing
 			if (testMode == 0)
 			{
-				//Time to test adding extensions
+				//Virgin C++ user using classes vs Chad C user reinventing OOP principles
+				GenericMatrixTP extMat = new_GenericMatrixT(2, 2);
+				set_GenericMatrixT_freeFunction(extMat, free_MultiVarExtT);
+				set_GenericMatrixT_initValue(extMat, 3);
+				set_GenericMatrixT_initFunction(extMat, new_MultiVarExtT);
+				set_GenericMatrixT_copyFunction(extMat, copy_MultiVarExtT);
+				set_GenericMatrixT_printFunction(extMat, printmve_row);
+				
+				init_GenericMatrixT(extMat);
+				
+				//Time to test extension matrices
 				MultiVarExtTP coolExt1 = new_MultiVarExtT(3);
 				MultiVarExtTP coolExt2 = new_MultiVarExtT(3);
 				MultiVarExtTP extHold  = new_MultiVarExtT(3);
 				MultiVarExtTP coolExt3 = new_MultiVarExtT(4);
+				
+				void*** extsInGrid = malloc(2*sizeof(void**));
+				extsInGrid[0] = malloc(2*sizeof(void*));
+				extsInGrid[1] = malloc(2*sizeof(void*));
+				extsInGrid[0][0] = coolExt1;
+				extsInGrid[0][1] = coolExt2;
+				extsInGrid[1][0] = coolExt2;
+				extsInGrid[1][1] = coolExt1;
 				
 				BigIntTP* extDefn1;
 				BigIntTP* extDefn2;
@@ -5016,15 +5034,15 @@ int main(int argc, char* argv[])
 				add_extension(coolExt2, extDefn2, 3, "b");
 				add_extension(coolExt2, extDefn3, 3, "c");
 				
+				printf("coolExt2 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
+				printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
+				printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
+				reduce_MultiVarExtT(coolExt2);
 				
-				/*add_extension(extHold, extDefn1, 4, "a");
-				add_extension(extHold, extDefn2, 3, "b");
-				add_extension(extHold, extDefn3, 3, "c");
-				
-				add_extension(coolExt3, extDefn1, 4, "a");
-				add_extension(coolExt3, extDefn2, 3, "b");
-				add_extension(coolExt3, extDefn3, 3, "c");
-				add_extension(coolExt3, extDefn4, 3, "d");*/
+				set_GenericMatrixT(extMat, extsInGrid);
+				printf("\n\nextMat:\n");
+				printgm(extMat);
+				printf("\n");
 				
 				printf("\ncoolExt2:\n");
 				printmve(coolExt2);
@@ -5038,9 +5056,6 @@ int main(int argc, char* argv[])
 				
 				goto FREESTUFF;
 				
-				printf("coolExt2 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
-				printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
-				printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
 				
 				printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
 				printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
@@ -5095,6 +5110,11 @@ int main(int argc, char* argv[])
 				FREE(extDefn2);
 				FREE(extDefn3);
 				FREE(extDefn4);
+				
+				extMat = free_GenericMatrixT(extMat);
+				FREE(extsInGrid[0]);
+				FREE(extsInGrid[1]);
+				FREE(extsInGrid);
 			}
 			
 			//factor_BigPolyT() testing

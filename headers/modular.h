@@ -13,7 +13,7 @@ int num_inverse(int, int);
     result in third given BigIntT (must be initialised).
 	Stores 0 on error or if inverse doesn't exist. */
 //                   findInverse     modulus         result
-void big_num_inverse(BigIntTP const, BigIntTP const, BigIntTP);
+void big_num_inverse(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Returns the first nonzero number that, when
     multiplied by the first argument, gives 0 when
