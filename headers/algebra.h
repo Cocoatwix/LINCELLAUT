@@ -83,7 +83,7 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP, const int*, const BigIntTP);
 	This function can only be used when all extensions
 	have been set for the MultiVarExtT.
 	Returns 1 on success, 0 otherwise. */
-int reduce_MultiVarExtT(MultiVarExtTP);
+int reduce_MultiVarExtT(void*);
 
 /** Returns the degree of the given polynomial. */
 int degree(const BigPolyTP);
@@ -140,9 +140,10 @@ int compare_BigPolyT(const BigPolyTP, const BigPolyTP);
 	Returns 1 on success, 0 otherwise. */
 int set_BigPolyT(BigPolyTP, const BigIntTP*);
 
-/** Sets all coefficients in the given polynomial
+/** Sets all coefficients in the given object
     to zero. Returns 1 on success, 0 otherwise. */
 int clear_BigPolyT(BigPolyTP);
+int clear_MultiVarExtT(void*);
 
 /** Outputs a BigPolyT to stdout (the console). */
 void printp(const BigPolyTP);
@@ -224,7 +225,7 @@ BigFactorsTP factor_BigPolyT(const BigPolyTP, const BigIntTP);
 	any sort of modular reduction during addition. Use
 	reduce_MultiVarExtT() for that.
 	Returns 1 on success, 0 otherwise. */
-int inc_sim_MultiVarExtT(const MultiVarExtTP, MultiVarExtTP);
+int inc_sim_MultiVarExtT(const void*, void*);
 
 /** Multiplies two MultiVarExtTs with the same extensions together, stores the
     result in the third MultiVarExtTP given. All MultiVarExtTs must have the
@@ -232,7 +233,7 @@ int inc_sim_MultiVarExtT(const MultiVarExtTP, MultiVarExtTP);
 	coefficients). 
 	This function assumes the modulus used is a prime.
 	Returns 1 on success, 0 otherwise. */
-int mult_sim_MultiVarExtT(const MultiVarExtTP, const MultiVarExtTP, MultiVarExtTP);
+int mult_sim_MultiVarExtT(const void*, const void*, void*);
 
 /*
 int find_factors(BigIntTP const,

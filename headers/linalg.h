@@ -18,16 +18,20 @@ typedef struct bigintmatrix *BigIntMatrixTP;
 typedef struct genericmatrix *GenericMatrixTP;
 
 /** Used for determining how to print vectors to the console/files. */
-typedef enum vt {row, col} VectorTypeE;
+typedef enum vt {row, col} VectorTypeT;
 
+
+//Wouldn't it have been nice if these were all the same function?
 
 /** How many rows are in the given matrix? */
-int rows(IntMatrixTP);
-int big_rows(BigIntMatrixTP);
+int rows(const IntMatrixTP);
+int big_rows(const BigIntMatrixTP);
+int gen_rows(const GenericMatrixTP);
 
 /** How mnay columns are in the given matrix? */
-int cols(IntMatrixTP);
-int big_cols(BigIntMatrixTP);
+int cols(const IntMatrixTP);
+int big_cols(const BigIntMatrixTP);
+int gen_cols(const GenericMatrixTP);
 
 /** What's the element at the given indices in the matrix? */
 int element(const IntMatrixTP, int, int);
@@ -69,6 +73,7 @@ BigIntMatrixTP identity_BigIntMatrixT(int);
 /** Sets all elements in the matrix to zero. 
     Returns 1 on success, 0 otherwise. */
 int clear_BigIntMatrixT(BigIntMatrixTP);
+int clear_GenericMatrixT(GenericMatrixTP);
 
 /** Sets the values of a column vector with elements specified
     in the given int pointer. Returns 1 on success, 0
@@ -94,6 +99,22 @@ int set_GenericMatrixT_copyFunction(GenericMatrixTP, int (*)(const void*, void*)
     elements of its matrix. Returns 1 on success, 0 otherwise. */
 int set_GenericMatrixT_printFunction(GenericMatrixTP, void (*)(const void*));
 
+/** Sets the function to use for clearing elements of a GenericMatrixT 
+    matrix. Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_clearFunction(GenericMatrixTP, int (*)(void*));
+
+/** Sets the function the matrix uses to reduce its terms.
+    Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_reduceFunction(GenericMatrixTP, int (*)(void*));
+
+/** Sets the increment function to use for adding to an element in
+    its matrix. Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_incFunction(GenericMatrixTP, int (*)(const void*, void*));
+
+/** Sets the multiplication function to use on elements of
+    its matrix. Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_multFunction(GenericMatrixTP, int (*)(const void*, const void*, void*));
+
 /** Uses the supplied initFunction to initialise the values in the
     matrix. Returns 1 on success, 0 otherwise. */
 int init_GenericMatrixT(GenericMatrixTP);
@@ -107,6 +128,10 @@ int set_matrix(IntMatrixTP, int** const);
 int set_big_matrix(BigIntMatrixTP, BigIntTP** const);
 int set_GenericMatrixT(GenericMatrixTP, void** *const);
 
+/** Reduces the given GenericMatrixT using its reduceFunction.
+    Returns 1 on success, 0 otherwise. */
+int reduce_GenericMatrixT(GenericMatrixTP);
+
 /** Reads in a matrix stored in a .matrix file. 
     Returns a pointer to the matrix on success, NULL otherwise. */
 IntMatrixTP read_IntMatrixT(const char*);
@@ -116,6 +141,12 @@ BigIntMatrixTP read_BigIntMatrixT(const char*);
     Returns 1 on success, 0 otherwise. */
 int copy_IntMatrixT(const IntMatrixTP, IntMatrixTP);
 int copy_BigIntMatrixT(const BigIntMatrixTP, BigIntMatrixTP);
+
+/** Copies one GenericMatrixT into another, copying both the
+    matrix entries and the functions. The matrices must be the 
+	same dimensions.
+	Returns 1 on success, 0 otherwise. */
+int copy_sim_GenericMatrixT(const GenericMatrixTP, GenericMatrixTP);
 
 /** Returns 1 if the given matrix is diagonal, 0 otherwise. */
 int is_diagonal(IntMatrixTP);
@@ -165,6 +196,12 @@ int big_mat_add(const BigIntMatrixTP, const BigIntMatrixTP, BigIntMatrixTP);
     Returns 1 on success, 0 otherwise. */
 int mat_mul(const IntMatrixTP, const IntMatrixTP, IntMatrixTP);
 int big_mat_mul(const BigIntMatrixTP, const BigIntMatrixTP, BigIntMatrixTP);
+
+/** Matrix multiplication for GenericMatrixTs. Assumes all passed
+    GenericMatrixTs are initialised correctly, and that all the elements
+	in the matrices are compatiable with each other. 
+	Returns 1 on success, 0 otherwise. */
+int gen_mat_mul(const GenericMatrixTP, const GenericMatrixTP, GenericMatrixTP);
 
 /** Calculates powers of first matrix, stores result in second
     matrix. Currently, they only work for positive powers.

@@ -50,38 +50,59 @@ typedef struct genericmatrix
 	int m;
 	int n;
 	
+	bool isInitialised; //Says whether its matrix elements are initialised
+	
 	int initValue; //For feeding into the initialisation function
 	
 	void* (*freeFunction)(void*);
 	void* (*initFunction)(int);
 	int   (*copyFunction)(const void*, void*);
 	void  (*printFunction)(const void*); 
+	int   (*clearFunction)(void*); 
+	int   (*reduceFunction)(void*);
+	
+	int   (*incFunction)(const void*, void*);
+	int   (*multFunction)(const void*, const void*, void*);
 } GenericMatrixT, *GenericMatrixTP;
 
 
-int rows(IntMatrixTP M)
+int rows(const IntMatrixTP M)
 /** Returns the number of rows in a given matrix. */
 {
 	return M->m;
 }
 
 
-int big_rows(BigIntMatrixTP M)
+int big_rows(const BigIntMatrixTP M)
 /** Returns the number of rows in the given matrix. */
 {
 	return M->m;
 }
 
 
-int cols(IntMatrixTP M)
+int gen_rows(const GenericMatrixTP M)
+/** Returns the number of rows in M. */
+{
+	return M->m;
+}
+
+
+int cols(const IntMatrixTP M)
 /** Returns the number of columns in a given matrix. */
 {
 	return M->n;
 }
 
 
-int big_cols(BigIntMatrixTP M)
+int big_cols(const BigIntMatrixTP M)
 /** Returns the number of columns in the given matrix. */
+{
+	return M->n;
+}
+
+
+int gen_cols(const GenericMatrixTP M)
+/** Returns the number of columns in M. */
 {
 	return M->n;
 }
@@ -153,7 +174,6 @@ bool increment_int_array(int** intArr, int sizeRow, int sizeCol, int inc, int mo
 					break;
 				}
 			}
-			
 			
 			if (!rolledOver)
 				break;
@@ -228,7 +248,6 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 					break;
 				}
 			}
-			
 			
 			if (!rolledOver)
 				break;
@@ -319,8 +338,10 @@ GenericMatrixTP free_GenericMatrixT(GenericMatrixTP a)
 		for (int row = 0; row < a->m; row += 1)
 		{
 			for (int col = 0; col < a->n; col += 1)
+			{
 				if (a->freeFunction != NULL)
 					a->matrix[row][col] = a->freeFunction(a->matrix[row][col]);
+			}
 			
 			free(a->matrix[row]);
 			a->matrix[row] = NULL;
@@ -332,6 +353,13 @@ GenericMatrixTP free_GenericMatrixT(GenericMatrixTP a)
 		a->initFunction = NULL;
 		a->copyFunction = NULL;
 		a->printFunction = NULL;
+		a->clearFunction = NULL;
+		a->reduceFunction = NULL;
+		
+		a->incFunction = NULL;
+		a->multFunction = NULL;
+		
+		free(a);
 	}
 	return NULL;
 }
@@ -397,12 +425,18 @@ GenericMatrixTP new_GenericMatrixT(int r, int c)
 	for (int i = 0; i < r; i += 1)
 		a->matrix[i] = calloc(c, sizeof(void*));
 	
+	a->isInitialised = FALSE;
 	a->initValue = 0;
 	
 	a->freeFunction = NULL;
 	a->initFunction = NULL;
 	a->copyFunction = NULL;
 	a->printFunction = NULL;
+	a->clearFunction = NULL;
+	a->reduceFunction = NULL;
+	
+	a->incFunction = NULL;
+	a->multFunction = NULL;
 	
 	return a;
 }
@@ -460,6 +494,21 @@ int clear_BigIntMatrixT(BigIntMatrixTP A)
 }
 
 
+int clear_GenericMatrixT(GenericMatrixTP A)
+/** Clears all the elements in A's matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	if (A->clearFunction == NULL)
+		return 0;
+	
+	for (int row = 0; row < A->m; row += 1)
+		for (int col = 0; col < A->n; col += 1)
+			A->clearFunction(A->matrix[row][col]);
+		
+	return 1;
+}
+
+
 int set_column(IntMatrixTP v, const int* elements)
 /** Returns a pointer to a new IntMatrixTP vector that contains
     the elements specified in elements. Returns NULL on error. */
@@ -510,6 +559,42 @@ int set_GenericMatrixT_printFunction(GenericMatrixTP a, void (*f)(const void*))
 }
 
 
+int set_GenericMatrixT_clearFunction(GenericMatrixTP a, int (*f)(void*))
+/** Sets the function a will use to clear out elements of its matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	a->clearFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_reduceFunction(GenericMatrixTP a, int (*f)(void*))
+/** Sets the function the matrix will use to reduce its elements.
+    Returns 1 on success, 0 otherwise. */
+{
+	a->reduceFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_incFunction(GenericMatrixTP a, int (*f)(const void*, void*))
+/** Sets the increment function to use for adding to an
+    element of a's matrix. Returns 1 on success, 0 otherwise. */
+{
+	a->incFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_multFunction(GenericMatrixTP a, int (*f)(const void*, const void*, void*))
+/** Sets the multiplication function to use for multiplying
+    two elements of a's matrix. Returns 1 on success, 0 otherwise. */
+{
+	a->multFunction = f;
+	return 1;
+}
+
+
 int init_GenericMatrixT(GenericMatrixTP a)
 /** Uses the previously supplied init function to initialise
     the values of the matrix. Returns 1 on success, 0 otherwise. */
@@ -517,6 +602,8 @@ int init_GenericMatrixT(GenericMatrixTP a)
 	for (int i = 0; i < a->m; i += 1)
 		for (int j = 0; j < a->n; j += 1)
 			a->matrix[i][j] = a->initFunction(a->initValue);
+		
+	a->isInitialised = TRUE;
 
 	return 1;
 }
@@ -565,6 +652,23 @@ int set_GenericMatrixT(GenericMatrixTP a, void** *const arr)
 			a->copyFunction(arr[row][col], a->matrix[row][col]);
 		}
 	}
+	
+	a->isInitialised = TRUE;
+	
+	return 1;
+}
+
+
+int reduce_GenericMatrixT(GenericMatrixTP a)
+/** Uses a's reduceFunction to reduce its matrix.
+    Returns 1 on success, 0 otherwise. */
+{
+	if (a->reduceFunction == NULL)
+		return 0;
+	
+	for (int row = 0; row < a->m; row += 1)
+		for (int col = 0; col < a->n; col += 1)
+			a->reduceFunction(a->matrix[row][col]);
 	
 	return 1;
 }
@@ -707,6 +811,40 @@ int copy_BigIntMatrixT(const BigIntMatrixTP toCopy, BigIntMatrixTP copyTo)
 		for (int col = 0; col < copyTo->n; col += 1)
 			copy_BigIntT(toCopy->matrix[row][col], copyTo->matrix[row][col]);
 		
+	return 1;
+}
+
+
+int copy_sim_GenericMatrixT(const GenericMatrixTP toCopy, GenericMatrixTP copyTo)
+/** Copies both toCopy's elements and toCopy's functions into
+    copyTo. Both matrices must be the same size for this to
+		work.
+		Returns 1 on success, 0 otherwise. */
+{
+	if ((toCopy->m != copyTo->m) || (toCopy->n != copyTo->n))
+		return 0;
+	
+	copyTo->initFunction = toCopy->initFunction;
+	copyTo->initValue = toCopy->initValue;
+	
+	//Making sure we'll be able to copy values
+	// by-value into copyTo
+	if (!copyTo->isInitialised)
+		init_GenericMatrixT(copyTo);
+	
+	copyTo->copyFunction = toCopy->copyFunction;
+	for (int row = 0; row < toCopy->m; row += 1)
+		for (int col = 0; col < toCopy->n; col += 1)
+			copyTo->copyFunction(toCopy->matrix[row][col], copyTo->matrix[row][col]);
+		
+	copyTo->freeFunction = toCopy->freeFunction;
+	copyTo->printFunction = toCopy->printFunction;
+	copyTo->clearFunction = toCopy->clearFunction;
+	copyTo->reduceFunction = toCopy->reduceFunction;
+	
+	copyTo->incFunction = toCopy->incFunction;
+	copyTo->multFunction = toCopy->multFunction;
+	
 	return 1;
 }
 
@@ -1181,6 +1319,56 @@ int big_mat_mul(const BigIntMatrixTP A, const BigIntMatrixTP B, BigIntMatrixTP r
 }
 
 
+int gen_mat_mul(const GenericMatrixTP A, const GenericMatrixTP B, GenericMatrixTP result)
+/** Computes AB, stores result in result.
+    Function assumes all given matrices are properly initialised, and that all the
+		elements in the matrix are compatiable.
+		Returns 1 on success, 0 otherwise. */
+{
+	void* tempProduct; //For holding intermediary products
+	
+	if (clear_GenericMatrixT(result) == 0)
+		return 0;
+	
+	//Check to make sure the dimensions of the matrices are
+	// such that they can be multiplied
+	if (A->n != B->m)
+		return 0;
+	
+	if ((result->m != A->m) || (result->n != B->n))
+		return 0;
+	
+	//Getting tempProduct ready to hold values
+	//For MultiVarExtTs, copying a value into it
+	// initialises the coefficients, whereas the
+	// regular init function just creates the struct.
+	// For other structs, the copyFunction here
+	// probably isn't necessary. This is basically a
+	// lazy way for me to make sure tempProduct is
+	// ready.
+	tempProduct = result->initFunction(result->initValue);
+	result->copyFunction(A->matrix[0][0], tempProduct);
+	
+	//The actual matrix multiplication
+	for (int row = 0; row < A->m; row += 1)
+	{
+		for (int col = 0; col < B->n; col += 1)
+		{
+			for (int elem = 0; elem < A->n; elem += 1)
+			{
+				result->clearFunction(tempProduct);
+				result->multFunction(A->matrix[row][elem], B->matrix[elem][col], tempProduct);
+				result->incFunction(tempProduct, result->matrix[row][col]);
+			}
+		}
+	}
+	
+	tempProduct = result->freeFunction(tempProduct);
+	
+	return 1;
+}
+
+
 int modm(IntMatrixTP M, int mod)
 /** Applies a modulus to every element of a given matrix. 
     Returns 1 on success, 0 otherwise. */
@@ -1344,8 +1532,8 @@ int eval_BigPolyT(const BigPolyTP p, const BigIntMatrixTP A, BigIntMatrixTP resu
 	tempMat = free_BigIntMatrixT(tempMat);
 	I       = free_BigIntMatrixT(I);
 	
-	powCount  = free_BigIntT(multCount);
-	multCount = free_BigIntT(powCount);
+	powCount  = free_BigIntT(powCount);
+	multCount = free_BigIntT(multCount);
 	one       = free_BigIntT(one);
 	temp      = free_BigIntT(temp);
 	

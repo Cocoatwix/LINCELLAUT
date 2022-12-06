@@ -83,7 +83,7 @@ CycleInfoTP new_CycleInfoT()
 }
 
 
-void printcycle(CycleInfoTP c, VectorTypeE e)
+void printcycle(CycleInfoTP c, VectorTypeT e)
 /** Prints info about a cycle to the screen. */
 {
 	printf("Floyd's Algorithm stopping time: %d\n", c->stoppingTime);
@@ -164,6 +164,11 @@ void* rep(CycleInfoTP c)
 		case (BigIntMatrixE):
 		{
 			return c->inCycle->bigintmat;
+		}
+		
+		case (GenericMatrixE):
+		{
+			return c->inCycle->genericmat;
 		}
 		
 		default:
@@ -636,6 +641,170 @@ int big_floyd(const BigIntMatrixTP F,
 	y_2  = free_BigIntMatrixT(y_2);
 	
 	return 1;
+}
+
+
+int generic_floyd(GenericMatrixTP F, GenericMatrixTP s_0, CycleInfoTP* info)
+/** Same as big_floyd, but for GenericMatrixTs.
+    Returns 1 on success, 0 otherwise. */
+{
+	printf("THIS FUNCTION DOES NOT WORK YET.\n");
+	/*
+	//THE CODE HERE IS COPY-PASTED FROM big_floyd().
+	//AS I REWRITE IT FOR GENERICMATRIXTs, I'LL MOVE A
+	//MARKER TO INDICATE UP TO WHERE I'VE REWRITTEN
+	if (gen_rows(F) != gen_cols(F))
+		return 0;
+	
+	int stoppingTime = 0;
+	
+	// ~~~MARKER~~~
+	
+	//If we need to allocate a CycleInfoTP
+	if (*info == NULL)
+	{
+		*info = malloc(sizeof(CycleInfoT));
+		(*info)->inCycle = malloc(sizeof(MatrixTP));
+		(*info)->inCycle->genericmat = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
+		
+		//I need a way to copy functions from one GenericMatrix to another
+	}
+	
+	//Making sure we don't try and dereference nothing
+	if ((*info)->inCycle->bigintmat == NULL)
+		(*info)->inCycle->bigintmat = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	
+	//Making sure we can actually store a rep of correct dimensions within bigintmat
+	if (big_rows((*info)->inCycle->bigintmat) != big_rows(s_0) ||
+	    big_cols((*info)->inCycle->bigintmat) != big_cols(s_0))
+	{
+		free_BigIntMatrixT((*info)->inCycle->bigintmat);
+		(*info)->inCycle->bigintmat = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	}
+
+	(*info)->omega = 0;
+	(*info)->tau = -1;
+	(*info)->type = BigIntMatrixE;
+	
+	//Initalising x and y to be s_0
+	//We need to switch between the two versions to store data w/o overwriting
+	BigIntMatrixTP x_1 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	BigIntMatrixTP x_2 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	BigIntMatrixTP y_1 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0)); 
+	BigIntMatrixTP y_2 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	//IntMatrixTP I   = identity_IntMatrixT(rows(F)); //Used for calculating matrix transient lengths
+	
+	copy_BigIntMatrixT(s_0, x_1);
+	copy_BigIntMatrixT(s_0, y_1);
+	
+	//Iterate until x and y are the same
+	do
+	{
+		big_mat_mul(F, x_1, x_2);
+		modbm(x_2, modulus);
+		copy_BigIntMatrixT(x_2, x_1);
+		
+		//Iterate y twice
+		big_mat_mul(F, y_1, y_2);
+		modbm(y_2, modulus);
+		big_mat_mul(F, y_2, y_1);
+		modbm(y_1, modulus);
+		
+		stoppingTime += 1;
+	}
+	while (compare_BigIntMatrixT(x_1, y_1) == 0);
+	
+	//If, after iterating, we end up at the same vector,
+	// that means we started on a stationary point
+	if ((compare_BigIntMatrixT(s_0, x_1)) && (stoppingTime == 1))
+		(*info)->tau = 0;
+	
+	//This is risky, but should save on memory allocations
+	(*info)->stoppingTime = stoppingTime;
+	copy_BigIntMatrixT(x_1, (*info)->inCycle->bigintmat);
+	
+	//Now we have a vector that's confirmed to be in a cycle
+	//Now, we determine the cycle length
+	
+	if ((*info)->tau == 0)
+		(*info)->omega = stoppingTime;
+	
+	//If above inequality doesn't hold, calculate omega manually
+	else
+	{
+		do
+		{
+			big_mat_mul(F, x_1, x_2);
+			modbm(x_2, modulus);
+			copy_BigIntMatrixT(x_2, x_1);
+			(*info)->omega += 1;
+		}
+		while (compare_BigIntMatrixT(x_1, y_1) == 0);
+	}
+	
+	//I need a better way to get tau from St and omega
+	if (((*info)->omega == 1) && ((*info)->tau != 0))
+		(*info)->tau = stoppingTime;
+	
+	//Find tau manually if all else fails
+	else if ((*info)->tau == -1)
+	{
+		(*info)->tau = 0;
+		
+		copy_BigIntMatrixT(s_0, x_1);
+		
+		//Iterate y_1 around the full cycle, see if
+		// x_1 is in it. If not, iterate x_1 once and repeat
+		// until it is.
+		while (TRUE)
+		{
+			copy_BigIntMatrixT((*info)->inCycle->bigintmat, y_1);
+			
+			do
+			{
+				big_mat_mul(F, y_1, y_2);
+				modbm(y_2, modulus);
+				copy_BigIntMatrixT(y_2, y_1);
+			}
+			while ((compare_BigIntMatrixT(y_1, (*info)->inCycle->bigintmat) == 0) &&
+			       (compare_BigIntMatrixT(x_1, y_1) == 0));
+						 
+			//If x_1 is in the cycle
+			if (compare_BigIntMatrixT(x_1, y_1) == 1)
+				break;
+			
+			//If x_1 isn't in the cycle, iterate x_1 and try again
+			else
+			{
+				(*info)->tau += 1;
+				big_mat_mul(F, x_1, x_2);
+				modbm(x_2, modulus);
+				copy_BigIntMatrixT(x_2, x_1);
+			}
+		}
+	}
+	
+	//Maybe we can do casework here? to find tau?
+	//For instance, if we know omega == 2, we can
+	// go through each possible case for the Stopping time
+	// (even or odd) and make a conclusion about tau that way?
+	// This may then extend to omega == 3, 4, etc.
+	
+	//We do know that, given an L by L update matrix and a square-free
+	// modulus, the maximum transient length is L.
+	
+	//pg 29 of LCA paper explains why prime powers are more complicated
+	//They believe the bound on prime powered systems should be kL, where
+	// k is the power of the prime
+	
+	//Freeing memory
+	x_1  = free_BigIntMatrixT(x_1);
+	x_2  = free_BigIntMatrixT(x_2);
+	y_1  = free_BigIntMatrixT(y_1);
+	y_2  = free_BigIntMatrixT(y_2);
+	
+	return 1;*/
+	return 0; 
 }
 
 

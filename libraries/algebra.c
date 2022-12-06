@@ -182,39 +182,40 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 }
 
 
-void* free_MultiVarExtT(void* ext)
+void* free_MultiVarExtT(void* voidExt)
 /** Frees the memory used by a MultiVarExtT. Returns NULL. */
 {
+	MultiVarExtTP ext = (MultiVarExtTP)voidExt;
 	if (ext != NULL)
 	{
-		((MultiVarExtTP)ext)->coeffs = free_BigIntDirectorT(((MultiVarExtTP)ext)->coeffs);
+		ext->coeffs = free_BigIntDirectorT(ext->coeffs);
 		
-		for (int i = 0; i < ((MultiVarExtTP)ext)->numOfExtensions; i += 1)
+		for (int i = 0; i < ext->numOfExtensions; i += 1)
 		{
-			free(((MultiVarExtTP)ext)->extNames[i]);
-			((MultiVarExtTP)ext)->extNames[i] = NULL;
+			free(ext->extNames[i]);
+			ext->extNames[i] = NULL;
 			
-			if (((MultiVarExtTP)ext)->extensions[i] != NULL) //If we try and free before all extensions have been defined
+			if (ext->extensions[i] != NULL) //If we try and free before all extensions have been defined
 			{
-				for (int elem = 0; elem < ((MultiVarExtTP)ext)->extensionSizes[i]; elem += 1)
-					((MultiVarExtTP)ext)->extensions[i][elem] = free_BigIntT(((MultiVarExtTP)ext)->extensions[i][elem]);
+				for (int elem = 0; elem < ext->extensionSizes[i]; elem += 1)
+					ext->extensions[i][elem] = free_BigIntT(ext->extensions[i][elem]);
 				
-				free(((MultiVarExtTP)ext)->extensions[i]);
-				((MultiVarExtTP)ext)->extensions[i] = NULL;
+				free(ext->extensions[i]);
+				ext->extensions[i] = NULL;
 			}
 		}
-		free(((MultiVarExtTP)ext)->extNames);
-		((MultiVarExtTP)ext)->extNames = NULL;
+		free(ext->extNames);
+		ext->extNames = NULL;
 		
-		((MultiVarExtTP)ext)->mod = free_BigIntT(((MultiVarExtTP)ext)->mod);
+		ext->mod = free_BigIntT(ext->mod);
 		
-		free(((MultiVarExtTP)ext)->extensions);
-		((MultiVarExtTP)ext)->extensions = NULL;
+		free(ext->extensions);
+		ext->extensions = NULL;
 		
-		free(((MultiVarExtTP)ext)->extensionSizes);
-		((MultiVarExtTP)ext)->extensionSizes = NULL;
+		free(ext->extensionSizes);
+		ext->extensionSizes = NULL;
 		
-		free(((MultiVarExtTP)ext));
+		free(ext);
 	}
 	return NULL;
 }
@@ -576,10 +577,12 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP ext, const int* coeffPos, const B
 }
 
 
-int reduce_MultiVarExtT(MultiVarExtTP ext)
+int reduce_MultiVarExtT(void* voidExt)
 /** Uses the extension definitions to reduce the given
     MultiVarExtT. Returns 1 on success, 0 otherwise. */
 {
+	MultiVarExtTP ext = (MultiVarExtTP)voidExt;
+	
 	if (ext->numOfExtensionsSet != ext->numOfExtensions)
 		return 0;
 	
@@ -1039,6 +1042,44 @@ int clear_BigPolyT(BigPolyTP p)
 }
 
 
+int clear_MultiVarExtT(void* voidExt)
+/** Sets all coefficients in the ext to 0.
+    Returns 1 on success, 0 otherwise. */
+{
+	MultiVarExtTP ext = (MultiVarExtTP)voidExt;
+	BigIntDirectorTP ref;
+	int currLoc[ext->numOfExtensions];
+	bool moreToClear = TRUE;
+	
+	if (ext->numOfExtensions != ext->numOfExtensionsSet)
+		return 0;
+	
+	for (int i = 0; i < ext->numOfExtensions; i += 1)
+		currLoc[i] = 0;
+	
+	while (moreToClear)
+	{
+		ref = ext->coeffs;
+		for (int pos = 0; pos < ext->numOfExtensions-1; pos += 1)
+			ref = ref->next[currLoc[pos]];
+		
+		clear_BigIntT(ref->coeffs[currLoc[ext->numOfExtensions-1]]);
+		
+		moreToClear = FALSE;
+		for (int pos = 0; (pos < ext->numOfExtensions) && (!moreToClear); pos += 1)
+		{
+			currLoc[pos] += 1;
+			if (currLoc[pos] >= ext->extensionSizes[pos])
+				currLoc[pos] = 0;
+			else
+				moreToClear = TRUE;
+		}
+	}
+
+	return 1;
+}
+
+
 void printp(const BigPolyTP p)
 /** Outputs a BigPolyTP to stdout. */
 {
@@ -1220,6 +1261,7 @@ void printmve_row(const void* voidExt)
 {
 	MultiVarExtTP ext = (MultiVarExtTP)voidExt;
 	
+	bool hasPrinted = FALSE;
 	bool printPlus;
 	int coeffPos[ext->numOfExtensions];
 	
@@ -1253,6 +1295,7 @@ void printmve_row(const void* voidExt)
 				
 				printi(intRef);
 				printPlus = TRUE;
+				hasPrinted = TRUE;
 				
 				//Print appropriate extension names
 				for (int i = 0; i < ext->numOfExtensions; i += 1)
@@ -1277,6 +1320,9 @@ void printmve_row(const void* voidExt)
 			}
 		}
 	}
+	
+	if (!hasPrinted)
+		printf("0");
 }
 
 
@@ -3003,7 +3049,7 @@ BigFactorsTP factor_BigPolyT(const BigPolyTP p, const BigIntTP mod)
 }
 
 
-int inc_sim_MultiVarExtT(const MultiVarExtTP a, MultiVarExtTP b)
+int inc_sim_MultiVarExtT(const void* voidA, void* voidB)
 /** Computes a+b, stores the result in b.
     This function assumes a and b have the same size and the
 		same extensions added in the same order.
@@ -3011,6 +3057,9 @@ int inc_sim_MultiVarExtT(const MultiVarExtTP a, MultiVarExtTP b)
 		DON'T try and do any modular reduction during the addition.
 		Returns 1 on success, 0 otherwise. */
 {
+	MultiVarExtTP a = (MultiVarExtTP)voidA;
+	MultiVarExtTP b = (MultiVarExtTP)voidB;
+	
 	bool moreToAdd = TRUE;
 	int currPos[b->numOfExtensions];
 	
@@ -3087,11 +3136,15 @@ int inc_sim_MultiVarExtT(const MultiVarExtTP a, MultiVarExtTP b)
 }
 
 
-int mult_sim_MultiVarExtT(const MultiVarExtTP a, const MultiVarExtTP b, MultiVarExtTP product)
+int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduct)
 /** Calculates a*b, stores the product in product. a, b, and product must have the
     same extensions in the same order, and they all must be fully set.
 		Returns 1 on success, 0 otherwise. */ 
 {
+	MultiVarExtTP a = (MultiVarExtTP)voidA;
+	MultiVarExtTP b = (MultiVarExtTP)voidB;
+	MultiVarExtTP product = (MultiVarExtTP)voidProduct;
+	
 	int oneArr[1] = {1};
 	BigIntTP one;
 	BigIntTP zero;
@@ -3292,13 +3345,18 @@ int mult_sim_MultiVarExtT(const MultiVarExtTP a, const MultiVarExtTP b, MultiVar
 						if (newLocations[L][ext] >= b->extensionSizes[ext]-1)
 						{
 							withinBounds = FALSE;
-							printf("trouble\n");
-							DEBUGPRINT(numOfNewCoeffs);
+							
+							#ifdef VERBOSE
+								printf("trouble\n");
+								DEBUGPRINT(numOfNewCoeffs);
+							#endif
 							
 							//Now we have to check whether we have the correct reduction to rewrite our term
 							if (newLocations[L][ext] > extensionReductionsPowers[ext] + numOfExtensionReductions[ext] - 1)
 							{
-								printf("we don't have the right reduction\n");
+								#ifdef VERBOSE
+									printf("we don't have the right reduction\n");
+								#endif
 								//We need to generate a new extensionReduction
 								//I don't think it's ever possible for newLocations[L][ext] to be 2 above what we have,
 								// so we probably only need to ever generate one extra extension
@@ -3326,27 +3384,34 @@ int mult_sim_MultiVarExtT(const MultiVarExtTP a, const MultiVarExtTP b, MultiVar
 								}
 							}
 							
-							printf("we should now have the right reduction. let's check if we do...\n");
-							printf("reduction = [");
-							for (int i = 0; i < b->extensionSizes[ext]-1; i += 1)
-							{
-								printi(extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][i]);
-								(i == b->extensionSizes[ext]-2) ? printf("]\n") : printf(", ");
-							}
-							printf("\n");
-							
-							printf("numOfNewCoeffs = %d\n", numOfNewCoeffs);
+							#ifdef VERBOSE
+								printf("we should now have the right reduction. let's check if we do...\n");
+								printf("reduction = [");
+								for (int i = 0; i < b->extensionSizes[ext]-1; i += 1)
+								{
+									printi(extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][i]);
+									(i == b->extensionSizes[ext]-2) ? printf("]\n") : printf(", ");
+								}
+								printf("\n");
+								
+								printf("numOfNewCoeffs = %d\n", numOfNewCoeffs);
+							#endif
 							
 							//We should now have the reduction we need
 							//Now, rewrite the term as multiple terms with lower exponents
 							newLocations = realloc(newLocations, (numOfNewCoeffs+newLocations[L][ext]-1)*sizeof(int*));
 							newCoeffs    = realloc(newCoeffs, (numOfNewCoeffs+newLocations[L][ext]-1)*sizeof(BigIntTP));
 							
-							printf("memory allocation okay\n");
+							#ifdef VERBOSE
+								printf("memory allocation okay\n");
+							#endif
 							
 							for (int i = numOfNewCoeffs; i < numOfNewCoeffs+b->extensionSizes[ext]-2; i += 1)
 							{
-								printf("i = %d\n", i);
+								#ifdef VERBOSE
+									printf("i = %d\n", i);
+								#endif
+								
 								//Taking coefficient on entire term, distributing it to new terms created by reduction
 								newCoeffs[i] = empty_BigIntT(1);
 								multiply_BigIntT(newCoeffs[L], 
@@ -3378,9 +3443,11 @@ int mult_sim_MultiVarExtT(const MultiVarExtTP a, const MultiVarExtTP b, MultiVar
 				}
 			}
 			
-			//Okay, this whole block is a lot, so I'd like to print some stuff out 
-			// before carrying out the actual multiplication
-			DEBUGPRINT(numOfNewCoeffs);
+			#ifdef VERBOSE
+				//Okay, this whole block is a lot, so I'd like to print some stuff out 
+				// before carrying out the actual multiplication
+				DEBUGPRINT(numOfNewCoeffs);
+			#endif
 			
 			//Now, it's time to properly add the new coefficients to product
 			for (int c = 0; c < numOfNewCoeffs; c += 1)

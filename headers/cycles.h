@@ -27,7 +27,7 @@ void* rep(CycleInfoTP);
 
 /** Prints out the information contained in the
     CycleInfoT object pointed to. */
-void printcycle(CycleInfoTP, VectorTypeE);
+void printcycle(CycleInfoTP, VectorTypeT);
 
 /** Multiples a matrix by a given matrix some times, returns
     the final iterated matrix. Returns NULL if F isn't square. 
