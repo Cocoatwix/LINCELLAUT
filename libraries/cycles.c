@@ -649,7 +649,6 @@ int generic_floyd(GenericMatrixTP F, GenericMatrixTP s_0, CycleInfoTP* info)
     Returns 1 on success, 0 otherwise. */
 {
 	printf("THIS FUNCTION DOES NOT WORK YET.\n");
-	/*
 	//THE CODE HERE IS COPY-PASTED FROM big_floyd().
 	//AS I REWRITE IT FOR GENERICMATRIXTs, I'LL MOVE A
 	//MARKER TO INDICATE UP TO WHERE I'VE REWRITTEN
@@ -658,62 +657,71 @@ int generic_floyd(GenericMatrixTP F, GenericMatrixTP s_0, CycleInfoTP* info)
 	
 	int stoppingTime = 0;
 	
-	// ~~~MARKER~~~
-	
 	//If we need to allocate a CycleInfoTP
 	if (*info == NULL)
 	{
 		*info = malloc(sizeof(CycleInfoT));
 		(*info)->inCycle = malloc(sizeof(MatrixTP));
 		(*info)->inCycle->genericmat = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
-		
-		//I need a way to copy functions from one GenericMatrix to another
 	}
 	
 	//Making sure we don't try and dereference nothing
-	if ((*info)->inCycle->bigintmat == NULL)
-		(*info)->inCycle->bigintmat = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+	if ((*info)->inCycle->genericmat == NULL)
+		(*info)->inCycle->genericmat = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
 	
 	//Making sure we can actually store a rep of correct dimensions within bigintmat
-	if (big_rows((*info)->inCycle->bigintmat) != big_rows(s_0) ||
-	    big_cols((*info)->inCycle->bigintmat) != big_cols(s_0))
+	if (gen_rows((*info)->inCycle->genericmat) != gen_rows(s_0) ||
+	    gen_cols((*info)->inCycle->genericmat) != gen_cols(s_0))
 	{
-		free_BigIntMatrixT((*info)->inCycle->bigintmat);
-		(*info)->inCycle->bigintmat = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
+		free_GenericMatrixT((*info)->inCycle->genericmat);
+		(*info)->inCycle->genericmat = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
 	}
+	
+	//Copying all our relevant functions into the matrix in question
+	copy_sim_GenericMatrixT(s_0, (*info)->inCycle->genericmat);
+	clear_GenericMatrixT((*info)->inCycle->genericmat);
 
 	(*info)->omega = 0;
 	(*info)->tau = -1;
-	(*info)->type = BigIntMatrixE;
+	(*info)->type = GenericMatrixE;
 	
 	//Initalising x and y to be s_0
 	//We need to switch between the two versions to store data w/o overwriting
-	BigIntMatrixTP x_1 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
-	BigIntMatrixTP x_2 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
-	BigIntMatrixTP y_1 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0)); 
-	BigIntMatrixTP y_2 = new_BigIntMatrixT(big_rows(s_0), big_cols(s_0));
-	//IntMatrixTP I   = identity_IntMatrixT(rows(F)); //Used for calculating matrix transient lengths
+	GenericMatrixTP x_1 = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
+	GenericMatrixTP x_2 = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
+	GenericMatrixTP y_1 = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0)); 
+	GenericMatrixTP y_2 = new_GenericMatrixT(gen_rows(s_0), gen_cols(s_0));
 	
-	copy_BigIntMatrixT(s_0, x_1);
-	copy_BigIntMatrixT(s_0, y_1);
+	copy_sim_GenericMatrixT(s_0, x_1);
+	copy_sim_GenericMatrixT(s_0, y_1);
+	
+	//These copies are performed to make sure x_2 and y_2 have
+	// all the correct functions they need
+	copy_sim_GenericMatrixT(s_0, x_2);
+	copy_sim_GenericMatrixT(s_0, y_2);
+	clear_GenericMatrixT(x_2);
+	clear_GenericMatrixT(y_2);
+	
+	// ~~~MARKER~~~
 	
 	//Iterate until x and y are the same
 	do
 	{
-		big_mat_mul(F, x_1, x_2);
-		modbm(x_2, modulus);
-		copy_BigIntMatrixT(x_2, x_1);
+		gen_mat_mul(F, x_1, x_2);
+		reduce_GenericMatrixT(x_2);
+		copy_sim_GenericMatrixT(x_2, x_1);
 		
 		//Iterate y twice
-		big_mat_mul(F, y_1, y_2);
-		modbm(y_2, modulus);
-		big_mat_mul(F, y_2, y_1);
-		modbm(y_1, modulus);
+		gen_mat_mul(F, y_1, y_2);
+		reduce_GenericMatrixT(y_2);
+		gen_mat_mul(F, y_2, y_1);
+		reduce_GenericMatrixT(y_1);
 		
 		stoppingTime += 1;
 	}
-	while (compare_BigIntMatrixT(x_1, y_1) == 0);
+	while (compare_GenericMatrixT(x_1, y_1) == 0);
 	
+	/*
 	//If, after iterating, we end up at the same vector,
 	// that means we started on a stationary point
 	if ((compare_BigIntMatrixT(s_0, x_1)) && (stoppingTime == 1))
@@ -803,7 +811,7 @@ int generic_floyd(GenericMatrixTP F, GenericMatrixTP s_0, CycleInfoTP* info)
 	y_1  = free_BigIntMatrixT(y_1);
 	y_2  = free_BigIntMatrixT(y_2);
 	
-	return 1;*/
+	return 1; */
 	return 0; 
 }
 

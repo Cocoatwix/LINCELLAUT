@@ -155,6 +155,7 @@ int is_diagonal(IntMatrixTP);
     Returns 1 if they are, 0 otherwise. */
 int compare_IntMatrixT(const IntMatrixTP, const IntMatrixTP);
 int compare_BigIntMatrixT(const BigIntMatrixTP, const BigIntMatrixTP);
+int compare_GenericMatrixT(const GenericMatrixTP, const GenericMatrixTP);
 
 /** Compares the given column of the two matrices, returns 1 if they're 
     equal. Returns 0 otherwise. */

@@ -60,6 +60,7 @@ typedef struct genericmatrix
 	void  (*printFunction)(const void*); 
 	int   (*clearFunction)(void*); 
 	int   (*reduceFunction)(void*);
+	int   (*compareFunction)(const void*, const void*);
 	
 	int   (*incFunction)(const void*, void*);
 	int   (*multFunction)(const void*, const void*, void*);
@@ -355,6 +356,7 @@ GenericMatrixTP free_GenericMatrixT(GenericMatrixTP a)
 		a->printFunction = NULL;
 		a->clearFunction = NULL;
 		a->reduceFunction = NULL;
+		a->compareFunction = NULL;
 		
 		a->incFunction = NULL;
 		a->multFunction = NULL;
@@ -434,6 +436,7 @@ GenericMatrixTP new_GenericMatrixT(int r, int c)
 	a->printFunction = NULL;
 	a->clearFunction = NULL;
 	a->reduceFunction = NULL;
+	a->compareFunction = NULL;
 	
 	a->incFunction = NULL;
 	a->multFunction = NULL;
@@ -573,6 +576,15 @@ int set_GenericMatrixT_reduceFunction(GenericMatrixTP a, int (*f)(void*))
     Returns 1 on success, 0 otherwise. */
 {
 	a->reduceFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_compareFunction(GenericMatrixTP a, int (*f)(const void*, const void*))
+/** Sets the compare function the matrix will use to compare its
+    elements. Returns 1 on success, 0 otherwise. */
+{
+	a->compareFunction = f;
 	return 1;
 }
 
@@ -841,6 +853,7 @@ int copy_sim_GenericMatrixT(const GenericMatrixTP toCopy, GenericMatrixTP copyTo
 	copyTo->printFunction = toCopy->printFunction;
 	copyTo->clearFunction = toCopy->clearFunction;
 	copyTo->reduceFunction = toCopy->reduceFunction;
+	copyTo->compareFunction = toCopy->compareFunction;
 	
 	copyTo->incFunction = toCopy->incFunction;
 	copyTo->multFunction = toCopy->multFunction;
@@ -894,6 +907,15 @@ int compare_BigIntMatrixT(const BigIntMatrixTP M1, const BigIntMatrixTP M2)
 				return 0;
 			
 	return 1;
+}
+
+
+int compare_GenericMatrixT(const GenericMatrixTP a, const GenericMatrixTP b)
+/** Compares a and b to see if their matrices are equal.
+    Returns 1 if they are, 0 otherwise. */
+{
+	printf("Not implemented yet.\n");
+	return 0;
 }
 
 

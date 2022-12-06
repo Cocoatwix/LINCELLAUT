@@ -135,6 +135,11 @@ int count_factors(const BigFactorsTP);
 	greater than the second. */ 
 int compare_BigPolyT(const BigPolyTP, const BigPolyTP);
 
+/** Compares MultiVarExtTs to check whether their 
+    expressions are equal. Returns 1 if they're equal, 
+	0 otherwise. */
+int compare_MultiVarExtT(const void*, const void*);
+
 /** Uses the given list of BigIntTs to set the polynomial's
     coefficients. 
 	Returns 1 on success, 0 otherwise. */

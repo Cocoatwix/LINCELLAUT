@@ -5034,11 +5034,12 @@ int main(int argc, char* argv[])
 				set_MultiVarExtT_coefficient(extsInGrid[1][1], noI, NA[12]);
 				set_MultiVarExtT_coefficient(extsInGrid[1][1], yesI, NA[10]);
 				
-				/*
+				
 				add_extension(coolExt1, extDefn1, 4, "a");
 				add_extension(coolExt1, extDefn2, 3, "b");
 				add_extension(coolExt1, extDefn3, 3, "c");
 				
+				/*
 				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
 				printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
 				printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
@@ -5086,11 +5087,18 @@ int main(int argc, char* argv[])
 				printf("coolExt1 7th set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[10]));
 				printf("\ncoolExt1 after adding back extensions:\n");
 				printmve(coolExt1);
+				*/
 				
-				add_extension(coolExt2, extDefn1, 4, "a");
-				add_extension(coolExt2, extDefn2, 3, "b");
 				add_extension(coolExt2, extDefn3, 3, "c");
+				add_extension(coolExt2, extDefn2, 3, "b");
+				add_extension(coolExt2, extDefn1, 4, "a");
 				
+				add_extension(coolExt3, extDefn1, 4, "a");
+				add_extension(coolExt3, extDefn2, 3, "b");
+				add_extension(coolExt3, extDefn3, 3, "c");
+				add_extension(coolExt3, iDefn, 3, "i");
+				
+				/*
 				printf("coolExt2 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
 				printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
 				printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
@@ -5116,6 +5124,14 @@ int main(int argc, char* argv[])
 				printgm(resultMat);
 				printf("\n");
 				
+				printf("coolExt1:\n");
+				printmve(coolExt1);
+				printf("\ncoolExt3:\n");
+				printmve(coolExt3);
+				printf("\ncompare_MultiVarExtT(coolExt1, coolExt3)\n");
+				compare_MultiVarExtT(coolExt1, coolExt3);
+				printf("\n");
+				
 				/*
 				printf("\ncoolExt2:\n");
 				printmve(coolExt2);
@@ -5131,10 +5147,6 @@ int main(int argc, char* argv[])
 				//goto FREESTUFF;
 				
 				/*
-				add_extension(coolExt3, extDefn1, 4, "a");
-				add_extension(coolExt3, extDefn2, 3, "b");
-				add_extension(coolExt3, extDefn3, 3, "c");
-				add_extension(coolExt3, iDefn, 3, "i");
 				printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
 				printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
 				printf("coolExt3 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]));
@@ -5323,7 +5335,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");

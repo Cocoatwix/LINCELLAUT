@@ -1013,6 +1013,77 @@ int compare_BigPolyT(const BigPolyTP A, const BigPolyTP B)
 }
 
 
+int compare_MultiVarExtT(const void* voidA, const void* voidB)
+/** Compares two MultiVarExtTs to see if their expressions are
+    equal. Returns 1 if they are, 0 otherwise. */
+{
+	MultiVarExtTP a = (MultiVarExtTP)voidA;
+	MultiVarExtTP b = (MultiVarExtTP)voidB;
+	
+	//Used for keeping track of how, if at all, the same
+	// extensions are shuffled around between the two
+	// MultiVarExtTs.
+	//For example, a2bExtensionMap[0] holds the index of
+	// a's first extension in b, so
+	// a->extensions[0] == b->extensions[a2bExtensionMap[0]];
+	int a2bExtensionMap[a->numOfExtensions];
+	bool foundExtension;
+	
+	//If either of them don't have all their extensions set
+	if ((a->numOfExtensions != a->numOfExtensionsSet) ||
+	    (b->numOfExtensions != b->numOfExtensionsSet))
+		return 0;
+		
+	if (a->numOfExtensions != b->numOfExtensions)
+		return 0;
+	
+	//Now, we gotta determine if they both contain the same
+	// extensions
+	for (int aExt = 0; aExt < a->numOfExtensions; aExt += 1)
+	{
+		foundExtension = FALSE;
+		
+		for (int bExt = 0; bExt < a->numOfExtensions; bExt += 1)
+		{
+			if (a->extensionSizes[aExt] == b->extensionSizes[bExt])
+			{
+				//Check this extension to see if it matches a's
+				for (int coeff = 0; coeff < a->extensionSizes[aExt]; coeff += 1)
+				{
+					foundExtension = TRUE;
+					a2bExtensionMap[aExt] = bExt;
+					
+					if (compare_BigIntT(a->extensions[aExt][coeff], b->extensions[bExt][coeff]) != 0)
+					{
+						foundExtension = FALSE;
+						break;
+					}
+				}
+			}
+			
+			//No need to check the other extensions in b if we've already found one
+			if (foundExtension)
+				break;
+		}
+		
+		//If there's no extension that matches a->extensions[ext]
+		if (!foundExtension)
+			return 0;
+	}
+	
+	//At this point, we should have a nice mapping between the two MultiVarExtT's
+	// extensions.
+	//I should print them out and test
+	
+	printf("[");
+	for (int i = 0; i < a->numOfExtensions; i += 1)
+		(i == a->numOfExtensions-1) ? printf("%d]\n", a2bExtensionMap[i]) : printf("%d, ", a2bExtensionMap[i]);
+	
+	
+	return 0;
+}
+
+
 int set_BigPolyT(BigPolyTP p, const BigIntTP* coeffList)
 /** Uses the given list of BigIntTs to set the polynomial's
     coefficients. 
