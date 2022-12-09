@@ -49,6 +49,10 @@ int big_floyd(const BigIntMatrixTP,
               const BigIntMatrixTP, 
 			  const BigIntTP,
 			  CycleInfoTP*);
+			  
+/** Same as floyd(), but with GenericMatrixTs.
+    Returns 1 on success, 0 otherwise. */
+int generic_floyd(GenericMatrixTP, GenericMatrixTP, CycleInfoTP*);
 
 /** Creates a .iteration file containing a single iteration of
     every vector under the given update matrix and modulus. 

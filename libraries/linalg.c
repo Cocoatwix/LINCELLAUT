@@ -60,7 +60,7 @@ typedef struct genericmatrix
 	void  (*printFunction)(const void*); 
 	int   (*clearFunction)(void*); 
 	int   (*reduceFunction)(void*);
-	int   (*compareFunction)(const void*, const void*);
+	int   (*compareFunction)(void*, void*);
 	
 	int   (*incFunction)(const void*, void*);
 	int   (*multFunction)(const void*, const void*, void*);
@@ -580,7 +580,7 @@ int set_GenericMatrixT_reduceFunction(GenericMatrixTP a, int (*f)(void*))
 }
 
 
-int set_GenericMatrixT_compareFunction(GenericMatrixTP a, int (*f)(const void*, const void*))
+int set_GenericMatrixT_compareFunction(GenericMatrixTP a, int (*f)(void*, void*))
 /** Sets the compare function the matrix will use to compare its
     elements. Returns 1 on success, 0 otherwise. */
 {
@@ -910,12 +910,23 @@ int compare_BigIntMatrixT(const BigIntMatrixTP M1, const BigIntMatrixTP M2)
 }
 
 
-int compare_GenericMatrixT(const GenericMatrixTP a, const GenericMatrixTP b)
+int compare_GenericMatrixT(GenericMatrixTP a, GenericMatrixTP b)
 /** Compares a and b to see if their matrices are equal.
     Returns 1 if they are, 0 otherwise. */
 {
-	printf("Not implemented yet.\n");
-	return 0;
+	if ((a->m != b->m) || (a->n != b->n))
+		return 0;
+	
+	//If the datatypes within the matrices can't be compared
+	if (a->compareFunction != b->compareFunction)
+		return 0;
+	
+	for (int row = 0; row < a->m; row += 1)
+		for (int col = 0; col < a->n; col += 1)
+			if (! a->compareFunction(a->matrix[row][col], b->matrix[row][col]))
+				return 0;
+
+	return 1;
 }
 
 
@@ -2516,6 +2527,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 	BigFactorsTP factoredCharaPoly = NULL;
 	BigPolyTP* unneededFactors = NULL;
 	BigPolyTP  charaPoly;
+	//BigFactorsTP factoredMinPoly = NULL;
 	int unneededFactorsCount = 0;
 	
 	BigIntTP numOfFactors = NULL;
@@ -2644,6 +2656,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 		}
 	}
 	
+	//exit(EXIT_SUCCESS);
 	free(tempPoly);
 	tempPoly = NULL;
 	
@@ -2664,6 +2677,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 	
 	tempMat = free_BigIntMatrixT(tempMat);
 	zeroMat = free_BigIntMatrixT(zeroMat);
+	
 	
 	return tempMinPoly;
 }

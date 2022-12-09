@@ -1013,12 +1013,22 @@ int compare_BigPolyT(const BigPolyTP A, const BigPolyTP B)
 }
 
 
-int compare_MultiVarExtT(const void* voidA, const void* voidB)
+int compare_MultiVarExtT(void* voidA, void* voidB)
 /** Compares two MultiVarExtTs to see if their expressions are
-    equal. Returns 1 if they are, 0 otherwise. */
+    equal. Returns 1 if they are, 0 otherwise. 
+		
+		This function reduces a and b before comparing. */
 {
 	MultiVarExtTP a = (MultiVarExtTP)voidA;
 	MultiVarExtTP b = (MultiVarExtTP)voidB;
+	reduce_MultiVarExtT(a);
+	reduce_MultiVarExtT(b);
+	
+	BigIntDirectorTP aRef;
+	BigIntDirectorTP bRef;
+	
+	bool moreToCompare = TRUE;
+	int currLoc[a->numOfExtensions];
 	
 	//Used for keeping track of how, if at all, the same
 	// extensions are shuffled around between the two
@@ -1071,16 +1081,54 @@ int compare_MultiVarExtT(const void* voidA, const void* voidB)
 			return 0;
 	}
 	
-	//At this point, we should have a nice mapping between the two MultiVarExtT's
-	// extensions.
-	//I should print them out and test
-	
-	printf("[");
+	/*
+	printf("\n\n[");
 	for (int i = 0; i < a->numOfExtensions; i += 1)
 		(i == a->numOfExtensions-1) ? printf("%d]\n", a2bExtensionMap[i]) : printf("%d, ", a2bExtensionMap[i]);
+	*/
 	
+	for (int i = 0; i < a->numOfExtensions; i += 1)
+		currLoc[i] = 0;
 	
-	return 0;
+	//At this point, we should have a nice mapping between the two MultiVarExtT's
+	// extensions. So, we need to iterate through both MultiVarExtTs to see if their
+	// expressions are the same
+	while (moreToCompare)
+	{
+		aRef = a->coeffs;
+		bRef = b->coeffs;
+		for (int exp = 0; exp < a->numOfExtensions-1; exp += 1)
+		{
+			aRef = aRef->next[currLoc[exp]];
+			
+			//Find the correct exponent for b's extension
+			for (int bExp = 0; bExp < a->numOfExtensions; bExp += 1)
+				if (a2bExtensionMap[bExp] == exp)
+				{
+					bRef = bRef->next[currLoc[bExp]];
+					break;
+				}
+		}
+		
+		//Find correct coefficient for b, compare it with a
+		for (int bExp = 0; bExp < a->numOfExtensions; bExp += 1)
+			if (a2bExtensionMap[bExp] == a->numOfExtensions-1)
+				if (compare_BigIntT(aRef->coeffs[currLoc[a->numOfExtensions-1]], bRef->coeffs[currLoc[bExp]]) != 0)
+					return 0;
+
+		//Iterate to next coefficient
+		moreToCompare = FALSE;
+		for (int ext = 0; (ext < a->numOfExtensions) && (!moreToCompare); ext += 1)
+		{
+			currLoc[ext] += 1;
+			if (currLoc[ext] >= a->extensionSizes[ext])
+				currLoc[ext] = 0;
+			else
+				moreToCompare = TRUE;
+		}
+	}
+	
+	return 1;
 }
 
 

@@ -26,9 +26,9 @@ orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits
 
 splitorbits [modulus] [fileoutput] (UNFINISHED): This tool allows the user to calculates the orbits of a given matrix and modulus over the splitting field of the matrix's minimal polynomial. 
  - The optional argument "modulus" overrides the modulus used in the .config file. This argument expects a positive integer greater than 1.
- - The optional argument "fileoutput" specifies whether the program should output a text file with the orbits. The file will be created under the name "splitorbits <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE.
+ - The optional argument "fileoutput" specifies whether the program should output a text file with the orbits. The file will be created under the name "splitorbits F<matrix> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE.
 
-orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths.
+orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths. This tool assumes the modulus used is a prime number.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "fileoutput" says whether to output a text file with the found representative vectors. This argument expects a TRUE or FALSE. By default, this option is set to TRUE.
 

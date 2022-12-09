@@ -137,8 +137,11 @@ int compare_BigPolyT(const BigPolyTP, const BigPolyTP);
 
 /** Compares MultiVarExtTs to check whether their 
     expressions are equal. Returns 1 if they're equal, 
-	0 otherwise. */
-int compare_MultiVarExtT(const void*, const void*);
+	0 otherwise. 
+	
+	This function reduces the two MultiVarExtTs before
+	comparing. */
+int compare_MultiVarExtT(void*, void*);
 
 /** Uses the given list of BigIntTs to set the polynomial's
     coefficients. 

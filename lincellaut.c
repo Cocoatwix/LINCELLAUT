@@ -1153,9 +1153,189 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to calculate orbits over a splitting field for
+		// the given update matrix's minimal polynomial
 		else if (! strcmp(argv[1], "splitorbits"))
 		{
-			printf("Not yet implemented!\n");
+			//Let's just hope we don't have more extensions than this
+			char* extensionNames[5] = {"α", "β", "δ", "ε", "θ"};
+			
+			BigIntTP bigMod;
+			BigIntMatrixTP bigF;
+			
+			BigPolyTP* minPolyFactors; 
+			BigPolyTP* extDefns = NULL; //For extracting coeffs from min poly factors
+			BigIntTP*  tempFactor;
+			bool isSameDefn;
+			
+			//How many extensions we need to add to our field
+			int numOfExtensionsNeeded = 0;
+			
+			//Will hold all our extensions
+			MultiVarExtTP repExtension = NULL;
+			
+			int oneArr[1] = {1};
+			BigIntTP one;
+			BigIntTP temp;
+			BigIntTP temp2;
+			
+			char* fileOutputName = NULL;
+			FILE* fileOutput = NULL;
+			
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
+			}
+			
+			bigF = read_BigIntMatrixT(updatefilepath);
+			if (bigF == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix from %s.\n", updatefilepath);
+				bigMod = free_BigIntT(bigMod);
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (argc > 3)
+				if (!strcmp(argv[3], "TRUE"))
+				{
+					fileOutputName = malloc(MAXSTRLEN*sizeof(char));
+					fileOutputName[0] = '\0';
+					strcat(fileOutputName, "splitorbits F");
+					
+					//Get elements of matrix
+					for (int row = 0; row < big_rows(bigF); row += 1)
+						for (int col = 0; col < big_cols(bigF); col += 1)
+							append_BigIntT(fileOutputName, big_element(bigF, row, col));
+						
+					strcat(fileOutputName, " ");
+					append_BigIntT(fileOutputName, bigMod);
+					strcat(fileOutputName, ".txt");
+					
+					fileOutput = fopen(fileOutputName, "a");
+					if (fileOutput == NULL)
+						fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
+				}
+				
+			one   = new_BigIntT(oneArr, 1);
+			temp  = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
+			
+			printf("Update matrix:\n");
+			printbm(bigF);
+			printf("Modulus: ");
+			printi(bigMod);
+			minPolyFactors = min_poly(bigF, bigMod);
+			printf("\nMin poly: ");
+			old_printpf(minPolyFactors);
+			printf("\n");
+			
+			//Now, we check to see how many extensions we need for
+			// our splitting field
+			copy_BigIntT(one, temp);
+			for (int i = 1; compare_BigIntT(constant(minPolyFactors[0]), temp) >= 0; i += 1)
+			{
+				isSameDefn = FALSE;
+				if (degree(minPolyFactors[i]) >= 2)
+				{
+					//We need to ensure that this factor is unique.
+					for (int extDefn = 0; extDefn < numOfExtensionsNeeded; extDefn += 1)
+					{
+						isSameDefn = TRUE;
+						if (degree(extDefns[extDefn]) == degree(minPolyFactors[i]))
+						{
+							if (compare_BigPolyT(extDefns[extDefn], minPolyFactors[i]) != 0)
+								isSameDefn = FALSE;
+						}
+						
+						else
+							isSameDefn = FALSE;
+						
+						if (isSameDefn)
+							break;
+					}
+					
+					//Only add new extension if we don't already have it
+					if (!isSameDefn)
+					{
+						numOfExtensionsNeeded += 1;
+						
+						extDefns = realloc(extDefns, numOfExtensionsNeeded*sizeof(BigPolyTP));
+						extDefns[numOfExtensionsNeeded-1] = empty_BigPolyT();
+						copy_BigPolyT(minPolyFactors[i], extDefns[numOfExtensionsNeeded-1]);
+					}
+				}
+				
+				add_BigIntT(temp, one, temp2);
+				copy_BigIntT(temp2, temp);
+			}
+			
+			if (numOfExtensionsNeeded == 0)
+			{
+				printf("\nThe splitting field for this system contains no new extensions.\n" \
+			         "Use another tool to analyse this system.\n");
+			}
+			
+			else
+			{
+				//We have the number of extensions we need, now create a 
+				// representative MultiVarExtT that has all the extensions
+				// we need.
+				
+				repExtension = new_MultiVarExtT(numOfExtensionsNeeded);
+				set_MultiVarExtT_mod(repExtension, bigMod);
+				
+				for (int i = 0; i < numOfExtensionsNeeded; i += 1)
+				{
+					tempFactor = extract_coefficients(extDefns[i]);
+					add_extension(repExtension, tempFactor, degree(extDefns[i])+1, extensionNames[i]);
+					
+					for (int tempCoeff = 0; tempCoeff < degree(extDefns[i])+1; tempCoeff += 1)
+						tempFactor[tempCoeff] = free_BigIntT(tempFactor[tempCoeff]);
+					FREE(tempFactor);
+				}
+				
+				printf("repExtension:\n");
+				printmve(repExtension);
+				printf("\n");
+			}
+			
+			repExtension = free_MultiVarExtT(repExtension);
+			
+			copy_BigIntT(one, temp);
+			for (int i = 1; compare_BigIntT(constant(minPolyFactors[0]), temp) >= 0; i += 1)
+			{
+				minPolyFactors[i] = free_BigPolyT(minPolyFactors[i]);
+				add_BigIntT(temp, one, temp2);
+				copy_BigIntT(temp2, temp);
+			}
+			minPolyFactors[0] = free_BigPolyT(minPolyFactors[0]);
+			FREE(minPolyFactors);
+				
+			if (fileOutput != NULL)
+				if (fclose(fileOutput) == EOF)
+					fprintf(stderr, "Unable to save output file.\n");
+			
+			if (fileOutputName != NULL)
+			{
+				FREE(fileOutputName);
+			}
+			
+			for (int i = 0; i < numOfExtensionsNeeded; i += 1)
+				extDefns[i] = free_BigPolyT(extDefns[i]);
+
+			FREE(extDefns);
+			
+			bigF = free_BigIntMatrixT(bigF);
+			
+			one    = free_BigIntT(one);
+			temp   = free_BigIntT(temp);
+			temp2  = free_BigIntT(temp2);
+			bigMod = free_BigIntT(bigMod);
 		}
 		
 		
@@ -4901,7 +5081,7 @@ int main(int argc, char* argv[])
 		//For testing purposes only
 		else if (! strcmp(argv[1], "test"))
 		{
-			int testMode = 0;
+			int testMode = 1;
 		
 			#define nasize 19
 			int numArr[1] = {0};
@@ -4927,6 +5107,7 @@ int main(int argc, char* argv[])
 				set_GenericMatrixT_copyFunction(extMat, copy_MultiVarExtT);
 				set_GenericMatrixT_printFunction(extMat, printmve_row);
 				set_GenericMatrixT_clearFunction(extMat, clear_MultiVarExtT);
+				set_GenericMatrixT_compareFunction(extMat, compare_MultiVarExtT);
 				
 				set_GenericMatrixT_incFunction(extMat, inc_sim_MultiVarExtT);
 				set_GenericMatrixT_multFunction(extMat, mult_sim_MultiVarExtT);
@@ -4967,6 +5148,10 @@ int main(int argc, char* argv[])
 				int coeff1[3] = {2, 2, 0};
 				int coeff2[3] = {0, 1, 1};
 				int coeff3[3] = {3, 2, 2};
+				
+				int reverseCoeff1[3] = {0, 2, 2};
+				int reverseCoeff2[3] = {1, 1, 0};
+				int reverseCoeff3[3] = {2, 2, 3};
 				
 				int specialCoeff1[4] = {0, 1, 2, 2};
 				int specialCoeff2[4] = {1, 1, 2, 2};
@@ -5039,13 +5224,14 @@ int main(int argc, char* argv[])
 				add_extension(coolExt1, extDefn2, 3, "b");
 				add_extension(coolExt1, extDefn3, 3, "c");
 				
-				/*
-				printf("coolExt1 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]));
-				printf("coolExt1 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]));
-				printf("coolExt1 3rd set = %d\n",set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]));
+				set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]);
+				set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]);
+				set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]);
 				
 				printf("\ncoolExt1 after adding all extensions:\n");
 				printmve(coolExt1);
+				
+				/*
 				printf("\ncoolExt1 after removing one extension:\n");
 				remove_extension(coolExt1);
 				printmve(coolExt1);
@@ -5098,12 +5284,14 @@ int main(int argc, char* argv[])
 				add_extension(coolExt3, extDefn3, 3, "c");
 				add_extension(coolExt3, iDefn, 3, "i");
 				
-				/*
-				printf("coolExt2 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]));
-				printf("coolExt2 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]));
-				printf("coolExt2 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]));
+				set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]);
+				set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]);
+				set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]);
 				reduce_MultiVarExtT(coolExt2);
-				*/
+				
+				set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]);
+				set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]);
+				set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]);
 				
 				set_GenericMatrixT(extMat, extsInGrid);
 				set_GenericMatrixT(resultMat, extsInGrid);
@@ -5124,15 +5312,37 @@ int main(int argc, char* argv[])
 				printgm(resultMat);
 				printf("\n");
 				
-				printf("coolExt1:\n");
-				printmve(coolExt1);
-				printf("\ncoolExt3:\n");
-				printmve(coolExt3);
-				printf("\ncompare_MultiVarExtT(coolExt1, coolExt3)\n");
-				compare_MultiVarExtT(coolExt1, coolExt3);
-				printf("\n");
+				printf("compare_GenericMatrixT(extMat, extMat) = %d\n", compare_GenericMatrixT(extMat, extMat));
 				
 				/*
+				printf("coolExt1:\n");
+				printmve(coolExt1);
+				printf("\ncoolExt2:\n");
+				printmve(coolExt2);
+				printf("\ncoolExt3:\n");
+				printmve(coolExt3);
+				
+				printf("\ncompare_MultiVarExtT(coolExt1, coolExt1) = %d\n", compare_MultiVarExtT(coolExt1, coolExt1));
+				printf("\n");
+				printf("\ncompare_MultiVarExtT(coolExt1, coolExt2) = %d\n", compare_MultiVarExtT(coolExt1, coolExt2));
+				printf("\n");
+				printf("\ncompare_MultiVarExtT(coolExt1, coolExt3) = %d\n", compare_MultiVarExtT(coolExt1, coolExt3));
+				printf("\n");
+				
+				//Now, let's make coolExt2 the same as coolExt1, just with its extensions swapped
+				clear_MultiVarExtT(coolExt2);
+				set_MultiVarExtT_coefficient(coolExt2, reverseCoeff1, NA[6]);
+				set_MultiVarExtT_coefficient(coolExt2, reverseCoeff2, NA[6]);
+				set_MultiVarExtT_coefficient(coolExt2, reverseCoeff3, NA[12]);
+				//reduce_MultiVarExtT(coolExt2);
+				
+				printf("coolExt1:\n");
+				printmve(coolExt1);
+				printf("\ncoolExt2:\n");
+				printmve(coolExt2);
+				printf("\ncompare_MultiVarExtT(coolExt1, coolExt2) = %d\n", compare_MultiVarExtT(coolExt1, coolExt2));
+				printf("\n");
+				
 				printf("\ncoolExt2:\n");
 				printmve(coolExt2);
 				printf("\nCopying coolExt1 into coolExt2...\n");
@@ -5147,10 +5357,6 @@ int main(int argc, char* argv[])
 				//goto FREESTUFF;
 				
 				/*
-				printf("coolExt3 1st set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]));
-				printf("coolExt3 2nd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]));
-				printf("coolExt3 3rd set = %d\n", set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]));
-				
 				printf("coolExt1 before reduction:\n");
 				printmve(coolExt1);
 				reduce_MultiVarExtT(coolExt1);
@@ -5216,8 +5422,125 @@ int main(int argc, char* argv[])
 				FREE(extsInGrid);
 			}
 			
-			//factor_BigPolyT() testing
+			//Testing generic_floyd()
 			else if (testMode == 1)
+			{
+				CycleInfoTP theCycle = NULL;
+				
+				GenericMatrixTP updateMat = new_GenericMatrixT(2, 2);
+				set_GenericMatrixT_freeFunction(updateMat, free_MultiVarExtT);
+				set_GenericMatrixT_initValue(updateMat, 1);
+				set_GenericMatrixT_initFunction(updateMat, new_MultiVarExtT);
+				set_GenericMatrixT_copyFunction(updateMat, copy_MultiVarExtT);
+				set_GenericMatrixT_printFunction(updateMat, printmve_row);
+				set_GenericMatrixT_clearFunction(updateMat, clear_MultiVarExtT);
+				set_GenericMatrixT_reduceFunction(updateMat, reduce_MultiVarExtT);
+				set_GenericMatrixT_compareFunction(updateMat, compare_MultiVarExtT);
+				set_GenericMatrixT_incFunction(updateMat, inc_sim_MultiVarExtT);
+				set_GenericMatrixT_multFunction(updateMat, mult_sim_MultiVarExtT);
+				
+				GenericMatrixTP updateMat2 = new_GenericMatrixT(2, 2);
+				set_GenericMatrixT_freeFunction(updateMat2, free_MultiVarExtT);
+				set_GenericMatrixT_initValue(updateMat2, 1);
+				set_GenericMatrixT_initFunction(updateMat2, new_MultiVarExtT);
+				set_GenericMatrixT_copyFunction(updateMat2, copy_MultiVarExtT);
+				set_GenericMatrixT_printFunction(updateMat2, printmve_row);
+				set_GenericMatrixT_clearFunction(updateMat2, clear_MultiVarExtT);
+				set_GenericMatrixT_reduceFunction(updateMat2, reduce_MultiVarExtT);
+				set_GenericMatrixT_compareFunction(updateMat2, compare_MultiVarExtT);
+				set_GenericMatrixT_incFunction(updateMat2, inc_sim_MultiVarExtT);
+				set_GenericMatrixT_multFunction(updateMat2, mult_sim_MultiVarExtT);
+				
+				GenericMatrixTP vectorMat = new_GenericMatrixT(2, 1);
+				set_GenericMatrixT_freeFunction(vectorMat, free_MultiVarExtT);
+				set_GenericMatrixT_initValue(vectorMat, 1);
+				set_GenericMatrixT_initFunction(vectorMat, new_MultiVarExtT);
+				set_GenericMatrixT_copyFunction(vectorMat, copy_MultiVarExtT);
+				set_GenericMatrixT_printFunction(vectorMat, printmve_row);
+				set_GenericMatrixT_clearFunction(vectorMat, clear_MultiVarExtT);
+				set_GenericMatrixT_reduceFunction(vectorMat, reduce_MultiVarExtT);
+				set_GenericMatrixT_compareFunction(vectorMat, compare_MultiVarExtT);
+				set_GenericMatrixT_incFunction(vectorMat, inc_sim_MultiVarExtT);
+				set_GenericMatrixT_multFunction(vectorMat, mult_sim_MultiVarExtT);
+				
+				BigIntTP iDefn[3] = {NA[1], NA[0], NA[1]};
+				int yesI[1] = {1};
+				int noI[1]  = {0};
+				
+				void*** updateMatElements = malloc(2*sizeof(void**));
+				void*** vectorMatElements = malloc(2*sizeof(void**));
+				for (int i = 0; i < 2; i += 1)
+				{
+					updateMatElements[i] = malloc(2*sizeof(void*));
+					vectorMatElements[i] = malloc(sizeof(void*));
+					for (int j = 0; j < 2; j += 1)
+					{
+						updateMatElements[i][j] = new_MultiVarExtT(1);
+						set_MultiVarExtT_mod(updateMatElements[i][j], bigMod);
+						add_extension(updateMatElements[i][j], iDefn, 3, "i");
+					}
+					
+					vectorMatElements[i][0] = new_MultiVarExtT(1);
+					set_MultiVarExtT_mod(vectorMatElements[i][0], bigMod);
+					add_extension(vectorMatElements[i][0], iDefn, 3, "i");
+				}
+				
+				set_MultiVarExtT_coefficient(updateMatElements[0][0], yesI, NA[1]);
+				set_MultiVarExtT_coefficient(updateMatElements[1][1], yesI, NA[1]);
+				
+				//Set a random value for our starting vector
+				set_MultiVarExtT_coefficient(vectorMatElements[0][0], noI, NA[(rand() >> 2) % 19]);
+				set_MultiVarExtT_coefficient(vectorMatElements[0][0], yesI, NA[(rand() >> 2) % 19]);
+				set_MultiVarExtT_coefficient(vectorMatElements[1][0], noI, NA[(rand() >> 2) % 19]);
+				set_MultiVarExtT_coefficient(vectorMatElements[1][0], yesI, NA[(rand() >> 2) % 19]);
+				
+				set_GenericMatrixT(updateMat, updateMatElements);
+				set_GenericMatrixT(vectorMat, vectorMatElements);
+				
+				set_MultiVarExtT_coefficient(updateMatElements[0][0], noI, NA[1]);
+				set_MultiVarExtT_coefficient(updateMatElements[1][1], noI, NA[1]);
+				set_GenericMatrixT(updateMat2, updateMatElements);
+				
+				printf("updateMat:\n");
+				printgm(updateMat);
+				printf("\nvectorMat:\n");
+				printgm(vectorMat);
+				printf("\n");
+				
+				generic_floyd(updateMat, vectorMat, &theCycle);
+				printcycle(theCycle, col);
+				printf("\n");
+				
+				//Now, let's use the other matrix
+				printf("updateMat2:\n");
+				printgm(updateMat2);
+				generic_floyd(updateMat2, vectorMat, &theCycle);
+				printcycle(theCycle, col);
+				printf("\n");
+				
+				
+				theCycle = free_CycleInfoT(theCycle);
+				
+				updateMat  = free_GenericMatrixT(updateMat);
+				updateMat2 = free_GenericMatrixT(updateMat2);
+				vectorMat  = free_GenericMatrixT(vectorMat);
+				
+				for (int i = 0; i < 2; i += 1)
+				{
+					for (int j = 0; j < 2; j += 1)
+						updateMatElements[i][j] = free_MultiVarExtT(updateMatElements[i][j]);
+					
+					vectorMatElements[i][0] = free_MultiVarExtT(vectorMatElements[i][0]);
+					
+					FREE(updateMatElements[i]);
+					FREE(vectorMatElements[i]);
+				}
+				FREE(updateMatElements);
+				FREE(vectorMatElements);
+			}
+			
+			//factor_BigPolyT() testing
+			else if (testMode == 2)
 			{
 				#define Asize 47
 				#define Bsize 3
@@ -5350,7 +5673,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "oddminpolsearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

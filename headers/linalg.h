@@ -107,6 +107,10 @@ int set_GenericMatrixT_clearFunction(GenericMatrixTP, int (*)(void*));
     Returns 1 on success, 0 otherwise. */
 int set_GenericMatrixT_reduceFunction(GenericMatrixTP, int (*)(void*));
 
+/** Sets the function the matrix will use to compare elements of
+    its matrix. Returns 1 on success, 0 otherwise. */
+int set_GenericMatrixT_compareFunction(GenericMatrixTP, int (*)(void*, void*));
+
 /** Sets the increment function to use for adding to an element in
     its matrix. Returns 1 on success, 0 otherwise. */
 int set_GenericMatrixT_incFunction(GenericMatrixTP, int (*)(const void*, void*));
@@ -155,7 +159,7 @@ int is_diagonal(IntMatrixTP);
     Returns 1 if they are, 0 otherwise. */
 int compare_IntMatrixT(const IntMatrixTP, const IntMatrixTP);
 int compare_BigIntMatrixT(const BigIntMatrixTP, const BigIntMatrixTP);
-int compare_GenericMatrixT(const GenericMatrixTP, const GenericMatrixTP);
+int compare_GenericMatrixT(GenericMatrixTP, GenericMatrixTP);
 
 /** Compares the given column of the two matrices, returns 1 if they're 
     equal. Returns 0 otherwise. */
