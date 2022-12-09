@@ -2351,7 +2351,7 @@ int rref(IntMatrixTP M, int mod)
 	BigPolyTP temp   = empty_BigPolyT();
 	BigPolyTP temp2  = empty_BigPolyT();
 	
-	BigPolyTP subResult = empty_BigPolyT();
+	BigPolyTP subResult = NULL;
 	
 	BigPolyTP** subArr; //Holds a smaller array for calculating sub determinants
 	
@@ -2401,6 +2401,8 @@ int rref(IntMatrixTP M, int mod)
 				add_BigPolyT(temp2, result, temp);
 				copy_BigPolyT(temp, result);
 			}
+			
+			subResult = free_BigPolyT(subResult);
 		}
 		
 		//We only need to deallocate subArr itself
@@ -2633,30 +2635,21 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 					tempMinPoly[i] = tempPoly[i];
 				
 				tempPoly = realloc(tempPoly, numOfFactorsInt*sizeof(BigPolyTP));
-				
-				/*
-				printf(":)\n");
-				printf("tempPoly: ");
-				old_printpf(tempPoly);
-				printf("\ntempMinPoly: ");
-				old_printpf(tempMinPoly);
-				printf("\n");
-				*/
-				
-				//Free constant so that we don't need to worry about it later
-				tempPoly[0] = free_BigPolyT(tempPoly[0]); 
 			}
 			
-			//Change tempPoly[0] to store the correct value
+			//Change tempMinPoly[0] to store the correct value
 			else
 			{
-				tempMinPoly[0] = free_BigPolyT(tempPoly[0]); 
+				//Not sure if these lines are correct
+				tempMinPoly[0] = free_BigPolyT(tempMinPoly[0]);
 				tempMinPoly[0] = constant_BigPolyT(numOfFactors);
 			}
+			
+			//Free constant so that we don't need to worry about it later
+			tempPoly[0] = free_BigPolyT(tempPoly[0]);
 		}
 	}
 	
-	//exit(EXIT_SUCCESS);
 	free(tempPoly);
 	tempPoly = NULL;
 	
