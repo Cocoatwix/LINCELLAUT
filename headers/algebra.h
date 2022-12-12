@@ -72,6 +72,10 @@ int add_extension(MultiVarExtTP, const BigIntTP*, int, const char*);
 	Returns 1 on success, 0 otherwise. */
 int remove_extension(MultiVarExtTP);
 
+/** Returns a pointer to the coefficient at the given
+    position. Returns NULL on error. */
+BigIntTP get_MultiVarExtT_coefficient(const MultiVarExtTP, const int*);
+
 /** Sets a particular value for the given MultiVarExtT's coefficient.
     The MultiVarExtT must be fully set before this function can be used.
 	Returns 1 on success, 0 otherwise. */

@@ -1169,10 +1169,19 @@ int main(int argc, char* argv[])
 			bool isSameDefn;
 			
 			//How many extensions we need to add to our field
-			int numOfExtensionsNeeded = 0;
+			int  numOfExtensionsNeeded = 0;
+			int* zeroPointer = NULL; //For placing coefficients into MultiVarExtTs
 			
 			//Will hold all our extensions
 			MultiVarExtTP repExtension = NULL;
+			
+			void*** genericFelements = NULL;
+			GenericMatrixTP genericF = NULL;
+			
+			void*** currVectElements = NULL;
+			GenericMatrixTP currVect = NULL;
+			
+			bool moreVectors = TRUE;
 			
 			int oneArr[1] = {1};
 			BigIntTP one;
@@ -1198,6 +1207,15 @@ int main(int argc, char* argv[])
 				bigMod = free_BigIntT(bigMod);
 				FREE_VARIABLES;
 				return EXIT_FAILURE;
+			}
+			
+			if (big_rows(bigF) != big_cols(bigF))
+			{
+				fprintf(stderr, "Given matrix isn't square.\n");
+				bigMod = free_BigIntT(bigMod);
+				bigF = free_BigIntMatrixT(bigF);
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
 			}
 			
 			if (argc > 3)
@@ -1289,6 +1307,9 @@ int main(int argc, char* argv[])
 				repExtension = new_MultiVarExtT(numOfExtensionsNeeded);
 				set_MultiVarExtT_mod(repExtension, bigMod);
 				
+				zeroPointer = calloc(numOfExtensionsNeeded, sizeof(int));
+				
+				//Adding the extensions we need
 				for (int i = 0; i < numOfExtensionsNeeded; i += 1)
 				{
 					tempFactor = extract_coefficients(extDefns[i]);
@@ -1302,6 +1323,42 @@ int main(int argc, char* argv[])
 				printf("repExtension:\n");
 				printmve(repExtension);
 				printf("\n");
+				
+				//Now, initialise our matrix and vector
+				genericFelements = malloc(big_rows(bigF)*sizeof(void**));
+				currVectElements = malloc(big_rows(bigF)*sizeof(void**));
+				for (int i = 0; i < big_rows(bigF); i += 1)
+				{
+					genericFelements[i] = malloc(big_cols(bigF)*sizeof(void*));
+					currVectElements[i] = malloc(sizeof(void*));
+					for (int j = 0; j < big_cols(bigF); j += 1)
+					{
+						genericFelements[i][j] = new_MultiVarExtT(numOfExtensionsNeeded);
+						copy_MultiVarExtT(repExtension, genericFelements[i][j]);
+						set_MultiVarExtT_coefficient(genericFelements[i][j], zeroPointer, big_element(bigF, i, j));
+					}
+					currVectElements[i][0] = new_MultiVarExtT(numOfExtensionsNeeded);
+					copy_MultiVarExtT(repExtension, genericFelements[i][0]);
+				}
+				
+				genericF = new_MultiVarExtMatrixT(big_rows(bigF), big_cols(bigF), numOfExtensionsNeeded);
+				currVect = new_MultiVarExtMatrixT(big_rows(bigF), 1, numOfExtensionsNeeded);
+				set_GenericMatrixT(genericF, genericFelements);
+				set_GenericMatrixT(currVect, currVectElements);
+				
+				printf("genericF:\n");
+				printgm(genericF);
+				printf("\n");
+				
+				//Iterate through all possible vectors over our splitting field
+				while (moreVectors)
+				{
+					printgm(currVect);
+					printf("\n");
+					
+					//Iterate currVect
+					moreVectors = FALSE;
+				}
 			}
 			
 			repExtension = free_MultiVarExtT(repExtension);
@@ -1330,7 +1387,37 @@ int main(int argc, char* argv[])
 
 			FREE(extDefns);
 			
+			if (genericFelements != NULL)
+			{
+				for (int i = 0; i < big_rows(bigF); i += 1)
+				{
+					for (int j = 0; j < big_cols(bigF); j += 1)
+						genericFelements[i][j] = free_MultiVarExtT(genericFelements[i][j]);
+					
+					FREE(genericFelements[i]);
+				}
+				FREE(genericFelements);
+			}
+			
+			if (currVectElements != NULL)
+			{
+				for (int i = 0; i < big_rows(bigF); i += 1)
+				{
+					currVectElements[i][0] = free_MultiVarExtT(currVectElements[i][0]);
+					FREE(currVectElements[i]);
+				}
+				FREE(currVectElements);
+			}
+		
 			bigF = free_BigIntMatrixT(bigF);
+			genericF = free_GenericMatrixT(genericF);
+			currVect = free_GenericMatrixT(currVect);
+			
+			if (zeroPointer != NULL)
+			{
+				FREE(zeroPointer);
+			}
+			
 			
 			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);

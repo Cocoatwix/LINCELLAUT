@@ -65,6 +65,12 @@ IntMatrixTP     new_IntMatrixT(int, int);
 BigIntMatrixTP  new_BigIntMatrixT(int, int);
 GenericMatrixTP new_GenericMatrixT(int, int);
 
+/** These functions create specialised GenericMatrixTs
+    for use with specific structures. They are freed
+	using the usual free_GenericMatrixT() */
+//                                     rows cols numOfExtensions
+GenericMatrixTP new_MultiVarExtMatrixT(int, int, int);
+
 /** Creates a new identity matrix of given size and
     returns a pointer to the matrix. Returns NULL on error. */
 IntMatrixTP identity_IntMatrixT(int);

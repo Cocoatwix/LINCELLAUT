@@ -547,6 +547,23 @@ int remove_extension(MultiVarExtTP a)
 }
 
 
+BigIntTP get_MultiVarExtT_coefficient(const MultiVarExtTP ext, const int* coeffPos)
+/** Retrieves a pointer to the given coefficient.
+    Returns NULL on error. */
+{
+	BigIntDirectorTP ref;
+	
+	if (ext->numOfExtensions != ext->numOfExtensionsSet)
+		return NULL;
+	
+	ref = ext->coeffs;
+	for (int i = 0; i < ext->numOfExtensions-1; i += 1)
+		ref = ref-next[coeffPos[i]];
+	
+	return ref->coeffs[coeffPos[ext->numOfExtensions-1]];
+}
+
+
 int set_MultiVarExtT_coefficient(MultiVarExtTP ext, const int* coeffPos, const BigIntTP coeff)
 /** Sets a particular value for the given MultiVarExtT's coefficient.
     The MultiVarExtT must be fully set before this function can be used.

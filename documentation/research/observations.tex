@@ -1,0 +1,690 @@
+
+\documentclass[a4paper, reqno, 12pt]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=3cm]{geometry}
+\usepackage[parfill]{parskip}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+\usepackage{amsmath}
+\usepackage{amssymb}
+%\usepackage{nicematrix} %Used for adding dividers in complicated matrices
+
+\usepackage{array} %For nicer tables
+
+\usepackage{natbib}
+
+%Defining choose and permutation notation
+\newcommand\combine[2]{{}^{#1}C_{#2}}
+%\newcommand\permute[2]{{}^{#1} \hspace{-0.05cm} P_{#2}}
+
+%Defining an environment for observations
+\newcounter{obscounter}[section]
+\newenvironment{observation}[2]
+{
+	\refstepcounter{obscounter} %Increment environment counter
+	\addcontentsline{toc}{subsection}{\thesection .\theobscounter \;\;\;\; #2}
+	%\makeatother
+	\textbf{Observation \thesection .\theobscounter} 
+	- #1
+	
+	\textbf{Justification} \\
+}
+{
+	\vspace{1cm}
+}
+
+\begin{document}
+	\tableofcontents
+	\section{Explanation}
+		This LaTeX file serves as a growing catalogue for any interesting and/or relevant observations regarding linear cellular automata over $\mathds{Z}_N$. The results
+		listed here should not be taken as proofs, but rather as things that \emph{may} be true and are worth looking into. To the best of my ability, every observation
+		here will be listed with as rigorous a justification as possible to explain why I believe each observation to be true. Again, \textbf{these justifications are not 
+		necessarily proofs}. They very well might be, but they're simply my attempt to show why I believe something to be true. 
+		
+		The following section will list all the relevant definitions and terms needed to understand the observations herein. The remaining sections will list the 
+		observations, grouped by topic and sorted in no particular order.
+		
+	\section{Terms, Definitions, Notation}
+		\subsection{Notation}
+			\begin{description}
+				\item[Divisibility] If $b$ divides $a$ (meaning $\frac{a}{b}$ results in a remainder of 0), this is represented as $b \, | \, a$. If $b$ doesn't divide $a$, 
+				this is represented as $b \nmid a$.
+				
+				\item[Set of All Matrices] The set of all $L_1$ by $L_2$ matrices with elements in $\mathds{Z}$ will be represented by $\mathds{Z}^{L_1 \times L_2}$. 
+				Similarly, the set of all $L_1$ by $L_2$ matrices with elements in $\mathds{Z}_{N}$ will be represented by $\mathds{Z}_{N}^{L_1 \times L_2}$.
+				
+				\item[Set of All Polynomials] The set of all polynomials with coefficients in $\mathds{Z}_{N}$ will be represented as $\mathds{Z}_{N}[x]$.
+			\end{description}
+			
+		\subsection{Miscellaneous}
+			\begin{description}
+				\item[Factorial] $x! = \prod_{i \, = \, 1}^{x} i$, the product of all integers from 1 to $x$.
+			
+				\item[Combinations] The number of ways to choose $y$ items from a collection of $x$, disregarding order, will be denoted as $\combine{x}{y}$. This can also
+				be computed explicitly as $\frac{x!}{y!(x-y)!}$.
+				
+				\item[Monic Polynomial] A polynomial whose leading term has a coefficient of 1.
+				
+				\item[Cycle Converting Matrix (CCM)] A matrix of the form $C_{\beta \rightarrow \alpha} \equiv \sum_{i\,=\,0}^{\frac{\beta-\alpha}{\alpha}} A^{\alpha i}$ for
+				some other update matrix $A \in \mathds{Z}_{N}^{L \times L}$, where $\alpha \, | \, \beta$ and $\beta \, | \, \omega$, where $\omega$ is the cycle length
+				of $A$.
+			\end{description}
+			
+		\subsection{Linear Cellular Automata}
+			\begin{description}
+				\item[Multiplicative Order] The \emph{multiplicative order} of some object $\alpha$ is the smallest positive integer $c$ such that $\alpha^c \equiv 1$.
+			
+				\item[Module] For the purposes of this document, a \emph{module} will refer to sets of ordered tuples of the integers modulo some integer, i.e. 
+				$\mathds{Z}_{N}^{L}$. They can be thought of as vector spaces with less strict definitions.
+			
+				\item[Cycle Length] The \emph{cycle length} of a vector $\vec{v}$ under iteration by $A$ is defined to be the smallest positive integer $\omega$ such that
+				$A^{\tau + \omega}\vec{v} \equiv A^{\tau}\vec{v}$ for some nonnegative integer $\tau$, called the \emph{transient length} of the vector $\vec{v}$. The cycle 
+				length can be thought of as the number of iterations needed for $\vec{v}$ to return back to itself. The \emph{cycle length} of the matrix $A$ is defined to 
+				be the smallest positive integer $\omega$ such that $A^{\tau + \omega} \equiv A^{\tau}$ for some nonnegative integer $\tau$, called the \emph{transient 	
+				length} of the matrix $A$.
+			
+				\item[Transient Length] The \emph{transient length} of a vector $\vec{v}$ under iteration by $A$ is the largest nonnegative integer $\tau$ such that 
+				$A^{\tau}\vec{v} \not\equiv A^{\tau + c}\vec{v} \;\; \forall c \in \mathds{Z}^+$. It can be thought of as the number of iterations needed for the vector $
+				\vec{v}$ to fall into a cycle.
+			
+				\item["iterating"] The process of multiplying a vector or matrix by some update matrix. For instance, iterating the vector $\vec{v}$ twice means to calculate
+				$A^{2}\vec{v}$.
+			
+				\item[Maximal cycle length] Under iteration my a matrix $A$, the \emph{maximal cycle length} for a vector is the cycle length of the matrix $A$. It's unknown
+				whether a vector with maximal cycle length always exists in $\mathds{Z}_{p^k}^{L}$.
+			
+				\item["iterating back to itself"] Used to describe the process of a vector or matrix iterating enough times to return back to its "original value". The 
+				meaning of "original value" may change depending on context.
+				
+				\item[Matrix Lift] A \emph{lift} of a matrix $A \in \mathds{Z}_{p^k}^{L \times L}$ is any matrix $B \in \mathds{Z}_{p^{k+n}}^{L \times L}$ with the property
+				that $B \equiv A \bmod{p^k}$. This means $B = A + \sum_{i\,=\,0}^{n-1} p^{k+i}G_i, \, G_i \in \mathds{Z}_{p}^{L \times L}$.
+				
+				\item[Minimal Polynomial] The \emph{minimal polynomial} of a matrix $A \in \mathds{Z}_{p}^{L \times L}$ is the monic polynomial $\mu(x)$ of least degree such 
+				that $\mu(A) \equiv 0$. 
+			
+				\item[Minimal Annihilating Polynomial] The \emph{minimal annihilating polynomial} of a vector $\vec{v} \in \mathds{Z}_{p}^{L}$ is the monic polynomial $\rho(
+				x)$ of least degree such that, for a given matrix $A \in \mathds{Z}_{p}^{L \times L}$, $\rho(A)\vec{v} \equiv 0$.
+			\end{description}
+			
+	\section{Fields}
+		\label{sec:fields}
+		\begin{observation}{For all elements $n \in \mathds{Z}_{p}, n \leq \frac{p-1}{2}$, no two distinct elements can square to the same number.}
+		{$\forall m, n \in \mathds{Z}_{p}, m, n \leq \frac{p-1}{2}, m \not\equiv n \implies m^2 \not\equiv n^2$}
+			\label{obs:zmodpsquares}
+			In order for no two distinct elements in $\mathds{Z}_{p}$ less than or equal to $\frac{p-1}{2}$ to square to the same thing, it must be the case that the first
+			$\frac{p-1}{2}+1$ square numbers (using $0^2$ as the first) are all distinct. As an example, for $\mathds{Z}_7$, the first $\frac{7-1}{2}+1=4$ square 
+			numbers are 0, 1, 4, and 2. Since these are all distinct, we know for all $n \leq \frac{p-1}{2}, p=7$, no two numbers square to the same thing.
+			
+			If we were to list out these square numbers in order (including one extra to show where they start repeating), taking into account the amount added to one 
+			square number to get the next, we'd get:
+			
+			%A modern masterpiece
+			\begin{center}
+				\begin{tabular}{c}
+					\begin{tabular}{*{4}{b{0.3cm}}}
+						\tiny{+1} & \tiny{+3} & \tiny{+5} & \tiny{+7}
+					\end{tabular} \\
+					\begin{tabular}{*{4}{p{0.3cm}}}
+						$\curvearrowright$ & $\curvearrowright$ & $\curvearrowright$ & $\curvearrowright$
+					\end{tabular} \\
+					\begin{tabular}{*{5}{p{0.3cm}}}
+						0 & 1 & 4 & 2 & 2
+					\end{tabular}
+				\end{tabular}
+			\end{center}
+			
+			where the arithmetic is carried out mod 7. What's interesting to note is that, to get from one square number to the next, we simply add a sequence of odd
+			numbers. For example, to get from 1 to 2, we add +3, then +5. In fact, for any prime modulus we use, going from one square number to the next requires
+			simply adding a sequence of some consecutive odd numbers.
+			
+			This gives us a way to potentially show that none of the square numbers we're interested in will ever repeat. If we could find a way to create a consecutive
+			sequence of odd numbers (within our bounds) that sums to a multiple of our prime $p$, then that means there would be a way to hop from one square number
+			to the same square number (since adding any multiple of $p$ is the same as adding zero mod $p$). Inversely, if there's no such way to find a consecutive
+			sequence of odd numbers like this, then we've shown that all square numbers within our bounds are unique.
+			
+			Using the list above as reference, we can see that, if we're in $\mathds{Z}_p$, our odd numbers range from 1 to $p-2$. Let's use $a$ to index the start of our
+			sequence and $b$ to index the end of our sequence. If our starting odd number is written as $2a+1$, then $0 \leq a \leq \lfloor\frac{p}{2}\rfloor-1$. If our
+			ending odd number is written as $2b+1$, then $a \leq b \leq \lfloor\frac{p}{2}\rfloor-1$.
+			
+			%Don't mess with me; I can do whatever I want
+			\begin{figure*}[b]
+				\[
+					\overbrace{\hspace{3cm}}^{b+1}
+					\vspace{1.4cm}
+				\]
+				\[
+					a \;
+					\Biggl\{ 
+					\vspace{-3cm}
+					\hspace{3.7cm}
+				\]
+				\[
+				\begin{matrix}
+					\bullet & \bullet & \bullet & \bullet & \bullet & \bullet \\
+					\bullet & \bullet & \bullet & \bullet & \bullet & \bullet \\
+					\bullet & \bullet & \bullet & \bullet & \bullet & \bullet \\
+					\circ   & \circ   & \circ   & \bullet & \bullet & \bullet \\
+					\circ   & \circ   & \circ   & \bullet & \bullet & \bullet \\
+					\circ   & \circ   & \circ   & \bullet & \bullet & \bullet
+				\end{matrix}
+				\]
+				\caption{A visual representation of what the sum of odd numbers could look like mod 13, with $a=3$ and $b=5$.
+				The sum is equal to the number of black dots.}
+			\end{figure*}
+			
+			Using $a$ and $b$, we can write the sum of our resulting sequence of odd numbers as
+			\[
+				(b+1)^2 - a^2 = (b+1-a)(b+1+a)
+			\]
+			What's the minimum and maximum value the terms on the RHS of the equation can be?
+			Using the bounds we created for $a$ and $b$:
+			\begin{alignat*}{3}
+				\text{min}(b+1-a) &= 0+1-0                                      &&= 1                                    \\
+				\text{max}(b+1-a) &= \left\lfloor\frac{p}{2}\right\rfloor-1+1-0 &&= \left\lfloor\frac{p}{2}\right\rfloor \\
+				\text{min}(b+1+a) &= 0+1+0                                      &&= 1                                    \\
+				\text{max}(b+1+a) &= \left\lfloor\frac{p}{2}\right\rfloor-1+1+\left\lfloor\frac{p}{2}\right\rfloor-1 &&= 2\left\lfloor\frac{p}{2}\right\rfloor-1
+			\end{alignat*}
+			
+			$p$ is prime, so for $(b+1)^2-a^2$ to be a multiple of $p$, one of $(b+1-a)$ or $(b+1+a)$ must be a multiple of $p$. However, from the minimum and
+			maximum calculations above, both these factors are bounded between 1 and $2\left\lfloor\frac{p}{2}\right\rfloor-1$, which is strictly less than $p$. Therefore,
+			there's no possible way either of these factors can be a multiple of $p$. Therefore, within our given bounds, a consecutive sequence of odd numbers can never
+			sum to a multiple of $p$, and therefore no numbers $\leq \frac{p-1}{2}$ in $\mathds{Z}_p$ can square to the same number. 
+		\end{observation}
+		
+		\begin{observation}{For all elements $n \in \mathds{Z}_{p^2}, n \leq \frac{p^2-1}{2}, \, p \nmid n$, no two distinct elements can square to the same number.}
+		{$\forall m, n \in \mathds{Z}_{p^2}, m, n \leq \frac{p^2-1}{2}, p \nmid m, p \nmid n, m \not\equiv n \implies m^2 \not\equiv n^2$}
+			The idea is very similar to Observation \ref{sec:fields}.\ref{obs:zmodpsquares}. If we look at the differences between differing square numbers, we see the
+			difference is given by sums of consecutive odd numbers. If we let the starting odd number be represented as $2a+1$ and the ending odd number as $2b+1$, the
+			sum of all the odd numbers from $2a+1$ to $2b+1$ is given by
+			\[
+				(b+1)^2 - a^2 = (b+1-a)(b+1+a)
+			\]
+			
+			In this case, we want to ensure that this sum is never a multiple of $p^2$ within our bounds. Otherwise, there would exist a pair of square numbers in our bound
+			with the same value mod $p^2$. Of course, in $\mathds{Z}_{p^2}$, any multiple of $p$ will square to 0, so we ignore these by saying that $p$ can't divide our 
+			original numbers before squaring. 
+			
+			Setting our bounds as $0 \leq a \leq \lfloor\frac{p^2}{2}\rfloor-1$ and $a \leq b \leq \lfloor\frac{p^2}{2}\rfloor-1$ ensures we only consider squaring numbers in
+			$\mathds{Z}_{p^2}$ which are $\leq \frac{p^2-1}{2}$. Computing the minimum and maximum value for our factors in the sum of consecutive odd numbers as before, we 
+			see:
+			\begin{alignat*}{3}
+				\text{min}(b+1-a) &= 0+1-0                                        &&= 1                                      \\
+				\text{max}(b+1-a) &= \left\lfloor\frac{p^2}{2}\right\rfloor-1+1-0 &&= \left\lfloor\frac{p^2}{2}\right\rfloor \\
+				\text{min}(b+1+a) &= 0+1+0                                        &&= 1                                      \\
+				\text{max}(b+1+a) &= \left\lfloor\frac{p^2}{2}\right\rfloor-1+1+\left\lfloor\frac{p^2}{2}\right\rfloor-1 &&=
+				                     2\left\lfloor\frac{p^2}{2}\right\rfloor-1
+			\end{alignat*}
+			Using these bounds, neither factors in the sum of consecutive odd number can never have a factor of $p^2$ in them. Also, because we explicitly assume that our
+			sequence won't start or end on a multiple of $p$-th odd number (e.g. if our prime was 7, then we'd never start or end the sequence on the 7th odd number, the
+			14th, 21st, etc., where 1 is treated as the zeroth odd number), a factor of $p^2$ can never be created by multiplying two factors with $p$ in them. Therefore, 
+			with our given restrictions and bounds, there's no way the sum of consecutive odd numbers can be a multiple of $p^2$, which means for any two numbers in 
+			$\mathds{Z}_{p^2}$ which are $\leq \frac{p^2-1}{2}$ are aren't multiples of $p$, their squares won't be equal.
+		\end{observation}
+		
+	\section{Polynomials, Roots, Field Extensions}
+		\label{sec:polynomials}
+		\begin{observation}{Given two positive integers $i$ and $j$ with $i \geq j$, 
+		\[
+			\text{gcd}(x^i-1, \, x^j-1) = x^{\text{gcd}(i, \, j)} - 1 
+		\]}{$\text{gcd}(x^i-1, \, x^j-1) = x^{\text{gcd}(i, \, j)} - 1$}
+			\label{obs:primegcdexpression}
+			\textbf{First observation -} If $j \nmid i$, then $(x^i - 1) \bmod{(x^j - 1)} \equiv x^{i \bmod{j}} - 1$.
+			
+			To find $(x^i - 1) \bmod{(x^j - 1)}$, we need to divide $x^i - 1$ by $x^j - 1$ and take the remainder. Performing this division, we get
+			\[
+				\frac{x^i - 1}{x^j - 1} = x^{i-j} + x^{i-2j} + x^{i-3j} + \cdots + x^{i-nj} \text{ R } x^{i-nj} - 1
+			\]
+			where R signifies the remainder of the division and where $nj$ is the largest positive multiple of $j$ such that $i - nj \geq 0$. $i - nj$ is the same as $i 
+			\bmod{j}$, so we can rewrite the above division as
+			\[
+				\frac{x^i - 1}{x^j - 1} = \left(\sum_{c \, = \, 0}^{\bigl\lfloor\frac{i}{j}\bigl\rfloor} x^{i-cj}\right) \text{ R } \, x^{(i \bmod{j})} - 1
+			\]
+			
+			\textbf{Second observation - } If $j \, | \, i$, then $x^i - 1 \bmod{x^j - 1} \equiv 0$.
+			
+			Repeating the same division as before, we see
+			\[
+				\frac{x^i - 1}{x^j - 1} = x^{i-j} + x^{i-2j} + x^{i-3j} + \cdots + x^{i-(n-1)j} + 1
+			\]
+			The difference in this case is that, unlike when $j \nmid i$, $i-nj = 0$, since $j$ is a factor of $i$. This means the division works out more nicely in that
+			it's possible to multiply $x^j - 1$ by another polynomial and get $x^i - 1$ \emph{exactly} as opposed to only getting close.
+			
+			This leaves us with a remainder of 0 in this case.
+			
+			These observations allow us to find the gcd of our two polynomials using the Euclidean algorithm. To find the gcd of $x^i - 1$ and $x^j - 1$ using the Euclidean
+			algorithm, we divide the two polynomials and find the remainder. If the remainder is zero, the divisor of the division is taken to be the gcd. If the remainder
+			isn't zero, we repeat this process using the divisor as the new dividend and the remainder as the new divisor, repeating as many times as necessary until the
+			remainder is zero, at which point we can find the gcd of the two original polynomials by looking at the most recent divisor.
+			
+			This allows us to check the claim above. If $j \, | \, i$, then gcd$(x^i - 1, \, x^j - 1) = x^j - 1$ directly from the Euclidean algorithm and our second
+			observation.
+			
+			If $j \nmid i$, then we'll end up computing a sequence of divisions until the remainder is zero:
+			\[
+				\frac{x^i - 1}{x^j - 1}, \, \frac{x^j - 1}{x^{(i \bmod j)} - 1}, \, \frac{x^{(i \bmod j)} - 1}{x^{(j \bmod{(i \bmod j)})} - 1}, \, \cdots
+			\]
+			
+			What's interesting about this sequence is that the exponents on each polynomial mimic how $i$ and $j$ would behave under the Euclidean algorithm on their own;
+			the sequence of divisions we get trying to find gcd$(i, \, j)$ gives us the exponents for our polynomials above:
+			\[
+				\frac{i}{j}, \, \frac{j}{i \bmod{j}}, \, \frac{i \bmod{j}}{j \bmod{(i \bmod{j})}}, \, \cdots
+			\]
+			This is a direct consequence of our first observation. Since the Euclidean algorithm finishing for gcd$(i, \, j)$ means the divisor divides the 
+			dividend for the resulting division, the exponents for the corresponding polynomial division in gcd$(x^j-1, \, x^i-1)$ will also divide, putting us in the first 
+			case where the division will result in a remainder of zero. 
+			
+			This means that the number of divisions we need to compute for gcd$(x^j - 1, \, x^i - 1)$ is exactly the same as the number of divisions we need to compute for
+			gcd$(i, \, j)$. We know the Euclidean algorithm will end when the divisor of the resulting division is the gcd of the two starting values, so we know that the
+			exponent on the divisor of the last division for gcd$(x^j-1, \, x^i-1)$ must be gcd$(i, \, j)$, since that will be the value of the divisor of the last division
+			while calculating gcd$(i, \, j)$.
+			
+			Putting these two cases together suggests that gcd$(x^i-1, \, x^j-1) = x^{\text{gcd}(i, \, j)}-1$.
+		\end{observation}
+		
+		\begin{observation}{Given a root $\alpha$ of an irreducible monic polynomial $\mu(x) \in \mathds{Z}_{p}[x]$, where the degree of $\mu(x)$ is $d$, $\alpha$ must have 
+		a multiplicative order that divides $p^d - 1$ in $\mathds{Z}_p$.}
+		{Order of roots of irreducible polynomials}
+			\label{obs:irreducibleroots}
+			The root $\alpha$ is a purely algebraic object, one that's defined entirely by the monic polynomial given. Therefore, any other object that satisfies the same
+			algebraic definition given should share the same properties as $\alpha$, at least up to the properties that the monic polynomial guarantees. In this case, it's
+			helpful to imagine a matrix $A$ whose minimal polynomial is $\mu(x)$. By properties of the polynomial, this tells us that $A \in \mathds{Z}_{p}^{d \times d}$.
+			
+			Because the minimal polynomial of $A$ is $\mu(x)$, $A$ is also a sort of root of the polynomial $\mu(x)$. For us, this means that the multiplicative order of $A$
+			should match with the multiplicative order of $\alpha$ (since powers of both $\alpha$ and $A$ will take the same algebraic form and abide by the same algebraic
+			restrictions).
+			
+			Now, we can make use of Observation \ref{sec:matrices}.\ref{obs:onebigcyclelength} to deduce properties of $A$. Because the minimal polynomial of $A$ is 
+			irreducible, that means iterating vectors by $A$ can create at most 2 different cycle lengths, one of which being 1 while the other is some value $\geq 1$.
+			We only care about this second cycle length as, when these vectors iterate back to themselves, the matrix $A$ must cycle back to itself, too (since all vectors
+			would be iterated back to their original values, $A$ would necessarily have to iterate to $I$). This means the matrix's multiplicative order is tied to the 
+			possible values this second cycle length can have. From Observation \ref{sec:matrices}.\ref{obs:onebigcyclelength}, we know that all the possible cycle lengths
+			must divide $p^d - 1$, meaning the multiplicative order of $A$ must also divide $p^d - 1$.
+			
+			Because the multiplicative order of $A$ divides $p^d - 1$, the multiplicative order of $\alpha$ must also divide $p^d - 1$.
+		\end{observation}
+		
+		\begin{observation}{For $i \geq 1$, the polynomial $x^{p^i} - x \in \mathds{Z}_{p}[x]$ is the product of all monic irreducible polynomials in $\mathds{Z}_{p}[x]$
+		whose degree divides $i$.}{Properties of $x^{p^i} - x \in \mathds{Z}_{p}[x]$}		
+			Firstly, let's factor this polynomial as
+			\[
+				x(x^{p^i - 1} - 1) \mod{p}
+			\]
+			Clearly, the irreducible factor $x$ will always be in this polynomial. We'll now focus our attention only on the second factor:
+			\[
+				x^{p^i - 1} - 1 \mod{p}
+			\]
+			This polynomial behaves similarly to a "roots of unity" polynomial, in that every factor defines some root that has an order that divides $p^i-1$. In fact, 
+			because we're in a field ($\mathds{Z}_{p}$), this polynomial has \emph{every} factor that defines a root with order that divides $p^i-1$. Also, because we're in a
+			finite field, we can always factor out some constant multiple from each factor to make them monic, so we'll assume all factors we're dealing with are monic.
+			
+			Because of Observation \ref{sec:polynomials}.\ref{obs:irreducibleroots}, we know that all irreducible polynomials of degree $i$ have roots with orders that 
+			divide $p^i-1$. Therefore, the polynomial $x^{p^i-1}-1$ must contain all irreducible monic polynomials of degree $i$.
+			
+			As well, we can show that all irreducible monic polynomials of degree $j, \, j \, | \, i$ are also factors in $x^{p^i-1}-1$. If $j \, | \, i$, then 
+			$p^j-1 \, | \, p^i-1$ by Observation \ref{sec:polynomials}.\ref{obs:primegcdexpression}. This means any irreducible monic polynomial of degree $j$ will have 
+			roots with orders that divide $p^i-1$, meaning they're factors of $x^{p^i-1}-1$.
+			
+			Now let's say we're given an irreducible monic polynomial with degree $k, \, k \nmid i$. By Observation \ref{sec:polynomials}.\ref{obs:primegcdexpression}, we
+			know that if the order of the root from the $k$-th degree polynomial divides $p^i-1$, it must also divide $p-1$. However, every root with order that divides
+			$p-1$ would simply be a linear factor of the form $x-c, \, c \in \mathds{Z}_{p}$. Therefore, no irreducible monic polynomial with degree $k$ is a factor of 
+			$x^{p^i-1}-1$.
+			
+			The last thing we need to show is that no irreducible factor repeats in the factorisation of $x^{p^i-1}-1$. Taking the derivative of this polynomial, we see
+			\[
+				\frac{\mathrm{d}}{\mathrm{d}x} x^{p^i-1}-1 \equiv \, (p^i-1)x^{p^i-2} \mod{p}
+			\]
+			For any root to be a repeated root of $x^{p^i-1}-1$, it must also be a root of its derivative. The only root of the derivative above is 0, which we know isn't
+			a root of $x^{p^i-1}-1$. Therefore, none of the roots of $x^{p^i-1}-1$ are repeated.
+			
+			So, this should be enough to show that the polynomial $x(x^{p^i-1}-1) = x^{p^i}-x$ is the product of all irreducible monic polynomials over $\mathds{Z}_{p}[x]$
+			whose degree divides $i$.
+		\end{observation}
+		
+		\begin{observation}{For a polynomial $q(x) \in \mathds{Z}_{p}[x]$, 
+		\[
+			q'(x) \equiv 0 \implies (q(x^{\frac{1}{p}}))^p \equiv q(x) \mod{p}
+		\]}
+		{$q'(x) \equiv 0 \implies (q(x^{\frac{1}{p}}))^p \equiv q(x)$}
+			If $q'(x) \equiv 0$, this means $q(x)$ is a polynomial in $x^p$, since these are the polynomial terms which get sent to 0 under differentiation. This means
+			$q(x)$ looks something like
+			\[
+				q(x) = c_0 + {c_1}x^p + {c_2}x^{2p} + \cdots + {c_n}x^{np} \mod{p}
+			\]
+			Plugging in $x = x^{\frac{1}{p}}$, we get
+			\begin{align*}
+				q(x^{\frac{1}{p}}) &= c_0 + {c_1}(x^{\frac{1}{p}})^p + {c_2}(x^{\frac{1}{p}})^{2p} + \cdots + {c_n}(x^{\frac{1}{p}})^{np} \\
+				                   &= c_0 + {c_1}x + {c_2}x^2 + \cdots + {c_n}x^n \mod{p}
+			\end{align*}
+			Then, raising this entire expression to the $p$-th power gives
+			\[
+				(q(x^{\frac{1}{p}}))^p = (c_0 + {c_1}x + {c_2}x^2 + \cdots + {c_n}x^n)^p \mod{p}
+			\]
+			This expression seems difficult to simplify, but we can make use of a few observations to help us.
+			
+			Firstly, the resulting expression will be a polynomial with terms from $x^0$ to $x^{np}$:
+			\[
+				\equiv d_0 + d_1{x} + d_2{x^2} + \cdots + d_{np}{x^{np}} \mod{p}
+			\]
+			How will these terms be created? Each one will the the sum of all possible ways to create that specific power of $x$. For example, our $x^4$ term will be the
+			sum of all possible $(x)(x)(x)(x)$ terms (four $x$ terms multiplied together, then multiplied by a bunch of constants), as well as all $(x^2)(x)(x)$ terms (an 
+			$x^2$ term multiplied by two $x$ terms, then multiplied by a bunch of constants), $(x^3)(x)$ terms, $(x^2)(x^2)$ terms, and $x^4$ terms directly. How many 
+			different ways are there to create these terms?
+			
+			Imagine a simpler example, where $(q(x^{\frac{1}{p}}))^p$ looked like
+			\begin{align*}
+				(q(x^{\frac{1}{p}}))^p = & \, (c_0 + {c_1}x + {c_2}x^2 + {c_3}x^3 + {c_4}x^4) \, \times \\
+				                         & \, (c_0 + {c_1}x + {c_2}x^2 + {c_3}x^3 + {c_4}x^4) \, \times \\
+				                         & \, (c_0 + {c_1}x + {c_2}x^2 + {c_3}x^3 + {c_4}x^4) \, \times \\
+				                         & \, (c_0 + {c_1}x + {c_2}x^2 + {c_3}x^3 + {c_4}x^4) \mod{p}
+			\end{align*}
+			To get a $(x^2)(x)(x)$ term, for instance, we need to pick one line to get a $x^2$ from, and two lines to get a $x$ from. The number of ways to do this is
+			$(\combine{4}{1})(\combine{3}{2})$. Similarly, every possible term we can create with various powers of $x$ can be counted using some product of combination
+			functions. It's important to note that each term we count this way will be exactly the same. Each $x^2$ from each line has the same coefficient, as does any
+			other power we choose. Therefore, the resulting term we get at the end of this multiplication will look like 
+			${c_2}{c_1}{c_1}{c_0}(\combine{4}{1})(\combine{3}{2})x^{2}xx$.
+			
+			Another important note is that these terms can be chosen in any order. Instead of choosing the $x^2$ term first, we just as easily could have chosen the two
+			$x$ terms first, in which case our resulting term would look like ${c_1}{c_1}{c_2}{c_0}(\combine{4}{2})(\combine{2}{1})xxx^2$. The two results are equivalent.
+			
+			Going back to our original problem, this means that, for some term $(x^\alpha)(x^\beta)(x^\gamma)\cdots$, the resulting term will be given by 
+			$D(\combine{p}{A})(\combine{p - A}{B})(\combine{p - A+B}{C})\cdots(x^\alpha)(x^\beta)(x^\gamma)\cdots$ where $D$ is the product of all the relevant 
+			coefficients, and $A, \, B, \, C, \, \cdots$ is the number of times each power of $x$ appears. Because these can be in any order, we'll assume 
+			$A, \, B, \, C, \, \cdots$ are in descending order. Now, if none of $A, \, B, \, C, \, \cdots$ are equal to $p$, then the first combination function, 
+			$\combine{p}{A}$, will result in a factor of $p$. Modulo $p$, our entire term will subsequently disappear because of it. In fact, the majority of valid 
+			combinations of $A, \, B, \, C, \, \cdots$ won't have any numbers equal to $p$. The only possible terms that'll result in one of $A, \, B, \, C, \, \cdots$ being
+			equal to $p$ are $(x^0), \, (x)(x)(x)\cdots, \, (x^2)(x^2)(x^2)\cdots, \, (x^3)(x^3)(x^3)\cdots, \, \cdots$, the terms with $p$ copies of the same power of $x$. 
+			These are the terms that won't reduce to zero modulo $p$.
+			
+			Clearly, the terms $(x^0), \, (x)(x)(x)\cdots, \, (x^2)(x^2)(x^2)\cdots, \, (x^3)(x^3)(x^3)\cdots, \, \cdots$ will result in an expression similar to
+			\[
+				(q(x^{\frac{1}{p}}))^p \equiv d_0 + {d_p}x^p + {d_{2p}}x^{2p} + \cdots + {d_{np}}x^{np} \mod{p}
+			\]
+			Can we show that the coefficients $d_i$ match with the coefficients of $q(x)$? Expanding each term out gives us
+			\begin{align*}
+				\equiv & \, {c_0}{c_0}\cdots + ({c_1}{c_1}\cdots){x}xx\cdots + ({c_2}{c_2}\cdots){x^2}{x^2}{x^2}\cdots + \cdots + ({c_n}{c_n}\cdots)
+				{x^n}{x^n}{x^n}\cdots \\
+				\equiv & \, {{c_0}^p} + {{c_1}^p}x^p + {{c_2}^p}(x^2)^p + \cdots + {{c_n}^p}(x^n)^p \mod{p}
+			\end{align*}
+			In $\mathds{Z}_{p}$, every number has a multiplicative order that divides $p-1$, so $c^p \equiv c \;\; \forall c \in \mathds{Z}_{p}$. We can simplify our above
+			expression to
+			\[
+				\equiv c_0 + {c_1}x^p + {c_2}x^{2p} + \cdots + {c_n}x^{np} \mod{p}
+			\]
+			This expression is exactly $q(x)$. So $q'(x) \equiv 0$ should imply that $(q(x^{\frac{1}{p}}))^p \equiv q(x) \bmod{p}$.
+		\end{observation}
+	
+	\section{Matrices, Matrix Lifts}
+		\label{sec:matrices}
+		\begin{observation}{$A\vec{v} = \lambda\vec{v} \implies p(A)\vec{v} = p(\lambda)\vec{v}$.}
+		{$A\vec{v} = \lambda\vec{v} \implies p(A)\vec{v} = p(\lambda)\vec{v}$}
+			Let $p(x) = c_0 + c_1x + c_2x^2 + \cdots + c_nx^n$. Computing $p(A)\vec{v}$, we see
+			\begin{align*}
+				  & \, p(A)\vec{v} \\
+				= & \, (c_0I + c_1A + c_2A^2 + \cdots + c_nA^n)\vec{v} \\
+				= & \, c_0\vec{v} + c_1A\vec{v} + c_2A^2\vec{v} + \cdots + c_nA^n\vec{v} \\
+				= & \, c_0\vec{v} + c_1\lambda\vec{v} + c_2\lambda^2\vec{v} + \cdots + c_n\lambda^n\vec{v} \\
+				= & \, (c_0 + c_1\lambda + c_2\lambda^2 + \cdots + c_n\lambda^n)\vec{v} \\
+				= & \, p(\lambda)\vec{v}
+			\end{align*}
+		\end{observation}
+		
+		\begin{observation}{Given an invertible matrix $A \in \mathds{Z}^{L \times L}$ and some odd prime $p$, 
+		\[
+			A^\omega \equiv I + p^{k-1}B \bmod{p^k} \implies A^{p\omega} \equiv I + p^{k}B \bmod{p^{k+1}}
+		\]
+		for some integer $k \geq 2$ and some $B \in \mathds{Z}_{p}^{L \times L}$.}
+		{$A^\omega \equiv I + p^{k-1}B \bmod{p^k} \implies A^{p\omega} \equiv I + p^{k}B \bmod{p^{k+1}}$}
+			\label{obs:abcmatrixrelation}
+			If $A^\omega \equiv I + p^{k-1}B \bmod{p^k}$, then we know
+			\[
+				A^\omega \equiv I + p^{k-1}B + p^{k}C \mod{p^{k+1}}
+			\]
+			for some $C \in \mathds{Z}_{p}^{L \times L}$. With a bit of algebraic manipulation, we see
+			\[
+				A^{2\omega} \equiv I + 2p^{k-1}B + 2p^{k}C + p^{2k-2}B^{2} \mod{p^{k+1}}
+			\]
+			for $k \geq 2$. We can now use induction to show what higher powers of $A$ will look like. Let $\Delta_{n} = \frac{n(n+1)}{2}$ be the $n$th triangular number. 
+			We can then rewrite $A^{2\omega}$ as
+			\[
+				A^{2\omega} \equiv I + 2p^{k-1}B + 2p^{k}C + \Delta_{2-1}p^{2k-2}B^{2} \mod{p^{k+1}}
+			\]
+			Let's assume that, for some integer $r < p$, 
+			\[
+				A^{r\omega} \equiv I + rp^{k-1}B + rp^{k}C + \Delta_{r-1}p^{2k-2}B^{2} \mod{p^{k+1}}
+			\]
+			If we multiply both sides by $A^\omega$, we get
+			\begin{align*}
+				       & \, A^{\omega}A^{r\omega} \\
+				\equiv & \, (I + p^{k-1}B + p^{k}C)(I + rp^{k-1}B + rp^{k}C + \Delta_{r-1}p^{2k-2}B^{2}) \\
+				\equiv & \, I + (r+1)p^{k-1}B + (r+1)p^{k}C + (r + \Delta_{r-1})p^{2k-2}B^2 \\
+				\equiv & \, I + (r+1)p^{k-1}B + (r+1)p^{k}C + (r + \frac{(r-1)r}{2})p^{2k-2}B^2 \\
+				\equiv & \, I + (r+1)p^{k-1}B + (r+1)p^{k}C + (\frac{(r+1)r}{2})p^{2k-2}B^2 \\
+				\equiv & \, I + (r+1)p^{k-1}B + (r+1)p^{k}C + \Delta_{r}p^{2k-2}B^2 \\
+				\equiv & \, A^{(r+1)\omega} \mod{p^{k+1}}
+			\end{align*}
+			From this, we see
+			\begin{align*}
+				             A^{r\omega} & \, \equiv I + rp^{k-1}B + rp^{k}C + \Delta_{r-1}p^{2k-2}B^{2} \\
+				\implies A^{(r+1)\omega} & \, \equiv I + (r+1)p^{k-1}B + (r+1)p^{k}C + \Delta_{r}p^{2k-2}B^{2} \mod{p^{k+1}}
+			\end{align*}
+			Via the principle of mathematical induction, we can say
+			\[
+				A^{n\omega} \equiv I + np^{k-1}B + np^{k}C + \Delta_{n-1}p^{2k-2}B^{2} \mod{p^{k+1}}
+			\]
+			for $k \geq 2$ and $p \neq 2$x. Then, simply plugging $n = p$ into this expression gives
+			\begin{align*}
+				A^{p\omega} & \, \equiv I + pp^{k-1}B + pp^{k}C + \Delta_{p-1}p^{2k-2}B^{2}   \\
+				            & \, \equiv I + p^{k}B + p^{k+1}C + \frac{(p-1)p}{2}p^{2k-2}B^{2} \\
+							& \, \equiv I + p^{k}B + \frac{(p-1)p}{2}p^{2k-2}B^{2} \mod{p^{k+1}}
+			\end{align*}
+			Since we know $p \neq 2$, we can simplify the third term in this sum:
+			\begin{align*}
+				\equiv & \, I + p^{k}B + \frac{p-1}{2}p^{2k-1}B^{2} \\
+				\equiv & \, I + p^{k}B \mod{p^{k+1}}
+			\end{align*}
+			for $k \geq 2$. 
+		\end{observation}
+		
+		\begin{observation}{Assume $A \in \mathds{Z}^{L \times L}$ is an invertible matrix where $A^\omega \equiv I \bmod{p}$, $p \neq 2$ (so $\omega$ is the cycle length 
+		of $A$). If, for the smallest $k > 1$, $B \neq 0$, $A^\omega \equiv I + p^{k-1}B \bmod{p^k}$, and the vector $\vec{v}$ has maximal cycle length mod $p^k$, then for 
+		all $h > 0$, $\vec{v}$ will also have maximal cycle length mod $p^h$.}
+		{Maximal cycle vector mod $p^k$, $\implies$ maximal cycle vector mod $p^{k+h}$}
+			From Proposition 3 in \citet{Mendivil2012}, we know a vector with maximal cycle length always exists under a prime modulus. Let's say the vector $\vec{v}$
+			has maximal cycle length $\omega$ under iteration by $A$ mod $p$.
+			
+			Modulo $p^2$, there are only two possibilities for the cycle length of $A$: either it stays as $\omega$--which means $\vec{v}$ will necessarily still have maximal
+			cycle length--or it increases to $p\omega$. If the cycle length stays the same, then the cycle length of $A$ mod $p^3$ will have the same two choices. If the
+			cycle length stays the same mod $p^3$, then the cycle length mod $p^4$ will have the same choice, and so on. We'll assume that at some modulus, say $p^k$, the 
+			cycle length of $A$ will increase to $p\omega$. Otherwise, $\vec{v}$ will always have maximal cycle length for all mod $p^k$ anyway.
+			
+			If the cycle length of $A$ increases to $p\omega$ mod $p^k$, then we can write that
+			\[
+				A^\omega \equiv I + p^{k-1}B \mod{p^k}
+			\]
+			since $A$ must reduce to $I$ for all moduli $p^h$ where $h < k$. From our assumptions, $B \neq 0$, so there exists at least one vector that doesn't iterate to 
+			zero under $B$. If one of those vectors happens to be $\vec{v}$, then $\vec{v}$ also has maximal cycle length mod $p^k$ since its cycle length must both be a
+			multiple of $\omega$ and must divide the matrix's cycle length $p\omega$. Since $p$ is prime, $n\omega \, | \, p\omega \implies n \in \{1, \, p\}$, and if
+			$B\vec{v} \neq \vec{0}$, then $A^{\omega}\vec{v} \neq \vec{v}$, so the cycle length of $\vec{v}$ can't possibly be $\omega$. This leaves the only remaining
+			possible cycle length for $\vec{v}$ as $p\omega$, which is the maximal cycle length mod $p^k$.
+			
+			Now, we can make use of Observation \ref{sec:matrices}.\ref{obs:abcmatrixrelation}, which says that
+			\[
+				A^{\omega} \equiv I + p^{k-1}B \bmod{p^k} \implies A^{p\omega} \equiv I + p^{k}B \bmod{p^{k+1}}
+			\]
+			We know $\vec{v}$ has a cycle length of $p\omega \bmod{p^k}$, so its cycle length must be a multiple of $p\omega \bmod{p^{k+1}}$. However, it must also divide
+			the matrix's cycle length mod $p^{k+1}$, which is $p^{2}\omega$. By the same logic as before, this means $\vec{v}$ must also have maximal cycle length
+			mod $p^{k+1}$.
+			
+			This same line of reasoning should extend to any mod $p^{k+n}$, meaning $\vec{v}$ will have maximal cycle length for all moduli which are powers of $p$.
+		\end{observation}
+		
+		\begin{observation}{If $A \in \mathds{Z}_{p}^{L \times L}$ is an invertible matrix with irreducible monic minimal polynomial $\mu(x)$, then under iteration by $A$,
+		there are only two possible cycle lengths for a vector in $\mathds{Z}_{p}^{L}$ (possibly the same), one of which being 1. As well, these cycle lengths must divide
+		$p^L-1$.}{Cycles under matrices w/ irreducible minimal polynomials}
+			\label{obs:onebigcyclelength}
+			The Minimal Polynomial Theorem described in \citet{Patterson2008}, says that, given a vector's minimal annihilating polynomial, we can compute that vector's
+			cycle length by computing the minimal annihilating polynomial's order. We also know that the minimal annihilating polynomial for any vector must be a factor of 
+			the matrix's minimal polynomial due to the Primary Decomposition Theorem. 
+			
+			However, since our matrix's minimal polynomial is irreducible, it can't be factored into smaller factors. This means each vector in $\mathds{Z}_{p}^{L}$ must
+			have the same minimal annihilating polynomial: the matrix's minimal polynomial. So, every vector in the space must have the same cycle length, dictated by the
+			order of the minimal polynomial, except for the zero vector, which is already zero and thus will always have a cycle length of 1, separate from the rest (unless
+			the order of the minimal polynomial happens to be 1, in which case all vectors will have a cycle length of 1).
+			
+			As well, since there are $p^L-1$ nonzero vectors in $\mathds{Z}_{p}^{L}$, the order of the minimal polynomial (and thus the cycle length for all nonzero vectors)
+			must divide $p^L-1$. Otherwise, there's no possible way the matrix would be invertible (multiple vectors would have to be mapped to the same vector).
+		\end{observation}
+		
+		\begin{observation}{Given an invertible matrix $A \in \mathds{Z}_{p}^{L \times L}$ with minimal polynomial in the form $(\lambda-c)^{2}q(\lambda)$, $A$ will have a 
+		cycle length in the form $np$ for some $n \in \mathds{Z}$.}
+		{Repeated root in minimal polynomial $\implies \omega = np$}
+			If the cycle length of $A$ is $\omega$, then
+			\begin{align*}
+				         & A^\omega \equiv I \\
+				\implies & A^\omega - I \equiv 0 \mod{p}
+			\end{align*}
+			This means the minimal polynomial of $A$ must divide $\lambda^\omega - 1$. So
+			\begin{align*}
+				         & (\lambda-c)^{2}q(\lambda) \;\, | \;\, \lambda^\omega - 1 \\
+				\implies & (\lambda-c)^{2} \;\, | \;\, \lambda^\omega - 1 \\
+				\implies & (\lambda-c) \;\, | \;\, \lambda^\omega - 1
+			\end{align*}
+			If we were to divide these polynomials, we see
+			\[
+				\frac{\lambda^\omega-1}{\lambda-c} = \lambda^{\omega-1} + c\lambda^{\omega-2} + c^{2}\lambda^{\omega-3} + \cdots + c^{\omega-2}\lambda + c^{\omega-1}
+				\implies c^{\omega} \equiv 1 \mod{p}
+			\]
+			This isn't too surprising. However, we also know that $(\lambda-c)^{2} \;\, | \;\, \lambda^\omega - 1$, so $\lambda-c$ must divide the quotient above.
+			Dividing them, we see
+			\begin{align*}
+				& \frac{\sum_{i\;=\;0}^{\omega-1} c^{i}\lambda^{\omega-1-i}}{\lambda-c} = 
+				\lambda^{\omega-2} + 2c\lambda^{\omega-3} + 3c^{2}\lambda^{\omega-4} + \cdots + (\omega-2)c^{\omega-3}\lambda + (\omega-1)c^{\omega-2} \\
+				\implies & (1-\omega)c^{\omega-1} \equiv c^{\omega-1} \\
+				\implies & \omega \equiv 0 \mod{p}
+			\end{align*}
+			This means $\omega$ must be a multiple of $p$ when the minimal polynomial has a repeated root in the form $\lambda-c$. Theoretically, this should also extend
+			to when $c$ is a field extension of $\mathds{Z}_p$, so non-linear repeated roots in the minimal polynomial should also cause the cycle length of $A$ to be a
+			multiple of $p$.
+		\end{observation}
+		
+		\begin{observation}{After a certain number of iterations, lifts of invertible matrices "merge" into the same matrix.}
+		{Merging Matrix Lifts}
+			Sadly, I don't have anything more than examples to back this one up, but based on the few examples I've tried, this seems to be a common behaviour.
+			
+			As an easy example, consider the matrix $A = 
+			\begin{bmatrix}
+				\begin{smallmatrix}
+					1 & 1 \\
+					1 & 0
+				\end{smallmatrix}
+			\end{bmatrix}$ 
+			mod 5. If we "lift" this matrix to mod 25 (meaning we take some lift of it mod 25) and label our lift as $B$, then it seems as though
+			\[
+				B^5 \equiv A^5 \equiv
+				\begin{bmatrix}
+					8 & 5 \\
+					5 & 3
+				\end{bmatrix} \mod{25}
+			\]
+			no matter what lift we choose. In this way, after 5 iterations, the lifts of $A$ all seem to "merge" into the same matrix.
+			
+			This isn't specific to this matrix or modulus, either. As another random example, take $A = 
+			\begin{bmatrix}
+				\begin{smallmatrix}
+					0 & 8 \\
+					13 & 17
+				\end{smallmatrix}
+			\end{bmatrix}$
+			mod 19. If we lift this matrix to mod 361 ($19^2$), then all lifts seem to marge after 380 iterations. For instance:
+			\[
+				\begin{bmatrix}
+					0 & 8 \\
+					13 & 17
+				\end{bmatrix}^{380}
+				\equiv
+				\begin{bmatrix}
+					57 & 141 \\
+					108 & 359
+				\end{bmatrix}^{380}
+				\equiv
+				\begin{bmatrix}
+					333 & 0 \\
+					0 & 333
+				\end{bmatrix} \mod{361}
+			\]
+		\end{observation}
+		
+		\begin{observation}{All 2 by 2 matrices mod a prime power have a vector with maximal cycle length}
+		{$\forall A \in \mathds{Z}_{p^k}^{2 \times 2}$, a vector with maximal cycle length exists}
+			My reasoning is explained in \citet{Strong2022maximal2x2}.
+		\end{observation}
+		
+	\section{Cycle Converting Matrices (CCMs)}
+		\begin{observation}{$(C_{\alpha \rightarrow \beta})(C_{\beta \rightarrow \gamma}) \equiv C_{\alpha \rightarrow \gamma}$.}
+		{$(C_{\alpha \rightarrow \beta})(C_{\beta \rightarrow \gamma}) \equiv C_{\alpha \rightarrow \gamma}$.}
+			By definition of the CCM:
+			\begin{align*}
+				  & (C_{\alpha \rightarrow \beta})(C_{\beta \rightarrow \gamma}) \\
+				= & \left(\sum_{i\,=\,0}^{\frac{\alpha-\beta}{\beta}} A^{\beta i}\right)\left(\sum_{j\,=\,0}^{\frac{\beta-\gamma}{\gamma}} A^{\gamma j}\right) \\
+				= & \, I(I + A^{\gamma} + A^{2\gamma} + \cdots + A^{\beta - 2\gamma} + A^{\beta - \gamma}) \\
+				+ & \, A^{\beta}(I + A^{\gamma} + A^{2\gamma} + \cdots + A^{\beta - 2\gamma} + A^{\beta - \gamma}) \\
+				+ & \, A^{2\beta}(I + A^{\gamma} + A^{2\gamma} + \cdots + A^{\beta - 2\gamma} + A^{\beta - \gamma}) \\
+				+ & \, \cdots \\
+				+ & \, A^{\alpha - 2\beta}(I + A^{\gamma} + A^{2\gamma} + \cdots + A^{\beta - 2\gamma} + A^{\beta - \gamma}) \\
+				+ & \, A^{\alpha - \beta}(I + A^{\gamma} + A^{2\gamma} + \cdots + A^{\beta - 2\gamma} + A^{\beta - \gamma})
+			\end{align*}
+			
+			This creates a sequence of increasing powers of $A$, from $I$ to $A^{\alpha-\gamma}$, each different by a factor of $A^{\gamma}$. This can be rewritten as
+			\begin{align*}
+				= & \, \sum_{i\,=\,0}^{\frac{\alpha-\gamma}{\gamma}} A^{\gamma i} \\
+				= & \, C_{\alpha \rightarrow \gamma}
+			\end{align*}
+		\end{observation}
+		
+		\begin{observation}{For an invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$ with cycle length $\omega \bmod{p^k}$, if the cycle length of $A$ increases to
+		$p\omega \bmod{p^{k+1}}$, then $C_{p\omega \rightarrow \omega} \equiv pI \bmod{p^{k+1}}$ for $p \neq 2$.}
+		{$C_{p\omega \rightarrow \omega} \equiv pI \bmod{p^{k+1}}, p \neq 2$}
+			Computing $C_{p\omega \rightarrow \omega} \bmod{p^{k+1}}$, we see
+			\begin{align*}
+				       & \, C_{p\omega \rightarrow \omega} \\
+				\equiv & \, \sum_{i\,=\,0}^{p\omega-\omega} A^{\omega i} \\
+				\equiv & \, I + A^\omega + A^{2\omega} + \cdots + A^{p\omega-2\omega} + A^{p\omega-\omega} \\
+				\equiv & \, I + (I + p^kB) + (I + 2p^kB) + \cdots + (I + (p-2)p^kB) + (I + (p-1)p^kB), \, B \in \mathds{Z}_{p}^{L \times L} \\
+				\equiv & \, pI + \frac{p(p-1)}{2}p^kB
+			\end{align*}
+			If $p \neq 2$,
+			\[
+				\equiv pI \mod{p^{k+1}}
+			\]
+		\end{observation}
+		
+		\begin{observation}{Given an invertible matrix with cycle length $\omega$, the CCM $C_{\alpha \rightarrow \beta}$ with $\alpha \, | \, \omega$, $\beta \, | \, \omega
+		$, $\alpha, \beta < \omega$ will never be the zero matrix.}
+		{$\alpha < \omega \implies C_{\alpha \rightarrow \beta} \not\equiv 0$}
+			If an invertible matrix $A$ has cycle length $\omega$, this means 
+			\[
+				A^{\omega} - I \equiv 0
+			\]
+			and
+			\[
+				A^{c} - I \not\equiv 0 \quad \forall c < \omega
+			\]
+			
+			If $c$ happens to divide $\omega$, then the above expression can be factored as
+			\begin{align*}
+				       & \, A^{c} - I \\
+				\equiv & \, (I + A^{d} + A^{2d} + \cdots + A^{c-d})(A^{d} - I), \quad d \, | \, c \\
+				\equiv & \, C_{c \rightarrow d}(A^{d} - I)
+			\end{align*}
+			We know this expression can't equal 0, so none of its factors can equal 0, either. This means $C_{c \rightarrow d} \not\equiv 0 \; \forall c < \omega$.
+			What's more, $c$ and $d$ can be any factors of $\omega$ we want, provided they're less than $\omega$, so we can guarantee that all CCMs without an $\omega$
+			as one of their subscript numbers can't equal the zero matrix.
+		\end{observation}
+		
+		\bibliographystyle{plainnat}
+		\bibliography{refs.bib}
+\end{document}

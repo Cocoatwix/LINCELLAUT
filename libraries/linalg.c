@@ -445,6 +445,31 @@ GenericMatrixTP new_GenericMatrixT(int r, int c)
 }
 
 
+GenericMatrixTP new_MultiVarExtMatrixT(int r, int c, int numOfExtensions)
+/** Automates the creation of a GenericMatrixT meant for
+    holding MultiVarExtTs.
+		Returns a pointer to the matrix on success, NULL otherwise. */
+{
+	GenericMatrixTP theMatrix = new_GenericMatrixT(r, c);
+
+	theMatrix->freeFunction    = free_MultiVarExtT;
+	theMatrix->initValue       = numOfExtensions;
+	theMatrix->initFunction    = new_MultiVarExtT;
+	theMatrix->copyFunction    = copy_MultiVarExtT;
+	theMatrix->printFunction   = printmve_row;
+	theMatrix->clearFunction   = clear_MultiVarExtT;
+	theMatrix->compareFunction = compare_MultiVarExtT;
+	theMatrix->reduceFunction  = reduce_MultiVarExtT;
+
+	theMatrix->incFunction  = inc_sim_MultiVarExtT;
+	theMatrix->multFunction = mult_sim_MultiVarExtT;
+	
+	init_GenericMatrixT(theMatrix);
+	
+	return theMatrix;
+}
+
+
 IntMatrixTP identity_IntMatrixT(int r)
 /** Creates an identity matrix of size r by r and returns
     a pointer to it. Returns NULL on error. */
@@ -651,21 +676,18 @@ int set_big_matrix(BigIntMatrixTP A, BigIntTP** const arr)
 
 int set_GenericMatrixT(GenericMatrixTP a, void** *const arr)
 /** Sets the matrix of a given GenericMatrixT.
+    The matrix must first be initalised.
     Returns 1 on success, 0 otherwise. */
 {
-	if ((a->copyFunction == NULL) || (a->initFunction == NULL))
+	if (a->copyFunction == NULL)
+		return 0;
+	
+	if (a->isInitialised != TRUE)
 		return 0;
 	
 	for (int row = 0; row < a->m; row += 1)
-	{
 		for (int col = 0; col < a->n; col += 1)
-		{
-			a->matrix[row][col] = a->initFunction(a->initValue);
 			a->copyFunction(arr[row][col], a->matrix[row][col]);
-		}
-	}
-	
-	a->isInitialised = TRUE;
 	
 	return 1;
 }
