@@ -558,7 +558,7 @@ BigIntTP get_MultiVarExtT_coefficient(const MultiVarExtTP ext, const int* coeffP
 	
 	ref = ext->coeffs;
 	for (int i = 0; i < ext->numOfExtensions-1; i += 1)
-		ref = ref-next[coeffPos[i]];
+		ref = ref->next[coeffPos[i]];
 	
 	return ref->coeffs[coeffPos[ext->numOfExtensions-1]];
 }
@@ -573,7 +573,6 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP ext, const int* coeffPos, const B
 	
 	if (ext->numOfExtensionsSet != ext->numOfExtensions)
 		return 0;
-	
 	
 	ref = ext->coeffs;
 	
@@ -591,6 +590,79 @@ int set_MultiVarExtT_coefficient(MultiVarExtTP ext, const int* coeffPos, const B
 	copy_BigIntT(coeff, ref->coeffs[coeffPos[ext->numOfExtensions-1]]);
 	
 	return 1;
+}
+
+
+bool increment_MultiVarExtT(MultiVarExtTP ext)
+/** Increments a MultiVarExt by 1. Once the constant term
+    rolls over the modulus, the first extension is incremented,
+		then that extensions powers, then the next extension, etc.
+		
+		Returns 1 if the ENTIRE extension rolls over after calling this
+		function, 0 otherwise.
+		
+		This function assumes ext has been fully initialised and set. */
+{
+	if (ext->numOfExtensionsSet != ext->numOfExtensions)
+		return FALSE;
+	
+	int currLoc[ext->numOfExtensions];
+	for (int i = 0; i < ext->numOfExtensions; i += 1)
+		currLoc[i] = 0;
+	
+	bool moreToInc = TRUE; //Are there more terms we need to increment?
+	
+	BigIntTP         currCoeff; //Holds what coefficient we're looking at
+	BigIntTP         temp;
+	BigIntDirectorTP ref;       //Helps navigate the extension
+	
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	
+	temp = empty_BigIntT(1);
+	
+	//Increment each term that needs incrementing
+	while (moreToInc)
+	{
+		//Find our relevant term
+		ref = ext->coeffs;
+		for (int i = 0; i < ext->numOfExtensions - 1; i += 1)
+			ref = ref->next[currLoc[i]];
+		
+		currCoeff = ref->coeffs[currLoc[ext->numOfExtensions-1]];
+		add_BigIntT(currCoeff, one, temp);
+		
+		//If this particular coefficient overflowed
+		if (compare_BigIntT(temp, ext->mod) >= 0)
+		{
+			clear_BigIntT(currCoeff);
+		}
+		else
+		{
+			copy_BigIntT(temp, currCoeff);
+			break;
+		}
+		
+		//Increment our location
+		moreToInc = FALSE;
+		for (int i = 0; i < ext->numOfExtensions; i += 1)
+		{
+			currLoc[i] += 1;
+			if (currLoc[i] >= ext->extensionSizes[i])
+				currLoc[i] = 0;
+			
+			else
+			{
+				moreToInc = TRUE;
+				break;
+			}
+		}
+	}
+
+	one  = free_BigIntT(one);
+	temp = free_BigIntT(temp);
+	
+	return !moreToInc;
 }
 
 
@@ -618,7 +690,6 @@ int reduce_MultiVarExtT(void* voidExt)
 	
 	for (int i = 0; i < ext->numOfExtensions; i += 1)
 		currLoc[i] = 0;
-	
 	
 	for (int focusTerm = 0; focusTerm < ext->numOfExtensions; focusTerm += 1)
 	{
@@ -1403,7 +1474,6 @@ void printmve_row(const void* voidExt)
 	
 	BigIntDirectorTP ref;
 	BigIntTP intRef;
-	
 	
 	if (ext->numOfExtensionsSet == ext->numOfExtensions) //If we can actually print the expression
 	{

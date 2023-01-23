@@ -2,6 +2,7 @@
 #ifndef ALGEBRA_H
 #define ALGEBRA_H
 
+#include "helper.h"
 #include "bigint.h"
 
 /** Holds a polynomial datatype using BigIntT coefficients. */
@@ -80,6 +81,16 @@ BigIntTP get_MultiVarExtT_coefficient(const MultiVarExtTP, const int*);
     The MultiVarExtT must be fully set before this function can be used.
 	Returns 1 on success, 0 otherwise. */
 int set_MultiVarExtT_coefficient(MultiVarExtTP, const int*, const BigIntTP);
+
+/** Increments a MultiVarExt by 1. Once the constant term
+    rolls over the modulus, the first extension is incremented,
+	then that extensions powers, then the next extension, etc.
+	
+	Returns 1 if the ENTIRE extension rolls over after calling this
+	function, 0 otherwise.
+	
+	This function assumes the extension has been fully initialised and set. */
+bool increment_MultiVarExtT(MultiVarExtTP);
 
 /** Uses the extension definitions to reduce the given
     MultiVarExtT. Essentially, it'll zero any terms

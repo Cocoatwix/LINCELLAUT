@@ -1338,7 +1338,7 @@ int main(int argc, char* argv[])
 						set_MultiVarExtT_coefficient(genericFelements[i][j], zeroPointer, big_element(bigF, i, j));
 					}
 					currVectElements[i][0] = new_MultiVarExtT(numOfExtensionsNeeded);
-					copy_MultiVarExtT(repExtension, genericFelements[i][0]);
+					copy_MultiVarExtT(repExtension, currVectElements[i][0]);
 				}
 				
 				genericF = new_MultiVarExtMatrixT(big_rows(bigF), big_cols(bigF), numOfExtensionsNeeded);
@@ -5723,6 +5723,12 @@ int main(int argc, char* argv[])
 				t         = free_BigPolyT(t);
 				
 				bigMod = free_BigIntT(bigMod);
+			}
+			
+			//Misc.
+			else if (testMode == 3)
+			{
+				//Create a MultiVarExtT here for testing increment_MultiVarExtT()
 			}
 			
 			for (int i = 0; i < nasize; i += 1)

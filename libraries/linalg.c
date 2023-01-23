@@ -445,6 +445,20 @@ GenericMatrixTP new_GenericMatrixT(int r, int c)
 }
 
 
+int init_GenericMatrixT(GenericMatrixTP a)
+/** Uses the previously supplied init function to initialise
+    the values of the matrix. Returns 1 on success, 0 otherwise. */
+{
+	for (int i = 0; i < a->m; i += 1)
+		for (int j = 0; j < a->n; j += 1)
+			a->matrix[i][j] = a->initFunction(a->initValue);
+		
+	a->isInitialised = TRUE;
+
+	return 1;
+}
+
+
 GenericMatrixTP new_MultiVarExtMatrixT(int r, int c, int numOfExtensions)
 /** Automates the creation of a GenericMatrixT meant for
     holding MultiVarExtTs.
@@ -632,18 +646,6 @@ int set_GenericMatrixT_multFunction(GenericMatrixTP a, int (*f)(const void*, con
 }
 
 
-int init_GenericMatrixT(GenericMatrixTP a)
-/** Uses the previously supplied init function to initialise
-    the values of the matrix. Returns 1 on success, 0 otherwise. */
-{
-	for (int i = 0; i < a->m; i += 1)
-		for (int j = 0; j < a->n; j += 1)
-			a->matrix[i][j] = a->initFunction(a->initValue);
-		
-	a->isInitialised = TRUE;
-
-	return 1;
-}
 
 
 int set_matrix(IntMatrixTP A, int** const arr)
