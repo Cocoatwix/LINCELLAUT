@@ -177,12 +177,14 @@ void old_printpf(const BigPolyTP*);
 /** Prints a BigFactorsT to stdout. */
 void printpf(const BigFactorsTP);
 
-/** Prints a MultiVarExtT to stdout. */
+/** Prints a MultiVarExtT. */
 void printmve(const MultiVarExtTP);
+void fprintmve(FILE*, const MultiVarExtTP);
 
 /** Prints only a MultiVarExtT's expression,
     not its extension definitions. */
 void printmve_row(const void*);
+void fprintmve_row(FILE*, const void*);
 
 /** Same as printp and printpf, but it prints to a file stream. */
 void fprintp(FILE*, const BigPolyTP);

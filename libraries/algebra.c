@@ -648,7 +648,12 @@ bool increment_MultiVarExtT(MultiVarExtTP ext)
 		for (int i = 0; i < ext->numOfExtensions; i += 1)
 		{
 			currLoc[i] += 1;
-			if (currLoc[i] >= ext->extensionSizes[i])
+			
+			//The -1 prevents the incrementation from caring about the highest power
+			// in the extension. For instance, x^2 + 1 = 0 only requires iterating
+			// through all linear terms to get all possible values, since x^2 can be
+			// written as a linear term itself.
+			if (currLoc[i] >= ext->extensionSizes[i]-1)
 				currLoc[i] = 0;
 			
 			else
@@ -715,17 +720,6 @@ int reduce_MultiVarExtT(void* voidExt)
 			}
 			while (currLoc[focusTerm] != 0);
 			
-			//Print out currCoeffs so I can see what the hell's happening
-			/*printf("focusTerm: %d\n", focusTerm);
-			printf("currCoeffs before changing: [");
-			for (int i = 0; i < ext->extensionSizes[focusTerm]-1; i += 1)
-			{
-				printi(currCoeffs[i]);
-				printf(", ");
-			}
-			printi(currCoeffs[ext->extensionSizes[focusTerm]-1]);
-			printf("]\n");*/
-			
 			//Now, currCoeffs should hold the coefficients we want to check for focusTerm's minPoly
 			//Because we have a list of references, we can just change the list to change the actual coeffs
 			
@@ -758,22 +752,6 @@ int reduce_MultiVarExtT(void* voidExt)
 				}
 				
 				//The leading term should now be gone, meaning the expression is as reduced as it can get
-				/*printf("currCoeffs after changing: [");
-				for (int i = 0; i < ext->extensionSizes[focusTerm]-1; i += 1)
-				{
-					printi(currCoeffs[i]);
-					printf(", ");
-				}
-				printi(currCoeffs[ext->extensionSizes[focusTerm]-1]);
-				printf("]\n");
-				
-				printf("focusTerm: %d\n", focusTerm);
-				printf("currLoc: [");
-				for (int i = 0; i < ext->numOfExtensions-1; i += 1)
-					printf("%d, ", currLoc[i]);
-				printf("%d]\n", currLoc[ext->numOfExtensions-1]);
-				printmve(ext);
-				printf("\n"); */
 			}
 			
 			//Increment currLoc
@@ -890,6 +868,9 @@ int copy_MultiVarExtT(const void* toCopy, void* copyTo)
 	// and casted the pointers to them instead of manually casting each
 	// instance of toCopy and copyTo.
 	// I realised after the fact and am too lazy to undo everything
+	
+	//If it bothers you so much, how about YOU fix it, huh? Yeah, not so
+	// tough now, are ya? I dare you. I DARE you to fix it.
 	
 	bool moreToSet = TRUE;
 	int temp;
@@ -1169,12 +1150,6 @@ int compare_MultiVarExtT(void* voidA, void* voidB)
 			return 0;
 	}
 	
-	/*
-	printf("\n\n[");
-	for (int i = 0; i < a->numOfExtensions; i += 1)
-		(i == a->numOfExtensions-1) ? printf("%d]\n", a2bExtensionMap[i]) : printf("%d, ", a2bExtensionMap[i]);
-	*/
-	
 	for (int i = 0; i < a->numOfExtensions; i += 1)
 		currLoc[i] = 0;
 	
@@ -1287,50 +1262,6 @@ int clear_MultiVarExtT(void* voidExt)
 }
 
 
-void printp(const BigPolyTP p)
-/** Outputs a BigPolyTP to stdout. */
-{
-	BigIntTP zero = empty_BigIntT(1);
-	bool printPlus = FALSE;
-	bool isZero    = TRUE; //If p == 0, we should print a zero
-	
-	for (int i = 0; i < p->size; i += 1)
-	{	
-		//Only print if coefficient isn't zero
-		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
-		{
-			isZero = FALSE;
-			
-			//Prevents a + when all other terms are zero afterwards
-			if (printPlus)
-				printf(" + ");
-			
-			printPlus = TRUE;
-			
-			if (i == 0)
-				printi(p->coeffs[0]);
-			
-			else if (i == 1)
-			{
-				printi(p->coeffs[1]);
-				printf("λ");
-			}
-			
-			else
-			{
-				printi(p->coeffs[i]);
-				printf("λ^%d", i);
-			}
-		}
-	}
-	
-	if (isZero)
-		printf("0");
-	
-	zero = free_BigIntT(zero);
-}
-
-
 void old_printpf(const BigPolyTP* factors)
 /** Prints a factorised BigPolyT to stdout. */
 {
@@ -1373,8 +1304,8 @@ void printpf(const BigFactorsTP f)
 }
 
 
-void printmve(const MultiVarExtTP ext)
-/** Prints a MultiVarExtTP to stdout. */
+void fprintmve(FILE* file, const MultiVarExtTP ext)
+/** Same as printmve(), except it prints to a given file stream. */
 {
 	//Will hold which coefficient we're printing out
 	int coeffPos[ext->numOfExtensionsSet];
@@ -1384,7 +1315,7 @@ void printmve(const MultiVarExtTP ext)
 	
 	bool printPlus;
 	
-	printf("Extension definitions:\n");
+	fprintf(file, "Extension definitions:\n");
 	for (int i = 0; i < ext->numOfExtensionsSet; i += 1)
 	{
 		printPlus = FALSE;
@@ -1393,21 +1324,21 @@ void printmve(const MultiVarExtTP ext)
 			if (! is_zero(ext->extensions[i][coeff]))
 			{
 				if (printPlus)
-					printf(" + ");
+					fprintf(file, " + ");
 				
-				printi(ext->extensions[i][coeff]);
+				fprinti(file, ext->extensions[i][coeff]);
 				
 				if (coeff == 1) //linear
-					printf("(%s)", ext->extNames[i]);
+					fprintf(file, "(%s)", ext->extNames[i]);
 				
 				else if (coeff > 1)
-					printf("(%s)^%d", ext->extNames[i], coeff);
+					fprintf(file, "(%s)^%d", ext->extNames[i], coeff);
 				
 				printPlus = TRUE;
 			}
 		}
 		
-		printf(" = 0\n");
+		fprintf(file, " = 0\n");
 	}
 	
 	if (ext->numOfExtensionsSet == ext->numOfExtensions) //If we can actually print the expression
@@ -1432,19 +1363,19 @@ void printmve(const MultiVarExtTP ext)
 			if (! is_zero(intRef))
 			{
 				if (printPlus)
-					printf(" + ");
+					fprintf(file, " + ");
 				
-				printi(intRef);
+				fprinti(file, intRef);
 				printPlus = TRUE;
 				
 				//Print appropriate extension names
 				for (int i = 0; i < ext->numOfExtensions; i += 1)
 				{
 					if (coeffPos[i] == 1)
-						printf("(%s)", ext->extNames[i]);
+						fprintf(file, "(%s)", ext->extNames[i]);
 					
 					else if (coeffPos[i] > 1)
-						printf("(%s)^%d", ext->extNames[i], coeffPos[i]);
+						fprintf(file, "(%s)^%d", ext->extNames[i], coeffPos[i]);
 				}
 			}
 			
@@ -1463,8 +1394,15 @@ void printmve(const MultiVarExtTP ext)
 }
 
 
-void printmve_row(const void* voidExt)
-/** Same as printmve(), but only prints the extression. */
+void printmve(const MultiVarExtTP ext)
+/** Prints a MultiVarExtT to stdout. */
+{
+	fprintmve(stdout, ext);
+}
+
+
+void fprintmve_row(FILE* file, const void* voidExt)
+/** Same as printmve_row(), but prints to a file stream. */
 {
 	MultiVarExtTP ext = (MultiVarExtTP)voidExt;
 	
@@ -1488,18 +1426,16 @@ void printmve_row(const void* voidExt)
 			//Get the next coefficient to print
 			ref = ext->coeffs;
 			for (int i = 0; i < ext->numOfExtensions-1; i += 1)
-			{
 				ref = ref->next[coeffPos[i]];
-			}
 			
 			intRef = ref->coeffs[coeffPos[ext->numOfExtensions-1]];
 			
 			if (! is_zero(intRef))
 			{
 				if (printPlus)
-					printf(" + ");
+					fprintf(file, " + ");
 				
-				printi(intRef);
+				fprinti(file, intRef);
 				printPlus = TRUE;
 				hasPrinted = TRUE;
 				
@@ -1507,10 +1443,10 @@ void printmve_row(const void* voidExt)
 				for (int i = 0; i < ext->numOfExtensions; i += 1)
 				{
 					if (coeffPos[i] == 1)
-						printf("(%s)", ext->extNames[i]);
+						fprintf(file, "(%s)", ext->extNames[i]);
 					
 					else if (coeffPos[i] > 1)
-						printf("(%s)^%d", ext->extNames[i], coeffPos[i]);
+						fprintf(file, "(%s)^%d", ext->extNames[i], coeffPos[i]);
 				}
 			}
 			
@@ -1528,7 +1464,14 @@ void printmve_row(const void* voidExt)
 	}
 	
 	if (!hasPrinted)
-		printf("0");
+		fprintf(file, "0");
+}
+
+
+void printmve_row(const void* voidExt)
+/** Same as printmve(), but only prints the extression. */
+{
+	fprintmve_row(stdout, voidExt);
 }
 
 
@@ -1573,6 +1516,13 @@ void fprintp(FILE* file, const BigPolyTP p)
 	}
 	
 	zero = free_BigIntT(zero);
+}
+
+
+void printp(const BigPolyTP p)
+/** Outputs a BigPolyTP to stdout. */
+{
+	fprintp(stdout, p);
 }
 
 

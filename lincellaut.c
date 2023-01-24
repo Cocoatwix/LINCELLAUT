@@ -1181,12 +1181,27 @@ int main(int argc, char* argv[])
 			void*** currVectElements = NULL;
 			GenericMatrixTP currVect = NULL;
 			
+			GenericMatrixTP tempVect = NULL; //Facilitates calculations
+			
+			CycleInfoTP theCycle = NULL;
+			bool newCycleLength  = FALSE;
+			bool newCycle        = FALSE;
+			int foundCycleIndex; //Used for holding a position in the arrays below
+			
+			int     numOfCycleLengthsFound = 0;
+			int*    numOfCyclesFound;  //Holds how many cycles of each length we've found
+			int*    foundCycleLengths; //Holds all the cycle lengths we've come across so far
+			void*** foundReps;         //Holds representatives for all the cycles we've found thus far
+			
 			bool moreVectors = TRUE;
 			
 			int oneArr[1] = {1};
 			BigIntTP one;
 			BigIntTP temp;
 			BigIntTP temp2;
+			
+			int cycleCounter = 0; //How many cycles have we found?
+			BigIntTP vectorCounter = empty_BigIntT(1);
 			
 			char* fileOutputName = NULL;
 			FILE* fileOutput = NULL;
@@ -1320,10 +1335,6 @@ int main(int argc, char* argv[])
 					FREE(tempFactor);
 				}
 				
-				printf("repExtension:\n");
-				printmve(repExtension);
-				printf("\n");
-				
 				//Now, initialise our matrix and vector
 				genericFelements = malloc(big_rows(bigF)*sizeof(void**));
 				currVectElements = malloc(big_rows(bigF)*sizeof(void**));
@@ -1343,21 +1354,185 @@ int main(int argc, char* argv[])
 				
 				genericF = new_MultiVarExtMatrixT(big_rows(bigF), big_cols(bigF), numOfExtensionsNeeded);
 				currVect = new_MultiVarExtMatrixT(big_rows(bigF), 1, numOfExtensionsNeeded);
+				tempVect = new_MultiVarExtMatrixT(big_rows(bigF), 1, numOfExtensionsNeeded);
 				set_GenericMatrixT(genericF, genericFelements);
 				set_GenericMatrixT(currVect, currVectElements);
 				
-				printf("genericF:\n");
-				printgm(genericF);
-				printf("\n");
+				//Setting tempVect's extensions
+				set_GenericMatrixT(tempVect, currVectElements);
+				
+				foundCycleLengths = calloc(1, sizeof(int));
+				numOfCyclesFound  = calloc(1, sizeof(int));
+				foundReps = NULL;
+				
+				//Write MultiVarExt definitions to output file
+				if (fileOutput != NULL)
+				{
+					fprintmve(fileOutput, repExtension);
+					fprintf(fileOutput, "\n");
+					if (fclose(fileOutput) == EOF)
+						fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+					else
+					{
+						fileOutput = fopen(fileOutputName, "a");
+						if (fileOutput == NULL)
+							fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+					}
+				}
 				
 				//Iterate through all possible vectors over our splitting field
 				while (moreVectors)
 				{
-					printgm(currVect);
-					printf("\n");
+					//Now, let's actually do the calculations
+					generic_floyd(genericF, currVect, &theCycle);
 					
-					//Iterate currVect
+					//Check to see if our found cycle length has been found before
+					newCycleLength = TRUE;
+					for (int cyclen = 0; (cyclen < numOfCycleLengthsFound) && (newCycleLength); cyclen += 1)
+						if (foundCycleLengths[cyclen] == omega(theCycle))
+						{
+							newCycleLength = FALSE;
+							foundCycleIndex = cyclen;
+						}
+						
+					//Record data for new cycle found
+					if (newCycleLength)
+					{
+						foundCycleIndex = numOfCycleLengthsFound;
+						
+						numOfCycleLengthsFound += 1;
+						foundCycleLengths = realloc(foundCycleLengths, numOfCycleLengthsFound*sizeof(int));
+						numOfCyclesFound  = realloc(numOfCyclesFound, numOfCycleLengthsFound*sizeof(int));
+						
+						numOfCyclesFound[foundCycleIndex] = 0;
+						foundCycleLengths[foundCycleIndex] = omega(theCycle);
+						
+						foundReps = realloc(foundReps, numOfCycleLengthsFound*sizeof(void**));
+						foundReps[numOfCycleLengthsFound-1] = NULL;
+					}
+					
+					//Search to make sure that the cycle we calculated doesn't already have a rep
+					newCycle = TRUE;
+					for (int repr = 0; (repr < numOfCyclesFound[foundCycleIndex]) && newCycle; repr += 1)
+					{
+						//Iterate the current representative, see if our new cycle's rep is somewhere
+						// in the cycle.
+						copy_sim_GenericMatrixT(foundReps[foundCycleIndex][repr], currVect);
+						for (int iter = 0; (iter < foundCycleLengths[foundCycleIndex]-1) && newCycle; iter += 1)
+						{
+							gen_mat_mul(genericF, currVect, tempVect);
+							reduce_GenericMatrixT(tempVect);
+
+							if (compare_GenericMatrixT(tempVect, rep(theCycle)))
+								newCycle = FALSE;
+							
+							copy_sim_GenericMatrixT(tempVect, currVect);
+						}
+					}
+					
+					//Now, add the new cycle representative if needed
+					if (newCycle)
+					{
+						numOfCyclesFound[foundCycleIndex] += 1;
+						foundReps[foundCycleIndex] = realloc(foundReps[foundCycleIndex], numOfCyclesFound[foundCycleIndex]*sizeof(void*));
+						foundReps[foundCycleIndex][numOfCyclesFound[foundCycleIndex]-1] = new_MultiVarExtMatrixT(big_rows(bigF), 
+																																																		 1, 
+																																																		 numOfExtensionsNeeded);
+						//Making sure our new foundReps vector has the correct extension definitions and stuff
+						set_GenericMatrixT(foundReps[foundCycleIndex][numOfCyclesFound[foundCycleIndex]-1], currVectElements);
+						copy_sim_GenericMatrixT(rep(theCycle), foundReps[foundCycleIndex][numOfCyclesFound[foundCycleIndex]-1]);
+						
+						//Now, we print out the new cycle
+						printf("Cycle #%d:\n", cycleCounter++);
+						if (fileOutput != NULL)
+						{
+							fprintf(fileOutput, "Cycle #%d:\n", cycleCounter-1);
+							if (fclose(fileOutput) == EOF)
+								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							else
+							{
+								fileOutput = fopen(fileOutputName, "a");
+								if (fileOutput == NULL)
+									fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							}
+						}
+						
+						set_GenericMatrixT(currVect, currVectElements);
+						
+						printgm_row(currVect);
+						printf("\n");
+						if (fileOutput != NULL)
+						{
+							fprintgm_row(fileOutput, currVect);
+							fprintf(fileOutput, "\n");
+							if (fclose(fileOutput) == EOF)
+								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							else
+							{
+								fileOutput = fopen(fileOutputName, "a");
+								if (fileOutput == NULL)
+									fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							}
+						}
+						
+						add_BigIntT(vectorCounter, one, temp);
+						copy_BigIntT(temp, vectorCounter);
+							
+						copy_sim_GenericMatrixT(rep(theCycle), currVect);
+						for (int iter = 0; iter < foundCycleLengths[foundCycleIndex]-1; iter += 1)
+						{
+							add_BigIntT(vectorCounter, one, temp);
+							copy_BigIntT(temp, vectorCounter);
+							
+							gen_mat_mul(genericF, currVect, tempVect);
+							reduce_GenericMatrixT(tempVect);
+							
+							printgm_row(tempVect);
+							printf("\n");
+							if (fileOutput != NULL)
+							{
+								fprintgm_row(fileOutput, tempVect);
+								fprintf(fileOutput, "\n");
+								if (fclose(fileOutput) == EOF)
+									fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+								else
+								{
+									fileOutput = fopen(fileOutputName, "a");
+									if (fileOutput == NULL)
+										fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+								}
+							}
+							
+							copy_sim_GenericMatrixT(tempVect, currVect);
+						}
+						printf("Vectors in cycles: ");
+						printi(vectorCounter);
+						printf("\n\n");
+						if (fileOutput != NULL)
+						{
+							fprintf(fileOutput, "\n");
+							if (fclose(fileOutput) == EOF)
+								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							else
+							{
+								fileOutput = fopen(fileOutputName, "a");
+								if (fileOutput == NULL)
+									fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							}
+						}
+					}
+					
+					//Iterate our vector
 					moreVectors = FALSE;
+					for (int component = 0; component < big_rows(bigF); component += 1)
+					{
+						if (! increment_MultiVarExtT(currVectElements[component][0]))
+						{
+							moreVectors = TRUE;
+							set_GenericMatrixT(currVect, currVectElements);
+							break;
+						}
+					}
 				}
 			}
 			
@@ -1412,17 +1587,32 @@ int main(int argc, char* argv[])
 			bigF = free_BigIntMatrixT(bigF);
 			genericF = free_GenericMatrixT(genericF);
 			currVect = free_GenericMatrixT(currVect);
+			tempVect = free_GenericMatrixT(tempVect);
 			
 			if (zeroPointer != NULL)
 			{
 				FREE(zeroPointer);
 			}
 			
+			theCycle = free_CycleInfoT(theCycle);
+			FREE(foundCycleLengths);
+			for (int cyclen = 0; cyclen < numOfCycleLengthsFound; cyclen += 1)
+			{
+				for (int cyc = 0; cyc < numOfCyclesFound[cyclen]; cyc += 1)
+				{
+					foundReps[cyclen][cyc] = free_GenericMatrixT(foundReps[cyclen][cyc]);
+				}
+				FREE(foundReps[cyclen]);
+			}
+			FREE(foundReps);
+			FREE(numOfCyclesFound);
 			
 			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
 			bigMod = free_BigIntT(bigMod);
+			
+			vectorCounter = free_BigIntT(vectorCounter);
 		}
 		
 		
@@ -5168,7 +5358,7 @@ int main(int argc, char* argv[])
 		//For testing purposes only
 		else if (! strcmp(argv[1], "test"))
 		{
-			int testMode = 1;
+			int testMode = 3;
 		
 			#define nasize 19
 			int numArr[1] = {0};
@@ -5236,9 +5426,11 @@ int main(int argc, char* argv[])
 				int coeff2[3] = {0, 1, 1};
 				int coeff3[3] = {3, 2, 2};
 				
+				/*
 				int reverseCoeff1[3] = {0, 2, 2};
 				int reverseCoeff2[3] = {1, 1, 0};
 				int reverseCoeff3[3] = {2, 2, 3};
+				*/
 				
 				int specialCoeff1[4] = {0, 1, 2, 2};
 				int specialCoeff2[4] = {1, 1, 2, 2};
@@ -5482,7 +5674,7 @@ int main(int argc, char* argv[])
 				printf("\n");
 				*/
 				
-				FREESTUFF:
+				//FREESTUFF:
 				coolExt1 = free_MultiVarExtT(coolExt1);
 				coolExt2 = free_MultiVarExtT(coolExt2);
 				coolExt3 = free_MultiVarExtT(coolExt3);
@@ -5729,6 +5921,35 @@ int main(int argc, char* argv[])
 			else if (testMode == 3)
 			{
 				//Create a MultiVarExtT here for testing increment_MultiVarExtT()
+				MultiVarExtTP testExt = new_MultiVarExtT(1);
+				
+				int numArr[1] = {1};
+				
+				BigIntTP* extDefn = malloc(4*sizeof(BigIntTP));
+				extDefn[0] = NA[5];
+				extDefn[1] = NA[6];
+				extDefn[2] = NA[1];
+				extDefn[3] = NA[1];
+				
+				set_MultiVarExtT_mod(testExt, bigMod);
+				add_extension(testExt, extDefn, 4, "Z");
+				
+				numArr[0] = 2;
+				set_MultiVarExtT_coefficient(testExt, numArr, NA[7]);
+				numArr[0] = 0;
+				set_MultiVarExtT_coefficient(testExt, numArr, NA[1]);
+				
+				printmve(testExt);
+				printf("\n");
+				
+				while (! increment_MultiVarExtT(testExt))
+				{
+					printmve(testExt);
+					printf("\n");
+					//getchar();
+				}
+				
+				testExt = free_MultiVarExtT(testExt);
 			}
 			
 			for (int i = 0; i < nasize; i += 1)
@@ -5751,7 +5972,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RED "(UNFINISHED)" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");

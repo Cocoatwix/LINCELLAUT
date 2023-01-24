@@ -109,6 +109,11 @@ int set_GenericMatrixT_printFunction(GenericMatrixTP, void (*)(const void*));
     matrix. Returns 1 on success, 0 otherwise. */
 int set_GenericMatrixT_clearFunction(GenericMatrixTP, int (*)(void*));
 
+/** Sets the function to use for printing out elements of the
+    GenericMatrixT to a file stream. Returns 1 on success,
+	0 otherwise. */
+int set_GenericMatrixT_fprintFunction(GenericMatrixTP, void (*)(FILE*, const void*));
+
 /** Sets the function the matrix uses to reduce its terms.
     Returns 1 on success, 0 otherwise. */
 int set_GenericMatrixT_reduceFunction(GenericMatrixTP, int (*)(void*));
@@ -186,6 +191,7 @@ void fprintbm(FILE*, const BigIntMatrixTP);
 
 void fprintm_row(FILE*, const IntMatrixTP);
 void fprintbm_row(FILE*, const BigIntMatrixTP); //<0 0 0>
+void fprintgm_row(FILE*, const GenericMatrixTP);
 
 /** Same as function above, except no zero padding is added. */
 void fprintbm_nopad(FILE*, const BigIntMatrixTP);

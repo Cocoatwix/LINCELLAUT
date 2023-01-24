@@ -24,7 +24,7 @@ orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "fileoutput" says whether the tool should create an output file. This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-splitorbits [modulus] [fileoutput] (UNFINISHED): This tool allows the user to calculate the orbits of a given matrix and modulus over the splitting field of the matrix's minimal polynomial. 
+splitorbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a given matrix and modulus over the splitting field of the matrix's minimal polynomial. 
  - The optional argument "modulus" overrides the modulus used in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "fileoutput" specifies whether the program should output a text file with the orbits. The file will be created under the name "splitorbits F<matrix> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE.
 

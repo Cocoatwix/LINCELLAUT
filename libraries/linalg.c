@@ -59,6 +59,7 @@ typedef struct genericmatrix
 	int   (*copyFunction)(const void*, void*);
 	void  (*printFunction)(const void*); 
 	int   (*clearFunction)(void*); 
+	void  (*fprintFunction)(FILE*, const void*);
 	int   (*reduceFunction)(void*);
 	int   (*compareFunction)(void*, void*);
 	
@@ -355,6 +356,7 @@ GenericMatrixTP free_GenericMatrixT(GenericMatrixTP a)
 		a->copyFunction = NULL;
 		a->printFunction = NULL;
 		a->clearFunction = NULL;
+		a->fprintFunction = NULL;
 		a->reduceFunction = NULL;
 		a->compareFunction = NULL;
 		
@@ -435,6 +437,7 @@ GenericMatrixTP new_GenericMatrixT(int r, int c)
 	a->copyFunction = NULL;
 	a->printFunction = NULL;
 	a->clearFunction = NULL;
+	a->fprintFunction = NULL;
 	a->reduceFunction = NULL;
 	a->compareFunction = NULL;
 	
@@ -472,6 +475,7 @@ GenericMatrixTP new_MultiVarExtMatrixT(int r, int c, int numOfExtensions)
 	theMatrix->copyFunction    = copy_MultiVarExtT;
 	theMatrix->printFunction   = printmve_row;
 	theMatrix->clearFunction   = clear_MultiVarExtT;
+	theMatrix->fprintFunction  = fprintmve_row;
 	theMatrix->compareFunction = compare_MultiVarExtT;
 	theMatrix->reduceFunction  = reduce_MultiVarExtT;
 
@@ -606,6 +610,16 @@ int set_GenericMatrixT_clearFunction(GenericMatrixTP a, int (*f)(void*))
     Returns 1 on success, 0 otherwise. */
 {
 	a->clearFunction = f;
+	return 1;
+}
+
+
+int set_GenericMatrixT_fprintFunction(GenericMatrixTP a, void (*f)(FILE*, const void*))
+/** Sets the function a will use to print elements of its matrix
+    to a file stream.
+    Returns 1 on success, 0 otherwise. */
+{
+	a->fprintFunction = f;
 	return 1;
 }
 
@@ -836,7 +850,7 @@ int copy_IntMatrixT(const IntMatrixTP toCopy, IntMatrixTP copyTo)
 
 
 int copy_BigIntMatrixT(const BigIntMatrixTP toCopy, BigIntMatrixTP copyTo)
-/** Same as copy_IntMatrixT(), but for BigImtMatrixT structs.
+/** Same as copy_IntMatrixT(), but for BigIntMatrixT structs.
     Returns 1 on success, 0 otherwise. */
 {
 	if ((toCopy->m != copyTo->m) ||
@@ -848,6 +862,21 @@ int copy_BigIntMatrixT(const BigIntMatrixTP toCopy, BigIntMatrixTP copyTo)
 			copy_BigIntT(toCopy->matrix[row][col], copyTo->matrix[row][col]);
 		
 	return 1;
+}
+
+
+int copy_GenericMatrixT(const GenericMatrixTP toCopy, GenericMatrixTP copyTo)
+/** Same as copy_IntMatrixT(), but for GenericMatrixT structs.
+    Returns 1 on success, 0 otherwise. 
+		
+		This function assumes both GenericMatrixTs have all the relevant
+		functions set. */
+{
+	printf("copy_GenericMatrixT() is not yet implemented. This function will now clear \
+	given GenericMatrixTs...\n");
+	clear_GenericMatrixT(toCopy);
+	clear_GenericMatrixT(copyTo);
+	return 0;
 }
 
 
@@ -876,6 +905,7 @@ int copy_sim_GenericMatrixT(const GenericMatrixTP toCopy, GenericMatrixTP copyTo
 	copyTo->freeFunction = toCopy->freeFunction;
 	copyTo->printFunction = toCopy->printFunction;
 	copyTo->clearFunction = toCopy->clearFunction;
+	copyTo->fprintFunction = toCopy->fprintFunction;
 	copyTo->reduceFunction = toCopy->reduceFunction;
 	copyTo->compareFunction = toCopy->compareFunction;
 	
@@ -1260,7 +1290,25 @@ void printgm(const GenericMatrixTP a)
 void printgm_row(const GenericMatrixTP a)
 /** Prints a generic matrix as a row vector. */
 {
-	printf("Not implemented yet.\n");
+	printf("<");
+	for (int i = 0; i < a->m; i += 1)
+	{
+		a->printFunction(a->matrix[i][0]);
+		(i == a->m-1) ? printf(">") : printf(", ");
+	}
+}
+
+
+void fprintgm_row(FILE* file, const GenericMatrixTP a)
+/** Same as printgm_row, except it prints to a given
+    file stream. */
+{
+	fprintf(file, "<");
+	for (int i = 0; i < a->m; i += 1)
+	{
+		a->fprintFunction(file, a->matrix[i][0]);
+		(i == a->m-1) ? fprintf(file, ">") : fprintf(file, ", ");
+	}
 }
 
 
