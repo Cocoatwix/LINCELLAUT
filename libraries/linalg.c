@@ -2136,13 +2136,26 @@ BigIntMatrixTP big_inverse(const BigIntMatrixTP M, const BigIntTP modulus)
 			//Check to see if we can add rows to get an invertible entry
 			for (int rowToMaybeAdd = focusRow+1; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
 			{
-				//Hopefully finging a row that we can add to our current row to get an invertible number
+				//Hopefully finding a row that we can add to our current row to get an invertible number
 				copy_BigIntT(one, bigMult);
 				while (compare_BigIntT(bigMult, modulus) < 0)
 				{
-					multiply_BigIntT(bigMult, M->matrix[rowToMaybeAdd][focusRow], temp);
-					add_BigIntT(temp, M->matrix[focusRow][focusRow], temp2);
+					multiply_BigIntT(bigMult, toReduce->matrix[rowToMaybeAdd][focusRow], temp);
+					add_BigIntT(temp, toReduce->matrix[focusRow][focusRow], temp2);
 					big_num_inverse(temp2, modulus, tempInverse);
+					
+					#ifdef VERBOSE
+					printi(bigMult);
+					printf("*");
+					printi(toReduce->matrix[rowToMaybeAdd][focusRow]);
+					printf(" + ");
+					printi(toReduce->matrix[focusRow][focusRow]);
+					printf(" === ");
+					printi(temp2);
+					printf("\ntempInverse === ");
+					printi(tempInverse);
+					printf("\n");
+					#endif
 					
 					if (compare_BigIntT(tempInverse, zero) != 0)
 					{
