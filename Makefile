@@ -7,22 +7,14 @@ FLAGS = -Wall -Wextra -pedantic
 TARGET = lincellaut
 
 LIBPATH = libraries
-LIB1 = helper
-LIB2 = bigint
-LIB3 = algebra
-LIB4 = modular
-LIB5 = factors
-LIB6 = linalg
-LIB7 = cycles
-
 OBJPATH = objects
-ALLOBJS = $(OBJPATH)/$(LIB1).o 
-ALLOBJS += $(OBJPATH)/$(LIB2).o 
-ALLOBJS += $(OBJPATH)/$(LIB3).o
-ALLOBJS += $(OBJPATH)/$(LIB4).o
-ALLOBJS += $(OBJPATH)/$(LIB5).o
-ALLOBJS += $(OBJPATH)/$(LIB6).o
-ALLOBJS += $(OBJPATH)/$(LIB7).o
+
+LIBRARIES = helper bigint algebra modular factors linalg cycles
+
+#makefiletutorial.com/#string-substitution
+FULLPATHOBJECTS = $(patsubst %,$(OBJPATH)/%.o,$(LIBRARIES))
+#FULLPATHOBJECTS := $(LIBRARIES:%=$(OBJPATH)/%.o)
+
 
 all:	$(TARGET)
 
@@ -35,39 +27,32 @@ memdebug:	$(TARGET)
 
 #The -lm is included at the end of the command to avoid linker problems
 # stackoverflow.com/questions/11336477
-$(TARGET):	$(TARGET).c $(ALLOBJS)
-	$(COMPILER) $(FLAGS) -o $(TARGET) $(TARGET).c $(ALLOBJS) -lm
-	
-$(OBJPATH)/$(LIB1).o:	$(LIBPATH)/$(LIB1).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB1).o $(LIBPATH)/$(LIB1).c
-	
-$(OBJPATH)/$(LIB2).o:	$(LIBPATH)/$(LIB2).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB2).o $(LIBPATH)/$(LIB2).c
-	
-$(OBJPATH)/$(LIB3).o:	$(LIBPATH)/$(LIB3).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB3).o $(LIBPATH)/$(LIB3).c
-	
-$(OBJPATH)/$(LIB4).o:	$(LIBPATH)/$(LIB4).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB4).o $(LIBPATH)/$(LIB4).c
-	
-$(OBJPATH)/$(LIB5).o:	$(LIBPATH)/$(LIB5).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB5).o $(LIBPATH)/$(LIB5).c
-	
-$(OBJPATH)/$(LIB6).o:	$(LIBPATH)/$(LIB6).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB6).o $(LIBPATH)/$(LIB6).c
-	
-$(OBJPATH)/$(LIB7).o:	$(LIBPATH)/$(LIB7).c | $(OBJPATH)
-	$(COMPILER) $(FLAGS) -c -o $(OBJPATH)/$(LIB7).o $(LIBPATH)/$(LIB7).c
+$(TARGET):	$(TARGET).c $(FULLPATHOBJECTS)
+	$(COMPILER) $(FLAGS) -o $(TARGET) $(TARGET).c $(FULLPATHOBJECTS) -lm
+
+#Generic rule for compiling all required objects
+# makefiletutorial.com/#pattern-rules
+# $< is the first prerequisite
+# $@ is the target
+$(OBJPATH)/%.o	:	$(LIBPATH)/%.c | $(OBJPATH)
+	$(COMPILER) $(FLAGS) -c -o $@ $<
 	
 #Create objects directory if it doesn't already exist
 # stackoverflow.com/questions/12605051
 $(OBJPATH):
 	mkdir -p $@
 
+#makefiletutorial.com/#check-if-a-variable-is-empty
 clean:
+#Remove program executable if it exists
+ifneq ($(TARGET),)
 	rm $(TARGET)
-	rm $(OBJPATH)/*.o
-	rm $(OBJPATH)/*.so
-	rm *.orbits
-	rm *.orbitsloc
-	rm *.iteration
+endif
+#Remove object files if they exist
+ifneq ($(wildcard $(OBJPATH)/*.o),)
+	rm $(wildcard $(OBJPATH)/*.o)
+endif
+#Remove shared object files (for ORBITVIS) if they exist
+ifneq ($(wildcard $(OBJPATH)/*.so),)
+	rm $(wildcard $(OBJPATH)/*.so)
+endif
