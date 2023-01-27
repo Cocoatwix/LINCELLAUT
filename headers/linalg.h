@@ -276,23 +276,4 @@ BigPolyTP* min_poly(const BigIntMatrixTP, const BigIntTP);
 //                     A                 CCM            from              to          modulus     
 int ccm(const BigIntMatrixTP, BigIntMatrixTP, const BigIntTP, const BigIntTP, const BigIntTP);
 
-
-
-/* These two functions are badly tested and specific in their
-    use cases. Only use them if you know what you're doing. */
-
-/** Returns the eigenvalues of a given matrix, mod some
-    modulus, as an int pointer. Returns NULL if no eigenvalues
-		exist. 
-		
-		This currently only works for 2x2 matrices. */
-//int* eigenvalues(const IntMatrixTP, int);
-
-/** Returns an eigenvector of the given matrix, eigenvalue, and
-    modulus. It is assumed the given eigenvalue is valid for the
-		given system. 
-		
-		Currently only works for 2x2 matrices. */
-//IntMatrixTP eigenvector(const IntMatrixTP, int, int);
-
 #endif //LINALG_H

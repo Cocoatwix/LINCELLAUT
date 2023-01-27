@@ -5,6 +5,7 @@
 #include <stdio.h> //Prevents compiler from complaining about FILE*
 
 const int MAXBUNCH;
+const int MAXBUNCHDIGITS;
 
 /** Struct for holding arbitrary precision number. */
 /** BigIntT structs store bunches little endian style. */

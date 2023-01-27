@@ -23,7 +23,8 @@ https://stackoverflow.com/questions/13239369/
 //That way, if we wanted to switch to doubles, we could
 //Or maybe a simple void pointer will do
 
-extern const int MAXBUNCH; 
+extern const int MAXBUNCH;
+extern const int MAXBUNCH;
 
 typedef struct intmatrix
 /** Structure for holding matrix data and metadata (dimensions, e.g.). */
@@ -1042,58 +1043,6 @@ int compare_BigIntMatrixT_cols(const BigIntMatrixTP M1, const BigIntMatrixTP M2,
 }
 	
 
-//I'll probably make this more efficient later
-//When is later?
-void printm(const IntMatrixTP M)
-/** Prints an m by n matrix to stdout. 
-    If zeroPad == TRUE, numbers will have
-		zeros added to the left of them to align them on the console. */
-{
-	int maxDigits = 0;
-	
-	for (int row = 0; row < M->m; row += 1)
-		for (int col = 0; col < M->n; col += 1)
-			if (num_digits(M->matrix[row][col]) > maxDigits)
-				maxDigits = num_digits(M->matrix[row][col]);
-	
-	for (int mIndex = 0; mIndex < M->m; mIndex += 1)
-	{
-		for (int nIndex = 0; nIndex < M->n-1; nIndex += 1)
-		{
-			for (int p = 0; p < maxDigits - num_digits(M->matrix[mIndex][nIndex]); p += 1)
-				printf("0");
-			
-			printf("%d, ", M->matrix[mIndex][nIndex]);
-		}
-		
-		for (int p = 0; p < maxDigits - num_digits(M->matrix[mIndex][M->n-1]); p += 1)
-				printf("0");
-
-		printf("%d", M->matrix[mIndex][M->n-1]);
-		printf("\n");
-	}
-}
-
-
-void printm_row(const IntMatrixTP M)
-/** Same as printm(), except it prints vectors as row vectors. 
-    This function also ditches the zero padding from the original. */
-{
-	//Making sure we're actually dealing with a column vector
-	if ((M->n == 1) && (M->m >= 1))
-	{
-		printf("<");
-		for (int mIndex = 0; mIndex < M->m-1; mIndex += 1)
-			printf("%d ", M->matrix[mIndex][0]);
-		
-		printf("%d>", M->matrix[M->m-1][0]);
-	}
-	
-	else
-		printm(M);
-}
-
-
 void fprintm(FILE* file, const IntMatrixTP M)
 /** Same as printm, except it prints to a file stream. */
 {
@@ -1123,6 +1072,13 @@ void fprintm(FILE* file, const IntMatrixTP M)
 }
 
 
+void printm(const IntMatrixTP M)
+/** Prints an m by n matrix to stdout. */
+{
+	fprintm(stdout, M);
+}
+
+
 void fprintm_row(FILE* file, const IntMatrixTP M)
 /** Same as printm_row(), except it prints vectors to a given file. */
 {
@@ -1141,65 +1097,11 @@ void fprintm_row(FILE* file, const IntMatrixTP M)
 }
 
 
-void printbm(const BigIntMatrixTP M)
-/** Prints out a BigIntMatrixT matrix to the console. */
+void printm_row(const IntMatrixTP M)
+/** Same as printm(), except it prints vectors as row vectors. 
+    This function also ditches the zero padding from the original. */
 {
-	int maxBunches = 0;
-	
-	//Search for the highest amount of bunches in the matrix
-	for (int x = 0; x < M->m; x += 1)
-		for (int y = 0; y < M->n; y += 1)
-			if (maxBunches < size(M->matrix[x][y]))
-				maxBunches = size(M->matrix[x][y]);
-			
-	//Actually print out the entries
-	for (int row = 0; row < M->m; row += 1)
-	{
-		for (int col = 0; col < M->n; col += 1)
-		{
-			//Zero padding
-			for (int i = 0; i < maxBunches - size(M->matrix[row][col]); i += 1)
-				for (int z = 1; z < MAXBUNCH; z *= 10)
-					printf("0");
-				
-			printi_pad(M->matrix[row][col]);
-			printf(" ");
-		}
-		printf("\n");
-	}
-}
-
-
-void printbm_row(const BigIntMatrixTP M)
-/** Prints a BigIntMatrixTP as a row vector. */
-{
-	if ((M->m > 1) && (M->n > 1))
-		printbm(M);
-	
-	else if (M->m == 1)
-	{
-		printf("<");
-		for (int i = 0; i < M->n-1; i += 1)
-		{
-			printi(M->matrix[0][i]);
-			printf(" ");
-		}
-		printi(M->matrix[0][M->n-1]);
-		printf(">");
-	}
-		
-	
-	else if (M->n == 1)
-	{
-		printf("<");
-		for (int i = 0; i < M->m-1; i += 1)
-		{
-			printi(M->matrix[i][0]);
-			printf(" ");
-		}
-		printi(M->matrix[M->m-1][0]);
-		printf(">");
-	}
+	fprintm_row(stdout, M);
 }
 
 
@@ -1207,28 +1109,47 @@ void fprintbm(FILE* file, BigIntMatrixTP M)
 /** Prints out a BigIntMatrixT matrix to the console. */
 {
 	int maxBunches = 0;
+	int maxDigits = 0;
+	int tempBunch;
+	int tempSize;
 	
 	//Search for the highest amount of bunches in the matrix
 	for (int x = 0; x < M->m; x += 1)
 		for (int y = 0; y < M->n; y += 1)
+		{
 			if (maxBunches < size(M->matrix[x][y]))
 				maxBunches = size(M->matrix[x][y]);
-			
+
+			tempSize = size(M->matrix[x][y])-1;
+			tempBunch = extract_bunch(M->matrix[x][y], tempSize);
+			if (maxDigits < num_digits(tempBunch) + tempSize*MAXBUNCHDIGITS)
+				maxDigits = num_digits(tempBunch) + tempSize*MAXBUNCHDIGITS;
+		}
+
 	//Actually print out the entries
 	for (int row = 0; row < M->m; row += 1)
 	{
 		for (int col = 0; col < M->n; col += 1)
 		{
 			//Zero padding
-			for (int i = 0; i < maxBunches - size(M->matrix[row][col]); i += 1)
-				for (int z = 1; z < MAXBUNCH; z *= 10)
-					fprintf(file, "0");
+			tempSize = size(M->matrix[row][col])-1;
+			for (int i = 0; 
+			     i < maxDigits - (tempSize*MAXBUNCHDIGITS + num_digits(extract_bunch(M->matrix[row][col], tempSize))); 
+					 i += 1)
+				fprintf(file, "0");
 				
 			fprinti(file, M->matrix[row][col]);
 			fprintf(file, " ");
 		}
 		fprintf(file, "\n");
 	}
+}
+
+
+void printbm(const BigIntMatrixTP M)
+/** Prints out a BigIntMatrixT matrix to the console. */
+{
+	fprintbm(stdout, M);
 }
 
 
@@ -1252,6 +1173,13 @@ void fprintbm_row(FILE* file, const BigIntMatrixTP M)
 		fprinti(file, M->matrix[M->m-1][0]);
 		fprintf(file, ">");
 	}
+}
+
+
+void printbm_row(const BigIntMatrixTP M)
+/** Prints a BigIntMatrixTP as a row vector. */
+{
+	fprintbm_row(stdout, M);
 }
 
 
@@ -1287,18 +1215,6 @@ void printgm(const GenericMatrixTP a)
 }
 
 
-void printgm_row(const GenericMatrixTP a)
-/** Prints a generic matrix as a row vector. */
-{
-	printf("<");
-	for (int i = 0; i < a->m; i += 1)
-	{
-		a->printFunction(a->matrix[i][0]);
-		(i == a->m-1) ? printf(">") : printf(", ");
-	}
-}
-
-
 void fprintgm_row(FILE* file, const GenericMatrixTP a)
 /** Same as printgm_row, except it prints to a given
     file stream. */
@@ -1309,6 +1225,13 @@ void fprintgm_row(FILE* file, const GenericMatrixTP a)
 		a->fprintFunction(file, a->matrix[i][0]);
 		(i == a->m-1) ? fprintf(file, ">") : fprintf(file, ", ");
 	}
+}
+
+
+void printgm_row(const GenericMatrixTP a)
+/** Prints a generic matrix as a row vector. */
+{
+	fprintgm_row(stdout, a);
 }
 
 
@@ -2806,134 +2729,4 @@ int ccm(const BigIntMatrixTP A,
 	tempMat      = free_BigIntMatrixT(tempMat);
 	
 	return 1;
-}
-
-
-//This function currently only works with 2 by 2 matrices
-int* eigenvalues(const IntMatrixTP F, int modulus)
-/** Returns the found eigenvalues of the given matrix,
-    mod the given modulus. The number of values returned
-		with the pointer will always be the first number in
-		the pointer. 
-		
-		Returns NULL if no eigenvalues exist or if the
-    given matrix isn't square. */
-{
-	if ((F->m != 2) || (F->m != F->n))
-		return NULL;
-	
-	//The quadratic formula doesn't really work here due
-	// to the system being modulated, so the best we can do
-	// is guess and check for solutions. There's probably some
-	// more efficient way to do this, but I can't be bothered
-	// right now.
-	int* values = malloc((modulus + 1)*sizeof(int));
-	values[0] = 0;
-	
-	int coefficient = F->matrix[0][0] + F->matrix[1][1];
-	int constant    = F->matrix[0][0]*F->matrix[1][1] - F->matrix[0][1]*F->matrix[1][0];
-	
-	for (int i = 0; i < modulus; i += 1)
-		if ((i*i - coefficient*i + constant) % modulus == 0)
-		{
-			values[0] += 1;
-			values[values[0]] = i;
-		}
-
-	return values;
-}
-
-
-//Currently only works with 2x2 matrices
-IntMatrixTP eigenvector(const IntMatrixTP F, int eigenvalue, int modulus)
-/** Returns an eigenvector of the given matrix and eigenvalue, under the
-    given modulus. It is assumed that the given eigenvalue is valid for
-		the given matrix and modulus. */
-{
-	if ((F->m != 2) || (F->m != F->n))
-		return NULL;
-	
-	IntMatrixTP toReduce = new_IntMatrixT(F->m, F->n);
-	copy_IntMatrixT(F, toReduce);
-	toReduce->matrix[0][0] -= eigenvalue;
-	toReduce->matrix[1][1] -= eigenvalue;
-	
-	//Making sure the entries in our matrix are positive
-	if (toReduce->matrix[0][0] < 0)
-		toReduce->matrix[0][0] += modulus;
-	if (toReduce->matrix[1][1] < 0)
-		toReduce->matrix[1][1] += modulus;
-	
-	int currentRow;         //Holds the current row we're reducing
-	int entryInverse = -1;  //Holds a number inverse for reducing
-	int numTimesToAdd;      //Holds how many times we add one row to another
-	
-	//Now, we reduce the matrix
-	//We don't need to worry about not getting leading entries 
-	// since we're assuming the given parameters will work
-	
-	for (currentRow = 0; currentRow < F->m; currentRow += 1)
-	{
-		//Make sure the currentRow has a leading entry
-		for (int row = currentRow; row < F->m; row += 1)
-		{
-			//If we found a row with a leading entry
-			if (toReduce->matrix[row][currentRow] != 0)
-			{
-				//Check to see if the leading entry is invertible
-				entryInverse = num_inverse(toReduce->matrix[row][row], modulus);
-				if (entryInverse != -1)
-				{
-					//Swap rows if needed
-					if (row != currentRow)
-						row_swap(toReduce, currentRow, row);
-					
-					break;
-				}
-			}
-		}
-		
-		//Reduce currentRow's leading entry to 1, if needed
-		if (entryInverse != -1)
-			row_multiply(toReduce, currentRow, entryInverse, modulus);
-		
-		//Now, get rid of all other entries in the current pivot column
-		for (int row = currentRow + 1; row < F->m; row += 1)
-		{
-			//Checking to see if next entry in pivot column is nonzero
-			if (toReduce->matrix[row][currentRow] != 0)
-			{
-				numTimesToAdd = (modulus - toReduce->matrix[row][currentRow]) % modulus;
-				for (int t = 0; t < numTimesToAdd; t += 1)
-					row_add(toReduce, currentRow, row, modulus);
-			}
-		}
-		//Pivot column should now be cleared out
-	}
-	
-	//Now, we convert to reduced row echelon form
-	for (int currentRow = F->m - 1; currentRow > 0; currentRow -= 1)
-	{
-		//If the leading entry in our currentRow isn't zero
-		if (toReduce->matrix[currentRow][currentRow] != 0)
-		{
-			for (int row = currentRow - 1; row >= 0; row -= 1)
-			{
-				numTimesToAdd = (modulus - toReduce->matrix[row][currentRow]) % modulus;
-				for (int t = 0; t < numTimesToAdd; t += 1)
-					row_add(toReduce, currentRow, row, modulus);
-			}
-		}
-	}
-	
-	printm(toReduce);
-	
-	//Now, we need to go through the matrix to see what form
-	// the eigenvector needs to take
-	
-	//Have some form of matrix that keeps track of which variables can
-	// be substituted, and go through the reduced matrix and get values.
-	
-	toReduce = free_IntMatrixT(toReduce);
-	return NULL;
 }
