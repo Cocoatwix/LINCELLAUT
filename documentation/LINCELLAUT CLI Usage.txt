@@ -8,9 +8,6 @@ iterate [iterations]: This tool allows you to take an initial matrix and iterate
 inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
-det [modulus] (INACTIVE): This tool allows the user to calculate the determinant of the update matrix mod some modulus. 
- - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
-
 chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
@@ -38,9 +35,6 @@ branchreps [modulus]: This tool takes the given update matrix and finds a repres
 floyd [modulus]: This tool allows the user to calculate specific info about an LCA system, such as the matrix's cycle length and the transient length, using Floyd's Cycle Detection Algorithm. The tool makes use of the initial and update matrices specified in the .config file as its parameters.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
-rots [modulus] (INACTIVE): This tool allows you to output basic rotation matrices for the given modulus to the screen. Currently, this tool outputs the 45 degree and 30 degree rotation matrices.
- - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
-
 cycmatsearch resume size maxmod cycles...: This tool allows the user to search for a matrix of a given size where the column vectors all have specified cycle lengths. The found matrices and their modulus are then output into a text file in the working directory following the naming convention "cycmatsearch <size> <maxmod> <cycles...>.txt". 
  - "resume" specifies whether to resume computation at the given resume matrix. The tool will also resume searching at the modulus provided in the config file. This argument expects TRUE or FALSE as its value.
  - "size" specifies how big of a matrix should be used. For instance, if 3 is input, then matrices of size 3x3 will be searched. This argument expects a positive integer.
@@ -60,6 +54,10 @@ ccmzerosearch resume size [mod]: This tool allows the user to search for matrice
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
+vectprops [mod] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what their "minimal" annihilating polynomials are.
+ - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
+ - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
+
 matprops maxpower [modulus]: This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
  - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
@@ -67,18 +65,6 @@ matprops maxpower [modulus]: This tool allows the user to calculate some useful 
 charawalk step [mod]: This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.
-
-fibcycle [modulus] (INACTIVE): This tool allows you to generate the Fibonacci cycle which contains the given initial vector (in the initial vector file given in the .config file) and print it to the CLI. A Fibonacci cycle is a cycle where the vectors get iterated by the update matrix:
-
-2 2
-1 1
-1 0
-
-in .matrix format. This specific update matrix has its own tools since each iteration can be computed more efficiently than by using general matrix multiplication.
- - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
-
-fibcyclelens [modulus] (INACTIVE): This tool allows you to calculate all possible Fibonacci cycle lengths for the used modulus and print them to the CLI.
- - The option argument "modulus" allows you to override the modulus provided in the .config file. This argument expects a positive integer (technically, it expects a BigIntT, but for all intents and purposes the user can treat this like an arbitrarily large integer).
 
 fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.
  - The optional argument "bound" allows the user to set a custom upper bound on the numbers to check. By default, the upper bound is set to 100. This argument expects a positive integer (can be arbitrarily big).

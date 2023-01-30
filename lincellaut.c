@@ -3116,6 +3116,200 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to calculate every vector's 
+		// "minimal" annihilating polynomial.
+		else if (!strcmp(argv[1], "vectprops"))
+		{
+			bool checkedAllVects = FALSE;
+			BigIntTP bigMod;
+			BigIntTP temp;
+			
+			int numArr[1] = {1};
+			BigIntTP one = new_BigIntT(numArr, 1);
+			
+			BigIntTP** currVectElements;
+			BigIntTP*  vectPropElements; //The coeffs for the min poly we're testing on currVect
+			
+			BigIntMatrixTP bigF;        //Holds our update matrix
+			BigIntMatrixTP exprF; //Holds bigF evaluated in some polynomial
+			BigIntMatrixTP currVect;
+			BigIntMatrixTP tempVect;
+			BigIntMatrixTP zeroVect;
+			
+			BigPolyTP annihPoly;
+			
+			char* fileName   = NULL;
+			FILE* outputFile = NULL;
+			
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			}
+			
+			bigF = read_BigIntMatrixT(updatefilepath);
+			if (bigF == NULL)
+			{
+				fprintf(stderr, "Unable to read matrix from config file.\n");
+				bigMod = free_BigIntT(bigMod);
+				one    = free_BigIntT(one);
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (big_rows(bigF) != big_cols(bigF))
+			{
+				fprintf(stderr, "Given update matrix isn't square.\n");
+				bigMod = free_BigIntT(bigMod);
+				one    = free_BigIntT(one);
+				bigF   = free_BigIntMatrixT(bigF);
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			//If user wants file output
+			if (argc > 3)
+			{
+				if (!strcmp(argv[3], "TRUE"))
+				{
+					fileName = malloc(MAXSTRLEN*sizeof(char));
+					fileName[0] = '\0';
+					strcat(fileName, "vectprops F");
+					for (int x = 0; x < big_rows(bigF); x += 1)
+						for (int y = 0; y < big_cols(bigF); y += 1)
+							append_BigIntT(fileName, big_element(bigF, x, y));
+					strcat(fileName, " ");
+					append_BigIntT(fileName, bigMod);
+					strcat(fileName, ".txt");
+					
+					outputFile = fopen(fileName, "a");
+					if (outputFile == NULL)
+						fprintf(stderr, "Unable to open file for saving output. Continuing without saving...\n");
+				}
+			}
+			
+			currVectElements = new_BigIntT_array(big_rows(bigF), 1);
+			vectPropElements = malloc((big_rows(bigF)+1)*sizeof(BigIntTP));
+			for (int i = 0; i < big_rows(bigF)+1; i += 1)
+				vectPropElements[i] = empty_BigIntT(1);
+			
+			/* 
+			//JUST FOR TESTING
+			numArr[0] = 0;
+			BigIntTP NA[25];
+			for (int i = 0; i < 25; i += 1)
+			{
+				NA[i] = new_BigIntT(numArr, 1);	
+				numArr[0] += 1;
+			}
+			*/
+	
+			annihPoly = new_BigPolyT(vectPropElements, big_rows(bigF)+1);
+			currVect = new_BigIntMatrixT(big_rows(bigF), 1);
+			tempVect = new_BigIntMatrixT(big_rows(bigF), 1);
+			zeroVect = new_BigIntMatrixT(big_rows(bigF), 1);
+			exprF = new_BigIntMatrixT(big_rows(bigF), big_cols(bigF));
+			temp = empty_BigIntT(1);
+			
+			//Iterate through all vectors in the module
+			while (!checkedAllVects)
+			{
+				set_big_matrix(currVect, currVectElements);
+				
+				//Clear all elements in our polynomial coeffs list
+				for (int i = 0; i < big_rows(bigF)+1; i += 1)
+					clear_BigIntT(vectPropElements[i]);
+				
+				//Iterate through all possible "minimal" annihilating polynomials for currVect
+				while (TRUE)
+				{
+					//Increment polynomial
+					for (int i = 0; i < big_rows(bigF)+1; i += 1)
+					{
+						add_BigIntT(vectPropElements[i], one, temp);
+						if (compare_BigIntT(temp, bigMod) >= 0)
+						{
+							clear_BigIntT(temp);
+							copy_BigIntT(temp, vectPropElements[i]);
+						}
+						else
+						{
+							copy_BigIntT(temp, vectPropElements[i]);
+							break;
+						}
+					}
+					
+					//Set polynomial, plug bigF into the polynomial
+					set_BigPolyT(annihPoly, vectPropElements);
+					eval_BigPolyT(annihPoly, bigF, exprF, bigMod);
+					
+					big_mat_mul(exprF, currVect, tempVect);
+					modbm(tempVect, bigMod);
+					
+					//If we've found currVect's "minimal" annihilating polynomial
+					if (compare_BigIntMatrixT(tempVect, zeroVect))
+					{
+						printbm_row(currVect);
+						printf("'s \"min\" poly: ");
+						printp(annihPoly);
+						printf("\n");
+						
+						if (outputFile != NULL)
+						{
+							fprintbm_row(outputFile, currVect);
+							fprintf(outputFile, " : ");
+							fprintp(outputFile, annihPoly);
+							fprintf(outputFile, "\n");
+							
+							if (fclose(outputFile) == EOF)
+								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							else
+							{
+								outputFile = fopen(fileName, "a");
+								if (outputFile == NULL)
+									fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							}
+						}
+						break;
+					}
+				}
+				
+				//Increment currVect
+				checkedAllVects = increment_BigIntT_array(currVectElements, big_rows(bigF), 1, one, bigMod);
+			}
+			
+			if (outputFile != NULL)
+				if (fclose(outputFile) == EOF)
+					fprintf(stderr, "Unable to save output file.\n");
+				
+			if (fileName != NULL)
+			{
+				FREE(fileName);
+			}
+			
+			currVectElements = free_BigIntT_array(currVectElements, big_rows(bigF), 1);
+			
+			for (int i = 0; i < big_rows(bigF)+1; i += 1)
+				vectPropElements[i] = free_BigIntT(vectPropElements[i]);
+			FREE(vectPropElements);
+			
+			one    = free_BigIntT(one);
+			temp   = free_BigIntT(temp);
+			bigMod = free_BigIntT(bigMod);
+			
+			bigF     = free_BigIntMatrixT(bigF);
+			exprF    = free_BigIntMatrixT(exprF);
+			currVect = free_BigIntMatrixT(currVect);
+			tempVect = free_BigIntMatrixT(tempVect);
+			zeroVect = free_BigIntMatrixT(zeroVect);
+			
+			annihPoly = free_BigPolyT(annihPoly);
+		}
+		
+		
 		//If the user wants to calculate some useful properties of a given matrix
 		// (simplify higher powers)
 		else if (! strcmp(argv[1], "matprops"))
@@ -5980,6 +6174,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
 		//printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
