@@ -3130,11 +3130,13 @@ int main(int argc, char* argv[])
 			BigIntTP** currVectElements;
 			BigIntTP*  vectPropElements; //The coeffs for the min poly we're testing on currVect
 			
-			BigIntMatrixTP bigF;        //Holds our update matrix
-			BigIntMatrixTP exprF; //Holds bigF evaluated in some polynomial
+			BigIntMatrixTP bigF;   //Holds our update matrix
+			BigIntMatrixTP exprF;  //Holds bigF evaluated in some polynomial
 			BigIntMatrixTP currVect;
 			BigIntMatrixTP tempVect;
 			BigIntMatrixTP zeroVect;
+			
+			BigIntMatrixTP resumeVect = NULL;
 			
 			BigPolyTP annihPoly;
 			
@@ -3170,10 +3172,52 @@ int main(int argc, char* argv[])
 				return EXIT_SUCCESS;
 			}
 			
-			//If user wants file output
+			
+			currVectElements = new_BigIntT_array(big_rows(bigF), 1);
+			vectPropElements = malloc((big_rows(bigF)+1)*sizeof(BigIntTP));
+			for (int i = 0; i < big_rows(bigF)+1; i += 1)
+				vectPropElements[i] = empty_BigIntT(1);
+			
+			
+			//If the user wants to resume computation from a
+			// particular vector
 			if (argc > 3)
 			{
 				if (!strcmp(argv[3], "TRUE"))
+				{
+					resumeVect = read_BigIntMatrixT(resumefilepath);
+					if (resumeVect == NULL)
+					{
+						fprintf(stderr, "Unable to read resume vector from .config file. ");
+						fprintf(stderr, "Beginning computation from the zero vector instead.\n");
+					}
+					
+					else if ((big_rows(resumeVect) != big_rows(bigF)) || 
+					         (big_cols(resumeVect) != 1))
+					{
+						fprintf(stderr, "Resume vector is of incorrect dimensions (must be %d by 1). ", big_rows(bigF));
+						fprintf(stderr, "Beginning computation from the zero vector instead.\n");
+					}
+					
+					else //Set currVect to resumeVect
+						for (int elem = 0; elem < big_rows(bigF); elem += 1)
+							copy_BigIntT(big_element(resumeVect, elem, 0), currVectElements[elem][0]);
+						
+					resumeVect = free_BigIntMatrixT(resumeVect);
+				}
+			}
+	
+			annihPoly = new_BigPolyT(vectPropElements, big_rows(bigF)+1);
+			currVect = new_BigIntMatrixT(big_rows(bigF), 1);
+			tempVect = new_BigIntMatrixT(big_rows(bigF), 1);
+			zeroVect = new_BigIntMatrixT(big_rows(bigF), 1);
+			exprF = new_BigIntMatrixT(big_rows(bigF), big_cols(bigF));
+			temp = empty_BigIntT(1);
+			
+			//If user wants file output
+			if (argc > 4)
+			{
+				if (!strcmp(argv[4], "TRUE"))
 				{
 					fileName = malloc(MAXSTRLEN*sizeof(char));
 					fileName[0] = '\0';
@@ -3190,29 +3234,6 @@ int main(int argc, char* argv[])
 						fprintf(stderr, "Unable to open file for saving output. Continuing without saving...\n");
 				}
 			}
-			
-			currVectElements = new_BigIntT_array(big_rows(bigF), 1);
-			vectPropElements = malloc((big_rows(bigF)+1)*sizeof(BigIntTP));
-			for (int i = 0; i < big_rows(bigF)+1; i += 1)
-				vectPropElements[i] = empty_BigIntT(1);
-			
-			/* 
-			//JUST FOR TESTING
-			numArr[0] = 0;
-			BigIntTP NA[25];
-			for (int i = 0; i < 25; i += 1)
-			{
-				NA[i] = new_BigIntT(numArr, 1);	
-				numArr[0] += 1;
-			}
-			*/
-	
-			annihPoly = new_BigPolyT(vectPropElements, big_rows(bigF)+1);
-			currVect = new_BigIntMatrixT(big_rows(bigF), 1);
-			tempVect = new_BigIntMatrixT(big_rows(bigF), 1);
-			zeroVect = new_BigIntMatrixT(big_rows(bigF), 1);
-			exprF = new_BigIntMatrixT(big_rows(bigF), big_cols(bigF));
-			temp = empty_BigIntT(1);
 			
 			//Iterate through all vectors in the module
 			while (!checkedAllVects)
@@ -6174,7 +6195,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[mod]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "[mod] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
 		//printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");

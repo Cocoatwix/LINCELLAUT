@@ -54,8 +54,9 @@ ccmzerosearch resume size [mod]: This tool allows the user to search for matrice
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-vectprops [mod] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what their "minimal" annihilating polynomials are.
+vectprops [mod] [resume] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what their "minimal" annihilating polynomials are.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
+ - The optional argument "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
 matprops maxpower [modulus]: This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
