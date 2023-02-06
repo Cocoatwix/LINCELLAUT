@@ -485,10 +485,10 @@ int main(int argc, char* argv[])
 			printi(bigMod);
 			printf("\n");
 			bigEqn = chara_poly(bigMatrix, bigMod);
-			printf("\nCharacteristic equation: ");
+			printf("\nCharacteristic polynomial: ");
 			printp(bigEqn);
 			
-			printf("\nFactored characteristic equation: ");
+			printf("\nFactored characteristic polynomial: ");
 			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
 			printpf(bigEqnFactors);
 			printf("\nMinimum polynomial: ");
@@ -1896,6 +1896,9 @@ int main(int argc, char* argv[])
 			bool hasConnections = TRUE;
 			bool isTopLeaf;   //For determining which leaves are strictly necessary for transient length representatives
 			
+			char* fileName = NULL;
+			FILE* outputFile = NULL;
+			
 			if (argc > 2)
 			{
 				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
@@ -1927,6 +1930,20 @@ int main(int argc, char* argv[])
 				FREE_VARIABLES;
 				return EXIT_SUCCESS;
 			}
+			
+			fileName = malloc(MAXSTRLEN*sizeof(char));
+			fileName[0] = '\0';
+			strcat(fileName, "branchreps ");
+			append_BigIntT(fileName, bigMod);
+			strcat(fileName, " F");
+			for (int row = 0; row < big_rows(A); row += 1)
+				for (int col = 0; col < big_cols(A); col += 1)
+					append_BigIntT(fileName, big_element(A, row, col));
+			strcat(fileName, ".txt");
+			
+			outputFile = fopen(fileName, "a");
+			if (outputFile == NULL)
+				fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
 			
 			one = new_BigIntT(oneArr, 1);
 			
@@ -2162,12 +2179,13 @@ int main(int argc, char* argv[])
 			for (int br = 0; br < numOfBranches; br += 1)
 			{
 				printf("Leaf:\n");
-				printbm(branches[br][0]);
+				printbm_row(branches[br][0]);
 				printf("\nRoot:\n");
-				printbm(branches[br][1]);
+				printbm_row(branches[br][1]);
 				printf("\nBase root:\n");
-				printbm(branches[br][2]);
-				printf("~~~~~~~~~~~~~~~~~~~\n");
+				printbm_row(branches[br][2]);
+				printf("\n~~~~~~~~~~~~~~~~~~~\n");
+				getchar();
 			}
 			*/
 			
@@ -2187,11 +2205,21 @@ int main(int argc, char* argv[])
 				if (isTopLeaf)
 				{
 					if (vectorType == row)
+					{
 						printbm_row(branches[maybeLeaf][0]);
+						if (outputFile != NULL)
+							fprintbm_row(outputFile, branches[maybeLeaf][0]);
+					}
 					else
+					{
 						printbm(branches[maybeLeaf][0]);
+						if (outputFile != NULL)
+							fprintbm(outputFile, branches[maybeLeaf][0]);
+					}
 					
 					printf("\n");
+					if (outputFile != NULL)
+						fprintf(outputFile, "\n");
 				}
 			}
 			
@@ -2219,6 +2247,11 @@ int main(int argc, char* argv[])
 			tempVect3 = free_BigIntMatrixT(tempVect);
 			tempRoot  = free_BigIntMatrixT(tempRoot);
 			theCycle  = free_CycleInfoT(theCycle);
+			
+			FREE(fileName);
+			if (outputFile != NULL)
+				if (fclose(outputFile) == EOF)
+					fprintf(stderr, "Unable to save output file.\n");
 		}
 		
 		
