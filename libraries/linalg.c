@@ -2534,11 +2534,14 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 {
 	BigPolyTP* tempMinPoly = NULL;
 	BigPolyTP* tempPoly = NULL;
+	BigPolyTP  tempCalcPoly = NULL; //For performing calculations
 	BigFactorsTP factoredCharaPoly = NULL;
 	BigPolyTP* unneededFactors = NULL;
 	BigPolyTP  charaPoly;
 	//BigFactorsTP factoredMinPoly = NULL;
 	int unneededFactorsCount = 0;
+	
+	BigPolyTP negOnePoly = NULL;
 	
 	BigIntTP numOfFactors = NULL;
 	BigIntTP tempCounter = NULL;
@@ -2566,6 +2569,10 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 		zero = empty_BigIntT(1);
 		temp = empty_BigIntT(1);
 		
+		subtract_BigIntT(mod, one, temp);
+		negOnePoly = constant_BigPolyT(temp);
+		tempCalcPoly = empty_BigPolyT();
+		
 		tempCounter = new_BigIntT(oneArr, 1);
 		numOfFactors = empty_BigIntT(1);
 		
@@ -2584,6 +2591,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 		tempMinPoly[0] = constant_BigPolyT(numOfFactors);
 		
 		tempPoly = malloc((numOfFactorsInt)*sizeof(BigPolyTP));
+		tempPoly[0] = NULL;
 		
 		tempMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
 		zeroMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
@@ -2597,8 +2605,16 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 			factorToExclude = 0;
 			
 			//Create constant polynomial to represent number of factors in our temporary polynomial
-			subtract_BigIntT(numOfFactors, one, temp);
-			tempPoly[0] = constant_BigPolyT(temp);
+			if (tempPoly[0] == NULL)
+			{
+				subtract_BigIntT(numOfFactors, one, temp);
+				tempPoly[0] = constant_BigPolyT(temp);
+			}
+			else //Prevents a new BigPolyT from needing to be created each loop
+			{
+				add_BigPolyT(tempPoly[0], negOnePoly, tempCalcPoly);
+				mod_BigPolyT(tempCalcPoly, mod, tempPoly[0]);
+			}
 			
 			for (int tempCounter = 1; tempCounter <= numOfFactorsInt; tempCounter += 1)
 			{
@@ -2620,7 +2636,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 				//If the matrix is zero, we don't need the factor we removed
 				//We're storing the unneeded factors so that we can free their memory at the end
 				// (the user won't be able to free them)
-				if ((compare_BigIntMatrixT(tempMat, zeroMat) == 1) && (compare_BigIntT(temp, zero) != 0))
+				if ((compare_BigIntMatrixT(tempMat, zeroMat)) && (compare_BigIntT(temp, zero) != 0))
 				{
 					allFactorsAreNeeded = FALSE;
 					unneededFactorsCount += 1;
@@ -2640,24 +2656,21 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 				
 				tempMinPoly = realloc(tempMinPoly, (numOfFactorsInt+1)*sizeof(BigPolyTP));
 				for (int i = 0; i <= numOfFactorsInt; i += 1)
-					tempMinPoly[i] = tempPoly[i];
+					if (i != 0) //Making sure we don't lose the minpoly's number of factors
+						tempMinPoly[i] = tempPoly[i];
+				
+				//Giving tempMinPoly the currect number of factors
+				//This is so that the free statement below doesn't remove the number of factors
+				add_BigPolyT(tempMinPoly[0], negOnePoly, tempCalcPoly);
+				mod_BigPolyT(tempCalcPoly, mod, tempMinPoly[0]);
 				
 				tempPoly = realloc(tempPoly, numOfFactorsInt*sizeof(BigPolyTP));
 			}
-			
-			//Change tempMinPoly[0] to store the correct value
-			else
-			{
-				//Not sure if these lines are correct
-				tempMinPoly[0] = free_BigPolyT(tempMinPoly[0]);
-				tempMinPoly[0] = constant_BigPolyT(numOfFactors);
-			}
-			
-			//Free constant so that we don't need to worry about it later
-			tempPoly[0] = free_BigPolyT(tempPoly[0]);
 		}
 	}
 	
+	//Free number of constants since we don't need it anymore
+	tempPoly[0] = free_BigPolyT(tempPoly[0]);
 	free(tempPoly);
 	tempPoly = NULL;
 	
@@ -2675,6 +2688,9 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 	one  = free_BigIntT(one);
 	zero = free_BigIntT(zero);
 	temp = free_BigIntT(temp);
+	
+	negOnePoly   = free_BigPolyT(negOnePoly);
+	tempCalcPoly = free_BigPolyT(tempCalcPoly);
 	
 	tempMat = free_BigIntMatrixT(tempMat);
 	zeroMat = free_BigIntMatrixT(zeroMat);

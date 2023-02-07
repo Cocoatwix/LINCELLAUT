@@ -408,44 +408,6 @@ int main(int argc, char* argv[])
 		}
 		
 		
-		//If we want to calculate the determinant of our matrix
-		/*
-		else if (!strcmp(argv[1], "det"))
-		{
-			int theDet;
-			
-			//If the user specified a custom modulus
-			if (argc > 2)
-			{
-				modulus = (int)strtol(argv[2], &tempStr, 10);
-				if (tempStr[0] != '\0')
-				{
-					fprintf(stderr, "Unable to read modulus from command line.\n");
-					return EXIT_FAILURE;
-				}
-			}
-			
-			IntMatrixTP A = read_IntMatrixT(updatefilepath);
-			if (A == NULL)
-			{
-				fprintf(stderr, "Unable to read .matrix file at %s.\n", updatefilepath);
-				return EXIT_FAILURE;
-			}
-			
-			printf("Matrix:\n");
-			printm(A);
-			theDet = det(A);
-			
-			if (theDet < 0)
-				printf("Determinant: %d\n", ((theDet % modulus) + modulus) % modulus);
-			else
-				printf("Determinant: %d\n", (theDet % modulus));
-			
-			A = free_IntMatrixT(A);
-		}
-		*/
-		
-		
 		//Find the characteristic equation of the update matrix
 		else if (! strcmp(argv[1], "chara"))
 		{
@@ -481,7 +443,7 @@ int main(int argc, char* argv[])
 			//Actually calculate the characteristic equation here
 			printf("Matrix:\n");
 			printbm(bigMatrix);
-			printf("\nModulus: ");
+			printf("Modulus: ");
 			printi(bigMod);
 			printf("\n");
 			bigEqn = chara_poly(bigMatrix, bigMod);
