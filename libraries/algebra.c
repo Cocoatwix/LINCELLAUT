@@ -1780,13 +1780,10 @@ int divide_BigPolyT(const BigPolyTP a, const BigPolyTP b, BigPolyTP quotient, Bi
 }
 
 
-int pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, BigPolyTP exp)
-/** Calculates the first BigPolyT raised to the given BigIntT.
-    Stores the result in the second BigPolyT given (which is
-		assumed to have been initialised).
-		Returns 1 on success, 0 otherwise. */
+int modulo_pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, const BigIntTP mod, BigPolyTP exp)
+/** Same as pow_BigPolyT(), but reduces polynomials by
+    a modulus after each calculation. */
 {
-	//This is my attempt at implementing exponentiation by squaring
 	int returnVal = 0;
 	int numArr[1] = {1};
 	
@@ -1846,7 +1843,11 @@ int pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, BigPolyTP exp)
 				numOfResults += 1;
 				results = realloc(results, numOfResults*sizeof(BigPolyTP));
 				results[numOfResults-1] = empty_BigPolyT();
-				copy_BigPolyT(results[0], results[numOfResults-1]);
+				
+				if (mod != NULL)
+					mod_BigPolyT(results[0], mod, results[numOfResults-1]);
+				else
+					copy_BigPolyT(results[0], results[numOfResults-1]);
 				
 				subtract_BigIntT(tempPow, one, temp);
 				divide_BigIntT(temp, two, tempPow);
@@ -1854,7 +1855,11 @@ int pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, BigPolyTP exp)
 			
 			//Square our current result
 			multiply_BigPolyT(results[0], results[0], tempPoly);
-			copy_BigPolyT(tempPoly, results[0]);
+			
+			if (mod != NULL)
+				mod_BigPolyT(tempPoly, mod, results[0]);
+			else
+				copy_BigPolyT(tempPoly, results[0]);
 		}
 		
 		//Now, we simply multiply all the results together to get exp
@@ -1862,7 +1867,10 @@ int pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, BigPolyTP exp)
 		for (int i = 0; i < numOfResults; i += 1)
 		{
 			multiply_BigPolyT(exp, results[i], tempPoly);
-			copy_BigPolyT(tempPoly, exp);
+			if (mod != NULL)
+				mod_BigPolyT(tempPoly, mod, exp);
+			else
+				copy_BigPolyT(tempPoly, exp);
 		}
 
 		returnVal = 1;
@@ -1885,6 +1893,16 @@ int pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, BigPolyTP exp)
 	temp    = free_BigIntT(temp);
 
 	return returnVal;
+}
+
+
+int pow_BigPolyT(const BigPolyTP p, const BigIntTP pow, BigPolyTP exp)
+/** Calculates the first BigPolyT raised to the given BigIntT.
+    Stores the result in the second BigPolyT given (which is
+		assumed to have been initialised).
+		Returns 1 on success, 0 otherwise. */
+{
+	return modulo_pow_BigPolyT(p, pow, NULL, exp);
 }
 
 
@@ -2948,7 +2966,7 @@ BigPolyTP* old_factor_BigPolyT(const BigPolyTP A, const BigIntTP mod)
 						printf("\n");
 					#endif
 					
-					pow_BigPolyT(h, M, tempPoly);
+					modulo_pow_BigPolyT(h, M, mod, tempPoly);
 					#ifdef VERBOSE
 						printf("pow_BigPolyT() completed.\n");
 					#endif
@@ -3165,6 +3183,7 @@ BigFactorsTP factor_BigPolyT(const BigPolyTP p, const BigIntTP mod)
 																							           mod,
 																							           &equalDegreeFactors,
 																							           &equalDegreeFactorsExponents);
+																												 
 	
 	//Now, I guess we print out our factorisation
 	#ifdef VERBOSE

@@ -453,7 +453,7 @@ int main(int argc, char* argv[])
 			printf("\nFactored characteristic polynomial: ");
 			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
 			printpf(bigEqnFactors);
-			printf("\nMinimum polynomial: ");
+			printf("\nMinimal polynomial: ");
 			minEqn = min_poly(bigMatrix, bigMod);
 			old_printpf(minEqn);
 			printf("\n\n");

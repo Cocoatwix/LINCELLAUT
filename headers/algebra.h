@@ -218,6 +218,7 @@ int divide_BigPolyT(const BigPolyTP, const BigPolyTP, BigPolyTP, BigPolyTP, cons
 	Currently, this function works for nonnegative powers.
 	Returns 1 on success, 0 otherwise. */
 int pow_BigPolyT(const BigPolyTP, const BigIntTP, BigPolyTP);
+int modulo_pow_BigPolyT(const BigPolyTP, const BigIntTP, const BigIntTP, BigPolyTP);
 
 /** Reduces a given polynomial by a modulus, stores the result in
     another passed polynomial. This function assumes all arguments
