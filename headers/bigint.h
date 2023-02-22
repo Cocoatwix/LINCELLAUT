@@ -38,6 +38,10 @@ BigIntTP** new_BigIntT_array(int, int);
     frees the array itself. Returns NULL. */
 BigIntTP** free_BigIntT_array(BigIntTP**, int, int);
 
+/** Sets all elements in the BigIntT to zero.
+    Returns 1 on success, 0 otherwise. */
+int clear_BigIntT_array(BigIntTP**, int, int);
+
 /** Reads in a string and stores its numerical value
     in the given BigIntTP. The BigIntTP is assumed NOT
 		to have been initialised, only declared.

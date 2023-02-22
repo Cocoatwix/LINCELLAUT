@@ -2217,6 +2217,116 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to calculate each unique cycle space
+		// within a given LCA system
+		else if (! strcmp(argv[1], "orbitspaces"))
+		{
+			int numArr[1] = {1};
+			BigIntTP one;
+			
+			BigIntTP bigMod;
+			BigIntTP** currVectElements;
+			
+			BigIntMatrixTP A;
+			BigIntMatrixTP currVect;
+			BigIntMatrixTP tempVect;
+			BigIntMatrixTP tempVect2;
+			
+			BigIntTP** tempSetCyclespace;
+			BigIntMatrixTP tempCyclespace;
+			BigIntMatrixTP tempCyclespace2;
+			
+			int numOfCyclespaces = 0;
+			BigIntMatrixTP* cyclespaces = NULL;
+			
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			}
+			
+			A = read_BigIntMatrixT(updatefilepath);
+			if (A == NULL)
+			{
+				fprintf(stderr, "Unable to read update matrix from config file.\n");
+				bigMod = free_BigIntT(bigMod);
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (big_rows(A) != big_cols(A))
+			{
+				fprintf(stderr, "Given update matrix is not square.\n");
+				A = free_BigIntMatrixT(A);
+				bigMod = free_BigIntT(bigMod);
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			one = new_BigIntT(numArr, 1);
+			currVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
+			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
+			currVectElements = new_BigIntT_array(big_rows(A), 1);
+			
+			tempCyclespace  = new_BigIntMatrixT(big_rows(A), big_cols(A));
+			tempCyclespace2 = new_BigIntMatrixT(big_rows(A), big_cols(A));
+			tempSetCyclespace = new_BigIntT_array(big_rows(A), big_cols(A));
+			
+			do
+			{
+				set_big_matrix(currVect, currVectElements);
+				copy_BigIntMatrixT(currVect, tempVect);
+				clear_BigIntT_array(tempSetCyclespace, big_rows(A), big_cols(A));
+				
+				//Calculate the max number of possible linearly-independent vectors
+				// for the cyclespace, and put them in tempSetCyclespace
+				for (int entry = 0; entry < big_rows(A); entry += 1)
+					copy_BigIntT(currVectElements[entry][0], tempSetCyclespace[0][entry]);
+				
+				for (int v = 1; v < big_rows(A); v += 1)
+				{
+					big_mat_mul(A, tempVect, tempVect2);
+					copy_BigIntMatrixT(tempVect2, tempVect);
+					modbm(tempVect, bigMod);
+					
+					for (int entry = 0; entry < big_rows(A); entry += 1)
+						copy_BigIntT(big_element(tempVect, entry, 0), tempSetCyclespace[v][entry]);
+				}
+				
+				
+				printbm_row(currVect);
+				printf("\n");
+				set_big_matrix(tempCyclespace, tempSetCyclespace);
+				printbm(tempCyclespace);
+				printf("~~~\n");
+				big_row_echelon(tempCyclespace, bigMod, tempCyclespace2, NULL);
+				big_reduced_row_echelon(tempCyclespace2, bigMod, tempCyclespace, NULL);
+				printbm(tempCyclespace);
+				getchar();
+			}
+			while (! increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
+			
+			one    = free_BigIntT(one);
+			bigMod = free_BigIntT(bigMod);
+			
+			currVectElements  = free_BigIntT_array(currVectElements, big_rows(A), 1);
+			tempSetCyclespace = free_BigIntT_array(tempSetCyclespace, big_rows(A), big_cols(A));
+			
+			A         = free_BigIntMatrixT(A);
+			currVect  = free_BigIntMatrixT(currVect);
+			tempVect  = free_BigIntMatrixT(tempVect);
+			tempVect2 = free_BigIntMatrixT(tempVect2);
+			
+			tempCyclespace  = free_BigIntMatrixT(tempCyclespace);
+			tempCyclespace2 = free_BigIntMatrixT(tempCyclespace2);
+			
+		}
+		
+		
 		//If the user wants to use Floyd's Cycle Detection Algorithm
 		else if (! strcmp(argv[1], "floyd"))
 		{
@@ -5570,7 +5680,7 @@ int main(int argc, char* argv[])
 		{
 			int testMode = 4;
 		
-			#define nasize 25
+			#define nasize 4
 			int numArr[1] = {0};
 			BigIntTP NA[nasize];
 			for (int i = 0; i < nasize; i += 1)
@@ -6021,8 +6131,9 @@ int main(int argc, char* argv[])
 			else if (testMode == 4)
 			{
 				printf("testMode 4 :)\n");
-				BigIntMatrixTP A   = read_BigIntMatrixT(updatefilepath);
-				BigIntMatrixTP UTF = new_BigIntMatrixT(big_rows(A), big_cols(A));
+				BigIntMatrixTP A    = read_BigIntMatrixT(updatefilepath);
+				BigIntMatrixTP UTF  = new_BigIntMatrixT(big_rows(A), big_cols(A));
+				BigIntMatrixTP RREF = new_BigIntMatrixT(big_rows(A), big_cols(A));
 				//BigIntMatrixTP I   = identity_BigIntMatrixT(big_rows(A));
 				
 				printf("Starting matrix:\n");
@@ -6031,12 +6142,16 @@ int main(int argc, char* argv[])
 				big_row_echelon(A, bigMod, UTF, NULL);
 				printf("Upper-triangular form of starting matrix:\n");
 				printbm(UTF);
+				big_reduced_row_echelon(UTF, bigMod, RREF, NULL);
+				printf("Reduced row echelon form of staring matrix:\n");
+				printbm(RREF);
 				/*printf("\nOther random matrix:\n");
 				printbm(I); */
 				
-				A   = free_BigIntMatrixT(A);
-				//I   = free_BigIntMatrixT(I);
-				UTF = free_BigIntMatrixT(UTF);
+				A    = free_BigIntMatrixT(A);
+				//I  = free_BigIntMatrixT(I);
+				UTF  = free_BigIntMatrixT(UTF);
+				RREF = free_BigIntMatrixT(RREF);
 			}
 			
 			for (int i = 0; i < nasize; i += 1)
@@ -6063,6 +6178,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitspaces " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		//printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");

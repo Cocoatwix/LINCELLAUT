@@ -2029,6 +2029,9 @@ int big_row_echelon(const BigIntMatrixTP M,
 	
 	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
 	{
+		if (focusRow+pivotColOffset >= M->n)
+			break;
+		
 		#ifdef VERBOSE
 		printf("focusRow = %d, pivotColOffset = %d\n", focusRow, pivotColOffset);
 		#endif
@@ -2196,11 +2199,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 				printf("Current pivot column is completely zero. Offsetting column by 1.\n");
 				#endif
 				
-				//If there's no other columns to check; they're all zero
-				if (pivotColOffset+focusRow+1 >= M->n)
-					return 0;
-				else
-					continue;
+				continue;
 			}
 			
 			//Swap our found row to the focus row
@@ -2372,7 +2371,12 @@ int big_reduced_row_echelon(const BigIntMatrixTP M,
 				//Adjusting for non-one leading terms
 				//This allows terms to get as small as possible
 				divide_BigIntT(temp2, result->matrix[i][leadingEntryCol], temp);
-				mod_BigIntT(temp, modulus, temp2);
+				
+				//Some manual adjustment for style
+				if ((compare_BigIntT(temp2, zero) != 0) && (compare_BigIntT(temp, zero) == 0))
+					copy_BigIntT(one, temp2);
+				else
+					mod_BigIntT(temp, modulus, temp2);
 				
 				if ((perfectReducedRowEchelon == 1) && 
 				    (compare_BigIntT(result->matrix[i][leadingEntryCol], one) != 0))

@@ -127,6 +127,21 @@ BigIntTP** free_BigIntT_array(BigIntTP** arr, int rows, int cols)
 }
 
 
+int clear_BigIntT_array(BigIntTP** arr, int rows, int cols)
+/** Sets each element in the array to zero.
+    Returns 1 on success, 0 otherwise. */
+{
+	BigIntTP zero = empty_BigIntT(1);
+	
+	for (int i = 0; i < rows; i += 1)
+		for (int j = 0; j < cols; j += 1)
+			copy_BigIntT(zero, arr[i][j]);
+		
+	zero = free_BigIntT(zero);
+	return 1;
+}
+
+
 int strtoBIT(const char* numStr, BigIntTP* theBig)
 /** Takes a numerical string and creates a BigIntT
     struct using it, storing it in theBig. 
