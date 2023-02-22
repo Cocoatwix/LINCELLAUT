@@ -249,6 +249,20 @@ int det(const IntMatrixTP);
     Returns NULL otherwise. */
 IntMatrixTP inverse(const IntMatrixTP, int);
 
+/** Computes an upper-triangular form of the first matrix mod the given modulus,
+    then stores the result in the second matrix. The third matrix will be altered using
+	the same steps that were used to reduce the matrix given. Set the third matrix to NULL
+	if not needed. Returns 1 upon computing an upper-triangular form, 0 otherwise. */
+int big_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP, BigIntMatrixTP);
+
+/** Takes the first matrix, in row echelon form, and tries to reduce it to 
+    reduced row echelon form. Stores the result in the second matrix.
+	The operations performed on the matrix will also be applied to the third
+	matrix. Set the third matrix to NULL if this behaviour isn't needed.
+	Returns 1 upon reducing the matrix to the identity (or some slice of it), 
+	0 otherwise. */
+int big_reduced_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP, BigIntMatrixTP);
+
 /** Same as inverse(), but for BigIntMatrixTs. */
 BigIntMatrixTP big_inverse(const BigIntMatrixTP, const BigIntTP);
 

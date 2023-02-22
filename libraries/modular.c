@@ -73,6 +73,48 @@ void big_num_inverse(const BigIntTP findInverse, const BigIntTP modulus, BigIntT
 }
 
 
+//BigIntTP base_prime(const BigIntTP pp)
+/** Given a prime-power, this function returns
+    what the original prime was. If a composite is
+	  given, this returns the smallest prime factor.
+	  Returns NULL on error. */ /*
+{
+	int numArr[1] = {1};
+	BigIntTP one = new_BigIntT(numArr, 1);
+	numArr[0] = 2;
+	BigIntTP two = new_BigIntT(numArr, 1);
+	BigIntTP prime  = empty_BigIntT(1);
+	BigIntTP result = empty_BigIntT(1);
+	BigIntTP temp   = empty_BigIntT(1);
+	
+	copy_BigIntT(one, prime);
+	//Loop until we find a prime divisor of pp
+	do
+	{
+		//Increment prime
+		//I could make this faster by only checking numbers 
+		// one more or less than a multiple of 6, but eh
+		if ((compare_BigIntT(prime, one) == 0) ||
+		    (compare_BigIntT(prime, two) == 0))
+			add_BigIntT(prime, one, temp);
+		else
+			add_BigIntT(prime, two, temp);
+		
+		copy_BigIntT(temp, prime);
+		mod_BigIntT(pp, prime, result);
+	}
+	while (compare_BigIntT(result, zero) != 0);
+	
+	one = free_BigIntT(one);
+	two = free_BigIntT(two);
+	temp = free_BigIntT(temp);
+	result = free_BigIntT(result);
+	
+	return prime;
+}
+*/
+
+
 int num_root(int a, int modulus)
 /** Returns the smallest nonzero number that, when multiplied by a,
     gives 0 when reduced by modulus. 

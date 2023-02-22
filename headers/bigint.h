@@ -133,8 +133,8 @@ int divide_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Computes first BigIntT mod second BigIntT, stores
     result in third BigIntT, which assumes the third
-		BigInt has been initialised.
-		Returns 1 on success, 0 otherwise. */
+	BigInt has been initialised.
+	Returns 1 on success, 0 otherwise. */
 int mod_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Returns an array pf all the possible factors of the given BigIntTP. 

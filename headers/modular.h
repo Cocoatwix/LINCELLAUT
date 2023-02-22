@@ -17,13 +17,19 @@ void big_num_inverse(const BigIntTP, const BigIntTP, BigIntTP);
 
 /** Returns the first nonzero number that, when
     multiplied by the first argument, gives 0 when
-		reduced by the second number as a modulus.
-		Returns 0 if no nonzero number exists. */
+	reduced by the second number as a modulus.
+	Returns 0 if no nonzero number exists. */
 int num_root(int, int);
 
 /** Returns the square root of the first given 
     number mod some modulus. Returns -1 if the
-		square root DNE. */
+	square root DNE. */
 int square_root(int, int);
+
+/** Given a prime-power, this function returns
+    what the original prime was. If a composite is
+	given, this returns the smallest prime factor.
+	Returns NULL on error. */
+//BigIntTP base_prime(const BigIntTP);
 
 #endif //MODULAR_H
