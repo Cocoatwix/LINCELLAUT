@@ -1265,30 +1265,36 @@ int clear_MultiVarExtT(void* voidExt)
 void old_printpf(const BigPolyTP* factors)
 /** Prints a factorised BigPolyT to stdout. */
 {
-	BigIntTP indexCounter;
-	BigIntTP one;
-	BigIntTP temp;
-	int oneArr[1] = {1};
+	if (is_zero(constant(factors[0])))
+		printf("0");
 	
-	one = new_BigIntT(oneArr, 1);
-	indexCounter = new_BigIntT(oneArr, 1);
-	temp = empty_BigIntT(1);
-	int index = 1;
-	
-	while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+	else
 	{
-		printf("(");
-		printp(factors[index]);
-		printf(")");
+		BigIntTP indexCounter;
+		BigIntTP one;
+		BigIntTP temp;
+		int oneArr[1] = {1};
 		
-		index += 1;
-		add_BigIntT(indexCounter, one, temp);
-		copy_BigIntT(temp, indexCounter);
+		one = new_BigIntT(oneArr, 1);
+		indexCounter = new_BigIntT(oneArr, 1);
+		temp = empty_BigIntT(1);
+		int index = 1;
+		
+		while (compare_BigIntT(indexCounter, factors[0]->coeffs[0]) <= 0)
+		{
+			printf("(");
+			printp(factors[index]);
+			printf(")");
+			
+			index += 1;
+			add_BigIntT(indexCounter, one, temp);
+			copy_BigIntT(temp, indexCounter);
+		}
+		
+		temp = free_BigIntT(temp);
+		one  = free_BigIntT(one);
+		indexCounter = free_BigIntT(indexCounter);
 	}
-	
-	temp = free_BigIntT(temp);
-	one  = free_BigIntT(one);
-	indexCounter = free_BigIntT(indexCounter);
 }
 
 

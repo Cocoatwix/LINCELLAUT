@@ -1200,6 +1200,50 @@ void fprintbm_nopad(FILE* file, const BigIntMatrixTP M)
 }
 
 
+void big_rowsp(const BigIntMatrixTP A)
+/** Prints a representation of A's row space
+    to stdout. */
+{
+	bool isZero;
+	
+	printf("span(");
+	for (int row = 0; row < A->m; row += 1)
+	{
+		isZero = row == 0 ? FALSE : TRUE;
+		
+		for (int col = 0; col < A->n; col += 1)
+		{
+			if ((!isZero) && (col == 0))
+			{
+				if (row != 0)
+					printf(", ");
+				
+				printf("<");
+			}
+			
+			if (!isZero)
+			{
+				printi(big_element(A, row, col));
+				if (col != A->n - 1)
+					printf(" ");
+				
+				else
+					printf(">");
+			}
+			
+			//Check to see if the row vector is the zero vector
+			if ((!is_zero(big_element(A, row, col))) && (isZero))
+			{
+				isZero = FALSE;
+				col = -1;
+			}
+		}
+		
+	}
+	printf(")");
+}
+
+
 void printgm(const GenericMatrixTP a)
 /** Prints a generic matrix to stdout. */
 {
@@ -2755,18 +2799,20 @@ BigPolyTP chara_poly(const BigIntMatrixTP A, const BigIntTP mod)
 }
 
 
-BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
-/** Calculates A's minimum polynomial, returns it in its factored 
-    form on success, NULL otherwise. This won't be tested for 
-		composite moduli since minimum polynomials don't really work 
-		under composite moduli. */
+BigPolyTP* min_poly(const BigIntMatrixTP A, 
+                    const BigIntMatrixTP v, 
+									  const BigIntTP mod,
+									  const BigPolyTP somePoly)
+/** Calculates A's minimum polynomial, using a given charaPoly,
+		and returns it in its factored form on success, NULL otherwise. 
+		This won't be tested for composite moduli. */
 {
 	BigPolyTP* tempMinPoly = NULL;
 	BigPolyTP* tempPoly = NULL;
 	BigPolyTP  tempCalcPoly = NULL; //For performing calculations
 	BigFactorsTP factoredCharaPoly = NULL;
 	BigPolyTP* unneededFactors = NULL;
-	BigPolyTP  charaPoly;
+	BigPolyTP  charaPoly = NULL;
 	//BigFactorsTP factoredMinPoly = NULL;
 	int unneededFactorsCount = 0;
 	
@@ -2785,10 +2831,24 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 	BigIntMatrixTP tempMat = NULL;
 	BigIntMatrixTP zeroMat = NULL;
 	
+	//Used for checking whether a matrix annihilates a vector
+	BigIntMatrixTP tempVect = NULL;
+	BigIntMatrixTP zeroVect = NULL;
+	if (v != NULL)
+	{
+		zeroVect = new_BigIntMatrixT(big_rows(v), 1);
+		tempVect = new_BigIntMatrixT(big_rows(v), 1);
+	}
+	
 	bool allFactorsAreNeeded = FALSE;
 	int indexCorrection;
 	
-	charaPoly = chara_poly(A, mod);
+	//Calculate charaPoly only if needed
+	if (somePoly == NULL)
+		charaPoly = chara_poly(A, mod);
+	else
+		charaPoly = somePoly;
+
 	if (charaPoly != NULL)
 	{
 		factoredCharaPoly = factor_BigPolyT(charaPoly, mod);
@@ -2833,6 +2893,10 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 			allFactorsAreNeeded = TRUE; //Assume we need all factors until proven otherwise
 			factorToExclude = 0;
 			
+			//The zero vector doesn't need any factors
+			if ((v != NULL) && (compare_BigIntMatrixT(v, zeroVect)))
+				allFactorsAreNeeded = FALSE;
+			
 			//Create constant polynomial to represent number of factors in our temporary polynomial
 			if (tempPoly[0] == NULL)
 			{
@@ -2862,10 +2926,18 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 				clear_BigIntMatrixT(tempMat);
 				eval_factored_BigPolyT(tempPoly, A, tempMat, mod);
 				
+				if (v != NULL)
+				{
+					big_mat_mul(tempMat, v, tempVect);
+					modbm(tempVect, mod);
+				}
+				
 				//If the matrix is zero, we don't need the factor we removed
 				//We're storing the unneeded factors so that we can free their memory at the end
 				// (the user won't be able to free them)
-				if ((compare_BigIntMatrixT(tempMat, zeroMat)) && (compare_BigIntT(temp, zero) != 0))
+				if ((((v == NULL) && (compare_BigIntMatrixT(tempMat, zeroMat))) ||
+				     ((v != NULL) && (compare_BigIntMatrixT(tempVect, zeroVect)))) && 
+						(compare_BigIntT(temp, zero) != 0))
 				{
 					allFactorsAreNeeded = FALSE;
 					unneededFactorsCount += 1;
@@ -2890,27 +2962,42 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 				
 				//Giving tempMinPoly the currect number of factors
 				//This is so that the free statement below doesn't remove the number of factors
-				add_BigPolyT(tempMinPoly[0], negOnePoly, tempCalcPoly);
-				mod_BigPolyT(tempCalcPoly, mod, tempMinPoly[0]);
+				if ((numOfFactorsInt != 0) || ((v != NULL) && (compare_BigIntMatrixT(v, zeroVect))))
+				{
+					add_BigPolyT(tempMinPoly[0], negOnePoly, tempCalcPoly);
+					mod_BigPolyT(tempCalcPoly, mod, tempMinPoly[0]);
+				}
 				
 				tempPoly = realloc(tempPoly, numOfFactorsInt*sizeof(BigPolyTP));
 			}
+			
+			//This case occurs when we're trying to find the minimal
+			// polynomial of the zero vector
+			if (numOfFactorsInt == 0)
+				allFactorsAreNeeded = TRUE;
 		}
 	}
 	
 	//Free number of constants since we don't need it anymore
-	tempPoly[0] = free_BigPolyT(tempPoly[0]);
-	free(tempPoly);
+	if (numOfFactorsInt != 0)
+	{
+		tempPoly[0] = free_BigPolyT(tempPoly[0]);
+		free(tempPoly);
+	}
 	tempPoly = NULL;
 	
-	//Free factors that aren't needed for minimum polynomial
+	//Prevents needed factors from being deallocated
+	// when finding a vector's minimal polynomial
+	if ((numOfFactorsInt == 0) && ((v != NULL) && (!compare_BigIntMatrixT(v, zeroVect))))
+		unneededFactorsCount -= 1;
+	
+	//Free factors that aren't needed for minimal polynomial
 	for (int i = 0; i < unneededFactorsCount; i += 1)
 		unneededFactors[i] = free_BigPolyT(unneededFactors[i]);
 	free(unneededFactors);
 	unneededFactors = NULL;
 	
 	factoredCharaPoly = free_BigFactorsT(factoredCharaPoly);
-	charaPoly = free_BigPolyT(charaPoly);
 	
 	numOfFactors = free_BigIntT(numOfFactors);
 	tempCounter  = free_BigIntT(tempCounter);
@@ -2918,13 +3005,17 @@ BigPolyTP* min_poly(const BigIntMatrixTP A, const BigIntTP mod)
 	zero = free_BigIntT(zero);
 	temp = free_BigIntT(temp);
 	
+	if (somePoly == NULL)
+		charaPoly = free_BigPolyT(charaPoly);
+	
 	negOnePoly   = free_BigPolyT(negOnePoly);
 	tempCalcPoly = free_BigPolyT(tempCalcPoly);
 	
-	tempMat = free_BigIntMatrixT(tempMat);
-	zeroMat = free_BigIntMatrixT(zeroMat);
-	
-	
+	tempMat  = free_BigIntMatrixT(tempMat);
+	zeroMat  = free_BigIntMatrixT(zeroMat);
+	zeroVect = free_BigIntMatrixT(zeroVect);
+	tempVect = free_BigIntMatrixT(tempVect);
+
 	return tempMinPoly;
 }
 

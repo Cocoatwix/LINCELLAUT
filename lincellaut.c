@@ -454,7 +454,7 @@ int main(int argc, char* argv[])
 			bigEqnFactors = factor_BigPolyT(bigEqn, bigMod);
 			printpf(bigEqnFactors);
 			printf("\nMinimal polynomial: ");
-			minEqn = min_poly(bigMatrix, bigMod);
+			minEqn = min_poly(bigMatrix, NULL, bigMod, bigEqn);
 			old_printpf(minEqn);
 			printf("\n\n");
 			
@@ -1224,7 +1224,7 @@ int main(int argc, char* argv[])
 			printbm(bigF);
 			printf("Modulus: ");
 			printi(bigMod);
-			minPolyFactors = min_poly(bigF, bigMod);
+			minPolyFactors = min_poly(bigF, NULL, bigMod, NULL);
 			printf("\nMin poly: ");
 			old_printpf(minPolyFactors);
 			printf("\n");
@@ -2221,6 +2221,9 @@ int main(int argc, char* argv[])
 		// within a given LCA system
 		else if (! strcmp(argv[1], "orbitspaces"))
 		{
+			bool calcMinPoly = FALSE; //Do we calculate min polys for each cyclespace?
+			bool newCyclespace;
+			
 			int numArr[1] = {1};
 			BigIntTP one;
 			
@@ -2238,6 +2241,9 @@ int main(int argc, char* argv[])
 			
 			int numOfCyclespaces = 0;
 			BigIntMatrixTP* cyclespaces = NULL;
+
+			BigPolyTP   charaPoly   = NULL;
+			BigPolyTP** minpolys    = NULL;
 			
 			if (argc > 2)
 			{
@@ -2247,6 +2253,11 @@ int main(int argc, char* argv[])
 			{
 				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
+			
+			//If the user wants to turn on minimal polynomial calculation
+			if (argc > 3)
+				if (! strcmp(argv[3], "TRUE"))
+					calcMinPoly = TRUE;
 			
 			A = read_BigIntMatrixT(updatefilepath);
 			if (A == NULL)
@@ -2265,6 +2276,15 @@ int main(int argc, char* argv[])
 				FREE_VARIABLES;
 				return EXIT_SUCCESS;
 			}
+			
+			if (calcMinPoly)
+				charaPoly = chara_poly(A, bigMod);
+			
+			printf("Matrix:\n");
+			printbm(A);
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\n\n");
 			
 			one = new_BigIntT(numArr, 1);
 			currVect  = new_BigIntMatrixT(big_rows(A), 1);
@@ -2297,21 +2317,69 @@ int main(int argc, char* argv[])
 						copy_BigIntT(big_element(tempVect, entry, 0), tempSetCyclespace[v][entry]);
 				}
 				
-				
-				printbm_row(currVect);
-				printf("\n");
+				/*printbm_row(currVect);
+				printf("\n"); */
 				set_big_matrix(tempCyclespace, tempSetCyclespace);
-				printbm(tempCyclespace);
-				printf("~~~\n");
+				/*printbm(tempCyclespace);
+				printf("~~~\n");*/
 				big_row_echelon(tempCyclespace, bigMod, tempCyclespace2, NULL);
 				big_reduced_row_echelon(tempCyclespace2, bigMod, tempCyclespace, NULL);
-				printbm(tempCyclespace);
-				getchar();
+				//printbm(tempCyclespace);
+				
+				//Now, search to see if we've already accounted for the current cyclespace
+				newCyclespace = TRUE;
+				for (int m = 0; m < numOfCyclespaces; m += 1)
+					if (compare_BigIntMatrixT(tempCyclespace, cyclespaces[m]))
+					{
+						newCyclespace = FALSE;
+						break;
+					}
+				
+				if (newCyclespace)
+				{
+					numOfCyclespaces += 1;
+					cyclespaces = realloc(cyclespaces, numOfCyclespaces*sizeof(BigIntMatrixTP));
+					cyclespaces[numOfCyclespaces-1] = new_BigIntMatrixT(big_rows(A), big_cols(A));
+					copy_BigIntMatrixT(tempCyclespace, cyclespaces[numOfCyclespaces-1]);
+					
+					//Calculate min poly if needed
+					if (calcMinPoly)
+					{
+						minpolys = realloc(minpolys, numOfCyclespaces*sizeof(BigPolyTP*));
+						minpolys[numOfCyclespaces-1] = min_poly(A, currVect, bigMod, charaPoly);
+					}
+				}
 			}
 			while (! increment_BigIntT_array(currVectElements, big_rows(A), 1, one, bigMod));
 			
+			
+			//Now, we print out all the cyclespaces we've found
+			printf("Unique cyclespaces found:\n");
+			for (int m = 0; m < numOfCyclespaces; m += 1)
+			{
+				big_rowsp(cyclespaces[m]);
+				
+				//If needed, also print out the min poly associated with the cyclespace
+				if (calcMinPoly)
+				{
+					printf(" : ");
+					old_printpf(minpolys[m]);
+					minpolys[m] = free_BigPolyT_factors(minpolys[m]);
+				}
+				
+				printf("\n");
+				cyclespaces[m] = free_BigIntMatrixT(cyclespaces[m]);
+			}
+			FREE(cyclespaces);
+			if (minpolys != NULL)
+			{
+				FREE(minpolys);
+			}
+			
 			one    = free_BigIntT(one);
 			bigMod = free_BigIntT(bigMod);
+			
+			charaPoly   = free_BigPolyT(charaPoly);
 			
 			currVectElements  = free_BigIntT_array(currVectElements, big_rows(A), 1);
 			tempSetCyclespace = free_BigIntT_array(tempSetCyclespace, big_rows(A), big_cols(A));
@@ -2323,7 +2391,6 @@ int main(int argc, char* argv[])
 			
 			tempCyclespace  = free_BigIntMatrixT(tempCyclespace);
 			tempCyclespace2 = free_BigIntMatrixT(tempCyclespace2);
-			
 		}
 		
 		
@@ -6178,7 +6245,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitspaces " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitspaces " ANSI_COLOR_CYAN "[modulus] [minpolys] [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		//printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");

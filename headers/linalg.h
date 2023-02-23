@@ -196,8 +196,11 @@ void fprintgm_row(FILE*, const GenericMatrixTP);
 /** Same as function above, except no zero padding is added. */
 void fprintbm_nopad(FILE*, const BigIntMatrixTP);
 
+/** Prints a representation of a matrix's row space to stdout. */
+void big_rowsp(const BigIntMatrixTP);
+
 /** Searches a given BigIntMatrixTP array for a matrix equivalent to the one
-    passed in, then returns the refernece to it. If the given matrix isn't
+    passed in, then returns the reference to it. If the given matrix isn't
 	in the array, it's copied to the array (by copy) and its reference is
 	returned. 
 	
@@ -276,12 +279,20 @@ int rref(IntMatrixTP, int);
 	NULL otherwise. */
 BigPolyTP chara_poly(const BigIntMatrixTP, const BigIntTP);
 
-/** Calculates a matrix's minimum polynomial mod some
-    prime modulus. Returns a BigPolyTP array
-	representing the minimum polynomial on success,
-	NULL otherwise. Output for non-prime moduli is
-	undefined. */
-BigPolyTP* min_poly(const BigIntMatrixTP, const BigIntTP); 
+/** Calculates a matrix's minimal polynomial mod some
+    prime modulus if the second BigIntMatrixTP is NULL. 
+	Otherwise, calculates a vector's minimal polynomial
+	under the given matrix (using the second matrix as the
+	vector) mod some prime modulus. If the BigPolyTP is NULL,
+	the function calculates the relavent characteristic polynomial itself.
+	Otherwise, it uses the one supplied by the caller.
+	Returns a BigPolyTP array representing the minimal polynomial 
+	on success, NULL otherwise. 
+	Output for non-prime moduli is undefined. */
+BigPolyTP* min_poly(const BigIntMatrixTP, 
+                    const BigIntMatrixTP, 
+					const BigIntTP, 
+					const BigPolyTP);
 
 /** Stores the specified cycle converting matrix for the first one
     in the second one. This function assumes the second matrix
