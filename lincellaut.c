@@ -54,7 +54,9 @@ stackoverflow.com/questions/1190870
 											 FREE(resumefilepath); \
 											 FREE(iterfilepath); \
 											 FREE(bigintmodstring); \
-											 FREE(resumemodstring)
+											 FREE(resumemodstring); \
+											 UPDATEMATRIX  = free_BigIntMatrixT(UPDATEMATRIX); \
+											 INITIALMATRIX = free_BigIntMatrixT(INITIALMATRIX)
 											 
 #define SET_BIG_NUM(str, bigint, msg) \
 if (strtoBIT((str), &(bigint)) != 1) \
@@ -105,6 +107,9 @@ int main(int argc, char* argv[])
 	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
 	char* resumefilepath  = malloc(MAXSTRLEN*sizeof(char));
 	char* iterfilepath    = malloc(MAXSTRLEN*sizeof(char));
+	
+	BigIntMatrixTP UPDATEMATRIX  = NULL;
+	BigIntMatrixTP INITIALMATRIX = NULL;
 	
 	//Temporarily holds config data
 	char* systemData  = malloc(MAXSTRLEN*sizeof(char));
@@ -170,6 +175,14 @@ int main(int argc, char* argv[])
 				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
+			
+			UPDATEMATRIX = read_BigIntMatrixT(updatefilepath);
+			if (UPDATEMATRIX == NULL)
+			{
+				fprintf(stderr, "Unable to set update matrix from config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
 		}
 		
 		else if (! strcmp(systemData, "initial"))
@@ -177,6 +190,14 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%s", initialfilepath) != 1)
 			{
 				fprintf(stderr, "Unable to read initial vector path from config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			INITIALMATRIX = read_BigIntMatrixT(initialfilepath);
+			if (INITIALMATRIX == NULL)
+			{
+				fprintf(stderr, "Unable to set initial matrix from config file.\n");
 				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
@@ -3503,6 +3524,79 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to calculate every annihilating vector under
+		// an update matrix up to a certain degree
+		else if (!strcmp(argv[1], "vectpolys"))
+		{
+			int degree;
+			int numArr[1] = {1};
+
+			BigIntTP bigMod, one;
+			
+			BigIntTP** tempPolyCoeffs = NULL;
+			BigPolyTP tempPoly = NULL;
+			
+			BigIntMatrixTP A, v;
+			
+			degree = (int)strtol(argv[2], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read degree from command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (argc > 3)
+			{
+				SET_BIG_NUM(argv[3], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			}
+			
+			//if (argc > 4)
+				
+			A = UPDATEMATRIX;
+			v = INITIALMATRIX;
+			
+			if (big_rows(A) != big_cols(A))
+			{
+				fprintf(stderr, "Given update matrix is not square.\n");
+				bigMod = free_BigIntT(bigMod);
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			if ((big_rows(v) != big_rows(A)) || (big_cols(v) != 1))
+			{
+				fprintf(stderr, "Given vector's dimensions are invalid. The number of rows must be equal to the matrix's rows \
+and the number of columns must be 1.\n");
+				bigMod = free_BigIntT(bigMod);
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			one = new_BigIntT(numArr, 1);
+			tempPolyCoeffs = new_BigIntT_array(1, degree+1);
+			tempPoly = new_BigPolyT(tempPolyCoeffs[0], degree+1);
+			
+			do
+			{
+				set_BigPolyT(tempPoly, tempPolyCoeffs[0]);
+				printp(tempPoly);
+				printf("\n");
+			}
+			while (!increment_BigIntT_array(tempPolyCoeffs, 1, degree+1, one, bigMod));
+			
+			one    = free_BigIntT(one);
+			bigMod = free_BigIntT(bigMod);
+			
+			tempPoly = free_BigPolyT(tempPoly);
+			tempPolyCoeffs = free_BigIntT_array(tempPolyCoeffs, 1, degree+1);
+		}
+		
+		
 		//If the user wants to calculate some useful properties of a given matrix
 		// (simplify higher powers)
 		else if (! strcmp(argv[1], "matprops"))
@@ -6237,7 +6331,6 @@ int main(int argc, char* argv[])
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		//printf(" - " ANSI_COLOR_YELLOW "det " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
@@ -6247,15 +6340,13 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitspaces " ANSI_COLOR_CYAN "[modulus] [minpolys] [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		//printf(" - " ANSI_COLOR_YELLOW "rots " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "[mod] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "degree [mod] [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
-		//printf(" - " ANSI_COLOR_YELLOW "fibcycle" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
-		//printf(" - " ANSI_COLOR_YELLOW "fibcyclelens" ANSI_COLOR_CYAN " [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
@@ -6267,6 +6358,5 @@ int main(int argc, char* argv[])
 	
 	//Freeing memory
 	FREE_VARIABLES;
-	
 	return EXIT_SUCCESS;
 }

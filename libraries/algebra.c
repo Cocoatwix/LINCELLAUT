@@ -1486,6 +1486,7 @@ void fprintp(FILE* file, const BigPolyTP p)
 {
 	BigIntTP zero = empty_BigIntT(1);
 	bool printPlus = FALSE;
+	bool notZero = FALSE;
 	
 	for (int i = 0; i < p->size; i += 1)
 	{
@@ -1497,6 +1498,8 @@ void fprintp(FILE* file, const BigPolyTP p)
 		//Only print if coefficient isn't zero
 		if (compare_BigIntT(zero, p->coeffs[i]) != 0)
 		{
+			notZero = TRUE;
+			
 			//Prevents a + when all other terms are zero afterwards
 			if (printPlus)
 			{
@@ -1520,6 +1523,9 @@ void fprintp(FILE* file, const BigPolyTP p)
 			}
 		}
 	}
+	
+	if (!notZero)
+		printf("0");
 	
 	zero = free_BigIntT(zero);
 }
