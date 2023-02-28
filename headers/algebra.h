@@ -37,7 +37,7 @@ BigPolyTP new_BigPolyT(const BigIntTP*, int);
 
 /** Creates a constant polynomial with the given BigIntTP
     as the constant term. Returns a pointer to the new
-		constant. */
+	constant. */
 BigPolyTP constant_BigPolyT(const BigIntTP);
 
 /** Creates an empty polynomial, returns a pointer to it. */
@@ -103,7 +103,7 @@ int reduce_MultiVarExtT(void*);
 /** Returns the degree of the given polynomial. */
 int degree(const BigPolyTP);
 
-/** Returns the constant term of a BigPolyTP. */
+/** Returns the constant term of a BigPolyTP by reference. */
 BigIntTP constant(const BigPolyTP);
 
 /** Returns the leading term's coefficient of the given BigPolyTP. */
