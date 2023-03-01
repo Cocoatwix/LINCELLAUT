@@ -3538,6 +3538,7 @@ int main(int argc, char* argv[])
 			
 			BigIntTP** tempPolyCoeffs = NULL;
 			BigPolyTP  tempAnnihPoly = NULL;
+			BigPolyTP  OGtempAnnihPoly = NULL;
 			
 			BigPolyTP  tempPoly  = NULL;
 			BigPolyTP  tempPoly2 = NULL;
@@ -3549,6 +3550,7 @@ int main(int argc, char* argv[])
 			int rewriteDegree    = 0; //The lowest power of a polynomial variable we can rewrite
 			int numOfVectProps   = 0;
 			BigPolyTP* vectProps = NULL; //Keeps track of formulas for higher powers of the polynomial variable
+			BigPolyTP  rewriteConstant = NULL; //For getting multiples from vectProps
 			
 			BigIntTP* tempCoeffs;
 			BigIntTP* tempCoeffs2;
@@ -3604,8 +3606,9 @@ and the number of columns must be 1.\n");
 			negOne = empty_BigIntT(1);
 			subtract_BigIntT(bigMod, one, negOne);
 			
-			tempPolyCoeffs = new_BigIntT_array(1, deg+1);
-			tempAnnihPoly  = new_BigPolyT(tempPolyCoeffs[0], deg+1);
+			tempPolyCoeffs   = new_BigIntT_array(1, deg+1);
+			tempAnnihPoly    = new_BigPolyT(tempPolyCoeffs[0], deg+1);
+			OGtempAnnihPoly  = new_BigPolyT(tempPolyCoeffs[0], deg+1);
 			
 			tempPoly  = empty_BigPolyT();
 			tempPoly2 = empty_BigPolyT();
@@ -3696,19 +3699,42 @@ and the number of columns must be 1.\n");
 					FREE(tempCoeffs);
 					
 					//Now, let's print out our relations to make sure they're reasonable
+					/*
 					for (int d = degree(annihPolys[numOfAnnihPolys-1]); d-degree(annihPolys[numOfAnnihPolys-1]) < numOfVectProps; d += 1)
 					{
 						printf("λ^%d = ", d);
 						printp(vectProps[d - degree(annihPolys[numOfAnnihPolys-1])]);
 						printf("\n");
 					}
+					*/
 				}
 				
-				//Check if we need to rewrite the polynomial using lower order terms
-				//for (int term = rewriteDegree)
+				//Keeping track of tempAnnihPoly since it can be reduced below
+				set_BigPolyT(OGtempAnnihPoly, tempPolyCoeffs[0]);
 				
-				resize_BigPolyT(tempAnnihPoly, deg+1);
-				set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
+				//If we can reduce our current polynomial using the already-found
+				// annihilating polynomial
+				if (rewriteDegree != 0)
+				{
+					resize_BigPolyT(tempAnnihPoly, rewriteDegree);
+					set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
+					
+					//Rewrite higher-order terms
+					for (int term = rewriteDegree; term <= deg; term += 1)
+					{
+						rewriteConstant = constant_BigPolyT(tempPolyCoeffs[0][term]);
+						multiply_BigPolyT(rewriteConstant, vectProps[term-rewriteDegree], tempPoly);
+						add_BigPolyT(tempPoly, tempAnnihPoly, tempPoly2);
+						mod_BigPolyT(tempPoly2, bigMod, tempAnnihPoly);
+					}
+				}
+				
+				else
+				{
+					resize_BigPolyT(tempAnnihPoly, deg+1);
+					set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
+				}
+				
 				eval_BigPolyT(tempAnnihPoly, A, tempMat, bigMod);
 				big_mat_mul(tempMat, v, tempVect);
 				modbm(tempVect, bigMod);
@@ -3739,9 +3765,7 @@ and the number of columns must be 1.\n");
 						
 						//If tempAnnihPoly is in our ideal
 						if (compare_BigPolyT(tempPoly, tempAnnihPoly) == 0)
-						{
 							break;
-						}
 						
 						//Increment idealCoords
 						moreIdealToCheck = FALSE;
@@ -3754,6 +3778,7 @@ and the number of columns must be 1.\n");
 							{
 								copy_BigPolyT(tempPoly, idealCoords[coord]);
 								moreIdealToCheck = TRUE;
+								break;
 							}
 						}
 					}
@@ -3774,7 +3799,7 @@ and the number of columns must be 1.\n");
 						numOfAnnihPolys += 1;
 						annihPolys = realloc(annihPolys, numOfAnnihPolys*sizeof(BigPolyTP));
 						annihPolys[numOfAnnihPolys-1] = empty_BigPolyT();
-						copy_BigPolyT(tempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
+						copy_BigPolyT(OGtempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
 						
 						idealCoords = realloc(idealCoords, numOfAnnihPolys*sizeof(BigPolyTP));
 						idealCoords[numOfAnnihPolys-1] = empty_BigPolyT();
@@ -3784,7 +3809,7 @@ and the number of columns must be 1.\n");
 			
 			if (numOfAnnihPolys > 0)
 			{
-				printf("Annihilating polynomials:\n");
+				printf("Unique annihilating polynomials:\n");
 				for (int p = 0; p < numOfAnnihPolys; p += 1)
 				{
 					printp(annihPolys[p]);
@@ -3798,13 +3823,14 @@ and the number of columns must be 1.\n");
 			negOne = free_BigIntT(negOne);
 			bigMod = free_BigIntT(bigMod);
 			
-			onePoly        = free_BigPolyT(onePoly);
-			zeroPoly       = free_BigPolyT(zeroPoly);
-			tempPoly       = free_BigPolyT(tempPoly);
-			tempPoly2      = free_BigPolyT(tempPoly2);
-			tempPoly3      = free_BigPolyT(tempPoly3);
-			tempAnnihPoly  = free_BigPolyT(tempAnnihPoly);
-			tempPolyCoeffs = free_BigIntT_array(tempPolyCoeffs, 1, deg+1);
+			onePoly          = free_BigPolyT(onePoly);
+			zeroPoly         = free_BigPolyT(zeroPoly);
+			tempPoly         = free_BigPolyT(tempPoly);
+			tempPoly2        = free_BigPolyT(tempPoly2);
+			tempPoly3        = free_BigPolyT(tempPoly3);
+			tempAnnihPoly    = free_BigPolyT(tempAnnihPoly);
+			OGtempAnnihPoly  = free_BigPolyT(OGtempAnnihPoly);
+			tempPolyCoeffs   = free_BigIntT_array(tempPolyCoeffs, 1, deg+1);
 			
 			for (int i = 0; i < numOfVectProps; i += 1)
 				vectProps[i] = free_BigPolyT(vectProps[i]);
