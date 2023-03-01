@@ -100,13 +100,16 @@ bool increment_MultiVarExtT(MultiVarExtTP);
 	Returns 1 on success, 0 otherwise. */
 int reduce_MultiVarExtT(void*);
 
-/** Returns the degree of the given polynomial. */
+/** Returns the degree of the given polynomial, independent
+    of the internal size of the polynomial. */
 int degree(const BigPolyTP);
 
 /** Returns the constant term of a BigPolyTP by reference. */
 BigIntTP constant(const BigPolyTP);
 
-/** Returns the leading term's coefficient of the given BigPolyTP. */
+/** Returns the leading term's coefficient of the given BigPolyTP. 
+    This function assumes the polynomial has been reduced. 
+	This can be done by calling reduce_BigPolyT(). */
 BigIntTP leading_term(const BigPolyTP);
 
 /** Returns an array of the given BigPolyT's coefficients,

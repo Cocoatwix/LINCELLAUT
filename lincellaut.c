@@ -3528,15 +3528,16 @@ int main(int argc, char* argv[])
 		// an update matrix up to a certain degree
 		else if (!strcmp(argv[1], "vectpolys"))
 		{
+			bool foundFirstMonic = FALSE;
 			bool moreIdealToCheck; //More annihilating polynomials to check in the ideal?
 			
-			int degree;
+			int deg;
 			int numArr[1] = {1};
 
-			BigIntTP bigMod, one;
+			BigIntTP bigMod, one, negOne, temp, temp2;
 			
 			BigIntTP** tempPolyCoeffs = NULL;
-			BigPolyTP tempAnnihPoly = NULL;
+			BigPolyTP  tempAnnihPoly = NULL;
 			
 			BigPolyTP  tempPoly  = NULL;
 			BigPolyTP  tempPoly2 = NULL;
@@ -3545,12 +3546,20 @@ int main(int argc, char* argv[])
 			BigPolyTP  zeroPoly;
 			BigPolyTP  onePoly = NULL;
 			
+			int rewriteDegree    = 0; //The lowest power of a polynomial variable we can rewrite
+			int numOfVectProps   = 0;
+			BigPolyTP* vectProps = NULL; //Keeps track of formulas for higher powers of the polynomial variable
+			
+			BigIntTP* tempCoeffs;
+			BigIntTP* tempCoeffs2;
+			BigIntTP* tempCoeffs3;
+			
 			int numOfAnnihPolys = 0;
 			BigPolyTP* annihPolys = NULL;
 			
 			BigIntMatrixTP A, v, zeroMat, tempMat, tempVect, zeroVect;
 			
-			degree = (int)strtol(argv[2], &tempStr, 10);
+			deg = (int)strtol(argv[2], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read degree from command line.\n");
@@ -3589,9 +3598,14 @@ and the number of columns must be 1.\n");
 				return EXIT_SUCCESS;
 			}
 			
-			one = new_BigIntT(numArr, 1);
-			tempPolyCoeffs = new_BigIntT_array(1, degree+1);
-			tempAnnihPoly = new_BigPolyT(tempPolyCoeffs[0], degree+1);
+			one    = new_BigIntT(numArr, 1);
+			temp   = empty_BigIntT(1);
+			temp2  = empty_BigIntT(1);
+			negOne = empty_BigIntT(1);
+			subtract_BigIntT(bigMod, one, negOne);
+			
+			tempPolyCoeffs = new_BigIntT_array(1, deg+1);
+			tempAnnihPoly  = new_BigPolyT(tempPolyCoeffs[0], deg+1);
 			
 			tempPoly  = empty_BigPolyT();
 			tempPoly2 = empty_BigPolyT();
@@ -3614,8 +3628,86 @@ and the number of columns must be 1.\n");
 			printf("\n");
 			
 			//Loop over each possible polynomial, check if it's an annihilating one for v
-			while (!increment_BigIntT_array(tempPolyCoeffs, 1, degree+1, one, bigMod))
+			while (!increment_BigIntT_array(tempPolyCoeffs, 1, deg+1, one, bigMod))
 			{
+				//When we find the first monic, calculate all future needed expressions
+				// representing higher polynomial variable powers
+				if ((foundFirstMonic) && (numOfVectProps == 0))
+				{
+					tempCoeffs  = extract_coefficients(annihPolys[numOfAnnihPolys-1]);
+					tempCoeffs2 = malloc(rewriteDegree*sizeof(BigIntTP));
+					
+					for (int coeff = 0; coeff < rewriteDegree; coeff += 1)
+					{
+						tempCoeffs2[coeff] = empty_BigIntT(1);
+						multiply_BigIntT(tempCoeffs[coeff], negOne, temp);
+						mod_BigIntT(temp, bigMod, tempCoeffs2[coeff]);
+					}
+					
+					//Now, create the actual polynomial representing this first polynomial term power
+					numOfVectProps += 1;
+					vectProps = realloc(vectProps, numOfVectProps*sizeof(BigPolyTP));
+					vectProps[numOfVectProps-1] = new_BigPolyT(tempCoeffs2, rewriteDegree);
+					
+					for (int i = 0; i < rewriteDegree; i += 1)
+					{
+						tempCoeffs[i]  = free_BigIntT(tempCoeffs[i]);
+						tempCoeffs2[i] = free_BigIntT(tempCoeffs2[i]);
+					}
+					FREE(tempCoeffs);
+					FREE(tempCoeffs2);
+					
+					//One polynomial for each power
+					tempCoeffs = extract_coefficients(vectProps[0]);
+					for (int p = rewriteDegree+1; p <= deg; p += 1)
+					{
+						tempCoeffs3 = extract_coefficients(vectProps[p-rewriteDegree-1]);
+						tempCoeffs2 = malloc((deg+1)*sizeof(BigIntTP));
+						for (int coeff = 0; coeff < rewriteDegree; coeff += 1)
+						{
+							tempCoeffs2[coeff] = empty_BigIntT(1);
+							multiply_BigIntT(tempCoeffs[coeff], tempCoeffs3[rewriteDegree-1], temp);
+							if (coeff != 0)
+								add_BigIntT(temp, tempCoeffs3[coeff-1], tempCoeffs2[coeff]);
+							else
+								copy_BigIntT(temp, tempCoeffs2[coeff]);
+							
+							//Now, take the modulus of each term
+							mod_BigIntT(tempCoeffs2[coeff], bigMod, temp);
+							copy_BigIntT(temp, tempCoeffs2[coeff]);
+						}
+						
+						//Create the actual polynomial
+						numOfVectProps += 1;
+						vectProps = realloc(vectProps, numOfVectProps*sizeof(BigPolyTP));
+						vectProps[numOfVectProps-1] = new_BigPolyT(tempCoeffs2, degree(annihPolys[numOfAnnihPolys-1]));
+						
+						for (int i = 0; i < rewriteDegree; i += 1)
+						{
+							tempCoeffs3[i]  = free_BigIntT(tempCoeffs3[i]);
+							tempCoeffs2[i] = free_BigIntT(tempCoeffs2[i]);
+						}
+						FREE(tempCoeffs3);
+						FREE(tempCoeffs2);
+					}
+					
+					for (int i = 0; i < rewriteDegree; i += 1)
+						tempCoeffs[i] = free_BigIntT(tempCoeffs[i]);
+					FREE(tempCoeffs);
+					
+					//Now, let's print out our relations to make sure they're reasonable
+					for (int d = degree(annihPolys[numOfAnnihPolys-1]); d-degree(annihPolys[numOfAnnihPolys-1]) < numOfVectProps; d += 1)
+					{
+						printf("λ^%d = ", d);
+						printp(vectProps[d - degree(annihPolys[numOfAnnihPolys-1])]);
+						printf("\n");
+					}
+				}
+				
+				//Check if we need to rewrite the polynomial using lower order terms
+				//for (int term = rewriteDegree)
+				
+				resize_BigPolyT(tempAnnihPoly, deg+1);
 				set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
 				eval_BigPolyT(tempAnnihPoly, A, tempMat, bigMod);
 				big_mat_mul(tempMat, v, tempVect);
@@ -3647,7 +3739,9 @@ and the number of columns must be 1.\n");
 						
 						//If tempAnnihPoly is in our ideal
 						if (compare_BigPolyT(tempPoly, tempAnnihPoly) == 0)
+						{
 							break;
+						}
 						
 						//Increment idealCoords
 						moreIdealToCheck = FALSE;
@@ -3667,6 +3761,16 @@ and the number of columns must be 1.\n");
 					//If we found a new annihilating polynomial
 					if (!moreIdealToCheck)
 					{
+						if (! foundFirstMonic)
+						{
+							reduce_BigPolyT(tempAnnihPoly);
+							if (compare_BigIntT(leading_term(tempAnnihPoly), one) == 0)
+							{
+								rewriteDegree = degree(tempAnnihPoly);
+								foundFirstMonic = TRUE;
+							}
+						}
+						
 						numOfAnnihPolys += 1;
 						annihPolys = realloc(annihPolys, numOfAnnihPolys*sizeof(BigPolyTP));
 						annihPolys[numOfAnnihPolys-1] = empty_BigPolyT();
@@ -3689,15 +3793,22 @@ and the number of columns must be 1.\n");
 			}
 			
 			one    = free_BigIntT(one);
+			temp   = free_BigIntT(temp);
+			temp2  = free_BigIntT(temp2);
+			negOne = free_BigIntT(negOne);
 			bigMod = free_BigIntT(bigMod);
 			
-			onePoly       = free_BigPolyT(onePoly);
-			zeroPoly      = free_BigPolyT(zeroPoly);
-			tempPoly      = free_BigPolyT(tempPoly);
-			tempPoly2     = free_BigPolyT(tempPoly2);
-			tempPoly3     = free_BigPolyT(tempPoly3);
-			tempAnnihPoly = free_BigPolyT(tempAnnihPoly);
-			tempPolyCoeffs = free_BigIntT_array(tempPolyCoeffs, 1, degree+1);
+			onePoly        = free_BigPolyT(onePoly);
+			zeroPoly       = free_BigPolyT(zeroPoly);
+			tempPoly       = free_BigPolyT(tempPoly);
+			tempPoly2      = free_BigPolyT(tempPoly2);
+			tempPoly3      = free_BigPolyT(tempPoly3);
+			tempAnnihPoly  = free_BigPolyT(tempAnnihPoly);
+			tempPolyCoeffs = free_BigIntT_array(tempPolyCoeffs, 1, deg+1);
+			
+			for (int i = 0; i < numOfVectProps; i += 1)
+				vectProps[i] = free_BigPolyT(vectProps[i]);
+			FREE(vectProps);
 			
 			for (int i = 0; i < numOfAnnihPolys; i += 1)
 			{
