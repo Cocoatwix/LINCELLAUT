@@ -6,8 +6,8 @@
 #include "algebra.h" //For polynomials
 #include "helper.h"  //For booleans
 
-//Whenever you use this struct, there needs to be an interfacing function.
-// C can't see "inside" the struct; it needs a function to interface with it.
+//Whenever you use these structs, there needs to be an interfacing function.
+// C can't see "inside" the structs; it needs a function to interface with it.
 /** For holding matrices. */
 typedef struct intmatrix *IntMatrixTP;
 

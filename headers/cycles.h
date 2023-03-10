@@ -54,6 +54,14 @@ int big_floyd(const BigIntMatrixTP,
     Returns 1 on success, 0 otherwise. */
 int generic_floyd(GenericMatrixTP, GenericMatrixTP, CycleInfoTP*);
 
+/** Stores a list of orbit representatives under the given update
+    matrix and modulus within the given BigIntMatrixTP array.
+	This function assumes the given array has been initialised to NULL.
+	If the int** != NULL, then the cycle lengths for each orbit rep
+	will also be recorded. It assumes the int* is initialised to NULL.
+	Returns the number of orbit reps found on success, -1 otherwise. */
+int big_orbit_reps(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP**, int**);
+
 /** Creates a .iteration file containing a single iteration of
     every vector under the given update matrix and modulus. 
 		Returns 1 on success, 0 otherwise. */

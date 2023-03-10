@@ -523,17 +523,6 @@ int big_floyd(const BigIntMatrixTP F,
 	copy_BigIntMatrixT(s_0, x_1);
 	copy_BigIntMatrixT(s_0, y_1);
 	
-	/*int o[] = {2};
-	BigIntTP on = new_BigIntT(o, 1);
-	while (TRUE)
-	{
-		BigIntTP test = empty_BigIntT(7);
-		BigIntTP test2 = empty_BigIntT(7);
-		multiply_BigIntT(test, on, test2);
-		test = free_BigIntT(test);
-		test2 = free_BigIntT(test2);
-	} */
-	
 	//Iterate until x and y are the same
 	do
 	{
@@ -620,19 +609,6 @@ int big_floyd(const BigIntMatrixTP F,
 			}
 		}
 	}
-	
-	//Maybe we can do casework here? to find tau?
-	//For instance, if we know omega == 2, we can
-	// go through each possible case for the Stopping time
-	// (even or odd) and make a conclusion about tau that way?
-	// This may then extend to omega == 3, 4, etc.
-	
-	//We do know that, given an L by L update matrix and a square-free
-	// modulus, the maximum transient length is L.
-	
-	//pg 29 of LCA paper explains why prime powers are more complicated
-	//They believe the bound on prime powered systems should be kL, where
-	// k is the power of the prime
 	
 	//Freeing memory
 	x_1  = free_BigIntMatrixT(x_1);
@@ -792,6 +768,115 @@ int generic_floyd(GenericMatrixTP F, GenericMatrixTP s_0, CycleInfoTP* info)
 	y_2  = free_GenericMatrixT(y_2);
 	
 	return 1; 
+}
+
+
+int big_orbit_reps(const BigIntMatrixTP A, const BigIntTP bigMod, BigIntMatrixTP** orbitReps, int** cycLens)
+/** Stores a list of orbit representatives under A and bigMod
+    within *arr. Assumes *arr is NULL. If cycleArr != NULL, then
+		cycle lengths of the orbit reps are also saved. This function
+		assumes *cycleArr = NULL.
+	  Returns the number of orbit reps found on success, -1 otherwise. */
+{
+	bool isNewVector;
+	
+	int numArr[1] = {1};
+	BigIntTP one;
+	
+	if ((orbitReps == NULL) || (*orbitReps != NULL))
+		return -1;
+	
+	int orbitRepsCount = 0;
+	if ((cycLens == NULL) || (*cycLens != NULL))
+	{
+		return -1;
+	}
+	
+	BigIntTP** vectorElements; //Holds the raw elements for the vector
+	
+	const int numOfTempVects = 3;
+	BigIntMatrixTP* tempVects;
+	CycleInfoTP theCycle = NULL;
+	
+	if ((A == NULL) || (big_rows(A) != big_cols(A)))
+		return -1;
+	
+	if (bigMod == NULL)
+		return -1;
+	
+	vectorElements = new_BigIntT_array(big_rows(A), 1);
+	
+	one = new_BigIntT(numArr, 1);
+	tempVects = malloc(numOfTempVects*sizeof(BigIntMatrixTP));
+	for (int i = 0; i < numOfTempVects; i += 1)
+		tempVects[i] = new_BigIntMatrixT(big_rows(A), 1);
+	
+	//Let's calculate our base orbit reps, since those won't change throughout
+	// the course of the program running
+	do
+	{
+		set_big_matrix(tempVects[0], vectorElements);
+		big_floyd(A, tempVects[0], bigMod, &theCycle);
+		copy_BigIntMatrixT(rep(theCycle), tempVects[0]);
+		
+		//If we can add our orbit rep no problem
+		if (orbitRepsCount == 0)
+		{
+			orbitRepsCount += 1;
+			(*orbitReps) = realloc((*orbitReps), sizeof(BigIntMatrixTP));
+			(*orbitReps)[0] = new_BigIntMatrixT(big_rows(A), 1);
+			copy_BigIntMatrixT(tempVects[0], (*orbitReps)[0]);
+			
+			(*cycLens) = realloc((*cycLens), sizeof(int));
+			(*cycLens)[0] = omega(theCycle);
+		}
+		
+		//Otherwise, we need to check whether this orbit rep has
+		// already been accounted for by our other orbit reps
+		else
+		{
+			copy_BigIntMatrixT(tempVects[0], tempVects[1]);
+			isNewVector = TRUE;
+			do
+			{
+				big_mat_mul(A, tempVects[1], tempVects[2]);
+				modbm(tempVects[2], bigMod);
+				copy_BigIntMatrixT(tempVects[2], tempVects[1]);
+				
+				//Search through all orbit reps, see if this vector matches any of them
+				for (int repr = 0; repr < orbitRepsCount; repr += 1)
+					if (compare_BigIntMatrixT((*orbitReps)[repr], tempVects[1]))
+					{
+						isNewVector = FALSE;
+						break;
+					}
+			}
+			while ((! compare_BigIntMatrixT(tempVects[0], tempVects[1])) && (isNewVector));
+			
+			if (isNewVector)
+			{
+				orbitRepsCount += 1;
+				(*orbitReps) = realloc((*orbitReps), orbitRepsCount*sizeof(BigIntMatrixTP));
+				(*orbitReps)[orbitRepsCount-1] = new_BigIntMatrixT(big_rows(A), 1);
+				copy_BigIntMatrixT(tempVects[0], (*orbitReps)[orbitRepsCount-1]);
+				
+				(*cycLens) = realloc((*cycLens), orbitRepsCount*sizeof(int));
+				(*cycLens)[orbitRepsCount-1] = omega(theCycle);
+			}
+		}
+	}
+	while (! increment_BigIntT_array(vectorElements, big_rows(A), 1, one, bigMod));
+	
+	one = free_BigIntT(one);
+	
+	vectorElements = free_BigIntT_array(vectorElements, big_rows(A), 1);
+	
+	theCycle  = free_CycleInfoT(theCycle);
+	for (int i = 0; i < numOfTempVects; i += 1)
+		tempVects[i] = free_BigIntMatrixT(tempVects[i]);
+	FREE(tempVects);
+	
+	return orbitRepsCount;
 }
 
 

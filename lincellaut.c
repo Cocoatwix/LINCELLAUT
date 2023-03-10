@@ -5125,7 +5125,7 @@ and the number of columns must be 1.\n");
 			
 			int   groupCount = 0;
 			int   currCycleLength;
-			int   prevCycleLength; //Used to sort mappoings by cycle length
+			int   prevCycleLength; //Used to sort mappings by cycle length
 			int*  currOrbitMapMatch = NULL; //For organising output intogroupings of reductions
 			int** currOrbitMapGroup = NULL; //Holds the vectors that match our match
 			
@@ -5660,6 +5660,178 @@ and the number of columns must be 1.\n");
 		}
 		
 		
+		//If the user wants to calculate the orbit maps for ALL lifts of a particular matrix
+		else if (! strcmp(argv[1], "orbitmaps2"))
+		{
+			bool isNewVector;
+			
+			BigIntTP  baseMod; //The base prime
+			BigIntTP* modList; //Holds every power of baseMod we'll need, from baseMod to baseMod^maxPower
+			int maxPower;
+			int currPower = 1; //For keeping track of which layer of moduli we're on
+			
+			int numArr[1] = {1};
+			BigIntTP one;
+			
+			const BigIntMatrixTP initialA = UPDATEMATRIX;
+			
+			BigIntMatrixTP*  matrixLifts; //Holds the matrix lifts we're currently considering
+			BigIntMatrixTP** orbitReps;   //Holds representatives for all the orbits, from smallest modulus to biggest
+			int*  orbitRepsCount;         //How many vectors are in each layer of orbitReps?
+			int** orbitRepsCycleLengths;  //What are the cycle lengths of the orbit reps? 
+			
+			BigIntTP**  vectorLiftElements; //Holds the raw elements responsible for "lifting" each vector
+			BigIntTP*** matrixLiftElements; //Holds the raw elements for each matrix lift at each level
+			
+			BigIntMatrixTP currMat;
+			
+			const int numOfTempVects = 3;
+			BigIntMatrixTP* tempVects;
+			CycleInfoTP theCycle = NULL;
+			
+			if (big_rows(initialA) != big_cols(initialA))
+			{
+				fprintf(stderr, "Given update matrix isn't square.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			maxPower = (int)strtol(argv[2], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read maxPower from command line.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			if (argc > 3)
+			{
+				SET_BIG_NUM(argv[3], baseMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, baseMod, "Unable to read modulus from config file.");
+			}
+			
+			matrixLiftElements = malloc((maxPower-1)*sizeof(BigIntTP**));
+			for (int i = 0; i < maxPower-1; i += 1)
+			{
+				matrixLiftElements[i] = new_BigIntT_array(big_rows(initialA), big_rows(initialA));
+				for (int row = 0; row < big_rows(initialA); row += 1)
+					for (int col = 0; col < big_cols(initialA); col += 1)
+						copy_BigIntT(big_element(initialA, row, col), matrixLiftElements[i][row][col]);
+			}
+			vectorLiftElements = new_BigIntT_array(big_rows(initialA), 1);
+			currMat = new_BigIntMatrixT(big_rows(initialA), big_rows(initialA));
+			
+			orbitReps      = calloc(maxPower, sizeof(BigIntMatrixTP*));
+			orbitRepsCount = calloc(maxPower, sizeof(int));
+			orbitRepsCycleLengths = calloc(maxPower, sizeof(int*));
+			
+			one = new_BigIntT(numArr, 1);
+			tempVects = malloc(numOfTempVects*sizeof(BigIntMatrixTP));
+			for (int i = 0; i < numOfTempVects; i += 1)
+				tempVects[i] = new_BigIntMatrixT(big_rows(initialA), 1);
+			
+			modList = malloc(maxPower*sizeof(BigIntTP));
+			modList[0] = empty_BigIntT(1);
+			copy_BigIntT(baseMod, modList[0]);
+			for (int i = 1; i < maxPower; i += 1)
+			{
+				modList[i] = empty_BigIntT(1);
+				multiply_BigIntT(modList[i-1], baseMod, modList[i]);
+			}
+			
+			//Let's calculate our base orbit reps, since those won't change throughout
+			// the course of the program running
+			orbitRepsCount[0] = big_orbit_reps(initialA, baseMod, orbitReps, orbitRepsCycleLengths);
+			
+			/*
+			for (int repr = 0; repr < orbitRepsCount[0]; repr += 1)
+			{
+				printbm_row(orbitReps[0][repr]);
+				printf(" %d\n", orbitRepsCycleLengths[0][repr]);
+			}
+			*/
+			
+			//Now, let's start generating some orbit maps
+			currPower += 1;
+			while (currPower > 1)
+			{
+				currPower = maxPower; //This line is only for testing. Remove it when done
+				
+				set_big_matrix(currMat, matrixLiftElements[maxPower-2]);
+				printbm(currMat);
+				printf("\n");
+				getchar();
+				
+				//Increment through our matrix lifts in such a way as to reduce
+				// the amount of times we need to recompute lifts
+				for (int level = maxPower-2; level >= 0; level -= 1)
+				{
+					//CLEAR VECTORS IN orbitReps[level+1]
+					
+					//If we're done looking at all the matrix lifts that keep the
+					// lower vector lifts the same
+					
+					//NEED TO CREATE A NEW FUNCTION WHERE THE "CARRY" VALUE WHEN INCREMENTING
+					// IS THE SAME AS THE INCREMENTATION VALUE
+					if (increment_BigIntT_array(matrixLiftElements[level], 
+					                            big_rows(initialA), 
+																	    big_rows(initialA), 
+																	    modList[level], 
+																	    modList[level+1]))
+					{
+						currPower -= 1;
+					}
+					
+					else
+						break;
+				}
+				
+				//Now, make sure that if we changed a lower-moduli matrix lift, we carry that
+				// new lift up to the higher matrix lifts so the reduction process that keeps
+				// lift vectors constant works properly.
+				if (currPower > 1)
+					for (int rewrite = 1; rewrite + currPower <= maxPower; rewrite += 1)
+					{
+						//printf(":) rewrite = %d, currPower = %d, maxPower = %d\n", rewrite, currPower, maxPower);
+						for (int row = 0; row < big_rows(initialA); row += 1)
+							for (int col = 0; col < big_rows(initialA); col += 1)
+								copy_BigIntT(matrixLiftElements[currPower-2][row][col], 
+							               matrixLiftElements[currPower-2+rewrite][row][col]);
+					}
+			}
+			
+			
+			one     = free_BigIntT(one);
+			baseMod = free_BigIntT(baseMod);
+			
+			for (int i = 0; i < maxPower-1; i += 1)
+				matrixLiftElements[i] = free_BigIntT_array(matrixLiftElements[i], big_rows(initialA), big_rows(initialA));
+			FREE(matrixLiftElements);
+			
+			vectorLiftElements = free_BigIntT_array(vectorLiftElements, big_rows(initialA), 1);
+			currMat = free_BigIntMatrixT(currMat);
+			
+			for (int i = 0; i < maxPower; i += 1)
+			{
+				for (int j = 0; j < orbitRepsCount[i]; j += 1)
+					orbitReps[i][j] = free_BigIntMatrixT(orbitReps[i][j]);
+				FREE(orbitReps[i]);
+				FREE(orbitRepsCycleLengths[i]);
+			}
+			FREE(orbitReps);
+			FREE(orbitRepsCount);
+			FREE(orbitRepsCycleLengths);
+			
+			theCycle  = free_CycleInfoT(theCycle);
+			for (int i = 0; i < numOfTempVects; i += 1)
+				tempVects[i] = free_BigIntMatrixT(tempVects[i]);
+			FREE(tempVects);
+		}
+		
+		
 		//If the user wants to find an annihilating polynomial which
 		// isn't a multiple of the minimal polynomial
 		else if (! strcmp(argv[1], "oddminpolysearch"))
@@ -6088,494 +6260,8 @@ and the number of columns must be 1.\n");
 				FREE(outputFileName);
 			}
 		}
-		
-		
-		//For testing purposes only
-		else if (! strcmp(argv[1], "test"))
-		{
-			int testMode = 4;
-		
-			#define nasize 4
-			int numArr[1] = {0};
-			BigIntTP NA[nasize];
-			for (int i = 0; i < nasize; i += 1)
-			{
-				NA[i] = new_BigIntT(numArr, 1);
-				numArr[0] += 1;
-			}
-			BigIntTP bigMod = new_BigIntT(numArr, 1);
-			
-			//MultiVarExtT testing
-			if (testMode == 0)
-			{
-				//Virgin C++ user using classes vs Chad C user reinventing OOP principles
-				int genMatSize = 2;
-				void*** extsInGrid;
-				
-				GenericMatrixTP extMat = new_GenericMatrixT(genMatSize, genMatSize);
-				set_GenericMatrixT_freeFunction(extMat, free_MultiVarExtT);
-				set_GenericMatrixT_initValue(extMat, 1);
-				set_GenericMatrixT_initFunction(extMat, new_MultiVarExtT);
-				set_GenericMatrixT_copyFunction(extMat, copy_MultiVarExtT);
-				set_GenericMatrixT_printFunction(extMat, printmve_row);
-				set_GenericMatrixT_clearFunction(extMat, clear_MultiVarExtT);
-				set_GenericMatrixT_compareFunction(extMat, compare_MultiVarExtT);
-				
-				set_GenericMatrixT_incFunction(extMat, inc_sim_MultiVarExtT);
-				set_GenericMatrixT_multFunction(extMat, mult_sim_MultiVarExtT);
-				
-				//Only needed when we're not setting the matrix using set_GenericMatrixT()
-				//init_GenericMatrixT(extMat);
-				
-				GenericMatrixTP resultMat = new_GenericMatrixT(genMatSize, genMatSize);
-				set_GenericMatrixT_freeFunction(resultMat, free_MultiVarExtT);
-				set_GenericMatrixT_initValue(resultMat, 1);
-				set_GenericMatrixT_initFunction(resultMat, new_MultiVarExtT);
-				set_GenericMatrixT_copyFunction(resultMat, copy_MultiVarExtT);
-				set_GenericMatrixT_printFunction(resultMat, printmve_row);
-				set_GenericMatrixT_clearFunction(resultMat, clear_MultiVarExtT);
-				set_GenericMatrixT_reduceFunction(resultMat, reduce_MultiVarExtT);
-				
-				set_GenericMatrixT_incFunction(resultMat, inc_sim_MultiVarExtT);
-				set_GenericMatrixT_multFunction(resultMat, mult_sim_MultiVarExtT);
-				
-				//Time to test extension matrices
-				MultiVarExtTP coolExt1 = new_MultiVarExtT(3);
-				MultiVarExtTP coolExt2 = new_MultiVarExtT(3);
-				MultiVarExtTP coolExt3 = new_MultiVarExtT(4);
-				MultiVarExtTP extHold  = new_MultiVarExtT(3);
-				
-				BigIntTP* iDefn;
-				BigIntTP* extDefn1;
-				BigIntTP* extDefn2;
-				BigIntTP* extDefn3;
-				BigIntTP* extDefn4;
-				
-				//{exponent of first extension, exponent of second extension, ...}
-				int noI[1]  = {0};
-				int yesI[1] = {1};
-				
-				int coeff1[3] = {2, 2, 0};
-				int coeff2[3] = {0, 1, 1};
-				int coeff3[3] = {3, 2, 2};
-				
-				int specialCoeff1[4] = {0, 1, 2, 2};
-				int specialCoeff2[4] = {1, 1, 2, 2};
-				int specialCoeff3[4] = {0, 1, 0, 0};
-				
-				iDefn    = malloc(3*sizeof(BigIntTP));
-				extDefn1 = malloc(4*sizeof(BigIntTP));
-				extDefn2 = malloc(3*sizeof(BigIntTP));
-				extDefn3 = malloc(3*sizeof(BigIntTP));
-				extDefn4 = malloc(3*sizeof(BigIntTP));
-				
-				//1 + x^2 = 0
-				iDefn[0] = NA[1];
-				iDefn[1] = NA[0];
-				iDefn[2] = NA[1];
-				
-				//1 + 3*x + x^2 + x^3 = 0
-				extDefn1[0] = NA[1];
-				extDefn1[1] = NA[3];
-				extDefn1[2] = NA[1];
-				extDefn1[3] = NA[1];
-				
-				//2 + 9x + x^2 = 0
-				extDefn2[0] = NA[2];
-				extDefn2[1] = NA[9];
-				extDefn2[2] = NA[1];
-				
-				//2 + 6x^2 = 0
-				extDefn3[0] = NA[2];
-				extDefn3[1] = NA[0];
-				extDefn3[2] = NA[6];
-				
-				//1 + x + 8x^2 = 0
-				extDefn4[0] = NA[1];
-				extDefn4[1] = NA[1];
-				extDefn4[2] = NA[8];
-				
-				printf("Modulus: ");
-				printi(bigMod);
-				printf("\n");
-				
-				set_MultiVarExtT_mod(coolExt1, bigMod);
-				set_MultiVarExtT_mod(coolExt2, bigMod);
-				set_MultiVarExtT_mod(coolExt3, bigMod);
-				set_MultiVarExtT_mod(extHold, bigMod);
-				
-				extsInGrid = malloc(genMatSize*sizeof(void**));
-				for (int i = 0; i < genMatSize; i += 1)
-				{
-					extsInGrid[i] = malloc(genMatSize*sizeof(void*));
-					for (int j = 0; j < genMatSize; j += 1)
-					{
-						extsInGrid[i][j] = new_MultiVarExtT(1);
-						set_MultiVarExtT_mod(extsInGrid[i][j], bigMod);
-						add_extension(extsInGrid[i][j], iDefn, 3, "i");
-					}
-				}
-				
-				set_MultiVarExtT_coefficient(extsInGrid[0][0], noI, NA[17]);
-				set_MultiVarExtT_coefficient(extsInGrid[0][0], yesI, NA[13]);
-				set_MultiVarExtT_coefficient(extsInGrid[0][1], noI, NA[2]);
-				set_MultiVarExtT_coefficient(extsInGrid[0][1], yesI, NA[17]);
-				set_MultiVarExtT_coefficient(extsInGrid[1][0], noI, NA[14]);
-				set_MultiVarExtT_coefficient(extsInGrid[1][0], yesI, NA[14]);
-				set_MultiVarExtT_coefficient(extsInGrid[1][1], noI, NA[12]);
-				set_MultiVarExtT_coefficient(extsInGrid[1][1], yesI, NA[10]);
-				
-				
-				add_extension(coolExt1, extDefn1, 4, "a");
-				add_extension(coolExt1, extDefn2, 3, "b");
-				add_extension(coolExt1, extDefn3, 3, "c");
-				
-				set_MultiVarExtT_coefficient(coolExt1, coeff1, NA[6]);
-				set_MultiVarExtT_coefficient(coolExt1, coeff2, NA[6]);
-				set_MultiVarExtT_coefficient(coolExt1, coeff3, NA[12]);
-				
-				printf("\ncoolExt1 after adding all extensions:\n");
-				printmve(coolExt1);
-				
-				add_extension(coolExt2, extDefn3, 3, "c");
-				add_extension(coolExt2, extDefn2, 3, "b");
-				add_extension(coolExt2, extDefn1, 4, "a");
-				
-				add_extension(coolExt3, extDefn1, 4, "a");
-				add_extension(coolExt3, extDefn2, 3, "b");
-				add_extension(coolExt3, extDefn3, 3, "c");
-				add_extension(coolExt3, iDefn, 3, "i");
-				
-				set_MultiVarExtT_coefficient(coolExt2, coeff3, NA[6]);
-				set_MultiVarExtT_coefficient(coolExt2, coeff2, NA[6]);
-				set_MultiVarExtT_coefficient(coolExt2, coeff1, NA[12]);
-				reduce_MultiVarExtT(coolExt2);
-				
-				set_MultiVarExtT_coefficient(coolExt3, specialCoeff3, NA[15]);
-				set_MultiVarExtT_coefficient(coolExt3, specialCoeff2, NA[3]);
-				set_MultiVarExtT_coefficient(coolExt3, specialCoeff1, NA[1]);
-				
-				set_GenericMatrixT(extMat, extsInGrid);
-				set_GenericMatrixT(resultMat, extsInGrid);
-				clear_GenericMatrixT(resultMat);
-				
-				printf("\n\nextMat:\n");
-				printgm(extMat);
-				
-				printf("resultMat:\n");
-				printgm(resultMat);
-				
-				printf("Can we square extMat?\n");
-				gen_mat_mul(extMat, extMat, resultMat);
-				printf("resultMat before reduction:\n");
-				printgm(resultMat);
-				printf("\nresultMat after reduction:\n");
-				reduce_GenericMatrixT(resultMat);
-				printgm(resultMat);
-				printf("\n");
-				
-				printf("compare_GenericMatrixT(extMat, extMat) = %d\n", compare_GenericMatrixT(extMat, extMat));
-				
-				//FREESTUFF:
-				coolExt1 = free_MultiVarExtT(coolExt1);
-				coolExt2 = free_MultiVarExtT(coolExt2);
-				coolExt3 = free_MultiVarExtT(coolExt3);
-				extHold  = free_MultiVarExtT(extHold);
-				
-				bigMod = free_BigIntT(bigMod);
-				
-				FREE(iDefn);
-				FREE(extDefn1);
-				FREE(extDefn2);
-				FREE(extDefn3);
-				FREE(extDefn4);
-				
-				extMat = free_GenericMatrixT(extMat);
-				resultMat = free_GenericMatrixT(resultMat);
-				
-				for (int i = 0; i < genMatSize; i += 1)
-				{
-					for (int j = 0; j < genMatSize; j += 1)
-						extsInGrid[i][j] = free_MultiVarExtT(extsInGrid[i][j]);
-					
-					FREE(extsInGrid[i]);
-				}
-				FREE(extsInGrid);
-			}
-			
-			//Testing generic_floyd()
-			else if (testMode == 1)
-			{
-				CycleInfoTP theCycle = NULL;
-				
-				GenericMatrixTP updateMat = new_GenericMatrixT(2, 2);
-				set_GenericMatrixT_freeFunction(updateMat, free_MultiVarExtT);
-				set_GenericMatrixT_initValue(updateMat, 1);
-				set_GenericMatrixT_initFunction(updateMat, new_MultiVarExtT);
-				set_GenericMatrixT_copyFunction(updateMat, copy_MultiVarExtT);
-				set_GenericMatrixT_printFunction(updateMat, printmve_row);
-				set_GenericMatrixT_clearFunction(updateMat, clear_MultiVarExtT);
-				set_GenericMatrixT_reduceFunction(updateMat, reduce_MultiVarExtT);
-				set_GenericMatrixT_compareFunction(updateMat, compare_MultiVarExtT);
-				set_GenericMatrixT_incFunction(updateMat, inc_sim_MultiVarExtT);
-				set_GenericMatrixT_multFunction(updateMat, mult_sim_MultiVarExtT);
-				
-				GenericMatrixTP updateMat2 = new_GenericMatrixT(2, 2);
-				set_GenericMatrixT_freeFunction(updateMat2, free_MultiVarExtT);
-				set_GenericMatrixT_initValue(updateMat2, 1);
-				set_GenericMatrixT_initFunction(updateMat2, new_MultiVarExtT);
-				set_GenericMatrixT_copyFunction(updateMat2, copy_MultiVarExtT);
-				set_GenericMatrixT_printFunction(updateMat2, printmve_row);
-				set_GenericMatrixT_clearFunction(updateMat2, clear_MultiVarExtT);
-				set_GenericMatrixT_reduceFunction(updateMat2, reduce_MultiVarExtT);
-				set_GenericMatrixT_compareFunction(updateMat2, compare_MultiVarExtT);
-				set_GenericMatrixT_incFunction(updateMat2, inc_sim_MultiVarExtT);
-				set_GenericMatrixT_multFunction(updateMat2, mult_sim_MultiVarExtT);
-				
-				GenericMatrixTP vectorMat = new_GenericMatrixT(2, 1);
-				set_GenericMatrixT_freeFunction(vectorMat, free_MultiVarExtT);
-				set_GenericMatrixT_initValue(vectorMat, 1);
-				set_GenericMatrixT_initFunction(vectorMat, new_MultiVarExtT);
-				set_GenericMatrixT_copyFunction(vectorMat, copy_MultiVarExtT);
-				set_GenericMatrixT_printFunction(vectorMat, printmve_row);
-				set_GenericMatrixT_clearFunction(vectorMat, clear_MultiVarExtT);
-				set_GenericMatrixT_reduceFunction(vectorMat, reduce_MultiVarExtT);
-				set_GenericMatrixT_compareFunction(vectorMat, compare_MultiVarExtT);
-				set_GenericMatrixT_incFunction(vectorMat, inc_sim_MultiVarExtT);
-				set_GenericMatrixT_multFunction(vectorMat, mult_sim_MultiVarExtT);
-				
-				BigIntTP iDefn[3] = {NA[1], NA[0], NA[1]};
-				int yesI[1] = {1};
-				int noI[1]  = {0};
-				
-				void*** updateMatElements = malloc(2*sizeof(void**));
-				void*** vectorMatElements = malloc(2*sizeof(void**));
-				for (int i = 0; i < 2; i += 1)
-				{
-					updateMatElements[i] = malloc(2*sizeof(void*));
-					vectorMatElements[i] = malloc(sizeof(void*));
-					for (int j = 0; j < 2; j += 1)
-					{
-						updateMatElements[i][j] = new_MultiVarExtT(1);
-						set_MultiVarExtT_mod(updateMatElements[i][j], bigMod);
-						add_extension(updateMatElements[i][j], iDefn, 3, "i");
-					}
-					
-					vectorMatElements[i][0] = new_MultiVarExtT(1);
-					set_MultiVarExtT_mod(vectorMatElements[i][0], bigMod);
-					add_extension(vectorMatElements[i][0], iDefn, 3, "i");
-				}
-				
-				set_MultiVarExtT_coefficient(updateMatElements[0][0], yesI, NA[1]);
-				set_MultiVarExtT_coefficient(updateMatElements[1][1], yesI, NA[1]);
-				
-				//Set a random value for our starting vector
-				set_MultiVarExtT_coefficient(vectorMatElements[0][0], noI, NA[(rand() >> 2) % 19]);
-				set_MultiVarExtT_coefficient(vectorMatElements[0][0], yesI, NA[(rand() >> 2) % 19]);
-				set_MultiVarExtT_coefficient(vectorMatElements[1][0], noI, NA[(rand() >> 2) % 19]);
-				set_MultiVarExtT_coefficient(vectorMatElements[1][0], yesI, NA[(rand() >> 2) % 19]);
-				
-				set_GenericMatrixT(updateMat, updateMatElements);
-				set_GenericMatrixT(vectorMat, vectorMatElements);
-				
-				set_MultiVarExtT_coefficient(updateMatElements[0][0], noI, NA[1]);
-				set_MultiVarExtT_coefficient(updateMatElements[1][1], noI, NA[1]);
-				set_GenericMatrixT(updateMat2, updateMatElements);
-				
-				printf("updateMat:\n");
-				printgm(updateMat);
-				printf("\nvectorMat:\n");
-				printgm(vectorMat);
-				printf("\n");
-				
-				generic_floyd(updateMat, vectorMat, &theCycle);
-				printcycle(theCycle, col);
-				printf("\n");
-				
-				//Now, let's use the other matrix
-				printf("updateMat2:\n");
-				printgm(updateMat2);
-				generic_floyd(updateMat2, vectorMat, &theCycle);
-				printcycle(theCycle, col);
-				printf("\n");
-				
-				
-				theCycle = free_CycleInfoT(theCycle);
-				
-				updateMat  = free_GenericMatrixT(updateMat);
-				updateMat2 = free_GenericMatrixT(updateMat2);
-				vectorMat  = free_GenericMatrixT(vectorMat);
-				
-				for (int i = 0; i < 2; i += 1)
-				{
-					for (int j = 0; j < 2; j += 1)
-						updateMatElements[i][j] = free_MultiVarExtT(updateMatElements[i][j]);
-					
-					vectorMatElements[i][0] = free_MultiVarExtT(vectorMatElements[i][0]);
-					
-					FREE(updateMatElements[i]);
-					FREE(vectorMatElements[i]);
-				}
-				FREE(updateMatElements);
-				FREE(vectorMatElements);
-			}
-			
-			//factor_BigPolyT() testing
-			else if (testMode == 2)
-			{
-				#define Asize 47
-				#define Bsize 3
-				
-				BigFactorsTP finally;
-				
-				BigPolyTP A, dA, B, Bpow;
-				
-				BigPolyTP quotient;
-				BigPolyTP remainder;
-				BigPolyTP GCD;
-				BigPolyTP s, t;
-				
-				BigPolyTP temp;
-				
-				BigIntTP* Adefn = malloc(Asize*sizeof(BigIntTP));
-				BigIntTP* Bdefn = malloc(Bsize*sizeof(BigIntTP));
-				
-				BigIntTP bigMod;
-				
-				int NAsize = 17;
-				int numArr[1] = {0};
-				BigIntTP* NA = malloc(NAsize*sizeof(BigIntTP));
-				for (int i = 0; i < NAsize; i += 1)
-				{
-					NA[i] = new_BigIntT(numArr, 1);
-					numArr[0] += 1;
-				}
-				
-				//modulus
-				numArr[0] = 7;
-				bigMod = new_BigIntT(numArr, 1);
-
-				int aCoeffs[Asize] = {3, 1, 3, 2, 0, 0, 0, 1, 0, 0, 2, 1, 1, 1, 1, 4, 0, 2, 4, 2, 1, 4, 3, 0, 4, 1, 2, 2, 3, 2, 1, 1, 3, 1, 1, 0, 2, 4, 0, 1, 1, 3, 4, 3, 4, 3, 1};
-				for (int i = 0; i < Asize; i += 1)
-					Adefn[i] = NA[aCoeffs[i]];
-				
-				//14*x^7 + 2*x^6 + 3*x^5 + 10*x^4 + 7*x^3 + 8*x^2 + 9*x + 15 mod 17
-				//8*x^2 + 2*x + 2
-				//x^4 + 6*x^3 + x^2 + 9*x + 2 mod 11
-				//x^6 + 6*x^5 + 8*x^4 + 7*x^3 + 9*x^2 + 8*x + 3 mod 11
-				int bCoeffs[Bsize] = {2, 2, 8};
-				for (int i = 0; i < Bsize; i += 1)
-					Bdefn[i] = NA[bCoeffs[i]];
-				
-				A  = new_BigPolyT(Adefn, Asize);
-				B  = new_BigPolyT(Bdefn, Bsize);
-				
-				dA        = empty_BigPolyT();
-				Bpow      = empty_BigPolyT();
-				temp      = empty_BigPolyT();
-				quotient  = empty_BigPolyT();
-				remainder = empty_BigPolyT();
-				GCD       = empty_BigPolyT();
-				s         = empty_BigPolyT();
-				t         = empty_BigPolyT();
-				
-				printf("A = ");
-				printp(A);
-				
-				finally = factor_BigPolyT(A, bigMod);
-				printf("\nFactored A = ");
-				printpf(finally);
-				printf("\n");
-				
-				finally = free_BigFactorsT(finally);
-				
-				A    = free_BigPolyT(A);
-				B    = free_BigPolyT(B);
-				dA   = free_BigPolyT(dA);
-				Bpow = free_BigPolyT(Bpow);
-				
-				FREE(Adefn);
-				FREE(Bdefn);
-				
-				temp      = free_BigPolyT(temp);
-				quotient  = free_BigPolyT(quotient);
-				remainder = free_BigPolyT(remainder);
-				GCD       = free_BigPolyT(GCD);
-				s         = free_BigPolyT(s);
-				t         = free_BigPolyT(t);
-				
-				bigMod = free_BigIntT(bigMod);
-			}
-			
-			//increment_MultiVarExtT()
-			else if (testMode == 3)
-			{
-				//Create a MultiVarExtT here for testing increment_MultiVarExtT()
-				MultiVarExtTP testExt = new_MultiVarExtT(1);
-				
-				int numArr[1] = {1};
-				
-				BigIntTP* extDefn = malloc(4*sizeof(BigIntTP));
-				extDefn[0] = NA[5];
-				extDefn[1] = NA[6];
-				extDefn[2] = NA[1];
-				extDefn[3] = NA[1];
-				
-				set_MultiVarExtT_mod(testExt, bigMod);
-				add_extension(testExt, extDefn, 4, "Z");
-				
-				numArr[0] = 2;
-				set_MultiVarExtT_coefficient(testExt, numArr, NA[7]);
-				numArr[0] = 0;
-				set_MultiVarExtT_coefficient(testExt, numArr, NA[1]);
-				
-				printmve(testExt);
-				printf("\n");
-				
-				while (! increment_MultiVarExtT(testExt))
-				{
-					printmve(testExt);
-					printf("\n");
-					//getchar();
-				}
-				
-				testExt = free_MultiVarExtT(testExt);
-			}
-			
-			//big_row_echelon()
-			else if (testMode == 4)
-			{
-				printf("testMode 4 :)\n");
-				BigIntMatrixTP A    = read_BigIntMatrixT(updatefilepath);
-				BigIntMatrixTP UTF  = new_BigIntMatrixT(big_rows(A), big_cols(A));
-				BigIntMatrixTP RREF = new_BigIntMatrixT(big_rows(A), big_cols(A));
-				//BigIntMatrixTP I   = identity_BigIntMatrixT(big_rows(A));
-				
-				printf("Starting matrix:\n");
-				printbm(A);
-				printf("\n");
-				big_row_echelon(A, bigMod, UTF, NULL);
-				printf("Upper-triangular form of starting matrix:\n");
-				printbm(UTF);
-				big_reduced_row_echelon(UTF, bigMod, RREF, NULL);
-				printf("Reduced row echelon form of staring matrix:\n");
-				printbm(RREF);
-				/*printf("\nOther random matrix:\n");
-				printbm(I); */
-				
-				A    = free_BigIntMatrixT(A);
-				//I  = free_BigIntMatrixT(I);
-				UTF  = free_BigIntMatrixT(UTF);
-				RREF = free_BigIntMatrixT(RREF);
-			}
-			
-			for (int i = 0; i < nasize; i += 1)
-				NA[i] = free_BigIntT(NA[i]);
-			
-			bigMod = free_BigIntT(bigMod);
-		}
-		
 	}
+
 	
 	else
 	{
@@ -6604,6 +6290,7 @@ and the number of columns must be 1.\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
