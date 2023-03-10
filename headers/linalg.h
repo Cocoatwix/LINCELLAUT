@@ -49,6 +49,12 @@ bool increment_int_array(int**, int, int, int, int);
 //                                array  row  col       increment         modulus
 bool increment_BigIntT_array(BigIntTP**, int, int, const BigIntTP, const BigIntTP);
 
+/** Same as increment_BigIntT_array(), except the carry
+    is the same as the increment value. Returns TRUE if the 
+	array rolls over, FALSE otherwise. */
+	//                       array  row  col       increment         modulus
+bool step_BigIntT_array(BigIntTP**, int, int, const BigIntTP, const BigIntTP);
+
 /** Specifies the free function to use with the given
     GenericMatrixTP. Returns 1 on success, 0 otherwise. */
 int set_GenericMatrixT_freeFunction(GenericMatrixTP, void* (*)(void*));

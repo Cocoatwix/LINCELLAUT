@@ -190,16 +190,12 @@ bool increment_int_array(int** intArr, int sizeRow, int sizeCol, int inc, int mo
 }
 
 
-bool increment_BigIntT_array(BigIntTP** intArr, 
-                             int sizeRow, 
-														 int sizeCol, 
-														 const BigIntTP inc, 
-														 const BigIntTP mod)
-/** Increments the given size by size BigIntTP array by inc. 
-    Used to increment through all possible matrices or vectors 
-		under a particular modulus.
-		Returns TRUE if the array rolls over,
-		FALSE otherwise. */
+/* private */ bool general_increment_BigIntT_array(BigIntTP** intArr, 
+																									 int sizeRow, 
+																									 int sizeCol, 
+																									 const BigIntTP inc, 
+																									 const BigIntTP mod,
+																									 const BigIntTP elemCarry)
 {
 	BigIntTP temp  = empty_BigIntT(1);
 	BigIntTP temp2 = empty_BigIntT(1);
@@ -229,7 +225,10 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 					mod_BigIntT(temp, mod, temp2);
 					copy_BigIntT(temp2, intArr[row][col]);
 					
-					divide_BigIntT(temp, mod, carry);
+					if (elemCarry == NULL)
+						divide_BigIntT(temp, mod, carry);
+					else
+						copy_BigIntT(elemCarry, carry);
 					
 					//Prepare temp2 for carry
 					if (col+1 < sizeCol)
@@ -239,8 +238,14 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 					else
 					{
 						copy_BigIntT(intArr[0][0], temp2);
-						subtract_BigIntT(carry, one, temp); //Prevents the zero vector from being skipped when incrementing
-						copy_BigIntT(temp, carry);
+						
+						if (elemCarry == NULL)
+						{
+							subtract_BigIntT(carry, one, temp); //Prevents the zero vector from being skipped when incrementing
+							copy_BigIntT(temp, carry);
+						}
+						else
+							clear_BigIntT(carry);
 					}
 				}
 				
@@ -266,6 +271,36 @@ bool increment_BigIntT_array(BigIntTP** intArr,
 	carry = free_BigIntT(carry);
 	
 	return onceRolledOver;
+}
+
+
+bool increment_BigIntT_array(BigIntTP** intArr, 
+                             int sizeRow, 
+														 int sizeCol, 
+														 const BigIntTP inc, 
+														 const BigIntTP mod)
+/** Increments the given size by size BigIntTP array by inc. 
+    Used to increment through all possible matrices or vectors 
+		under a particular modulus.
+		Returns TRUE if the array rolls over,
+		FALSE otherwise. */
+{
+	return general_increment_BigIntT_array(intArr, sizeRow, sizeCol, inc, mod, NULL);
+}
+
+
+bool step_BigIntT_array(BigIntTP** intArr, 
+                             int sizeRow, 
+														 int sizeCol, 
+														 const BigIntTP inc, 
+														 const BigIntTP mod)
+/** Same as increment_BigIntT_array(), but the carry
+    between elements in the array is the same as the
+		incrementation.
+		Returns TRUE if the array rolls over,
+		FALSE otherwise. */
+{
+	return general_increment_BigIntT_array(intArr, sizeRow, sizeCol, inc, mod, inc);
 }
 
 

@@ -5672,6 +5672,7 @@ and the number of columns must be 1.\n");
 			
 			int numArr[1] = {1};
 			BigIntTP one;
+			BigIntTP temp = NULL;
 			
 			const BigIntMatrixTP initialA = UPDATEMATRIX;
 			
@@ -5684,6 +5685,7 @@ and the number of columns must be 1.\n");
 			BigIntTP*** matrixLiftElements; //Holds the raw elements for each matrix lift at each level
 			
 			BigIntMatrixTP currMat;
+			BigIntMatrixTP currPowMat; //For holding powers of currMat to speed up computations
 			
 			const int numOfTempVects = 3;
 			BigIntMatrixTP* tempVects;
@@ -5722,7 +5724,8 @@ and the number of columns must be 1.\n");
 						copy_BigIntT(big_element(initialA, row, col), matrixLiftElements[i][row][col]);
 			}
 			vectorLiftElements = new_BigIntT_array(big_rows(initialA), 1);
-			currMat = new_BigIntMatrixT(big_rows(initialA), big_rows(initialA));
+			currMat    = new_BigIntMatrixT(big_rows(initialA), big_rows(initialA));
+			currPowMat = new_BigIntMatrixT(big_rows(initialA), big_rows(initialA));
 			
 			orbitReps      = calloc(maxPower, sizeof(BigIntMatrixTP*));
 			orbitRepsCount = calloc(maxPower, sizeof(int));
@@ -5746,41 +5749,156 @@ and the number of columns must be 1.\n");
 			// the course of the program running
 			orbitRepsCount[0] = big_orbit_reps(initialA, baseMod, orbitReps, orbitRepsCycleLengths);
 			
-			/*
-			for (int repr = 0; repr < orbitRepsCount[0]; repr += 1)
-			{
-				printbm_row(orbitReps[0][repr]);
-				printf(" %d\n", orbitRepsCycleLengths[0][repr]);
-			}
-			*/
-			
 			//Now, let's start generating some orbit maps
 			currPower += 1;
 			while (currPower > 1)
 			{
-				currPower = maxPower; //This line is only for testing. Remove it when done
-				
 				set_big_matrix(currMat, matrixLiftElements[maxPower-2]);
-				printbm(currMat);
-				printf("\n");
-				getchar();
+				
+				//Clear out all vectors from mod baseMod^currPower upward
+				for (int L = currPower-1; L < maxPower; L += 1)
+				{
+					if (orbitReps[L] != NULL)
+					{
+						for (int v = 0; v < orbitRepsCount[L]; v += 1)
+						{
+							orbitReps[L][v] = free_BigIntMatrixT(orbitReps[L][v]);
+							orbitRepsCycleLengths[L][v] = 0;
+						}
+						FREE(orbitReps[L]);
+						FREE(orbitRepsCycleLengths[L]);
+						orbitRepsCount[L] = 0;
+					}
+				}
+				
+				//Get our orbit reps
+				do
+				{
+					//Iterate through all orbit reps from lower modulus
+					for (int lowRep = 0; lowRep < orbitRepsCount[currPower-2]; lowRep += 1)
+					{
+						//Getting ready to check every possible lift vector
+						for (int i = 0; i < big_rows(initialA); i += 1)
+							copy_BigIntT(big_element(orbitReps[currPower-2][lowRep], i, 0), vectorLiftElements[i][0]);
+						
+						//Check every lift vector
+						do
+						{
+							set_big_matrix(tempVects[0], vectorLiftElements);
+							big_floyd(currMat, tempVects[0], modList[currPower-1], &theCycle);
+							copy_BigIntMatrixT(rep(theCycle), tempVects[0]);
+							
+							//Now, iterate until tempVects[0] is a lift of orbitReps[currPower-2][lowRep]
+							//This is guaranteed to happen as orbitReps[currPower-2][lowRep] is in a cycle
+							while (TRUE)
+							{
+								copy_BigIntMatrixT(tempVects[0], tempVects[1]);
+								modbm(tempVects[1], modList[currPower-2]); //Reduce to see if we have a lift of orbitReps[currPower-2][lowRep]
+								
+								if (! compare_BigIntMatrixT(tempVects[1], orbitReps[currPower-2][lowRep]))
+								{
+									big_mat_mul(currMat, tempVects[0], tempVects[1]);
+									copy_BigIntMatrixT(tempVects[1], tempVects[0]);
+									modbm(tempVects[0], modList[currPower-1]);
+								}
+								
+								else
+									break;
+							}
+							
+							//Okay, so tempVects[0] is in a cycle and is a lift of orbitReps[currPower-2][lowReps]
+							//Now, if we need to, we check to see if it's already accounted for by the other cycles.
+							if (orbitRepsCount[currPower-1] == 0)
+							{
+								orbitRepsCount[currPower-1] = 1;
+								orbitReps[currPower-1] = realloc(orbitReps[currPower-1], sizeof(BigIntMatrixTP));
+								orbitReps[currPower-1][0] = new_BigIntMatrixT(big_rows(initialA), 1);
+								copy_BigIntMatrixT(tempVects[0], orbitReps[currPower-1][0]);
+								
+								orbitRepsCycleLengths[currPower-1] = realloc(orbitRepsCycleLengths[currPower-1], sizeof(int));
+								orbitRepsCycleLengths[currPower-1][0] = omega(theCycle);
+							}
+							
+							else
+							{
+								isNewVector = TRUE;
+								copy_BigIntMatrixT(tempVects[0], tempVects[2]);
+								
+								//Get matrix ready for doing quick iterations
+								//Let's hope the cycle length never gets too big...
+								numArr[0] = orbitRepsCycleLengths[currPower-2][lowRep];
+								temp = new_BigIntT(numArr, 1);
+								powbm(currMat, currPowMat, temp, modList[currPower-1]);
+								temp = free_BigIntT(temp);
+								
+								do
+								{
+									//Look at all the orbit reps we have so far, see if we have any duplicates
+									//We only need to check specific vectors in the cycle of tempVects[0] since
+									// we're only keeping track of lifts from specific vectors, so if tempVects[0]
+									// is to be in another cycle, it'll have to cycle back to one of the lifts we
+									// already have
+									for (int otherRep = 0; otherRep < orbitRepsCount[currPower-1]; otherRep += 1)
+									{
+										if (compare_BigIntMatrixT(orbitReps[currPower-1][otherRep], tempVects[0]))
+										{
+											isNewVector = FALSE;
+											break;
+										}
+									}
+									
+									//Iterate tempVects[0] to next lift of orbitReps[currPower-2][lowRep]
+									big_mat_mul(currPowMat, tempVects[0], tempVects[1]);
+									modbm(tempVects[1], modList[currPower-1]);
+									copy_BigIntMatrixT(tempVects[1], tempVects[0]);
+								}
+								while ((! compare_BigIntMatrixT(tempVects[0], tempVects[2])) && (isNewVector));
+								
+								//Yay, we found a new rep!
+								if (isNewVector)
+								{
+									//printf(":)\n");
+									orbitRepsCount[currPower-1] += 1;
+									orbitReps[currPower-1] = realloc(orbitReps[currPower-1], orbitRepsCount[currPower-1]*sizeof(BigIntMatrixTP));
+									orbitReps[currPower-1][orbitRepsCount[currPower-1]-1] = new_BigIntMatrixT(big_rows(initialA), 1);
+									copy_BigIntMatrixT(tempVects[0], orbitReps[currPower-1][0]);
+									
+									orbitRepsCycleLengths[currPower-1] = realloc(orbitRepsCycleLengths[currPower-1], sizeof(int));
+									orbitRepsCycleLengths[currPower-1][orbitRepsCount[currPower-1]-1] = omega(theCycle);
+								}
+							}
+						}
+						while (! step_BigIntT_array(vectorLiftElements, big_rows(initialA), 1, modList[currPower-2], modList[currPower-1]));
+					  //I'm suspicious of the step_BigIntT_array() above me, but it should be fine...
+					}
+					
+					//Find the orbit reps for the next modulus up
+					currPower += 1;
+				}
+				while (currPower <= maxPower);
+				currPower -= 1; //Accounting for the weird way I set up this loop
 				
 				//Increment through our matrix lifts in such a way as to reduce
 				// the amount of times we need to recompute lifts
 				for (int level = maxPower-2; level >= 0; level -= 1)
 				{
-					//CLEAR VECTORS IN orbitReps[level+1]
+					//Free these reps since they'll be replaced for the next lift we check
+					for (int v = 0; v < orbitRepsCount[level+1]; v += 1)
+					{
+						orbitReps[level+1][v] = free_BigIntMatrixT(orbitReps[level+1][v]);
+						orbitRepsCycleLengths[level+1][v] = 0;
+					}
+					FREE(orbitReps[level+1]);
+					FREE(orbitRepsCycleLengths[level+1]);
+					orbitRepsCount[level+1] = 0;
 					
 					//If we're done looking at all the matrix lifts that keep the
 					// lower vector lifts the same
-					
-					//NEED TO CREATE A NEW FUNCTION WHERE THE "CARRY" VALUE WHEN INCREMENTING
-					// IS THE SAME AS THE INCREMENTATION VALUE
-					if (increment_BigIntT_array(matrixLiftElements[level], 
-					                            big_rows(initialA), 
-																	    big_rows(initialA), 
-																	    modList[level], 
-																	    modList[level+1]))
+					if (step_BigIntT_array(matrixLiftElements[level], 
+																 big_rows(initialA), 
+																 big_rows(initialA), 
+																 modList[level], 
+																 modList[level+1]))
 					{
 						currPower -= 1;
 					}
@@ -5794,13 +5912,10 @@ and the number of columns must be 1.\n");
 				// lift vectors constant works properly.
 				if (currPower > 1)
 					for (int rewrite = 1; rewrite + currPower <= maxPower; rewrite += 1)
-					{
-						//printf(":) rewrite = %d, currPower = %d, maxPower = %d\n", rewrite, currPower, maxPower);
 						for (int row = 0; row < big_rows(initialA); row += 1)
 							for (int col = 0; col < big_rows(initialA); col += 1)
 								copy_BigIntT(matrixLiftElements[currPower-2][row][col], 
 							               matrixLiftElements[currPower-2+rewrite][row][col]);
-					}
 			}
 			
 			
@@ -5812,7 +5927,8 @@ and the number of columns must be 1.\n");
 			FREE(matrixLiftElements);
 			
 			vectorLiftElements = free_BigIntT_array(vectorLiftElements, big_rows(initialA), 1);
-			currMat = free_BigIntMatrixT(currMat);
+			currMat    = free_BigIntMatrixT(currMat);
+			currPowMat = free_BigIntMatrixT(currPowMat);
 			
 			for (int i = 0; i < maxPower; i += 1)
 			{
@@ -5829,6 +5945,8 @@ and the number of columns must be 1.\n");
 			for (int i = 0; i < numOfTempVects; i += 1)
 				tempVects[i] = free_BigIntMatrixT(tempVects[i]);
 			FREE(tempVects);
+			
+			temp = free_BigIntT(temp);
 		}
 		
 		
