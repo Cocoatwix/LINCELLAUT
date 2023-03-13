@@ -427,3 +427,21 @@ int is_square_free(int n)
 		
 	return 1;
 }
+
+
+int num_divisors(int n)
+/** Returns the number of divisors the number has. */
+{
+	int divisors = 0;
+	for (int count = 1; n/count >= count; count += 1)
+	{
+		if (n % count == 0)
+		{
+			divisors += 1;
+			if (n/count != count)
+				divisors += 1;
+		}
+	}
+	
+	return divisors;
+}

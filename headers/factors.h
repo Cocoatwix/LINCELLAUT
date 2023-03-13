@@ -32,4 +32,7 @@ int* prime_factors(int);
 /** Returns 1 if the given integer is square-free, 0 otherwise. */
 int is_square_free(int);
 
+/** Returns the number of divisors the given integer has. */
+int num_divisors(int);
+
 #endif //FACTORS_H

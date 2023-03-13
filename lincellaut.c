@@ -2582,8 +2582,8 @@ int main(int argc, char* argv[])
 			BigIntTP tempPercentCounter;
 			
 			BigIntTP progressUpdateElement; //For keeping track of progress through a modulus
-			int progressRow = 2;
-			int progressCol = 1; //Used to decide which element in the matrix to look at for progress updates
+			int progressRow = 1;
+			int progressCol = 2; //Used to decide which element in the matrix to look at for progress updates
 			bool printProgress = TRUE;
 			
 			BigIntTP** currMatElements; //Holds matrix numbers so we can set the matrix easily
@@ -2595,7 +2595,7 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP tempMat; //Holds results of matrix multiplication
 			BigIntMatrixTP tempMat2;
 			
-			bool checkedAllMatrices; //Says whether we've exhaused all matrices under a given modulus
+			bool checkedAllMatrices; //Says whether we've exhausted all matrices under a given modulus
 			bool matrixIsCyclic;     //Says whether the matrix we tested has cyclic column vectors or not
 			int i, j; //Used for for-loops so we don't have to keep declaring new variables
 			int size; //The size of our matrix to use
@@ -2614,7 +2614,7 @@ int main(int argc, char* argv[])
 			cycmatsearch 2 30 6 15
 			cycmatsearch 3 6 6 10 14
 			
-			cycmatsearch 3 9/9 6 10 14 (54/81)
+			cycmatsearch 3 9/9 6 10 14
 			
 			cycmatsearch 4 3 2 2 3 3 . . .
 			*/
@@ -5664,6 +5664,7 @@ and the number of columns must be 1.\n");
 		else if (! strcmp(argv[1], "orbitmaps2"))
 		{
 			bool isNewVector;
+			bool isNewCycLen;
 			
 			BigIntTP  baseMod; //The base prime
 			BigIntTP* modList; //Holds every power of baseMod we'll need, from baseMod to baseMod^maxPower
@@ -5676,7 +5677,6 @@ and the number of columns must be 1.\n");
 			
 			const BigIntMatrixTP initialA = UPDATEMATRIX;
 			
-			BigIntMatrixTP*  matrixLifts; //Holds the matrix lifts we're currently considering
 			BigIntMatrixTP** orbitReps;   //Holds representatives for all the orbits, from smallest modulus to biggest
 			int*  orbitRepsCount;         //How many vectors are in each layer of orbitReps?
 			int** orbitRepsCycleLengths;  //What are the cycle lengths of the orbit reps? 
@@ -5690,6 +5690,30 @@ and the number of columns must be 1.\n");
 			const int numOfTempVects = 3;
 			BigIntMatrixTP* tempVects;
 			CycleInfoTP theCycle = NULL;
+			
+			/*
+			 * stems           = print each orbit mapping reduction separately
+			 * compressedstems = same as stems, but with a smaller file size
+			 * trees           = print orbit mapping reductions as a single tree
+			 */
+			typedef enum outputtypes {stems, compressedStems, trees} OPT;
+			const OPT outputType = compressedStems;
+			BigIntMatrixTP* stemCollection; //For holding stems in the correct order
+			
+			FILE* outputFile     = NULL;
+			char* outputFileName = NULL;
+			
+			typedef struct cyclenchar
+			{
+				int cyclen; //the cycle length this character represents
+				char disp;  //the character to display in place of the cycle length
+			}
+			CLC;
+			
+			//For compressing the outputfile when using compressedStems
+			CLC* cyclenreplace = NULL;
+			int numofcyclenreplace = 0;
+			char* repchars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
 			
 			if (big_rows(initialA) != big_cols(initialA))
 			{
@@ -5706,6 +5730,9 @@ and the number of columns must be 1.\n");
 				return EXIT_FAILURE;
 			}
 			
+			//Has to go here since we don't read maxPower until now
+			int stemCollectionCycleLengths[maxPower];
+			
 			if (argc > 3)
 			{
 				SET_BIG_NUM(argv[3], baseMod, "Unable to read modulus from command line.");
@@ -5713,6 +5740,33 @@ and the number of columns must be 1.\n");
 			else
 			{
 				SET_BIG_NUM(bigintmodstring, baseMod, "Unable to read modulus from config file.");
+			}
+			
+			if ((argc > 4) && (!strcmp(argv[4], "TRUE")))
+			{
+				outputFileName = malloc(MAXSTRLEN*sizeof(char));
+				outputFileName[0] = '\0';
+				strcat(outputFileName, "orbitmaps2 ");
+				strcat(outputFileName, argv[2]);
+				strcat(outputFileName, " ");
+				append_BigIntT(outputFileName, baseMod);
+				strcat(outputFileName, " F");
+				for (int row = 0; row < big_rows(initialA); row += 1)
+					for (int col = 0; col < big_rows(initialA); col += 1)
+						append_BigIntT(outputFileName, big_element(initialA, row, col));
+				strcat(outputFileName, ".txt");
+				
+				outputFile = fopen(outputFileName, "a");
+				if (outputFile == NULL)
+					fprintf(stderr, "Unable to open output file. Continuing without saving...\n");
+			}
+			
+			//for stem output
+			if ((outputType == stems) || (outputType == compressedStems))
+			{
+				stemCollection = malloc(maxPower*sizeof(BigIntMatrixTP));
+				for (int i = 0; i < maxPower; i += 1)
+					stemCollection[i] = new_BigIntMatrixT(big_rows(initialA), 1);
 			}
 			
 			matrixLiftElements = malloc((maxPower-1)*sizeof(BigIntTP**));
@@ -5754,6 +5808,16 @@ and the number of columns must be 1.\n");
 			while (currPower > 1)
 			{
 				set_big_matrix(currMat, matrixLiftElements[maxPower-2]);
+				if (outputType == compressedStems)
+				{
+					printf("\n");
+					if (outputFile != NULL)
+						fprintf(outputFile, "\n");
+				}
+				
+				printbm(currMat);
+				if (outputFile != NULL)
+					fprintbm(outputFile, currMat);
 				
 				//Clear out all vectors from mod baseMod^currPower upward
 				for (int L = currPower-1; L < maxPower; L += 1)
@@ -5790,6 +5854,9 @@ and the number of columns must be 1.\n");
 							
 							//Now, iterate until tempVects[0] is a lift of orbitReps[currPower-2][lowRep]
 							//This is guaranteed to happen as orbitReps[currPower-2][lowRep] is in a cycle
+							
+							//This part of the code isn't necessary if our matrix is invertible
+							// since the rep(theCycle) will be the same as the vector we started with
 							while (TRUE)
 							{
 								copy_BigIntMatrixT(tempVects[0], tempVects[1]);
@@ -5857,13 +5924,12 @@ and the number of columns must be 1.\n");
 								//Yay, we found a new rep!
 								if (isNewVector)
 								{
-									//printf(":)\n");
 									orbitRepsCount[currPower-1] += 1;
 									orbitReps[currPower-1] = realloc(orbitReps[currPower-1], orbitRepsCount[currPower-1]*sizeof(BigIntMatrixTP));
 									orbitReps[currPower-1][orbitRepsCount[currPower-1]-1] = new_BigIntMatrixT(big_rows(initialA), 1);
-									copy_BigIntMatrixT(tempVects[0], orbitReps[currPower-1][0]);
+									copy_BigIntMatrixT(tempVects[0], orbitReps[currPower-1][orbitRepsCount[currPower-1]-1]);
 									
-									orbitRepsCycleLengths[currPower-1] = realloc(orbitRepsCycleLengths[currPower-1], sizeof(int));
+									orbitRepsCycleLengths[currPower-1] = realloc(orbitRepsCycleLengths[currPower-1], orbitRepsCount[currPower-1]*sizeof(int));
 									orbitRepsCycleLengths[currPower-1][orbitRepsCount[currPower-1]-1] = omega(theCycle);
 								}
 							}
@@ -5877,6 +5943,146 @@ and the number of columns must be 1.\n");
 				}
 				while (currPower <= maxPower);
 				currPower -= 1; //Accounting for the weird way I set up this loop
+				
+				//Now, print out the orbit reps
+				if ((outputType == stems) || (outputType == compressedStems))
+				{
+					for (int topVect = 0; topVect < orbitRepsCount[maxPower-1]; topVect += 1)
+					{
+						//Copying vectors into an easy-to-access array so we can print
+						// the vectors from smallest mod to greatest
+						copy_BigIntMatrixT(orbitReps[maxPower-1][topVect], stemCollection[maxPower-1]);
+						stemCollectionCycleLengths[maxPower-1] = orbitRepsCycleLengths[maxPower-1][topVect];
+						for (int level = maxPower-2; level >= 0; level -= 1)
+						{
+							copy_BigIntMatrixT(orbitReps[maxPower-1][topVect], tempVects[0]);
+							modbm(tempVects[0], modList[level]);
+							copy_BigIntMatrixT(tempVects[0], stemCollection[level]);
+							
+							//Finding the vector we map down to so I can get the cycle length
+							for (int notTopVect = 0; notTopVect < orbitRepsCount[level]; notTopVect += 1)
+								if (compare_BigIntMatrixT(tempVects[0], orbitReps[level][notTopVect]))
+								{
+									stemCollectionCycleLengths[level] = orbitRepsCycleLengths[level][notTopVect];
+									break;
+								}
+						}
+						
+						//Now, we can print out the stem
+						for (int stemPoint = 0; stemPoint < maxPower; stemPoint += 1)
+						{
+							if ((stemPoint != 0) && (outputType == stems))
+								printf(" --> ");
+							
+							if (outputType == stems)
+							{
+								printbm_row(stemCollection[stemPoint]);
+								printf(" (%d)", stemCollectionCycleLengths[stemPoint]);
+							}
+							
+							else
+							{
+								for (int vectorElem = 0; vectorElem < big_rows(initialA); vectorElem += 1)
+								{
+									if (vectorElem != 0)
+										printf(",");
+									printi(big_element(stemCollection[stemPoint], vectorElem, 0));
+								}
+								
+								//Every time we print a cycle length, we check if we have a character for it
+								// If not, we add one
+								isNewCycLen = TRUE;
+								for (int w = 0; w < numofcyclenreplace; w += 1)
+								{
+									if (stemCollectionCycleLengths[stemPoint] == cyclenreplace[w].cyclen)
+									{
+										isNewCycLen = FALSE;
+										printf("%c", cyclenreplace[w].disp);
+										break;
+									}
+								}
+								
+								//Add a new character representing a cycle length to our array
+								if (isNewCycLen)
+								{
+									numofcyclenreplace += 1;
+									cyclenreplace = realloc(cyclenreplace, numofcyclenreplace*sizeof(CLC));
+									struct cyclenchar clc = {stemCollectionCycleLengths[stemPoint], repchars[numofcyclenreplace-1]};
+									cyclenreplace[numofcyclenreplace-1] = clc;
+									printf("%c", cyclenreplace[numofcyclenreplace-1].disp);
+								}
+							}
+							
+							
+							if (outputFile != NULL)
+							{
+								if ((stemPoint != 0) && (outputType == stems))
+									fprintf(outputFile, " --> ");
+								
+								if (outputType == stems)
+								{
+									fprintbm_row(outputFile, stemCollection[stemPoint]);
+									fprintf(outputFile, " (%d)", stemCollectionCycleLengths[stemPoint]);
+								}
+								
+								else
+								{
+									for (int vectorElem = 0; vectorElem < big_rows(initialA); vectorElem += 1)
+									{
+										if (vectorElem != 0)
+											fprintf(outputFile, ",");
+										fprinti(outputFile, big_element(stemCollection[stemPoint], vectorElem, 0));
+									}
+									
+									//Every time we print a cycle length, we check if we have a character for it
+									// If not, we add one
+									isNewCycLen = TRUE;
+									for (int w = 0; w < numofcyclenreplace; w += 1)
+									{
+										if (stemCollectionCycleLengths[stemPoint] == cyclenreplace[w].cyclen)
+										{
+											isNewCycLen = FALSE;
+											fprintf(outputFile, "%c", cyclenreplace[w].disp);
+											break;
+										}
+									}
+									
+									//Add a new character representing a cycle length to our array
+									if (isNewCycLen)
+									{
+										numofcyclenreplace += 1;
+										cyclenreplace = realloc(cyclenreplace, numofcyclenreplace*sizeof(CLC));
+										struct cyclenchar clc = {stemCollectionCycleLengths[stemPoint], repchars[numofcyclenreplace-1]};
+										cyclenreplace[numofcyclenreplace-1] = clc;
+										fprintf(outputFile, "%c", cyclenreplace[numofcyclenreplace-1].disp);
+									}
+								}
+							}
+						}
+						if (outputType == compressedStems)
+							printf(";");
+						else
+							printf("\n");
+						
+						if (outputFile != NULL)
+						{
+							if (outputType == compressedStems)
+								fprintf(outputFile, ";");
+							
+							if (fclose(outputFile) == EOF)
+								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+							
+							outputFile = fopen(outputFileName, "a");
+							if (outputFile == NULL)
+								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+						}
+					}
+				}
+				
+				else if (outputType == trees)
+				{
+					printf(":)\n");
+				}
 				
 				//Increment through our matrix lifts in such a way as to reduce
 				// the amount of times we need to recompute lifts
@@ -5918,6 +6124,27 @@ and the number of columns must be 1.\n");
 							               matrixLiftElements[currPower-2+rewrite][row][col]);
 			}
 			
+			//Make sure to output what each letter means if we're using outputType == compressedStems
+			if (outputType == compressedStems)
+				for (int c = 0; c < numofcyclenreplace; c += 1)
+				{
+					if (c != 0)
+						printf(";");
+					printf("%c=%d", cyclenreplace[c].disp, cyclenreplace[c].cyclen);
+					
+					if (outputFile != NULL)
+					{
+						if (c != 0)
+							fprintf(outputFile, ";");
+						
+						fprintf(outputFile, "%c=%d", cyclenreplace[c].disp, cyclenreplace[c].cyclen);
+					}
+				}
+			
+			if (outputFile != NULL)
+				if (fclose(outputFile) == EOF)
+					fprintf(stderr, "Unable to save output file.\n");
+			FREE(outputFileName);
 			
 			one     = free_BigIntT(one);
 			baseMod = free_BigIntT(baseMod);
@@ -5946,7 +6173,17 @@ and the number of columns must be 1.\n");
 				tempVects[i] = free_BigIntMatrixT(tempVects[i]);
 			FREE(tempVects);
 			
-			temp = free_BigIntT(temp);
+			if ((outputType == stems) || (outputType == compressedStems))
+			{
+				for (int i = 0; i < maxPower; i += 1)
+					stemCollection[i] = free_BigIntMatrixT(stemCollection[i]);
+				FREE(stemCollection);
+				
+				if (outputType == compressedStems)
+				{
+					FREE(cyclenreplace);
+				}
+			}
 		}
 		
 		
