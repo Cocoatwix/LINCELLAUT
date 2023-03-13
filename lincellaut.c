@@ -5696,9 +5696,10 @@ and the number of columns must be 1.\n");
 			 * compressedstems = same as stems, but with a smaller file size
 			 * trees           = print orbit mapping reductions as a single tree
 			 */
-			typedef enum outputtypes {stems, compressedStems, trees} OPT;
-			const OPT outputType = compressedStems;
+			typedef enum outputtypes {stems, compressedStems, trees, compressedTrees} OPT;
+			const OPT outputType = trees;
 			BigIntMatrixTP* stemCollection; //For holding stems in the correct order
+			int treeBranchLevel; //Keeps track of how deep we are in the tree
 			
 			FILE* outputFile     = NULL;
 			char* outputFileName = NULL;
@@ -5732,6 +5733,7 @@ and the number of columns must be 1.\n");
 			
 			//Has to go here since we don't read maxPower until now
 			int stemCollectionCycleLengths[maxPower];
+			int treeBranches[maxPower];
 			
 			if (argc > 3)
 			{
@@ -5810,14 +5812,26 @@ and the number of columns must be 1.\n");
 				set_big_matrix(currMat, matrixLiftElements[maxPower-2]);
 				if (outputType == compressedStems)
 				{
-					printf("\n");
-					if (outputFile != NULL)
-						fprintf(outputFile, "\n");
+					for (int row = 0; row < big_rows(initialA); row += 1)
+						for (int col = 0; col < big_rows(initialA); col += 1)
+						{
+							printi(big_element(currMat, row, col));
+							printf(" ");
+							
+							if (outputFile != NULL)
+							{
+								fprinti(outputFile, big_element(currMat, row, col));
+								fprintf(outputFile, " ");
+							}
+						}
 				}
 				
-				printbm(currMat);
-				if (outputFile != NULL)
-					fprintbm(outputFile, currMat);
+				else
+				{
+					printbm(currMat);
+					if (outputFile != NULL)
+						fprintbm(outputFile, currMat);
+				}
 				
 				//Clear out all vectors from mod baseMod^currPower upward
 				for (int L = currPower-1; L < maxPower; L += 1)
@@ -6081,7 +6095,62 @@ and the number of columns must be 1.\n");
 				
 				else if (outputType == trees)
 				{
-					printf(":)\n");
+					// └ │ ├
+					//Need to save the next vector to be printed so that I can correctly print tree characters
+					for (int i = 0; i < maxPower; i += 1)
+						treeBranches[i] = 0;
+					treeBranches[0] = -1;
+					
+					treeBranchLevel = 0;
+					while (TRUE)
+					{
+						if (treeBranchLevel == 0)
+						{
+							treeBranches[0] += 1;
+							
+							if (treeBranches[0] >= orbitRepsCount[0])
+								break;
+							else
+							{
+								printbm_row(orbitReps[0][treeBranches[0]]);
+								printf("\n");
+							}
+							
+							treeBranchLevel += 1;
+						}
+						
+						else
+						{
+							isNewVector = FALSE;
+							for (int vect = treeBranches[treeBranchLevel]; vect < orbitRepsCount[treeBranchLevel]; vect += 1)
+							{
+								copy_BigIntMatrixT(orbitReps[treeBranchLevel][vect], tempVects[0]);
+								modbm(tempVects[0], modList[treeBranchLevel-1]);
+								if (compare_BigIntMatrixT(tempVects[0], orbitReps[0][treeBranches[0]]))
+								{
+									isNewVector = TRUE;
+									for (int i = 0; i < treeBranchLevel; i += 1)
+										printf(" ");
+									printbm_row(orbitReps[treeBranchLevel][vect]);
+									printf("\n");
+									
+									treeBranches[treeBranchLevel] = vect+1;
+									
+									if (treeBranchLevel != maxPower-1)
+										treeBranchLevel += 1;
+									
+									break;
+								}
+							}
+							
+							if (! isNewVector)
+							{
+								treeBranches[treeBranchLevel] = 0;
+								treeBranchLevel -= 1;
+							}
+						}
+					}
+					getchar();
 				}
 				
 				//Increment through our matrix lifts in such a way as to reduce
