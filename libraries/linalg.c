@@ -988,6 +988,9 @@ int compare_BigIntMatrixT(const BigIntMatrixTP M1, const BigIntMatrixTP M2)
 /** Same as compare_IntMatrixT(), but with BigIntMatrixT structs.
     Returns 1 if the two matrices are equal, zero otherwise. */
 {
+	if ((M1 == NULL) || (M2 == NULL))
+		return 0;
+	
 	if ((M1->m != M2->m) || (M1->n != M2->n))
 		return 0;
 	

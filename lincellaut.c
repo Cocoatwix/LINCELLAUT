@@ -5701,7 +5701,6 @@ and the number of columns must be 1.\n");
 			typedef enum outputtypes {stems, compressedStems, trees, compressedTrees} OPT;
 			const OPT outputType = trees;
 			BigIntMatrixTP* stemCollection; //For holding stems in the correct order
-			int treeBranchLevel; //Keeps track of how deep we are in the tree
 			
 			FILE* outputFile     = NULL;
 			char* outputFileName = NULL;
@@ -5737,7 +5736,7 @@ and the number of columns must be 1.\n");
 			BigIntTP modList[maxPower]; //Holds every power of baseMod we'll need, from baseMod to baseMod^maxPower
 			
 			int stemCollectionCycleLengths[maxPower];
-			int treeBranches[maxPower];
+			int stemCollectionIndices[maxPower];
 			
 			if (argc > 3)
 			{
@@ -5772,12 +5771,10 @@ and the number of columns must be 1.\n");
 			}
 			
 			//for stem output
+			stemCollection = malloc(maxPower*sizeof(BigIntMatrixTP));
 			if ((outputType == stems) || (outputType == compressedStems))
-			{
-				stemCollection = malloc(maxPower*sizeof(BigIntMatrixTP));
 				for (int i = 0; i < maxPower; i += 1)
 					stemCollection[i] = new_BigIntMatrixT(big_rows(initialA), 1);
-			}
 			
 			matrixLiftElements = malloc((maxPower-1)*sizeof(BigIntTP**));
 			for (int i = 0; i < maxPower-1; i += 1)
@@ -6147,143 +6144,65 @@ and the number of columns must be 1.\n");
 				{
 					// └ │ ├
 					//Need to save the next vector to be printed so that I can correctly print tree characters
-					for (int i = 0; i < maxPower; i += 1)
-						treeBranches[i] = 0;
-					treeBranches[0] = -1;
 					
-					treeBranchLevel = 0;
-					while (TRUE)
+					for (int i = 0; i < maxPower; i += 1)
 					{
-						if (treeBranchLevel == 0)
+						stemCollection[i] = NULL;
+						stemCollectionIndices[i] = 0;
+						
+						printf("orbitReps[%d] = [", i);
+						for (int v = 0; v < orbitRepsCount[i]; v += 1)
 						{
-							treeBranches[0] += 1;
+							if (v != 0)
+								printf(", ");
+							printbm_row(orbitReps[i][v]);
+						}
+						printf("]\n");
+					}
+				
+					printf(":)\n");
+					while (stemCollectionIndices[maxPower-1] < orbitRepsCount[maxPower-1])
+					{
+						stemCollection[maxPower-1] = orbitReps[maxPower-1][stemCollectionIndices[maxPower-1]];
+						stemCollectionIndices[maxPower-1] += 1;
+						
+						//Reduce this vector down to see if it matches with a lower vector on the tree
+						// If not, we'll have to start a new branch
+						for (int stem = maxPower-2; stem >= 0; stem -= 1)
+						{
+							copy_BigIntMatrixT(stemCollection[maxPower-1], tempVects[0]);
+							modbm(tempVects[0], modList[stem]);
+							if (! compare_BigIntMatrixT(tempVects[0], stemCollection[stem]))
+							{
+								stemCollection[stem] = orbitReps[stem][stemCollectionIndices[stem]];
+								stemCollectionIndices[stem] += 1;
+									
+								if (stem == 0)
+								{
+									for (int v = 0; v < maxPower; v += 1)
+									{
+										for (int i = 0; i < v; i += 1)
+											printf(" ");
+										printbm_row(stemCollection[v]);
+										printf("\n");
+									}
+									break;
+								}
+							}
 							
-							if (treeBranches[0] >= orbitRepsCount[0])
-								break;
 							else
 							{
-								if (outputType == compressedTrees)
-									printf("0?");
-								
-								for (int i = 0; i < big_rows(initialA); i += 1)
+								for (int v = stem+1; v < maxPower; v += 1)
 								{
-									if (i != 0)
-										printf(",");
-									printi(big_element(orbitReps[0][treeBranches[0]], i, 0));
+									for (int i = 0; i < v; i += 1)
+										printf(" ");
+									printbm_row(stemCollection[v]);
+									printf("\n");
 								}
-								
-								if (outputType == compressedTrees)
-								{
-									CHARCYCLELEN(stdout, orbitRepsCycleLengths[0][treeBranches[0]])
-								}
-								
-								else
-									printf(" w%d\n", orbitRepsCycleLengths[0][treeBranches[0]]);
-								
-								if (outputFile != NULL)
-								{
-									if (outputType == compressedTrees)
-										fprintf(outputFile, "0?");
-									
-									for (int i = 0; i < big_rows(initialA); i += 1)
-									{
-										if (i != 0)
-											fprintf(outputFile, ",");
-										fprinti(outputFile, big_element(orbitReps[0][treeBranches[0]], i, 0));
-									}
-									
-									if (outputType == compressedTrees)
-									{
-										CHARCYCLELEN(outputFile, orbitRepsCycleLengths[0][treeBranches[0]])
-									}
-									
-									else
-										fprintf(outputFile, " w%d\n", orbitRepsCycleLengths[0][treeBranches[0]]);
-									
-								}
-							}
-							
-							treeBranchLevel += 1;
-						}
-						
-						else
-						{
-							isNewVector = FALSE;
-							for (int vect = treeBranches[treeBranchLevel]; vect < orbitRepsCount[treeBranchLevel]; vect += 1)
-							{
-								copy_BigIntMatrixT(orbitReps[treeBranchLevel][vect], tempVects[0]);
-								modbm(tempVects[0], modList[treeBranchLevel-1]);
-								
-								//If there's no more vectors to look through in orbitReps[treeBranchLevel-1]
-								if (treeBranches[treeBranchLevel-1] >= orbitRepsCount[treeBranchLevel-1])
-									break;
-
-								if (compare_BigIntMatrixT(tempVects[0], orbitReps[treeBranchLevel-1][treeBranches[treeBranchLevel-1]]))
-								{
-									isNewVector = TRUE;
-									
-									if (outputType == compressedTrees)
-										printf("%d?", treeBranchLevel);
-									else
-										for (int i = 0; i < treeBranchLevel; i += 1)
-											printf(" ");
-										
-									for (int i = 0; i < big_rows(initialA); i += 1)
-									{
-										if (i != 0)
-											printf(",");
-										printi(big_element(orbitReps[treeBranchLevel][vect], i, 0));
-									}
-									
-									if (outputType == compressedTrees)
-									{
-										CHARCYCLELEN(stdout, orbitRepsCycleLengths[treeBranchLevel][vect])
-									}
-									
-									else
-										printf(" w%d\n", orbitRepsCycleLengths[treeBranchLevel][vect]);
-									
-									if (outputFile != NULL)
-									{
-										if (outputType == compressedTrees)
-											fprintf(outputFile, "%d?", treeBranchLevel);
-										else
-											for (int i = 0; i < treeBranchLevel; i += 1)
-												fprintf(outputFile, " ");
-											
-										for (int i = 0; i < big_rows(initialA); i += 1)
-										{
-											if (i != 0)
-												fprintf(outputFile, ",");
-											fprinti(outputFile, big_element(orbitReps[treeBranchLevel][vect], i, 0));
-										}
-										
-										if (outputType == compressedTrees)
-										{
-											CHARCYCLELEN(outputFile, orbitRepsCycleLengths[treeBranchLevel][vect])
-										}
-										
-										else
-											fprintf(outputFile, " w%d\n", orbitRepsCycleLengths[treeBranchLevel][vect]);
-									}
-									
-									treeBranches[treeBranchLevel] = vect+1;
-									
-									if (treeBranchLevel != maxPower-1)
-										treeBranchLevel += 1;
-									
-									break;
-								}
-							}
-							
-							if (! isNewVector)
-							{
-								treeBranches[treeBranchLevel] = 0;
-								treeBranchLevel -= 1;
+								break;
 							}
 						}
 					}
-					printf("done printing the trees, apparently\n");
 					getchar();
 				}
 				
@@ -6403,7 +6322,6 @@ and the number of columns must be 1.\n");
 				{
 					for (int i = 0; i < maxPower; i += 1)
 						stemCollection[i] = free_BigIntMatrixT(stemCollection[i]);
-					FREE(stemCollection);
 				}
 				
 				if ((outputType == compressedStems) || (outputType == compressedTrees))
@@ -6411,6 +6329,7 @@ and the number of columns must be 1.\n");
 					FREE(cyclenreplace);
 				}
 			}
+			FREE(stemCollection);
 		}
 		
 		
