@@ -1174,7 +1174,8 @@ void fprintbm(FILE* file, BigIntMatrixTP M)
 				fprintf(file, "0");
 				
 			fprinti(file, M->matrix[row][col]);
-			fprintf(file, " ");
+			if (col != M->n-1)
+				fprintf(file, " ");
 		}
 		fprintf(file, "\n");
 	}
