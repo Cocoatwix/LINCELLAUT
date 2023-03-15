@@ -5700,7 +5700,7 @@ and the number of columns must be 1.\n");
 			 */
 			typedef enum outputtypes {stems, compressedStems, trees, compressedTrees} OPT;
 			const OPT outputType = trees;
-			BigIntMatrixTP* stemCollection; //For holding stems in the correct order
+			int stemStart; //For simplifying tree-printing code
 			
 			FILE* outputFile     = NULL;
 			char* outputFileName = NULL;
@@ -5737,6 +5737,7 @@ and the number of columns must be 1.\n");
 			
 			int stemCollectionCycleLengths[maxPower];
 			int stemCollectionIndices[maxPower];
+			BigIntMatrixTP stemCollection[maxPower]; //For holding stems in the correct order
 			
 			if (argc > 3)
 			{
@@ -5771,7 +5772,6 @@ and the number of columns must be 1.\n");
 			}
 			
 			//for stem output
-			stemCollection = malloc(maxPower*sizeof(BigIntMatrixTP));
 			if ((outputType == stems) || (outputType == compressedStems))
 				for (int i = 0; i < maxPower; i += 1)
 					stemCollection[i] = new_BigIntMatrixT(big_rows(initialA), 1);
@@ -6150,60 +6150,79 @@ and the number of columns must be 1.\n");
 						stemCollection[i] = NULL;
 						stemCollectionIndices[i] = 0;
 						
+						/*
 						printf("orbitReps[%d] = [", i);
 						for (int v = 0; v < orbitRepsCount[i]; v += 1)
 						{
 							if (v != 0)
 								printf(", ");
 							printbm_row(orbitReps[i][v]);
+							printf(" w%d", orbitRepsCycleLengths[i][v]);
 						}
 						printf("]\n");
+						*/
 					}
-				
-					printf(":)\n");
+
 					while (stemCollectionIndices[maxPower-1] < orbitRepsCount[maxPower-1])
 					{
 						stemCollection[maxPower-1] = orbitReps[maxPower-1][stemCollectionIndices[maxPower-1]];
+						stemCollectionCycleLengths[maxPower-1] = orbitRepsCycleLengths[maxPower-1][stemCollectionIndices[maxPower-1]];
 						stemCollectionIndices[maxPower-1] += 1;
 						
 						//Reduce this vector down to see if it matches with a lower vector on the tree
 						// If not, we'll have to start a new branch
 						for (int stem = maxPower-2; stem >= 0; stem -= 1)
 						{
+							stemStart = -1;
 							copy_BigIntMatrixT(stemCollection[maxPower-1], tempVects[0]);
 							modbm(tempVects[0], modList[stem]);
+							
 							if (! compare_BigIntMatrixT(tempVects[0], stemCollection[stem]))
 							{
 								stemCollection[stem] = orbitReps[stem][stemCollectionIndices[stem]];
+								stemCollectionCycleLengths[stem] = orbitRepsCycleLengths[stem][stemCollectionIndices[stem]];
 								stemCollectionIndices[stem] += 1;
 									
 								if (stem == 0)
-								{
-									for (int v = 0; v < maxPower; v += 1)
-									{
-										for (int i = 0; i < v; i += 1)
-											printf(" ");
-										printbm_row(stemCollection[v]);
-										printf("\n");
-									}
-									break;
-								}
+									stemStart = 0;
 							}
 							
 							else
+								stemStart = stem+1;
+
+							//Now, actually print out this tree structure if there's something to print
+							if (stemStart != -1)
 							{
-								for (int v = stem+1; v < maxPower; v += 1)
+								for (int v = stemStart; v < maxPower; v += 1)
 								{
 									for (int i = 0; i < v; i += 1)
 										printf(" ");
-									printbm_row(stemCollection[v]);
-									printf("\n");
+									for (int i = 0; i < big_rows(initialA); i += 1)
+									{
+										if (i != 0)
+											printf(",");
+										printi(big_element(stemCollection[v], i, 0));
+									}
+									printf(" w%d\n", stemCollectionCycleLengths[v]);
+									
+									if (outputFile != NULL)
+									{
+										for (int i = 0; i < v; i += 1)
+											fprintf(outputFile, " ");
+										for (int i = 0; i < big_rows(initialA); i += 1)
+										{
+											if (i != 0)
+												fprintf(outputFile, ",");
+											fprinti(outputFile, big_element(stemCollection[v], i, 0));
+										}
+										fprintf(outputFile, " w%d\n", stemCollectionCycleLengths[v]);
+									}
 								}
 								break;
 							}
 						}
 					}
-					getchar();
+					//getchar();
 				}
 				
 				//Save datafile
@@ -6278,6 +6297,7 @@ and the number of columns must be 1.\n");
 				}
 			}
 			
+			//FREEEVERYTHING:
 			if (outputFile != NULL)
 				if (fclose(outputFile) == EOF)
 					fprintf(stderr, "Unable to save output file.\n");
@@ -6329,7 +6349,6 @@ and the number of columns must be 1.\n");
 					FREE(cyclenreplace);
 				}
 			}
-			FREE(stemCollection);
 		}
 		
 		

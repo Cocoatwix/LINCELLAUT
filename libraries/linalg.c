@@ -2086,6 +2086,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 	
 	int numArr[1] = {1};
 	BigIntTP zero, one, bigMult, temp, temp2, tempInverse;
+	BigIntTP tempGCD = NULL;
 	
 	//Making sure our matrices are of the correct shape
 	if ((result->m != M->m) || (result->n != M->n))
@@ -2128,9 +2129,10 @@ int big_row_echelon(const BigIntMatrixTP M,
 			//Checking to see whether the leading entry is one
 			//OR
 			//Checking to see whether the leading entry is nonzero and has an inverse
+			tempGCD = big_gcd(result->matrix[nonzero][focusRow+pivotColOffset], modulus);
 			if ((compare_BigIntT(result->matrix[nonzero][focusRow+pivotColOffset], one) == 0) ||
 					((compare_BigIntT(result->matrix[nonzero][focusRow+pivotColOffset], zero) != 0) &&
-					 (compare_BigIntT(big_gcd(result->matrix[nonzero][focusRow+pivotColOffset], modulus), one) == 0)))
+					 (compare_BigIntT(temp, one) == 0)))
 			{
 				hasLeadEntry = TRUE;
 				
@@ -2153,7 +2155,9 @@ int big_row_echelon(const BigIntMatrixTP M,
 
 				break;
 			}
+			tempGCD = free_BigIntT(tempGCD);
 		}
+		tempGCD = free_BigIntT(tempGCD);
 		
 		//If we couldn't find a nonzero entry for our pivot column
 		if (!hasLeadEntry)
