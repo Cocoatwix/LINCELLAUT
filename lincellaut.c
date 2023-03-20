@@ -5666,6 +5666,7 @@ and the number of columns must be 1.\n");
 			bool isNewVector;
 			bool isNewCycLen;
 			bool isAInvertible;
+			bool useTreeSpaces = FALSE; //Says whether we should use spaces or numbers for tree indentation
 			
 			BigIntTP  baseMod; //The base prime
 			int maxPower;
@@ -5704,6 +5705,8 @@ and the number of columns must be 1.\n");
 			
 			FILE* outputFile     = NULL;
 			char* outputFileName = NULL;
+			char* outputFileBaseName = NULL;
+			int   fileCounter = 0; //For numbering the different files created by the tool
 			
 			typedef struct cyclenchar
 			{
@@ -5751,19 +5754,24 @@ and the number of columns must be 1.\n");
 			if ((argc > 4) && (!strcmp(argv[4], "TRUE")))
 			{
 				outputFileName = malloc(MAXSTRLEN*sizeof(char));
-				outputFileName[0] = '\0';
-				strcat(outputFileName, "orbitmaps2 ");
-				strcat(outputFileName, argv[2]);
-				strcat(outputFileName, " ");
-				append_BigIntT(outputFileName, baseMod);
-				strcat(outputFileName, " F");
+				outputFileBaseName = malloc(MAXSTRLEN*sizeof(char));
+				outputFileBaseName[0] = '\0';
+				strcat(outputFileBaseName, "orbitmaps2 ");
+				strcat(outputFileBaseName, argv[2]);
+				strcat(outputFileBaseName, " ");
+				append_BigIntT(outputFileBaseName, baseMod);
+				strcat(outputFileBaseName, " F");
 				for (int row = 0; row < big_rows(initialA); row += 1)
 					for (int col = 0; col < big_rows(initialA); col += 1)
 					{
-						append_BigIntT(outputFileName, big_element(initialA, row, col));
+						append_BigIntT(outputFileBaseName, big_element(initialA, row, col));
 						if ((row != big_rows(initialA)-1) || (col != big_rows(initialA)-1))
-							strcat(outputFileName, " ");
+							strcat(outputFileBaseName, " ");
+						else
+							strcat(outputFileBaseName, " f");
 					}
+				strcpy(outputFileName, outputFileBaseName);
+				append_int(outputFileName, fileCounter);
 				strcat(outputFileName, ".txt");
 				
 				outputFile = fopen(outputFileName, "a");
@@ -5882,9 +5890,13 @@ and the number of columns must be 1.\n");
 				
 				else
 				{
+					printf("M\n");
 					printbm(currMat);
 					if (outputFile != NULL)
+					{
+						fprintf(outputFile, "M\n");
 						fprintbm(outputFile, currMat);
+					}
 				}
 				
 				//Clear out all vectors from mod baseMod^currPower upward
@@ -6150,17 +6162,35 @@ and the number of columns must be 1.\n");
 						stemCollection[i] = NULL;
 						stemCollectionIndices[i] = 0;
 						
-						/*
-						printf("orbitReps[%d] = [", i);
-						for (int v = 0; v < orbitRepsCount[i]; v += 1)
-						{
-							if (v != 0)
-								printf(", ");
-							printbm_row(orbitReps[i][v]);
-							printf(" w%d", orbitRepsCycleLengths[i][v]);
-						}
-						printf("]\n");
-						*/
+						//Template:
+						/* M
+						 * <matrix>
+						 * <indent level> <vector> <cycle length>
+						 * M
+						 * <matrix>
+						 * <indent level> <vector> <cycle length>
+						 * etc.
+						 */
+						
+						//Idea for keeping track of the tree structures:
+						/* [[1, 2, 3],
+						    [y_1, y_2, y_2, y_3, y_3, y_3],
+								[...]]
+						 *
+						 * Essentially, each different int array represents a level of the tree.
+						 * Each int counts the number of subnodes a node has in the tree.
+						 * That number is then used to subdivide the next layer down into each respective set of subnodes.
+						 * The same pattern is carried down until you reach the bottom.
+						 *
+						 * A pointer to the end of each array is all you'd need for incrementing these numbers,
+						 * since the tree is printed out sequentially, we never need to return to a previous node
+						 * to increment it.
+						 *
+						 * Then, comparing different structures is as easy as comparing numbers. The
+						 * only problems will be the time it takes to construct these trees and compare them,
+						 * and the space they'll take up (which could be quite a bit if the trees prove to be
+						 * various).
+						 */
 					}
 
 					while (stemCollectionIndices[maxPower-1] < orbitRepsCount[maxPower-1])
@@ -6195,27 +6225,37 @@ and the number of columns must be 1.\n");
 							{
 								for (int v = stemStart; v < maxPower; v += 1)
 								{
-									for (int i = 0; i < v; i += 1)
-										printf(" ");
+									if (useTreeSpaces)
+										for (int i = 0; i < v; i += 1)
+											printf(" ");
+										
+									else
+										printf("%d ", v);
+									
 									for (int i = 0; i < big_rows(initialA); i += 1)
 									{
 										if (i != 0)
 											printf(",");
 										printi(big_element(stemCollection[v], i, 0));
 									}
-									printf(" w%d\n", stemCollectionCycleLengths[v]);
+									printf(" %d\n", stemCollectionCycleLengths[v]);
 									
 									if (outputFile != NULL)
 									{
-										for (int i = 0; i < v; i += 1)
-											fprintf(outputFile, " ");
+										if (useTreeSpaces)
+											for (int i = 0; i < v; i += 1)
+												fprintf(outputFile, " ");
+											
+										else
+											fprintf(outputFile, "%d ", v);
+										
 										for (int i = 0; i < big_rows(initialA); i += 1)
 										{
 											if (i != 0)
 												fprintf(outputFile, ",");
 											fprinti(outputFile, big_element(stemCollection[v], i, 0));
 										}
-										fprintf(outputFile, " w%d\n", stemCollectionCycleLengths[v]);
+										fprintf(outputFile, " %d\n", stemCollectionCycleLengths[v]);
 									}
 								}
 								break;
@@ -6265,6 +6305,23 @@ and the number of columns must be 1.\n");
 						break;
 				}
 				
+				//If it's time to create a new output file (split when the lowest
+				// lift gets incremented)
+				if ((currPower == 2) && (outputFile != NULL))
+				{
+					if (fclose(outputFile) == EOF)
+						fprintf(stderr, "Unable to save output file. Will attempt to save next file created...\n");
+					
+					fileCounter += 1;
+					strcpy(outputFileName, outputFileBaseName);
+					append_int(outputFileName, fileCounter);
+					strcat(outputFileName, ".txt");
+					
+					outputFile = fopen(outputFileName, "a");
+					if (outputFile == NULL)
+						fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+				}
+				
 				//Now, make sure that if we changed a lower-moduli matrix lift, we carry that
 				// new lift up to the higher matrix lifts so the reduction process that keeps
 				// lift vectors constant works properly.
@@ -6302,6 +6359,7 @@ and the number of columns must be 1.\n");
 				if (fclose(outputFile) == EOF)
 					fprintf(stderr, "Unable to save output file.\n");
 			FREE(outputFileName);
+			FREE(outputFileBaseName);
 			
 			one     = free_BigIntT(one);
 			baseMod = free_BigIntT(baseMod);
