@@ -1,0 +1,238 @@
+
+\documentclass[a4paper, reqno, 12pt]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=3cm]{geometry}
+\usepackage[parfill]{parskip}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+
+\usepackage{natbib}
+
+%Generalised dimension notation
+\newcommand\dimdi[1]{\text{dimdi}(#1)}
+
+%Core of A
+\newcommand\core[2]{\text{core}_{#1}(#2)}
+
+%Column space
+\newcommand\colsp[1]{\text{colsp}(#1)}
+
+%Span
+\newcommand\vecspan[1]{\text{span}(#1)}
+
+%Kernel
+%\newcommand\ker[1]{\text{ker}(#1)}
+
+\begin{document}
+	A set of vectors $V = \{\vec{v}_{1}, \vec{v}_{2}, \vec{v}_{3}, \cdots \}$ is \emph{dimensionally independent} iff
+	\[
+		\forall \vec{v} \in V, \quad \vecspan{\vec{v}} \cap \vecspan{V\setminus\{\vec{v}\}} = \{\vec{0}\}
+	\]
+	
+	Dimensional independence is a generalisation of linear independence since, if the set $V = \{\vec{v}_{1}, \vec{v}_{2}, \vec{v}_{3}, \cdots \}$ is
+	linearly independent, then the only solution to
+	\[
+		a_{1}\vec{v}_{1} + a_{2}\vec{v}_{2} + \cdots \equiv \vec{0}
+	\]
+	is the trivial solution for the constants $\{a_i\}$. This means the rearranged equation
+	\[
+		-a_{i}\vec{v}_{i} \equiv a_1\vec{v}_1 + a_2\vec{v}_2 + \cdots + a_{i-1}\vec{v}_{i-1} + a_{i+1}\vec{v}_{i+1} + \cdots
+	\]
+	has no solutions, which means $V$ is dimensionally independent since no vector in $\vecspan{\vec{v}_i}$ is in $\vecspan{V \setminus \{\vec{v}_i\}}$ except
+	the zero vector.
+	
+	In particular, dimensional independence is a useful generalisation of linear independence when considering vectors from the module $\mathds{Z}_{p^k}^{L}$, the set
+	of all $L \times 1$ vectors with components from the integers modulo $p^k$, a power of a prime number. Note that we'll only be considering the case where $k > 1$, 
+	since if $k = 1$ then $\mathds{Z}_{p^k}^{L}$ is a vector space and using dimensional independence instead of linear independence wouldn't
+	grant any additional utility. 
+	
+	To understand why dimensional independence is useful in this case, consider the vectors $
+	\begin{bmatrix}
+		\begin{smallmatrix}
+			5 \\
+			0
+		\end{smallmatrix}
+	\end{bmatrix}
+	$ and $
+	\begin{bmatrix}
+		\begin{smallmatrix}
+			0 \\
+			5
+		\end{smallmatrix}
+	\end{bmatrix}
+	$ modulo 25. In the module $\mathds{Z}_{25}^{2}$, these two vectors are not linearly independent since
+	\[
+		5
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				5 \\
+				0
+			\end{smallmatrix}
+		\end{bmatrix}
+		+
+		5
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				0 \\
+				5
+			\end{smallmatrix}
+		\end{bmatrix}
+		\equiv \vec{0} \mod{25}
+	\]
+	However, these two vectors are pointing in orthogonal directions. In some sense, the two vectors are still independent of one another as one cannot be created as 
+	a linear combination of the other. Thus, dimensional independence provides a useful metric for when such a situation arises.
+	
+	Using dimensional independence, we can define the \emph{di-dimension} of a set of vectors $V$ as the minimum number of dimensionally independent vectors needed to 
+	span $V$. The di-dimension of $V$ will be denoted as $\dimdi{V}$.
+	
+	As with the definition of dimensional independence, di-dimension is a generalisation of the more typical definition of dimension used with vector spaces, as
+	the dimension of a vector space is the number of linearly independent vectors needed to span the space. Given some module, the number of vectors in the span of 
+	$n$ dimensionally independent vectors can, at most, be the same as the number of vectors in the span of $n$ linearly independent vectors, so the dimension of a 
+	vector space agrees with the di-dimension of the same space.
+	
+	The main interest in introducing the concepts of dimensional independence and di-dimension is to understand how the core of a matrix changes when increasing 
+	the exponent of a prime-power modulus. The \emph{core} of a matrix $A \in \mathds{Z}_{n}^{L \times L}$ (where $\mathds{Z}_{n}^{L \times L}$ is the set of 
+	all $L \times L$ matrices modulo n) is the largest submodule $S$ of $\mathds{Z}_{n}^{L}$ (the set of all $L \times 1$ vectors modulo n) such that
+	\[
+		AS \equiv S \mod{n}
+	\]
+	In other words, $S$ is the largest submodule where matrix multiplication by $A$ creates a bijection from $S$ to itself. One can think of $A$ as merely shuffling
+	the vectors within the core around as opposed to squeezing multiple vectors together in the mapping. The core of $A$ is denoted as $\core{n}{A}$, where $n$ is the
+	relevant modulus.
+	
+	Another valid definition for the core of a matrix makes use of the matrix's column space:
+	\[
+		\core{n}{A} = \colsp{A^\tau} \mod{n}
+	\]
+	where $\tau$ is defined to be the smallest positive integer such that
+	\[
+		\colsp{A^\tau} = \colsp{A^{\tau + 1}} \mod{n}
+	\]
+	The equivalency of these definitions is based on the fact that $\colsp{A^\tau}$ gives a submodule where, after multiplication by $A$, each vector in it is mapped 
+	to by only one other vector in the submodule, creating a bijection from the submodule to itself. It is also the largest such submodule as the column space of the 
+	matrix dictates which vectors can be mapped to by multiplication. No larger submodule with this property exists because the matrix itself doesn't allow for a 
+	bigger one to exist. Such a submodule is also guaranteed to exist as, for a general square matrix,
+	\[
+		\colsp{A^{i}} \supseteq \colsp{A^{i+1}}
+	\]
+	so the column space either shrinks or stays the same after each multiplication by $A$. If $\colsp{A^{i}} = \colsp{A^{i+1}}$, then 
+	$\forall c \in \mathds{Z}^{+}, \, \colsp{A^{i}} = \colsp{A^{i+c}}$ since $A(\colsp{A^i}) = \colsp{A^i}$. Eventually, the column space will reach one of 
+	these fixed submodules, or the column space will reduce itself to $\{\vec{0}\}$, at which point the column space will forcibly be fixed since 
+	$\forall A, \, A\vec{0} \equiv \vec{0}$.
+	
+	Our main concern is calculating $\dimdi{\core{p^k}{A}}$ when $\dimdi{\core{p}{A}}$ is known.
+	
+	The easiest case is when $\core{p}{A} = \{\vec{0}\}$. If this is the case, then for some positive integer $\tau$ we know
+	\[
+		A^{\tau} \equiv 0 \mod{p}
+	\]
+	since if the core is only the zero vector, $A$ must have mapped all vectors to it, and this can only happen with the zero matrix. Lifting the above equation
+	to a higher-powered modulus, we see
+	\[
+		A^{\tau} \equiv pB \mod{p^k}, \quad B \in \mathds{Z}^{L \times L}
+	\]
+	since this is the form the matrix must take if it is to reduce to 0 mod $p$. Raising both sides to the $k$-th power,
+	\[
+		A^{k\tau} \equiv p^{k}B^{k} \equiv 0 \mod{p^k}
+	\]
+	If $\core{p}{A} = \{\vec{0}\}$, then $\core{p^k}{A} = \{\vec{0}\}$ since the matrix will always iterate to the zero matrix eventually.
+	
+	Analogous to how the dimension of $\{\vec{0}\}$ is 0, the di-dimension of $\{\vec{0}\}$ is also 0. So,
+	\[
+		\dimdi{\core{p}{A}} = 0 \implies \dimdi{\core{p^k}{A}} = 0
+	\]
+	
+	What about when $\core{p}{A} \neq \{\vec{0}\}$? If $\core{p}{A}$ has more than the zero vector in it, then we can write it as the span of a set of vectors since
+	the core of $A$ is by definition a submodule. Let $\core{p}{A} = \vecspan{B}$, where $B = \{\vec{v}_{1}, \vec{v}_{2}, \vec{v}_{3}, \cdots\}$. Without loss of 
+	generality, we can assume all of $\vec{v}_{i}$ are linearly independent. If they weren't, one or more of $\vec{v}_{i}$ could be rewritten as a linear 
+	combination of the other vectors, meaning it could be removed from the set and the span wouldn't change.
+	
+	Each of $\vec{v}_{i}$ is linearly independent, and therefore dimensionally independent, meaning $\dimdi{\core{p}{A}} = |B|$.
+	
+	Now, what can we say about $\dimdi{\core{p^k}{A}}$ in this case? By Proposition 5 in \citet{Mendivil2012}, we know that $\core{p}{A}$ is embedded within 
+	$\core{p^k}{A}$, so at the very least, $\dimdi{\core{p^k}{A}} \geq \dimdi{\core{p}{A}}$, since it takes at least $\dimdi{\core{p}{A}}$ dimensionally independent
+	vectors to span $\core{p}{A}$.
+	
+	Is it possible for $\dimdi{\core{p^k}{A}} > \dimdi{\core{p}{A}}$? Let's assume it is, meaning
+	\[
+		\core{p^k}{A} = \vecspan{\{\vec{u}_{1}, \vec{u}_{2}, \vec{u}_{3}, \cdots, \vec{u}_{|B|}, \vec{u}_{|B|+1}\}}
+	\]
+	so $\core{p^k}{A}$ requires at least one more dimensionally independent vector to span it.
+	
+	What do we know about each $\vec{u}_{i}$? At the very least, we can define $\vec{u}_{1}$ to $\vec{u}_{|B|}$ as lifts of $\vec{v}_{1}$ to $\vec{v}_{|B|}$. A 
+	\emph{lift} of a vector $\vec{v}$ from mod $p^\alpha$ to $p^{\alpha + \beta}$ is defined as a vector of the form
+	\[
+		\vec{v} + p^{\alpha}\vec{a}, \quad \vec{a} \in \mathds{Z}_{p^\beta}^{L}
+	\]
+	A lift of $\vec{v}$ from mod $p^\alpha$ to $p^{\alpha+\beta}$ has the property that, when reduced modulo $p^\alpha$, it will reduce back to $\vec{v}$, even if the
+	lift is not congruent to $\vec{v}$ modulo $p^{\alpha+\beta}$.
+	
+	How do we know $\vec{u}_1$ to $\vec{u}_{|B|}$ can be written as lifts of $\vec{v}_1$ to $\vec{v}_{|B|}$? Because our focus is on vectors modulo $p^k$, we can 
+	consider \emph{every} vector $\vec{a}$ modulo $p^k$ as the lift of some vector $\vec{b}$ modulo $p$:
+	\[
+		\vec{a} \equiv \vec{b} + p\vec{c}, \quad \vec{c} \in \mathds{Z}_{p^{k-1}}^L \mod{p^k}
+	\]
+	A consequence of this is that the dynamics of all vectors modulo $p^k$ contain within them the dynamics of some vector modulo $p$:
+	\begin{alignat*}{2}
+		A\vec{a} \, &\equiv A\vec{b} + pA\vec{c} && \mod{p^k} \\
+		         \, &\equiv A\vec{b} && \mod{p}
+	\end{alignat*}
+	If we think of all vectors modulo $p^k$ as having a "base" part $\vec{a}_b$ and an "embedded" part $\vec{a}_e$, where
+	\[
+		\vec{a} \equiv \vec{a}_b + p\vec{a}_e
+	\]
+	then the behaviour of $\vec{a}_b$ modulo $p^k$ for each iteration of $\vec{a}$ will exactly mirror the dynamics of $\vec{a}_b$ modulo $p$. By \emph{iteration}, 
+	we mean a vector obtained by repeatedly multiplying a vector by some power of an update matrix. By \emph{dynamics}, we mean the set of all iterations of some 
+	vector. The behaviour of $\vec{a}_e$ for each iteration of $\vec{a}$ is slightly more complex since parts of $\vec{a}_b$ can "bleed" into $\vec{a}_e$, causing 
+	its behaviour to be dictated by more than matrix multiplication.
+	
+	In any case, the base part of a vector modulo $p^k$ will behave in a predictable way. In fact, since each vector modulo $p^k$ can be written as a lift of some 
+	vector modulo $p$, this means the base part will behave exactly the same as the dynamics of some vector modulo $p$. This means that, for all vectors in
+	$\core{p}{A}$, their behaviour will be mimicked by the base part of some lift vector modulo $p^k$.
+	
+	We can say a little bit more. Proposition 5 in \citet{Mendivil2012} shows that if $\vec{v} \in \core{p}{A}$, then $p^{k-1}\vec{v} \in \core{p^k}{A}$. This is
+	how it ensures the dynamics of $\core{p}{A}$ are embedded within $\core{p^k}{A}$. Thankfully, a useful property of lifts is that, if 
+	$\vec{a} \in \mathds{Z}_{p^k}^L$ is a lift of $\vec{v} \in \mathds{Z}_{p}^L$, then
+	\[
+		p^{k-1}\vec{a} \equiv p^{k-1}\vec{v} \mod{p^k}
+	\]
+	
+	What this means is that the vectors $\vec{u}_1$ to $\vec{u}_{|B|}$ must necessarily be able to be written as lifts of $\vec{v}_1$ to $\vec{v}_{|B|}$ since both
+	$p^{k-1}\vec{v}_i$ and a lift of $\vec{v}_i$ must be in $\core{p^k}{A}$, and lifts of $\vec{v}_i$ have $p^{k-1}\vec{v}_i$ in their spans.
+	
+	So $\vec{u}_1$ to $\vec{u}_{|B|}$ are lifts of $\vec{v}_1$ to $\vec{v}_{|B|}$, and we know they're dimensionally independent by construction since lifts of
+	linearly independent vectors ($\vec{v}_1$ to $\vec{v}_{|B|}$) remain linearly independent. Where does that leave $\vec{u}_{|B|+1}$, the extra vector we
+	assumed we needed to span $\core{p^k}{A}$?
+	
+	$\vec{u}_{|B|+1}$ is needed to span $\core{p^k}{A}$, so it must be an element of $\core{p^k}{A}$. This means $\vec{u}_{|B|+1}$ must be able
+	to be written as a linear combination of the vectors in $B$, plus some embedded part. This is because, upon reducing modulo $p$, $\vec{u}_{|B|+1}$ must be in
+	$\core{p}{A}$. Otherwise, $\vec{u}_{|B|+1}$ would be a lift of a vector not in $\core{p}{A}$, meaning the update matrix $A$ couldn't act as a bijection on
+	$\vec{u}_{|B|+1}$ modulo $p$ and by extension modulo $p^k$.
+	
+	Thus, $\vec{u}_{|B|+1}$ will look something like
+	\[
+		\vec{u}_{|B|+1} \equiv x_1\vec{v}_1 + x_2\vec{v}_2 + \cdots + x_{|B|}\vec{v}_{|B|} + p\vec{V}, 
+		\quad x_i \in \mathds{Z}_{p^k}, \, \vec{V} \in \mathds{Z}_{p^{k-1}}^{L} \mod{p^k}
+	\]
+	Since $\vec{V}$ can be practically any vector in $\mathds{Z}_{p^{k-1}}^L$, there's no loss in generality in assuming that, instead of using $\vec{v}_1$
+	to $\vec{v}_{|B|}$, we used \emph{lifts} of $\vec{v}_1$ to $\vec{v}_{|B|}$. The vector $\vec{V}$ could simply be changed to account for the change in embedded
+	part. With this, we can write $\vec{u}_{|B|+1}$ as
+	\[
+		\vec{u}_{|B|+1} \equiv x_1\vec{u}_1 + x_2\vec{u}_2 + \cdots + x_{|B|}\vec{u}_{|B|} + p\vec{V}, 
+		\quad x_i \in \mathds{Z}_{p^k}, \, \vec{V} \in \mathds{Z}_{p^{k-1}}^{L} \mod{p^k}
+	\]
+	The vectors $\vec{u}_1$ to $\vec{u}_{|B|}$ are guaranteed to be in $\core{p^k}{A}$, so we can practically ignore them for the purpose of determining whether
+	we need $\vec{u}_{|B|+1}$ to span $\core{p^k}{A}$. This means we can say
+	\[
+		\core{p^k}{A} = \vecspan{\{\vec{u}_1, \vec{u}_2, \cdots, \vec{u}_{|B|}, p\vec{V}\}}
+	\]
+	Is $p\vec{V} \in \vecspan{\{\vec{u}_1, \vec{u}_2, \cdots, \vec{u}_{|B|}\}}$? We know that $p\vec{V} \in \core{p^k}{A}$, which implies that 
+	$\vec{V} \bmod{p} \in \core{p}{A}$. But then $\vec{V}$ is simply a linear combination of $\vec{v}_1$ to $\vec{v}_{|B|}$...
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+\end{document}

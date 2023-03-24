@@ -1,0 +1,382 @@
+
+\documentclass[a4paper, reqno, 12pt]{amsart}
+
+\usepackage[T1]{fontenc}
+\usepackage[margin=3cm]{geometry}
+\usepackage[parfill]{parskip}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+\usepackage{amssymb}
+%\usepackage{upgreek} %Uppercase Greek letters
+
+\usepackage{array}
+
+\usepackage{natbib}
+
+%Cyclespace notation
+\newcommand\cycsp[1]{\mathcal{S}_{#1}}
+
+%Cycle length notation
+%\newcommand\cyclen[1]{\upgreek_{#1}}
+
+%span
+\newcommand\vecspan[1]{\text{span}(#1)}
+
+\begin{document}
+	\section{Definitions \& Notation}
+		\begin{description}
+			\item[Set of all $L \times 1$ vectors modulo $n$] Represented as $\mathds{Z}_{n}^{L}$.
+			
+			\item[Set of all $M \times N$ matrices] Represented as $\mathds{Z}^{M \times N}$
+			
+			\item[Set of all $M \times N$ matrices modulo $n$] Represented as $\mathds{Z}_{n}^{M \times N}$.
+			
+			\item[Transient length of $A$] The largest positive integer $\tau$ such that, for all positive integers $c$,
+			\[
+				A^{\tau-1} \not\equiv A^{\tau - 1 + c}
+			\]
+			The transient length is said to be 0 if no such positive integer $\tau$ exists.
+			
+			\item[Transient length of $\vec{v}$ under $A$] The largest positive integer $\tau$ such that, for all positive integers $c$,
+			\[
+				A^{\tau-1}\vec{v} \not\equiv A^{\tau-1+c}\vec{v}
+			\]
+			The transient length is said to be 0 if no such positive integer $\tau$ exists.
+			
+			\item[Cycle length of $A$] The smallest positive integer $\omega$ such that
+			\[
+				A^{\tau} \equiv A^{\tau + \omega}
+			\]
+			for the matrix's transient length $\tau$.
+			
+			\item[Cycle length of $\vec{v}$ under $A$] The smallest positive integer $\omega$ such that
+			\[
+				A^{\tau}\vec{v} \equiv A^{\tau + \omega}\vec{v}
+			\]
+			for the vector's transient length $\tau$.
+			
+			\item[Iteration by $A$] The product of a vector and a matrix $A$. Repeated iteration takes a previous iteration and uses it as the vector of
+			another iteration.
+			
+			\item[Minimal polynomial of $A$] The monic polynomial of least degree $\lambda(x)$ such that
+			\[
+				\lambda(A) \equiv 0 \mod{p}
+			\]
+			for prime $p$.
+			
+			\item[Minimal annihilating polynomial of $\vec{v}$ under $A$] The monic polynomial of least degree $\lambda(x)$ such that 
+			\[
+				\lambda(A)\vec{v} \equiv \vec{0} \mod{p}
+			\]
+			for prime $p$.
+			
+			\item[Cyclespace of $\vec{v}$ under $A$] The submodule defined by 
+			\[
+				\cycsp{\vec{v}} = \text{span}(\{\vec{v}, A\vec{v}, A^{2}\vec{v}, \cdots\})
+			\]
+			where $A$ is the update matrix being used. The update matrix $A$ will be apparent from context.
+			
+			\item[Maximal vector] A vector with the same cycle length as the update matrix being used.
+			
+			\item[LCA] Linear Cellular Automata. Refers to a system involving a module, an update matrix acting on that module, and a modulus.
+		\end{description}
+		
+	\section{Primary Decomposition Into Cyclespaces}
+		Let $A \in \mathds{Z}^{L \times L}$, $L \in \mathds{Z}^{+}$, with $\ker(A) = \{\vec{0}\}$. We'll denote the characteristic
+		polynomial of $A$ modulo $p$ as $\kappa(x)$ and the minimal polynomial of $A$ modulo $p$ as $m(x)$, where $p$ is prime.
+		
+		Let the prime factorisation of $m(x)$ be $f_{1}^{n_{1}}(x)f_{2}^{n_{2}}(x)\cdots f_{g}^{n_{g}}(x)$ with each $f_i^{n_i}$ monic and relatively prime. 
+		The Primary Decomposition Theorem says that each factor $f_i^{n_i}$ corresponds to a subspace $U_i$ such that, for all vectors $\vec{u} \in U_i$,
+		$f_i^{n_i}(A)\vec{u} \equiv \vec{0}$. It also guarantees that each $U_i \neq \{\vec{0}\}$, and that each one is disjoint from one another, except for the 
+		zero vector.
+		
+		It's guaranteed that, for each $U_i$, there exists at least one vector $\vec{v}_i \in U_i$ whose minimal annihilating polynomial is exactly $f_i^{n_i}$.
+		Otherwise, if such a vector didn't exist, then $m(x)$ wouldn't be the minimal polynomial of $A$ as a polynomial of lesser degree would annihilate all
+		vectors in the vector space. It's also guaranteed that each $U_i$ is invariant under iteration by $A$. In order for a vector to "jump" from one $U_i$
+		to another via iteration by $A$, $A\vec{v}$ would have to be annihilated by a polynomial that isn't an annihilating polynomial of $\vec{v}$. But
+		\begin{align*}
+			         & q(A)(A\vec{v}) \equiv \vec{0}                             \\
+			\implies & A(q(A)\vec{v}) \equiv \vec{0}                             \\
+			\implies & A\vec{w} \equiv \vec{0}, \quad \vec{w} \not\equiv \vec{0} \\
+			\implies & \ker(A) \neq \{\vec{0}\}
+		\end{align*}
+		and by our assumptions, $\ker(A) = \{\vec{0}\}$. Therefore, when $\ker(A) = \{\vec{0}\}$, vectors can never "jump" from one $U_i$ to another from 
+		iteration by $A$.
+		
+		In the case where $\kappa(x) \equiv m(x)$, $U_i = \cycsp{\vec{v}_i}$ where the minimal annihilating polynomial of $\vec{v}$ is $f_i^{n_i}$. Why?
+		$m(x)$ will have the same degree as $\kappa(x)$, so the sum of the degrees of each $f_i^{n_i}$ will equal the degree of $\kappa(x)$. We also know the 
+		dimension of each $U_i$ will at least be the degree of $f_i^{n_i}$. This is because the degree of a vector's minimal annihilating polynomial dictates how many 
+		iterations by $A$ it takes before a vector can be written as a linear combination of previous iterations, and we know $\vec{v}_i \in U_i$ has $f_i^{n_i}$ as 
+		its minimal annihilating polynomial.
+		
+		Since $\kappa(x) \equiv m(x)$, the dimension of any $U_i$ can be no more than the degree of $f_i^{n_i}$. If it was, at least one pair of $U_i$ subspaces
+		would share more than the zero vector since the sum of the dimensions of each $U_i$ would be greater than the dimension of the entire vector space (given 
+		by the degree of $\kappa(x)$). Therefore, in this case, the dimension of each $U_i$ is exactly the degree of each $f_i^{n_i}$. It follows that 
+		$U_i = \cycsp{\vec{v}_i}$ since $U_i$ is invariant under iteration by $A$, and because any vector in $U_i$ implies that all multiples of that vector are 
+		in $U_i$ (i.e. $U_i$ is a subspace).
+		
+	\section{Forming a Maximal Basis}
+		If $A$ is the same as defined above, and if $\kappa(x) \equiv m(x) \bmod{p}$, with $p$ an odd prime, then we can form a basis for $\mathds{Z}_{p}^{L}$ using 
+		maximal vectors under $A$ as follows:
+		
+		Let $\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g$ be the set of vectors whose cyclespaces define the subspaces $U_1$ to $U_g$ guaranteed by the Primary
+		Decomposition Theorem, and let $d_1, d_2, \cdots, d_g$ be the dimensions of $U_1$ to $U_g$. Because all of $U_i$ are disjoint (except for the zero vector),
+		Proposition 2 in \citet{Mendivil2012} says that adding together one vector from each $U_i$ will result in a vector whose cycle length is the least common
+		multiple of each vector's cycle length in the sum. If we choose our vectors from each of $U_i$ to have maximal cycle length in their respective subspace,
+		the resulting vector created will necessarily be a maximal vector under $A$.
+		
+		Thankfully, we know each of $\vec{v}_i$ to have maximal cycle length in their respective $U_i$ since they are generating vectors for each subspace.
+		By constructing two sets of vectors $\{\vec{\alpha}\}$ and $\{\vec{\beta}\}$ where each vector in both sets is maximal and where 
+		$\{\vec{\alpha}\} \cup \{\vec{\beta}\}$ forms a basis for the vector space, we can create a maximal basis.
+		
+		Define the two sets of vectors as:
+		\[
+			\vec{\alpha}_{i,j} \equiv \vec{v}_1 + \vec{v}_2 + \cdots + \vec{v}_{i-1} + A^{j}\vec{v}_i + \vec{v}_{i+1} + \cdots + \vec{v}_g, \quad
+			i,j \in \mathds{Z}^+, 1 \leq i \leq g, 1 \leq j < d_i
+		\]
+		and
+		\begin{align*}
+			\vec{\beta}_1 \, &\equiv \vec{v}_1 + \vec{v}_2 + \cdots \vec{v}_g \\
+			\vec{\beta}_i \, &\equiv \vec{v}_1 + \vec{v}_2 + \cdots + \vec{v}_{i-1} + 2\vec{v}_i + \vec{v}_{i+1} + \cdots + \vec{v}_g, \quad
+			 i \in \mathds{Z}^+, \, 2 \leq i \leq g
+		\end{align*}
+		
+		Each vector in $\{\vec{\alpha}\}$ is linearly independent from one another since only one $\vec{\alpha}_{i,j}$ will have the vector $A^{j}\vec{v}_i$ in it,
+		and this vector provides a unique span to any other vector.
+		
+		Showing the vectors in $\{\vec{\beta}\}$ to be linearly independent is a little more involved. Lining each $\vec{\beta}$ up, we see
+		\begin{center}
+			\begin{tabular}{*{11}{c}}
+				$\vec{\beta}_1$ & $\equiv$ & $\vec{v}_1$ & + & $\vec{v}_2$  & + & $\vec{v}_3$  & + & $\vec{v}_4$  & + & $\cdots$ \\
+				$\vec{\beta}_2$ & $\equiv$ & $\vec{v}_1$ & + & $2\vec{v}_2$ & + & $\vec{v}_3$  & + & $\vec{v}_4$  & + & $\cdots$ \\
+				$\vec{\beta}_3$ & $\equiv$ & $\vec{v}_1$ & + & $\vec{v}_2$  & + & $2\vec{v}_3$ & + & $\vec{v}_4$  & + & $\cdots$ \\
+				$\vec{\beta}_4$ & $\equiv$ & $\vec{v}_1$ & + & $\vec{v}_2$  & + & $\vec{v}_3$  & + & $2\vec{v}_4$ & + & $\cdots$ \\
+				$\vdots$        & $\equiv$ & $\vdots$    & + & $\vdots$     & + & $\vdots$     & + & $\vdots$     & + & $\ddots$
+			\end{tabular}
+		\end{center}
+		which can be rewritten using a matrix equation:
+		\[
+			\begin{bmatrix}
+				\vec{\beta}_1 \\
+				\vec{\beta}_2 \\
+				\vec{\beta}_3 \\
+				\vec{\beta}_4 \\
+				\vdots        \\
+				\vec{\beta}_g
+			\end{bmatrix}
+			\equiv
+			\begin{bmatrix}
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				1      & 2      & 1      & 1      & \cdots & 1      \\
+				1      & 1      & 2      & 1      & \cdots & 1      \\
+				1      & 1      & 1      & 2      & \cdots & 1      \\
+				\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+				1      & 1      & 1      & 1      & \cdots & 2
+			\end{bmatrix}
+			\begin{bmatrix}
+				\vec{v}_1 \\
+				\vec{v}_2 \\
+				\vec{v}_3 \\
+				\vec{v}_4 \\
+				\vdots    \\
+				\vec{v}_g
+			\end{bmatrix}
+		\]
+		If we can show that this coefficient matrix is invertible, we can show that the vectors in $\{\vec{\beta}\}$ are linearly independent. One way to show this 
+		matrix is invertible is to show that the equation
+		\[
+			\begin{bmatrix}
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				1      & 2      & 1      & 1      & \cdots & 1      \\
+				1      & 1      & 2      & 1      & \cdots & 1      \\
+				1      & 1      & 1      & 2      & \cdots & 1      \\
+				\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+				1      & 1      & 1      & 1      & \cdots & 2
+			\end{bmatrix}
+			\vec{a} \equiv \vec{0}
+		\]
+		has only the trivial solution $\vec{a} \equiv \vec{0}$. Let
+		\[
+			I = 
+			\begin{bmatrix}
+				1      & 0      & 0      & 0      & \cdots & 0      \\
+				0      & 1      & 0      & 0      & \cdots & 0      \\
+				0      & 0      & 1      & 0      & \cdots & 0      \\
+				0      & 0      & 0      & 1      & \cdots & 0      \\
+				\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+				0      & 0      & 0      & 0      & \cdots & 1
+			\end{bmatrix}
+		\]
+		and
+		\[
+			N =
+			\begin{bmatrix}
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+				1      & 1      & 1      & 1      & \cdots & 1
+			\end{bmatrix}
+		\]
+		and
+		\[
+			L = 
+			\begin{bmatrix}
+				1      & 0      & 0      & 0      & \cdots & 0      \\
+				0      & 0      & 0      & 0      & \cdots & 0      \\
+				0      & 0      & 0      & 0      & \cdots & 0      \\
+				0      & 0      & 0      & 0      & \cdots & 0      \\
+				\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+				0      & 0      & 0      & 0      & \cdots & 0
+			\end{bmatrix}
+		\]
+		Then
+		\[
+			\begin{bmatrix}
+				1      & 1      & 1      & 1      & \cdots & 1      \\
+				1      & 2      & 1      & 1      & \cdots & 1      \\
+				1      & 1      & 2      & 1      & \cdots & 1      \\
+				1      & 1      & 1      & 2      & \cdots & 1      \\
+				\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+				1      & 1      & 1      & 1      & \cdots & 2
+			\end{bmatrix}
+			= I + N - L
+		\]
+		
+		Now, we'd like to show that the equation
+		\[
+			(I + N - L)\vec{a} \equiv \vec{0}
+		\]
+		has only the trivial solution for $\vec{a}$. Rearranging and expanding the vectors, we see
+		\[
+			\begin{bmatrix}
+				a_1    \\
+				a_2    \\
+				a_3    \\
+				\vdots \\
+				a_g
+			\end{bmatrix}
+			+
+			\begin{bmatrix}
+				c      \\
+				c      \\
+				c      \\
+				\vdots \\
+				c
+			\end{bmatrix}
+			\equiv
+			\begin{bmatrix}
+				a_1    \\
+				0      \\
+				0      \\
+				\vdots \\
+				0
+			\end{bmatrix}
+		\]
+		where $c \equiv a_1 + a_2 + \cdots + a_g$. This implies $c \equiv 0$, so
+		\[
+			\begin{bmatrix}
+				a_1    \\
+				a_2    \\
+				a_3    \\
+				\vdots \\
+				a_g
+			\end{bmatrix}
+			\equiv
+			\begin{bmatrix}
+				a_1    \\
+				0      \\
+				0      \\
+				\vdots \\
+				0
+			\end{bmatrix}
+		\]
+		This implies that $a_2, a_3, \cdots, a_g \equiv 0$, so
+		\[
+			\vec{a} \equiv
+			\begin{bmatrix}
+				a_1    \\
+				0      \\
+				0      \\
+				\vdots \\
+				0
+			\end{bmatrix}
+		\]
+		But we know $N\vec{a} \equiv 0$, meaning $a_1 \equiv c \equiv 0$. Therefore $\vec{a} \equiv \vec{0}$. This means the coefficient
+		matrix is invertible, meaning the vectors in the set $\{\vec{\beta}\}$ are linearly independent.
+		
+		The vectors in the set $\{\vec{\alpha}\} \cup \{\vec{\beta}\}$ are also linearly independent, as none of $\vec{\beta}$ can be in $\{\vec{\alpha}\}$ since
+		each $\vec{\beta}$ has an $A^{j}\vec{v}_i$ term in its sum which cannot be removed by any other $\vec{\beta}$, and none of $\vec{\alpha}$ can be in 
+		$\{\vec{\beta}\}$ since none of $\vec{\alpha}$ have an $A^{j}\vec{v}_i$ term in their sums.
+		
+		So $\{\vec{\alpha}\} \cup \{\vec{\beta}\}$ forms a linearly independent set of $\sum_{i\,=\,0}^{g}(d_i - 1) + g = \sum_{i\,=\,0}^{g}(d_i)$ vectors, which
+		is enough to span the entire vector space and therefore forms a basis. Also, each $\vec{\alpha}$ and $\vec{\beta}$ is a maximal vector by construction, so 
+		this basis is a maximal basis.
+		
+	\section{Maximal Basis for LCAs with Prime-Power Moduli}
+		If a maximal basis exists for an LCA with an odd prime modulus, then that same basis can be used for LCAs with a modulus which is a power of that prime and
+		which use the same update matrix. Granted, the vectors will no longer necessarily be maximal, but they can be used to prove that at least one maximal vector 
+		exists in the prime-power case.
+		
+		Let $A \in \mathds{Z}^{L \times L}$ be an invertible matrix mod $p$, an odd prime, where $\kappa(A) \equiv m(A)$ and $L \in \mathds{Z}^+$. In this case,
+		we know a maximal basis exists. Denote this basis as $V$. Also, let the cycle length of $A$ modulo $p$ be denoted as $\omega$.
+		
+		Now, consider the LCA created using the same update matrix $A$ but with $p^2$ as the modulus. There are two possibilities for the cycle length of $A$ 
+		modulo $p^2$: either it stays the same or it increases by a factor of $p$.
+		
+		To see why, consider the equation
+		\[
+			A^\omega \equiv I \mod{p}
+		\]
+		We know this is true since $A$ is invertible and since the cycle length of $A$ mod $p$ is $\omega$. Raising this equation to mod $p^2$, we see
+		\[
+			A^\omega \equiv I + pB \mod{p^2}, \quad B \in \mathds{Z}_p^{L \times L}
+		\]
+		since $A^\omega$ must reduce down to $I$ mod $p$. If $B \equiv 0$, then the cycle length of $A$ remains unchanged. If $B \not\equiv 0$, then the cycle 
+		length must have increased. How much does it increase? Using induction, one can show that
+		\[
+			A^{a\omega} \equiv I + apB \mod{p^2}
+		\]
+		Plugging in $a = p$, we see
+		\[
+			A^{p\omega} \equiv I + ppB \equiv I + p^2B \equiv I \mod{p^2}
+		\]
+		We know the cycle length of $A$ modulo $p^2$ must be some multiple of $\omega$ since $A^c$ modulo $p^2$ must always reduce to $A^c$ modulo $p$ for
+		some integer $c$. Therefore, we can conclude that the cycle length of $A$ modulo $p^2$ is $p\omega$ if $B \not\equiv 0$.
+		
+		If $B \equiv 0 \bmod{p^2}$, then a maximal vector clearly exists since any vector from $V$ will still be maximal---the cycle length
+		wouldn't have changed. Going from modulo $p^2$ to $p^3$, the same argument as above can be used: either the cycle length stays the same or it increases by
+		a factor of $p$. 
+		
+		Let $p^k$ be the first modulus where the cycle length increases. Then we have
+		\[
+			A^\omega \equiv I + p^{k-1}B \mod{p^k}, \quad B \not\equiv 0
+		\]
+		We know that $V$ spans the entire module by construction, so at least one $\vec{h} \in V$ will not be in the kernel of $B$ since $B \not\equiv 0$. 
+		But then this means
+		\[
+			A^{\omega}\vec{h} \not\equiv \vec{h} \mod{p^k}
+		\]
+		so the cycle length of $\vec{h}$ is greater than $\omega$. Much like matrices, cycle lengths for vectors must be multiples of their cycle lengths for
+		lower-power moduli since the vector's iterations must always be able to reduce to lower-power moduli. We know the first power of $A^\omega$ that doesn't have 
+		a $B$ in its sum is $A^{p\omega}$, so the cycle length of $\vec{h}$ must be $p\omega$. 
+		
+		The only possible way this couldn't be true is if, for some integer $1 \leq a \leq p$, $a\vec{h} \equiv 0 \bmod{p^k}$, but this can't happen since all the 
+		vectors in $V$ are plucked directly from $\mathds{Z}_p^L$ so they can't have a factor of $p$ in them which would cause torsion.
+		
+		Another result we can show using induction is that, for odd prime $p$,
+		\[
+			A^{\omega} \equiv I + p^{k-1}B \bmod{p^k} \implies A^{p\omega} \equiv I + p^{k}B \bmod{p^{k+1}}
+		\]
+		where the matrix $B$ stays the same on each side of the implication. This means, for odd prime, the vector $\vec{h}$ found above will \emph{always} have
+		maximal cycle length since, due to $\vec{h}$ not being in the kernel of $B$, we can make the same argument about its cycle length increasing for each
+		prime-power modulus, showing each time that its cycle length must be the same as the matrix's, and therefore being maximal.
+		
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+
+\end{document}

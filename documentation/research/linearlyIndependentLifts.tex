@@ -1,0 +1,96 @@
+
+\documentclass[12pt, a4paper, reqno]{amsart}
+\usepackage[T1]{fontenc}
+
+\usepackage[parfill]{parskip}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+
+%Defining an environment for propositions
+\newcounter{claimcounter}[section]
+\newenvironment{claim}[1]
+{
+	\vspace{1em}
+	\refstepcounter{claimcounter} %Increment environment counter
+	\textbf{Claim \theclaimcounter.} \emph{#1}
+	
+	\emph{Justification.}
+}
+{
+	QED. \\
+}
+
+\begin{document}
+	Define $\phi : \mathds{Z}_{p^{k}}^{L} \rightarrow p\mathds{Z}_{p^{k+1}}^{L}$ as $\phi(\vec{x}) = p\vec{x}$. This mapping is a module homomorphism since,
+	for $\vec{u}, \vec{v} \in \mathds{Z}_{p^k}^L$, $s, t \in \mathds{Z}_{p^k}$,
+	\[
+		\phi(s\vec{u} + t\vec{v}) = p(s\vec{u} + t\vec{v}) = ps\vec{u} + pt\vec{v} = sp\vec{u} + tp\vec{v} = s\phi(\vec{u}) + t\phi(\vec{v})
+	\]
+	This mapping also creates a bijection between the modules $\mathds{Z}_{p^k}^L$ and $p\mathds{Z}_{p^{k+1}}^L$ since
+	\begin{center}
+		\begin{tabular}{*{3}{l}}
+					   & $\phi(\vec{u}) \equiv \phi(\vec{v})$             &                 \\
+			$\implies$ & $\phi(\vec{u}) - \phi(\vec{v}) \equiv \vec{0}$   &                 \\
+			$\implies$ & $\phi(\vec{u} - \vec{v}) \equiv \vec{0}$           &                 \\
+			$\implies$ & $p(\vec{u} - \vec{v}) \equiv \vec{0}$              & $\mod{p^{k+1}}$ \\
+			$\implies$ & $\vec{u} - \vec{v} \equiv p^k\vec{w} \equiv \vec{0}$ & $\mod{p^k}$     \\
+			$\implies$ & $\vec{u} \equiv \vec{v}$                             & $\mod{p^k}$     \\
+		\end{tabular}
+	\end{center}
+	so $\phi$ is injective, and for any vector of the form $p\vec{v} \in \mathds{Z}_{p^{k+1}}^L$, there's a vector $\vec{v} \in \mathds{Z}_{p^k}^L$ where 
+	$\phi(\vec{v}) = p\vec{v}$, so $\phi$ is surjective.
+	
+	\begin{claim}{If $V = \{\vec{v}_{1}, \vec{v}_{2}, \cdots, \vec{v}_{g}\}$ is a linearly-independent set modulo $p^{k}$, then $V$ is a linearly-independent set modulo 
+	$p^{k-1}$.}
+		\label{lab:lowLI}
+		Assume otherwise. Then there exists a non-trivial solution to
+		\[
+			\sum_{i\,=\,1}^{g} a_{i}\vec{v}_{i} \equiv \vec{0} \mod{p^{k-1}}
+		\]
+		where the constants $a_1$ to $a_g$ are integers $x$ in the range $0 \leq x < p^{k-1}$. Applying $\phi$, this would imply
+		\[
+			\sum_{i\,=\,1}^{g} pa_{i}\vec{v}_{i} \equiv \vec{0} \mod{p^{k}}
+		\]
+		where the constants $pa_1$ to $pa_g$ are integers $x$ in the range $0 \leq x < p^{k}$. This is impossible since $\vec{v}_{1}$ to $\vec{v}_{g}$ are linearly 
+		independent modulo $p^{k}$, and our solution is assumed to be non-trivial. So $V$ forms a set of linearly-independent vectors modulo $p^{k-1}$.
+	\end{claim}
+	
+	\begin{claim}{If the set $\{\vec{v}_{1}, \vec{v}_{2}, \cdots, \vec{v}_{g}\}$ is linearly independent modulo $p^{k}$, then the set
+	$\{\vec{v}_{1} + p^{k}\vec{w}_{1}, \vec{v}_{2} + p^{k}\vec{w}_{2}, \cdots, \vec{v}_{g} + p^{k}\vec{w}_{g}\}$ is linearly independent modulo $p^{k+1}$.}
+		Assume otherwise. Then there exists a non-trivial solution to
+		\begin{equation}
+			\label{lab:liftAssumption}
+			\sum_{i\,=\,1}^{g} a_{i}(\vec{v}_{i} + p^{k}\vec{w}_{i}) \equiv \vec{0} \mod{p^{k+1}}
+		\end{equation}
+		which implies
+		\[
+			\sum_{i\,=\,1}^{g} a_{i}\vec{v}_{i} \equiv -p^{k}\sum_{i\,=\,1}^{g} a_{i}\vec{w}_{i} \mod{p^{k+1}}
+		\]
+		This reduces to
+		\[
+			\sum_{i\,=\,1}^{g} a_{i}\vec{v}_{i} \equiv \vec{0} \mod{p^{k}}
+		\]
+		The only way for this equality to be true is if the constants $a_{1}$ to $a_{g}$ are zero modulo $p^{k}$, so the constants must each have a factor of $p^{k}$. 
+		Returning to equation \ref{lab:liftAssumption}, this implies
+		\[
+			\sum_{i\,=\,1}^{g} a_{i}\vec{v}_{i} \equiv \vec{0} \mod{p^{k+1}}
+		\]
+		We can rewrite each $a_{i}$ as $p^{k}b_{i}$:
+		\[
+			\sum_{i\,=\,1}^{g} p^{k}b_{i}\vec{v}_{i} \equiv \vec{0} \mod{p^{k+1}}
+		\]
+		By successively applying $\phi^{-1}$ to both sides of the above equation, we get
+		\[
+			\sum_{i\,=\,1}^{g} b_{i}\vec{v}_{i} \equiv \vec{0} \mod{p}
+		\]
+		From claim \ref{lab:lowLI}, we know the set $\{\vec{v}_{1}, \vec{v}_{2}, \cdots, \vec{v}_{g}\}$ is linearly independent modulo $p$, so
+		this relation is only possible if the constants $b_{1}$ to $b_{g}$ are zero modulo $p$, meaning they each have a factor of $p$. However, this would imply the
+		non-trivial solution of equation \ref{lab:liftAssumption} is actually the trivial solution. This is a contradiction, so the set
+		$\{\vec{v}_{1} + p^{k}\vec{w}_{1}, \vec{v}_{2} + p^{k}\vec{w}_{2}, \cdots, \vec{v}_{g} + p^{k}\vec{w}_{g}\}$ is linearly independent modulo $p^{k+1}$.
+	\end{claim}
+\end{document}

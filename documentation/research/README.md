@@ -1,0 +1,1 @@
+This folder contains LaTeX files that are *probably* of some significance to exploring linear cellular automata. They are written with various levels of formality and clarity, mainly written for my own use.
