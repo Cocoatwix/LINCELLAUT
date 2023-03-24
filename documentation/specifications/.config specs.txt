@@ -30,6 +30,6 @@ resumeMat : This key specifies a file path where a matrix to resume from can be 
 
 resumeMod : This key specifies a modulus to resume computations at. Currently, it's unused. This key expects a positive integer.
 
-sentinelMat : This key specifies a file path where a "sentinel" matrix can be found in .matrix format. The .matrix extension should be included in the filename. This matrix is used to denote a particular stopping point for a computation over many matrices. For example, it's used with the orbitmaps2 tool to signify where computation of orbit maps should stop. This allows different chunks of the matrix space to be analysed using the same program on different processes. This key expects a string (no quotes around string).
+sentinel : This key specifies a file path where a "sentinel" matrix can be found in .matrix format. The .matrix extension should be included in the filename. This matrix is used to denote a particular stopping point for a computation over many matrices. For example, it's used with the orbitmaps2 tool to signify where computation of orbit maps should stop. This allows different chunks of the matrix space to be analysed using the same program on different processes. This key expects a string (no quotes around string).
 
 itername : This key specifies a filename for creating a .iteration file. The .iteration extension should be included in the filename. This file is created when write_iteration() is called. This key expects a string (no quotes around the string).

@@ -92,11 +92,37 @@ orbitmaps maxpower [modulus] [fileoutput]: This tool allows the user to generate
  - The optional argument "fileoutput" specifies whether the tool's output should be saved to a file (naming convention "orbitmaps [maxpower] [modulus] F[matrix].txt"). This also determines whether the program should output a .graph file for use with GRAPHVIS. This argument expects TRUE or FALSE. The default value is FALSE.
 
 orbitmaps2 maxpower [modulus] [fileoutput] [belowBound] [aboveBound] (UNFINISHED): This tool uses a slightly different approach to orbitmaps in order to find orbit representatives for some high-power modulus and then map them down to orbit representatives for the lower-power moduli. Specifically, if two orbits reduce to the same cycle, their orbit representatives will reduce to the same representative. As well, this tool calculates the orbit maps for ALL lifts of the given update matrix, not just the one matrix given.
+The tool sifts through matrices in the following way:
+1. Start with the given matrix. Perform relevant calculations.
+
+2. Increment the highest lift of the matrix. For example, if our starting matrix is
+1 1
+1 0, 
+our base modulus is 2, and the max power is 3, then the first lift will be
+5 1
+1 0, 
+the second will be
+1 5
+1 0, 
+etc.
+
+3. Once all lifts at the highest level have been exhaused, the next lowest lift is incremented. For the example above, after all highest level lifts are checked, the next matrix to be considered will be
+3 1
+1 0.
+
+4. Now, the highest lifts will be incremented again using the lift from the next level down. In the example above, the next two matrices to be considered would be
+7 1
+1 0,
+
+3 5
+1 0.
+
+5. Repeat the above process for all lift levels until all matrices have been cycled through. This matrix ordering was chosen so as to facilitate the division of the output data into sensible chunks.
  - The argument "maxpower" specifies the highest exponent to use for the modulus. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "fileoutput" specifies whether the tool's output should be saved to files (naming convention "orbitmaps2 [maxpower] [modulus] F[matrix] f[file number].txt"). The tool splits up output into a different file for each time the lowest level lift matrix changes (e.g. if our modulus is 2 and the max power is 4, then each time the lift matrix mod 2^2 changes, a new file will be made). This argument expects TRUE or FALSE. The default value is FALSE.
  - The optional argument "belowBound" specifies whether the program should resume computation at a particular matrix given by the resume matrix in the config file. This argument expects TRUE or FALSE as its value. The default value is FALSE.
- - The optional argument "aboveBound" specifies whether computation should stop at a particular matrix given by the sentinel matrix in the config file. This argument expects TRUE or FALSE as its value. The default value is FALSE.
+ - The optional argument "aboveBound" specifies whether computation should stop at a particular matrix given by the sentinel matrix in the config file. It's the user's responsibility to ensure that the sentinel matrix is computed after the resume matrix. Otherwise, the program will run until all matrices have been computed. This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
 oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This tool allows the user to sift through all annihilating polynomials of all matrices under a given modulus to check if any of them ARE NOT multiples of the minimal annihilating polynomial of the same matrix.
  - The argument "maxpower" specifies the highest power of the modulus to check. This argument expects a positive integer.
