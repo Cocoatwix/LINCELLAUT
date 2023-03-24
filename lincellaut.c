@@ -32,14 +32,6 @@ stackoverflow.com/questions/1190870
 
 #define FREE(v) free(v); v = NULL
 
-//Debug macros; can be removed if not needed
-#define opp(a, b, c, o) printf("("); printp(a); printf(")"); printf(o); \
-											  printf("("); printp(b); printf(")"); printf(" == "); \
-											  printp(c); printf("\n")
-#define opi(a, b, c, o) printf("("); printi(a); printf(")"); printf(o); \
-											  printf("("); printi(b); printf(")"); printf(" == "); \
-											  printi(c); printf("\n")
-
 #define ANSI_COLOR_RED     "\x1b[31m"
 #define ANSI_COLOR_GREEN   "\x1b[32m"
 #define ANSI_COLOR_YELLOW  "\x1b[33m"
@@ -52,6 +44,7 @@ stackoverflow.com/questions/1190870
 #define FREE_VARIABLES FREE(updatefilepath); \
 											 FREE(initialfilepath); \
 											 FREE(resumefilepath); \
+											 FREE(sentinelfilepath); \
 											 FREE(iterfilepath); \
 											 FREE(bigintmodstring); \
 											 FREE(resumemodstring); \
@@ -103,10 +96,11 @@ int main(int argc, char* argv[])
 	char* bigintmodstring = malloc(MAXSTRLEN*sizeof(char));
 	char* resumemodstring = malloc(MAXSTRLEN*sizeof(char));
 	
-	char* updatefilepath  = malloc(MAXSTRLEN*sizeof(char));
-	char* initialfilepath = malloc(MAXSTRLEN*sizeof(char));
-	char* resumefilepath  = malloc(MAXSTRLEN*sizeof(char));
-	char* iterfilepath    = malloc(MAXSTRLEN*sizeof(char));
+	char* updatefilepath   = malloc(MAXSTRLEN*sizeof(char));
+	char* initialfilepath  = malloc(MAXSTRLEN*sizeof(char));
+	char* resumefilepath   = malloc(MAXSTRLEN*sizeof(char));
+	char* sentinelfilepath = malloc(MAXSTRLEN*sizeof(char));
+	char* iterfilepath     = malloc(MAXSTRLEN*sizeof(char));
 	
 	BigIntMatrixTP UPDATEMATRIX  = NULL;
 	BigIntMatrixTP INITIALMATRIX = NULL;
@@ -208,6 +202,16 @@ int main(int argc, char* argv[])
 			if (fscanf(system, "%s", resumefilepath) != 1)
 			{
 				fprintf(stderr, "Unable to read resume matrix path from config file.\n");
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+		}
+		
+		else if (! strcmp(systemData, "sentinelMat"))
+		{
+			if (fscanf(system, "%s", sentinelfilepath) != 1)
+			{
+				fprintf(stderr, "Unable to read sentinel matrix path from config file.\n");
 				FREE_VARIABLES;
 				return EXIT_FAILURE;
 			}
@@ -5708,6 +5712,10 @@ and the number of columns must be 1.\n");
 			char* outputFileBaseName = NULL;
 			int   fileCounter = 0; //For numbering the different files created by the tool
 			
+			//Matrices for starting and stopping computation, if requested
+			BigIntMatrixTP resumeMatrix   = NULL;
+			BigIntMatrixTP sentinelMatrix = NULL;
+			
 			typedef struct cyclenchar
 			{
 				int cyclen; //the cycle length this character represents
@@ -5779,10 +5787,59 @@ and the number of columns must be 1.\n");
 					fprintf(stderr, "Unable to open output file. Continuing without saving...\n");
 			}
 			
+			//If the user wants to resume computation at a particular matrix
+			if ((argc > 5) && (!strcmp(argv[5], "TRUE")))
+			{
+				resumeMatrix = read_BigIntMatrixT(resumefilepath);
+				if (resumeMatrix == NULL)
+				{
+					fprintf(stderr, "Unable to read resume matrix from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+				
+				else if ((big_rows(resumeMatrix) != big_rows(initialA)) ||
+				         (big_cols(resumeMatrix) != big_cols(initialA)))
+				{
+					fprintf(stderr, "Given resume matrix doesn't match dimensions of update matrix.\n");
+					FREE_VARIABLES;
+					return EXIT_SUCCESS;
+				}
+			}
+			
+			//If the user wants to stop computation at a particular matrix
+			if ((argc > 6) && (!strcmp(argv[6], "TRUE")))
+			{
+				sentinelMatrix = read_BigIntMatrixT(sentinelfilepath);
+				if (sentinelMatrix == NULL)
+				{
+					fprintf(stderr, "Unable to read sentinel matrix from config file.\n");
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+				
+				else if ((big_rows(sentinelMatrix) != big_rows(initialA)) ||
+				         (big_cols(sentinelMatrix) != big_cols(initialA)))
+				{
+					fprintf(stderr, "Given sentinel matrix doesn't match dimensions of update matrix.\n");
+					FREE_VARIABLES;
+					return EXIT_SUCCESS;
+				}
+			}
+			
 			//for stem output
 			if ((outputType == stems) || (outputType == compressedStems))
 				for (int i = 0; i < maxPower; i += 1)
 					stemCollection[i] = new_BigIntMatrixT(big_rows(initialA), 1);
+				
+			//Initialise list of all moduli we'll need to use
+			modList[0] = empty_BigIntT(1);
+			copy_BigIntT(baseMod, modList[0]);
+			for (int i = 1; i < maxPower; i += 1)
+			{
+				modList[i] = empty_BigIntT(1);
+				multiply_BigIntT(modList[i-1], baseMod, modList[i]);
+			}
 			
 			matrixLiftElements = malloc((maxPower-1)*sizeof(BigIntTP**));
 			for (int i = 0; i < maxPower-1; i += 1)
@@ -5790,7 +5847,12 @@ and the number of columns must be 1.\n");
 				matrixLiftElements[i] = new_BigIntT_array(big_rows(initialA), big_rows(initialA));
 				for (int row = 0; row < big_rows(initialA); row += 1)
 					for (int col = 0; col < big_cols(initialA); col += 1)
-						copy_BigIntT(big_element(initialA, row, col), matrixLiftElements[i][row][col]);
+					{
+						if (resumeMatrix == NULL)
+							copy_BigIntT(big_element(initialA, row, col), matrixLiftElements[i][row][col]);
+						else
+							mod_BigIntT(big_element(resumeMatrix, row, col), modList[i+1], matrixLiftElements[i][row][col]);
+					}
 			}
 			vectorLiftElements = new_BigIntT_array(big_rows(initialA), 1);
 			currMat    = new_BigIntMatrixT(big_rows(initialA), big_rows(initialA));
@@ -5804,16 +5866,29 @@ and the number of columns must be 1.\n");
 			for (int i = 0; i < numOfTempVects; i += 1)
 				tempVects[i] = new_BigIntMatrixT(big_rows(initialA), 1);
 			
-			modList[0] = empty_BigIntT(1);
-			copy_BigIntT(baseMod, modList[0]);
-			for (int i = 1; i < maxPower; i += 1)
-			{
-				modList[i] = empty_BigIntT(1);
-				multiply_BigIntT(modList[i-1], baseMod, modList[i]);
-			}
-			
 			for (int t = 0; t < numOfTemps; t += 1)
 				temps[t] = empty_BigIntT(1);
+			
+			#define CREATEHEADER for (int row = 0; row < big_rows(initialA); row += 1) \
+			{ \
+				for (int col = 0; col < big_rows(initialA); col += 1) \
+				{ \
+					fprinti(outputFile, matrixLiftElements[0][row][col]); \
+					if (col < big_rows(initialA)-1) \
+						fprintf(outputFile, " "); \
+					else \
+						fprintf(outputFile, "\n"); \
+				} \
+			} \
+			\
+			fprintf(outputFile, "~\n")
+			
+			/* include resume info above once added */ 
+			
+			if (outputFile != NULL)
+			{
+				CREATEHEADER;
+			}
 			
 			//Check to see if our given matrix is invertible
 			//If it is, there's a whole section of code we can skip
@@ -6043,7 +6118,7 @@ and the number of columns must be 1.\n");
 				{ \
 					numofcyclenreplace += 1; \
 					cyclenreplace = realloc(cyclenreplace, numofcyclenreplace*sizeof(CLC)); \
-					struct cyclenchar clc = {(omega), repchars[numofcyclenreplace-1]}; \
+					CLC clc = {(omega), repchars[numofcyclenreplace-1]}; \
 					cyclenreplace[numofcyclenreplace-1] = clc; \
 					fprintf(op, "%c", cyclenreplace[numofcyclenreplace-1].disp); \
 				}
@@ -6305,6 +6380,16 @@ and the number of columns must be 1.\n");
 						break;
 				}
 				
+				//Now, make sure that if we changed a lower-moduli matrix lift, we carry that
+				// new lift up to the higher matrix lifts so the reduction process that keeps
+				// lift vectors constant works properly.
+				if (currPower > 1)
+					for (int rewrite = 1; rewrite + currPower <= maxPower; rewrite += 1)
+						for (int row = 0; row < big_rows(initialA); row += 1)
+							for (int col = 0; col < big_rows(initialA); col += 1)
+								copy_BigIntT(matrixLiftElements[currPower-2][row][col], 
+							               matrixLiftElements[currPower-2+rewrite][row][col]);
+				
 				//If it's time to create a new output file (split when the lowest
 				// lift gets incremented)
 				if ((currPower == 2) && (outputFile != NULL))
@@ -6320,17 +6405,14 @@ and the number of columns must be 1.\n");
 					outputFile = fopen(outputFileName, "a");
 					if (outputFile == NULL)
 						fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
+					
+					//If file created successfully, make sure to add the file header to the top
+					else
+					{
+						CREATEHEADER;
+					}
 				}
 				
-				//Now, make sure that if we changed a lower-moduli matrix lift, we carry that
-				// new lift up to the higher matrix lifts so the reduction process that keeps
-				// lift vectors constant works properly.
-				if (currPower > 1)
-					for (int rewrite = 1; rewrite + currPower <= maxPower; rewrite += 1)
-						for (int row = 0; row < big_rows(initialA); row += 1)
-							for (int col = 0; col < big_rows(initialA); col += 1)
-								copy_BigIntT(matrixLiftElements[currPower-2][row][col], 
-							               matrixLiftElements[currPower-2+rewrite][row][col]);
 			}
 			
 			//Make sure to output what each letter means if we're using outputType == compressedStems
@@ -6360,6 +6442,9 @@ and the number of columns must be 1.\n");
 					fprintf(stderr, "Unable to save output file.\n");
 			FREE(outputFileName);
 			FREE(outputFileBaseName);
+			
+			resumeMatrix   = free_BigIntMatrixT(resumeMatrix);
+			sentinelMatrix = free_BigIntMatrixT(sentinelMatrix);
 			
 			one     = free_BigIntT(one);
 			baseMod = free_BigIntT(baseMod);
@@ -6868,7 +6953,8 @@ and the number of columns must be 1.\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" \
+			ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
