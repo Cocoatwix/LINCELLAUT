@@ -5741,7 +5741,8 @@ and the number of columns must be 1.\n");
 			}
 			OMT;
 			
-			int orbitMapsCount = 0;
+			bool isNewTree; //For saying whether we've found a new tree to add to our collection
+			int orbitMapsCount     = 0;
 			OMT* orbitMapsCatalogue = NULL; //Holds all the different structures we encounter when computing orbit maps
 			
 			if (big_rows(initialA) != big_cols(initialA))
@@ -5880,21 +5881,30 @@ and the number of columns must be 1.\n");
 			for (int t = 0; t < numOfTemps; t += 1)
 				temps[t] = empty_BigIntT(1);
 			
-			#define CREATEHEADER for (int row = 0; row < big_rows(initialA); row += 1) \
+			//Macro for printing out header information to the output file
+			#define CREATEHEADER \
+			fprintf(outputFile, "base:\n"); \
+			for (int row = 0; row < big_rows(initialA); row += 1) \
 			{ \
 				for (int col = 0; col < big_rows(initialA); col += 1) \
 				{ \
-					fprinti(outputFile, matrixLiftElements[0][row][col]); \
-					if (col < big_rows(initialA)-1) \
+					if (col != 0) \
 						fprintf(outputFile, " "); \
-					else \
-						fprintf(outputFile, "\n"); \
+					fprinti(outputFile, matrixLiftElements[0][row][col]); \
 				} \
+				fprintf(outputFile, "\n"); \
 			} \
-			\
+			if (resumeMatrix != NULL) \
+			{ \
+				fprintf(outputFile, "start:\n");      \
+				fprintbm(outputFile, resumeMatrix);   \
+			} \
+			if (sentinelMatrix != NULL) \
+			{ \
+				fprintf(outputFile, "end:\n");        \
+				fprintbm(outputFile, sentinelMatrix); \
+			} \
 			fprintf(outputFile, "~\n")
-			
-			/* include resume info above once added */ 
 			
 			if (outputFile != NULL)
 			{
@@ -6187,17 +6197,81 @@ and the number of columns must be 1.\n");
 						}
 					}
 				}
-				//getchar();
 				
-				//Here's the place where we'd check whether the tree we just built is
-				// unique. Right now, I'm just freeing the tree immediately so we don't
-				// get a memory leak.
-				for (int layer = 0; layer < maxPower; layer += 1)
+				//Here's the place where we check whether the tree we just built is unique.
+				if (orbitMapsCount == 0)
 				{
-					FREE(tempTree.nodes[layer]);
+					isNewTree = TRUE;
+					orbitMapsCount += 1;
+					orbitMapsCatalogue = malloc(sizeof(OMT));
+					orbitMapsCatalogue[0] = tempTree;
 				}
-				FREE(tempTree.nodes);
-				FREE(tempTree.layerCount);
+				
+				//Compare our most recent tree with all the other trees we have
+				//If it's unique, add it
+				else
+				{
+					isNewTree = TRUE;
+					for (int tree = 0; tree < orbitMapsCount; tree += 1)
+					{
+						isNewTree = FALSE;
+						
+						//Check to see if the layer counts are equal
+						for (int LC = 0; LC < maxPower; LC += 1)
+						{
+							if (orbitMapsCatalogue[tree].layerCount[LC] != tempTree.layerCount[LC])
+							{
+								isNewTree = TRUE;
+								break;
+							}
+						}
+						
+						//If the layer counts were the same
+						if (isNewTree)
+						{
+							isNewTree = FALSE;
+							for (int LC = 0; LC < maxPower; LC += 1)
+							{
+								for (int N = 0; N < orbitMapsCatalogue[tree].layerCount[LC]; N += 1)
+								{
+									if ((orbitMapsCatalogue[tree].nodes[LC][N].subNodes != tempTree.nodes[LC][N].subNodes) ||
+									    (orbitMapsCatalogue[tree].nodes[LC][N].cyclen != tempTree.nodes[LC][N].cyclen))
+									{
+										isNewTree = TRUE;
+										break;
+									}
+								}
+								
+								//If we know tempTree isn't this tree, check the next
+								if (isNewTree)
+									break;
+							}
+						}
+						
+						//If we found a matching tree to tempTree in orbitMapsCatalogue, we don't need to look any further
+						if (!isNewTree)
+							break;
+					}
+					
+					//If we found a new tree to add
+					if (isNewTree)
+					{
+						orbitMapsCount += 1;
+						orbitMapsCatalogue = realloc(orbitMapsCatalogue, orbitMapsCount*sizeof(OMT));
+						orbitMapsCatalogue[orbitMapsCount-1] = tempTree;
+					}
+					
+					//Discard tree
+					else
+					{
+						for (int layer = 0; layer < maxPower; layer += 1)
+						{
+							FREE(tempTree.nodes[layer]);
+						}
+						FREE(tempTree.nodes);
+						FREE(tempTree.layerCount);
+					}
+				}
 				
 				//Save datafile
 				if (outputFile != NULL)
@@ -6271,7 +6345,35 @@ and the number of columns must be 1.\n");
 						CREATEHEADER;
 					}
 				}
+				
+				#define PRINTOMCATALOGUE \
+				printf("orbitMapsCatalogue:\n"); \
+				for (int T = 0; T < orbitMapsCount; T += 1) \
+				{ \
+					printf("%d:\n", T); \
+					for (int L = 0; L < maxPower; L += 1) \
+					{ \
+						for (int N = 0; N < orbitMapsCatalogue[T].layerCount[L]; N += 1) \
+						{ \
+							if (N != 0) \
+								printf(", "); \
+							printf("{%d, %d}", orbitMapsCatalogue[T].nodes[L][N].subNodes,  \
+																 orbitMapsCatalogue[T].nodes[L][N].cyclen); \
+						} \
+						printf("\n"); \
+					} \
+					printf("\n"); \
+				}
+				
+				//Now, I'd like to print out orbitMapsCatalogue to see what that looks like
+				//Only print them out when we add a new tree to the catalogue
+				if (isNewTree)
+				{
+					PRINTOMCATALOGUE
+				}
 			}
+			
+			PRINTOMCATALOGUE
 			
 			//For printing out letters as cycle lengths 
 			//Make sure to output what each letter means if we're using outputType == compressedStems
@@ -6815,8 +6917,7 @@ and the number of columns must be 1.\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" \
-			ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
