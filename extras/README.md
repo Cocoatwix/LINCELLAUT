@@ -1,0 +1,1 @@
+This folder is for holding any files which aren't directly related to the LINCELLAUT code, but may be of interest to anyone using this program.
