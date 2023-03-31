@@ -1,0 +1,302 @@
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+
+\usepackage[T1]{fontenc}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage[parfill]{parskip}
+
+\usepackage{dsfont}
+\usepackage{marvosym} %Dumb astrological signs
+
+%Defining an environment for propositions
+\newcounter{propcounter}
+\newenvironment{proposition}[1]
+{
+	\vspace{1em}
+	\refstepcounter{propcounter} %Increment environment counter
+	\textbf{Proposition \thepropcounter.} \emph{#1}
+	
+	\emph{Justification.}
+}
+{
+	QED. \\
+}
+
+\begin{document}
+	%All fields are principal ideal domains
+	\section{Annihilating Polynomials Modulo Some Prime}
+		Say we're given some matrix $A \in \mathds{Z}_{p}^{L \times L}$, where $\mathds{Z}_{p}^{L \times L}$ represents the set of all $L \times L$ matrices with entries
+		from the integers modulo $p$. For the rest of this document, assume $p$ is some prime. A polynomial $r(x)$ is an \emph{annihilating polynomial of $A$} if
+		\[
+			r(A) \equiv 0
+		\]
+		At least one such annihilating polynomial must exist for $A$ modulo $p$ by the Cayley-Hamilton Theorem: the characteristic polynomial. The set of all annihilating
+		polynomials for $A$ forms an ideal since any polynomial with an annihilating polynomial as a factor is also an annihilating polynomial. Since the ring of
+		polynomials with coefficients from the integers modulo $p$ (denoted as $\mathds{Z}_{p}[X]$) is a principal ideal domain, the ideal of annihilating polynomials
+		modulo $p$ is a principal ideal---i.e. generated using only a single element. The monic generating element of this ideal is called the \emph{minimal polynomial of
+		$A$}.
+		
+		The minimal polynomial of $A$ is of interest when analysing the dynamics of vectors under repeated multiplication by $A$; it encodes the simplest algebraic
+		property $A$ must follow. However, when moving up to modulo $p^2$ and beyond, the annihilating polynomials---now in the ring $\mathds{Z}_{p^k}[X]$---no longer 
+		necessarily form a principal ideal, so there isn't necessarily a single minimal polynomial that characterises the algebraic behaviour of $A$. However, under 
+		specific circumstances, the set of annihilating polynomials modulo $p^k$ may still be a principal ideal.
+		
+	\section{Annihilating Polynomials Modulo Some Prime Squared}
+		Before we look at when annihilating polynomials form principal ideals modulo $p^k$, it's helpful to understand the concept of a \emph{lift}. Generally, a \emph{lift}
+		$W \bmod{p^{k+m}}$ of some object $V \bmod{p^k}$ is an object that reduces down to $V$:
+		\[
+			W \equiv V \mod{p^k}
+		\]
+		where $p^{k+m} > p^{k}$.
+		
+		For example, the polynomial $6x^{2} + 15x + 4 \bmod{25}$ is a lift of the polynomial \\ $x^{2} + 4 \bmod{5}$ since
+		\[
+			6x^{2} + 15x + 4 \equiv x^{2} + 4 \mod{5}
+		\]
+		Numerous other objects can have lifts, such as matrices, vectors, and scalars.
+		
+		Another important concept is the concept of \emph{embeds}. Generally, an \emph{embed} $W \bmod{p^{k+m}}$ of an object $V \bmod{p^k}$ is an object that's related to
+		$V$ in the following way:
+		\[
+			W \equiv p^mV \mod{p^{k+m}}
+		\]
+		$W$ is the embed, while $V$ is the object that's been embedded.
+		Embeds are useful as their behaviour mimics the object they've embedded, even though the modulus governing them is different. For instance, with the ring of
+		polynomials $\mathds{Z}_{p^k}[X]$, we can define a mapping $\phi_{n} : \mathds{Z}_{p^k}[X] \rightarrow p^n\mathds{Z}_{p^{k+n}}[X]$, $\phi_{n}(X) = p^nX$. This
+		mapping creates a group homomorphism under addition between $\mathds{Z}_{p^k}[X]$ and $p^n\mathds{Z}_{p^{k+n}}[X]$ since, for $Y, Z \in \mathds{Z}_{p^k}[X]$,
+		\[
+			\phi_n(Y + Z) = p^n(Y + Z) = p^nY + p^nZ = \phi_n(Y) + \phi_n(Z)
+		\]
+		This mapping is also bijective (and therefore a group isomorphism) since 
+		\begin{center}
+			\begin{tabular}{*3{l}}
+						   & $\phi_n(Y) \equiv \phi_n(Z)$ & $\mod{p^{k+n}}$ \\
+				$\implies$ & $p^nY \equiv p^nZ$           & $\mod{p^{k+n}}$ \\
+				$\implies$ & $p^nY - p^nZ \equiv 0$       & $\mod{p^{k+n}}$ \\
+				$\implies$ & $p^n(Y - Z) \equiv 0$        & $\mod{p^{k+n}}$ \\
+				$\implies$ & $Y - Z \equiv 0$             & $\mod{p^k}$     \\
+				$\implies$ & $Y \equiv Z$                 & $\mod{p^k}$
+			\end{tabular}
+		\end{center}
+		so $\phi_n$ is injective, and for every $p^nY \in \mathds{Z}_{p^{k+n}}[X]$ there's a $Y \in \mathds{Z}_{p^k}[X]$ such that $\phi_n(Y) = p^nY$, so $\phi_n$ is 
+		surjective.
+		
+		This shows that the set of all embed polynomials in $\mathds{Z}_{p^{k+n}}[X]$ which are embeds of the polynomials in $\mathds{Z}_{p^k}[X]$ is isomorphic to all 
+		polynomials in $\mathds{Z}_{p^k}[X]$.
+		
+		Using lifts and embeds, we can link concepts modulo $p$ with those same concepts modulo $p^k$. The following proposition makes use of both lifts 
+		and embeds.
+		
+		\begin{proposition}{Given $A \in \mathds{Z}_{p}^{L \times L}$, no nonzero polynomial with lesser degree than the minimal polynomial of $A$ modulo $p$ can annihilate 
+		$A$ modulo $p^2$.}
+			\label{prop:noLowerZeros}
+			Let m$(x)$ be the minimal polynomial of $A$ modulo $p$. Assume that a nonzero polynomial r$(x)$ exists with lower degree than m$(x)$ such that
+			\[
+				\text{r}(A) \equiv 0 \mod{p^2}
+			\]
+			Either r$(x)$ reduces to 0 modulo $p$, or it doesn't. If it doesn't reduce to 0, then r$(x)$ must be the lift of some nonzero polynomial modulo $p$. However,
+			since r$(x)$ annihilates $A$ modulo $p^2$, it would also annihilate $A$ modulo $p$. Such an r$(x)$ can't possibly exist since r$(x)$ modulo $p$ would have a 
+			lower degree than m$(x)$, and the degree of m$(x)$ is defined to be the lowest degree a nonzero annihilating polynomial can have modulo $p$.
+			
+			This means r$(x)$ reduces to 0 modulo $p$. Then r$(x)$ must be of the form $p$t$(x)$ for some polynomial t$(x)$ modulo $p$. Note that the degree of t$(x)$ 
+			modulo $p$ is necessarily the same as the degree of r$(x)$. Since r$(x) = p\text{t}(x)$, r$(x)$ is an embed of some nonzero polynomial modulo $p$, so
+			\[
+				\text{r}(x) = \phi_1(\text{t}(x))
+			\]
+			Because the embed mapping $\phi_1$ is an isomorphism, and since r$(x)$ is an annihilating polynomial, t$(x)$ must also be an annihilating polynomial modulo $p$:
+			\begin{center}
+				\begin{tabular}{lcl}
+					           & r$(A) \equiv 0$                   & $\mod{p^2}$ \\
+					$\implies$ & $\phi_1($t$(A)) \equiv \phi_1(0)$ & $\mod{p^2}$ \\
+					$\implies$ & t$(A) \equiv 0$                   & $\mod{p}$
+				\end{tabular}
+			\end{center}
+			Again, this causes a contradiction since there can be no nonzero annihilating polynomial modulo $p$ with lesser degree than m$(x)$.
+			
+			Therefore, the only polynomial in $\mathds{Z}_{p^2}[X]$ with lesser degree than m$(x)$ which annihilates $A$ modulo $p^2$ is the zero polynomial.
+		\end{proposition}
+		
+		Using some properties of polynomials, we can also show that, when a monic annihilating polynomial q$(x)$ of a matrix $A$ modulo $p^2$ is the same degree as the 
+		minimal polynomial of $A$ modulo $p$, then no polynomial with degree greater than or equal to the minimal polynomial's degree can annihilate $A$ modulo $p^2$ 
+		without being a multiple of q$(x)$. First, though, we need to define a particular equivalence relation.
+		
+		Assume q$(x)$ is a monic annihilating polynomial of some $A \in \mathds{Z}_{p}^{L \times L}$ modulo $p^2$ with the same degree as the minimal polynomial of $A$ 
+		modulo $p$. Let 
+		\begin{align*}
+			\text{a}(x) &= \text{s}_\text{a}(x)\text{q}(x) + \text{r}_\text{a}(x) \\
+			\text{b}(x) &= \text{s}_\text{b}(x)\text{q}(x) + \text{r}_\text{b}(x) \\
+			\text{c}(x) &= \text{s}_\text{c}(x)\text{q}(x) + \text{r}_\text{c}(x)
+		\end{align*}
+		for some 
+		s$_\text{a}(x), \text{s}_\text{b}(x), \text{s}_\text{c}(x), \text{r}_\text{a}(x), \text{r}_\text{b}(x), \text{r}_\text{c}(x) \in \mathds{Z}_{p^2}[X]$ where
+		r$_\text{a}(x)$, r$_\text{b}(x)$, and r$_\text{c}(x)$ are all of lesser degree than q$(x)$. Note that, because of the restrictions on r$_\text{a}(x)$, 
+		r$_\text{b}(x)$, and r$_\text{c}(x)$, and because q$(x)$ is monic, the division algorithm for polynomials ensures the representation for any polynomials 
+		a$(x)$, b$(x)$, and c$(x)$ in this form is unique.
+		
+		We'll say a$(x)$ and b$(x)$ are related by the relation \Taurus\ if r$_\text{a}(x) \equiv \text{r}_\text{b}(x) \bmod{p^2}$. Denote a$(x)$ and b$(x)$ being related 
+		by a$(x)$ \Taurus\ b$(x)$; a$(x)$ and b$(x)$ are \Taurus-equivalent.
+		
+		Note that if a polynomial is \Taurus-equivalent to 0, then that polynomial is a polynomial multiple of q$(x)$.
+		
+		The \Taurus\ relation is indeed an equivalence relation. It is reflexive since for any a$(x)$ as defined above, r$_\text{a}(x) \equiv \text{r}_\text{a}(x)$, so
+		a$(x)$ \Taurus\ a$(x)$. It is transitive since if a$(x)$ \Taurus\ b$(x)$ and b$(x)$ \Taurus\ c$(x)$, then $\text{r}_\text{a}(x) \equiv \text{r}_\text{b}(x)$ 
+		and $\text{r}_\text{b}(x) \equiv \text{r}_\text{c}(x)$, so $\text{r}_\text{a}(x) \equiv \text{r}_\text{c}(x)$ which means a$(x)$ \Taurus\ c$(x)$. It is also
+		symmetric since if a$(x)$ \Taurus\ b$(x)$, then $\text{r}_\text{a}(x) \equiv \text{r}_\text{b}(x) \implies \text{r}_\text{b}(x) \equiv \text{r}_\text{a}(x)$ and
+		so b$(x)$ \Taurus\, a$(x)$. This is enough to show that \Taurus\ is an equivalence relation.
+		
+		The following proposition will further establish \Taurus\ as a form of equivalence between polynomials.
+		
+		\begin{proposition}{If a$(x)$ \Taurus\ b$(x)$, then a$(x) + \text{c}(x)$ \Taurus\ b$(x) + \text{c}(x)$ and \\ a$(x)\text{c}(x)$ \Taurus\ b$(x)\text{c}(x)$.}
+			\label{prop:taurusPreservation}
+			Let
+			\begin{align*}
+				\text{a}(x) &= \text{s}_\text{a}(x)\text{q}(x) + \text{r}_1(x) \\
+				\text{b}(x) &= \text{s}_\text{b}(x)\text{q}(x) + \text{r}_1(x) \\
+				\text{c}(x) &= \text{s}_\text{c}(x)\text{q}(x) + \text{r}_2(x)
+			\end{align*}
+			Then
+			\begin{align*}
+				\text{a}(x) + \text{c}(x) &= \bigl(\text{s}_\text{a}(x) + \text{s}_\text{c}(x)\bigr)\text{q}(x) + \bigl(\text{r}_1(x) + \text{r}_2(x)\bigr) \\
+				\text{b}(x) + \text{c}(x) &= \bigl(\text{s}_\text{b}(x) + \text{s}_\text{c}(x)\bigr)\text{q}(x) + \bigl(\text{r}_1(x) + \text{r}_2(x)\bigr) \\
+			\end{align*}
+			By inspection, a$(x) + \text{c}(x)$ \Taurus\ b$(x) + \text{c}(x)$. As well,
+			\begin{align*}
+				\text{a}(x)\text{c}(x) &= \text{s}_\text{a}(x)\text{s}_\text{c}(x)\text{q}^2(x) + 
+				                          \text{s}_\text{a}(x)\text{r}_2(x)\text{q}(x) +
+										  \text{s}_\text{c}(x)\text{r}_1(x)\text{q}(x) +
+										  \text{r}_1(x)\text{r}_2(x) \\
+									   &= \bigl(\text{s}_\text{a}(x)\text{s}_\text{c}(x)\text{q}(x) +
+									       \text{s}_\text{a}(x)\text{r}_2(x) +
+										   \text{s}_\text{c}(x)\text{r}_1(x)\bigr)\text{q}(x) +
+										   \text{r}_1(x)\text{r}_2(x)
+			\end{align*}
+			and
+			\begin{align*}
+				\text{b}(x)\text{c}(x) &= \text{s}_\text{b}(x)\text{s}_\text{c}(x)\text{q}^2(x) + 
+				                          \text{s}_\text{b}(x)\text{r}_2(x)\text{q}(x) +
+										  \text{s}_\text{c}(x)\text{r}_1(x)\text{q}(x) +
+										  \text{r}_1(x)\text{r}_2(x) \\
+									   &= \bigl(\text{s}_\text{b}(x)\text{s}_\text{c}(x)\text{q}(x) +
+									       \text{s}_\text{b}(x)\text{r}_2(x) +
+										   \text{s}_\text{c}(x)\text{r}_1(x)\bigr)\text{q}(x) +
+										   \text{r}_1(x)\text{r}_2(x)
+			\end{align*}
+			By definition of the \Taurus\ relation, a$(x)\text{c}(x)$ \Taurus\ r$_1(x)\text{r}_2(x)$ and b$(x)\text{c}(x)$ \Taurus\ r$_1(x)\text{r}_2(x)$. The \Taurus\ 
+			relation is an equivalence relation, so a$(x)\text{c}(x)$ \Taurus\ b$(x)\text{c}(x)$.
+		\end{proposition}
+		
+		Proposition \ref{prop:taurusPreservation} allows us to create some useful relations using the polynomial q$(x)$. Let q$(x)$ be written as
+		\[
+			\text{q}(x) = x^n + \alpha_{n-1}x^{n-1} + \alpha_{n-2}x^{n-2} + \cdots + \alpha_1x + \alpha_0
+		\]
+		
+		By definition of \Taurus-equivalent polynomials, q$(x)$ \Taurus\ 0. Then using proposition \ref{prop:taurusPreservation},
+		\begin{align}
+			         & x^n + \alpha_{n-1}x^{n-1} + \alpha_{n-2}x^{n-2} + \cdots + \alpha_1x + \alpha_0 \ \text{\Taurus}\ 0 \nonumber \\
+			\implies & x^n \ \text{\Taurus}\ -(\alpha_{n-1}x^{n-1} + \alpha_{n-2}x^{n-2} + \cdots + \alpha_1x + \alpha_0)
+			\label{eq:taurusSub}
+		\end{align}
+		
+		Using q$(x)$, we can obtain a \Taurus-equivalent polynomial for $x^n$. As well, we can find a \Taurus-equivalent polynomial for any higher power of $x$ simply by 
+		multiplying both sides of equation \ref{eq:taurusSub} by some power of $x$.
+		
+		With equation \ref{eq:taurusSub}, we can reduce \emph{any} polynomial in $\mathds{Z}_{p^2}[X]$ to a \Taurus-equivalent polynomial with degree less than the 
+		degree of q$(x)$ by substituting any high-order terms in the polynomial with their \Taurus-equivalent expression guaranteed by equation \ref{eq:taurusSub}. This 
+		\Taurus-equivalent polynomial preserves the original polynomial's remainder when divided by q$(x)$ (by definition of \Taurus-equivalent polynomials). As well, 
+		reducing a polynomial using equation \ref{eq:taurusSub} preserves the value of that polynomial when plugging in the relevant matrix $A$ (due to q$(x)$ annihilating 
+		$A$).
+		
+		Now, with the \Taurus\ relation specified, we can now show that, when a monic annihilating polynomial q$(x)$ exists modulo $p^2$ for some matrix $A$ with the same 
+		degree as the matrix's minimal polynomial modulo $p$, then all annihilating polynomials modulo $p^2$ are polynomial multiples of q$(x)$.
+
+		\begin{proposition}{If a monic annihilating polynomial q$(x)$ of $A \in \mathds{Z}_{p}^{L \times L}$ modulo $p^2$ has the same degree as the minimal polynomial of $A$
+		modulo $p$, then no polynomial with a degree greater than or equal to the minimal polynomial can annihilate $A$ modulo $p^2$ without being a multiple of q$(x)$.}
+			\label{prop:noHigherZeros}
+			Assume we have another annihilating polynomial r$(x)$ modulo $p^2$ with degree greater than or equal to the degree of q$(x)$. Using equation \ref{eq:taurusSub}, 
+			we can reduce r$(x)$ down to a \Taurus-equivalent polynomial t$(x)$ which is guaranteed to have a degree less than q$(x)$. Because t$(x)$ is
+			\Taurus-equivalent to r$(x)$, t$(x)$ is also an annihilating polynomial for $A$ modulo $p^2$. By proposition \ref{prop:noLowerZeros}, 
+			t$(x) \equiv 0 \bmod{p^2}$. By definition of \Taurus-equivalent polynomials, r$(x)$ must be a multiple of q$(x)$.
+		\end{proposition}
+		
+		Because of propositions \ref{prop:noLowerZeros} and \ref{prop:noHigherZeros}, given a matrix $A \in \mathds{Z}_{p}^{L \times L}$, whenever a monic annihilating 
+		polynomial q$(x)$ modulo $p^2$ has the same degree as the minimal polynomial of $A$ modulo $p$, then the set of all annihilating polynomials modulo $p^2$ must form
+		a principal ideal with q$(x)$ being the generating element. It's fitting to label q$(x)$ the \emph{minimal polynomial of $A$ modulo $p^2$}.
+		
+	\section{Annihilating Polynomials Modulo Some Prime Power}
+		
+		If it's established that the set of annihilating polynomials modulo $p^2$ is a principal ideal, then the set of annihilating polynomials modulo $p^k$, with
+		$p^k > p^2$, can also be established as principal ideals using an induction-type argument.
+		
+		\begin{proposition}{Given $A \in \mathds{Z}_{p}^{L \times L}$, if it's known that the set of annihilating polynomials modulo $p^k$ forms a principal ideal, then no 
+		nonzero polynomial with lesser degree than the minimal polynomial of $A$ modulo $p^k$ can annihilate $A$ modulo $p^{k+1}$.}
+			\label{prop:pkNoLowerZeros}
+			Let m$(x)$ be the minimal polynomial of $A$ modulo $p^k$. Assume that a nonzero polynomial r$(x)$ exists with lower degree than m$(x)$ such that
+			\[
+				\text{r}(A) \equiv 0 \mod{p^{k+1}}
+			\]
+			Either r$(x)$ reduces to 0 modulo $p^k$, or it doesn't. If it doesn't reduce to 0, then r$(x)$ must be the lift of some nonzero polynomial modulo $p^k$. However,
+			since r$(x)$ annihilates $A$ modulo $p^{k+1}$, it would also annihilate $A$ modulo $p^k$. Such an r$(x)$ can't possibly exist since r$(x)$ modulo $p^k$ would 
+			have a lower degree than m$(x)$, and the degree of m$(x)$ is defined to be the lowest degree a nonzero annihilating polynomial can have modulo $p^k$.
+			
+			This means r$(x)$ reduces to 0 modulo $p^k$. Then r$(x)$ must be of the form $p^k$t$(x)$ for some polynomial t$(x)$ modulo $p$. Note that the degree of t$(x)$ 
+			modulo $p$ is necessarily the same as the degree of r$(x)$. Since r$(x) = p^k\text{t}(x)$, r$(x)$ is an embed of some nonzero polynomial modulo $p$, so
+			\[
+				\text{r}(x) = \phi_k(\text{t}(x))
+			\]
+			Because the embed mapping $\phi_k$ is an isomorphism, and since r$(x)$ is an annihilating polynomial, t$(x)$ must also be an annihilating polynomial modulo $p$:
+			\begin{center}
+				\begin{tabular}{lcl}
+					           & r$(A) \equiv 0$                   & $\mod{p^{k+1}}$ \\
+					$\implies$ & $\phi_k($t$(A)) \equiv \phi_k(0)$ & $\mod{p^{k+1}}$ \\
+					$\implies$ & t$(A) \equiv 0$                   & $\mod{p}$
+				\end{tabular}
+			\end{center}
+			This causes a contradiction since 
+			\[
+				\text{t}(A) \equiv 0 \bmod{p} \implies \phi_{k-1}(\text{t}(A)) \equiv 0 \bmod{p^k}
+			\]
+			and there can be no nonzero annihilating polynomial modulo $p^k$ with lesser degree than m$(x)$.
+			
+			Therefore, the only polynomial in $\mathds{Z}_{p^{k+1}}[X]$ with lesser degree than m$(x)$ which annihilates $A$ modulo $p^{k+1}$ is the zero polynomial.
+		\end{proposition}
+		
+		The \Taurus\ relation stays largely unchanged when considering higher moduli. Assume q$(x)$ is a monic annihilating polynomial of some 
+		$A \in \mathds{Z}_{p}^{L \times L}$ modulo $p^{k+1}$ with the same degree as the minimal polynomial of $A$ modulo $p^k$. Let 
+		\begin{align*}
+			\text{a}(x) &= \text{s}_\text{a}(x)\text{q}(x) + \text{r}_\text{a}(x) \\
+			\text{b}(x) &= \text{s}_\text{b}(x)\text{q}(x) + \text{r}_\text{b}(x) \\
+			\text{c}(x) &= \text{s}_\text{c}(x)\text{q}(x) + \text{r}_\text{c}(x)
+		\end{align*}
+		for some 
+		s$_\text{a}(x), \text{s}_\text{b}(x), \text{s}_\text{c}(x), \text{r}_\text{a}(x), \text{r}_\text{b}(x), \text{r}_\text{c}(x) \in \mathds{Z}_{p^{k+1}}[X]$ where
+		r$_\text{a}(x)$, r$_\text{b}(x)$, and r$_\text{c}(x)$ are all of lesser degree than q$(x)$. 
+		
+		We'll say a$(x)$ and b$(x)$ are related by the relation \Taurus\ if r$_\text{a}(x) \equiv \text{r}_\text{b}(x) \bmod{p^{k+1}}$. \Taurus\ still forms an equivalence
+		relation in the same way, and proposition \ref{prop:taurusPreservation} still applies. As well, equation \ref{eq:taurusSub} can still be used to reduce any
+		polynomial in $\mathds{Z}_{p^{k+1}}[X]$ to a \Taurus-equivalent polynomial with degree less than q$(x)$. With this, we can restate proposition 
+		\ref{prop:noHigherZeros} in terms of this more general case.
+		
+		\begin{proposition}{If a monic annihilating polynomial q$(x)$ of $A \in \mathds{Z}_{p}^{L \times L}$ modulo $p^{k+1}$ has the same degree as the minimal polynomial 
+		of $A$ modulo $p^k$, and the set of annihilating polynomials for $A$ modulo $p^k$ is a principal ideal, then no polynomial with a degree greater than or equal to 
+		the minimal polynomial can annihilate $A$ modulo $p^{k+1}$ without being a multiple of q$(x)$.}
+			\label{prop:pkNoHigherZeros}
+			Assume we have another annihilating polynomial r$(x)$ modulo $p^{k+1}$ with degree greater than or equal to the degree of q$(x)$. Using equation 
+			\ref{eq:taurusSub}, we can reduce r$(x)$ down to a \Taurus-equivalent polynomial t$(x)$ which is guaranteed to have a degree less than q$(x)$. Because t$(x)$ is
+			\Taurus-equivalent to r$(x)$, t$(x)$ is also an annihilating polynomial for $A$ modulo $p^{k+1}$. By proposition \ref{prop:pkNoLowerZeros}, 
+			t$(x) \equiv 0 \bmod{p^{k+1}}$. By definition of \Taurus-equivalent polynomials, r$(x)$ must be a multiple of q$(x)$.
+		\end{proposition}
+		
+		Therefore, using propositions \ref{prop:pkNoLowerZeros} and \ref{prop:pkNoHigherZeros}, whenever a monic annihilating polynomial q$(x)$ modulo $p^{k+1}$ of some 
+		matrix $A$ has the same degree as the minimal polynomial of $A$ modulo $p^k$, then the set of annihilating polynomials modulo $p^{k+1}$ forms a principal ideal
+		with q$(x)$ as its generator.
+		
+		% An easy example to apply this idea to is the set of all matrices in $\mathds{Z}_{p}^{L \times L}$ whose minimal polynomials are equal to their characteristic 
+		% polynomials. The characteristic polynomial of a matrix can always be expressed as a monic polynomial. As well, the degree of the characteristic polynomial for these 
+		% matrices doesn't change modulo $p^k$ for any value of $k$. This means they'll always be some monic annihilating polynomial with the same degree as the lower
+		% moduli: the characteristic polynomial. In these cases, the set of annihilating polynomials should always form a principal ideal, no matter the modulus.
+\end{document}

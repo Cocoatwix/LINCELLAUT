@@ -117,6 +117,34 @@
 </Input>
 </Group>
 <Group hide-input="false" labelreference="L49" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false">additive_order := proc(modulus::integer, vect::Vector)::integer;
+<Font foreground="[153,153,153]">    description &quot;Returns the additive order of the given vector under the given modulus.&quot;</Font>;
+    local count, tempVect, zeroVect;
+
+    zeroVect := Vector(RowDimension(vect));
+    count := 0;
+
+    do
+        count += 1;
+        tempVect := count*vect mod modulus;
+    until (Equal(tempVect, zeroVector));
+    return count;
+end proc:</Text-field>
+</Input>
+</Group>
+<Group labelreference="L105" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group labelreference="L106" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group labelreference="L107" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group hide-input="false" labelreference="L124" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false">mod_span := proc(modulus::integer, gens::set(Vector))::set(Vector);
     <Font foreground="[153,153,153]">description &quot;Returns a set representing the span of the given set of vectors under the given modulus.&quot;</Font>;
     local i, span, coeffis, zeroCoeffis, tempVect, tempVect2, isNew;
@@ -167,19 +195,19 @@
 end proc:</Text-field>
 </Input>
 </Group>
-<Group labelreference="L52" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L132" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L53" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L137" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L56" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L139" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L54" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L135" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">in_span := proc(vect::Vector, span::set(Vector))::boolean;
     <Font foreground="[153,153,153]">description &quot;Returns true if the given vector is in the given span, false otherwise.&quot;</Font>;
     local tempVect;
@@ -194,19 +222,19 @@ end proc:</Text-field>
 end proc:</Text-field>
 </Input>
 </Group>
-<Group labelreference="L61" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L111" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L58" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L140" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L65" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L116" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L62" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L114" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">span_intersect := proc(set1::set(Vector), set2::set(Vector))::set(Vector);
 <Font foreground="[153,153,153]">    description &quot;Returns the intersection of the two given sets of vectors.&quot;</Font>;
     local tempVect, tempVect2, intersectSet;
@@ -226,19 +254,19 @@ end proc:</Text-field>
 end proc:</Text-field>
 </Input>
 </Group>
-<Group labelreference="L59" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L142" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L46" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L123" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L50" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L127" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L57" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L141" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">equal_span := proc(span1::set(Vector), span2::set(Vector))::boolean;
     <Font foreground="[153,153,153]">description &quot;Returns true if the given spans are equal, false otherwise.&quot;</Font>;
     local tempVect, tempVect2, inBoth;
@@ -267,44 +295,108 @@ end proc:</Text-field>
 end proc:</Text-field>
 </Input>
 </Group>
-<Group labelreference="L70" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L125" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L71" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L130" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L72" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L128" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L84" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L115" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">dir_set_representation := proc(modulus::integer, vect::Vector, repset::set(Vector))::set(list);
-    <Font foreground="[153,153,153]">description &quot;Returns a representation of the passed vector using the given set if possible, returns NULL otherwise. The representation represents a polynomial expression in the following way: {[coefficient, vector], [coefficient, vector], ...}.&quot;</Font>;
-    local coeffis, zeroCoeffis;
+    <Font foreground="[153,153,153]">description &quot;Returns a representation of the passed vector using the given set if possible, returns the empty set otherwise. The representation represents a polynomial expression in the following way: {[coefficient, vector], [coefficient, vector], ...}.&quot;</Font>;
+    local i, coeffis, zeroCoeffis, tempVect, DIRrep;
+
+    if (repset = {}) then
+        return {};
+    fi;
 
     coeffis := [seq(0, 1..numelems(repset))];
     zeroCoeffis := [seq(0, 1..numelems(repset))];
-    do
+    DIRrep := {};
 
+    do
+        <Font foreground="[153,153,153]">#Check to see if our current coefficients create vect</Font>
+        tempVect := Vector(RowDimension(repset[1]));
+        for i from 1 to numelems(coeffis) do
+            tempVect += coeffis[i]*repset[i];
+        od;
+
+        tempVect mod= modulus;
+
+        <Font foreground="[153,153,153]">#If we found a set of coefficients that work, return them</Font>
+        if (Equal(tempVect, vect)) then
+           for i from 1 to numelems(coeffis) do
+               DIRrep union= {[coeffis[i], repset[i]]};
+           od;
+           return DIRrep;
+        fi;
+
+        <Font foreground="[153,153,153]">#Increment coeffis</Font>
+        for i from 1 to numelems(coeffis) do
+            if (coeffis[i] + 1 = modulus) then
+                coeffis[i] := 0;
+            else
+                coeffis[i] += 1;
+                break;
+            fi;
+        od;
     until (evalb(coeffis = zeroCoeffis));
+
+    return {};
 end proc:</Text-field>
 </Input>
 </Group>
-<Group labelreference="L85" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L113" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L86" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L119" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L87" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L117" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"><Font foreground="[51,204,204]">#This needs to be tested</Font></Text-field>
+</Input>
+</Group>
+<Group labelreference="L129" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">minimum_multiple_in_span := proc(baseMod::integer, maxMod::integer, vect::Vector, DIspan::set(Vector))::integer;
+    <Font foreground="[153,153,153]">description &quot;Returns the first nonzero multiple of the given vector that's in the given span under the given modulus. Returns zero if the zeroth multiple is the only one in the span.&quot;</Font>;
+    local power, multVect, tempVect;
+
+    power := 0;
+    while (baseMod^power &lt; maxMod) do
+        multVect := (baseMod^power)*vect;
+
+        for tempVect in DIspan do
+            if (Equal(tempVect, multVect)) then
+                return baseMod^power;
+            fi;
+        od;
+
+        power += 1;
+    od;
+end proc:</Text-field>
+</Input>
+</Group>
+<Group labelreference="L143" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L94" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L144" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group labelreference="L145" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group labelreference="L160" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">is_dimensionally_independent := proc(modulus::integer, gens::set(Vector))::boolean;
     <Font foreground="[153,153,153]">description &quot;Returns true if the given set of vectors is dimensionally independent, false otherwise.&quot;</Font>;
     local tempVect, zeroVect, tempSet;
@@ -332,38 +424,46 @@ end proc:</Text-field>
 end proc:</Text-field>
 </Input>
 </Group>
-<Group labelreference="L89" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L153" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L96" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L151" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L97" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L155" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">is_dimensionally_independent(2, {Vector([1, 0, 0])}):</Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L92" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L156" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">equal_span(mod_span(5, {Vector([1, 0]), Vector([0, 1])}), mod_span(5, {Vector([4, 4]), Vector([3, 1])})):</Text-field>
 </Input>
 </Group>
-<Group labelreference="L98" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L157" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">dir_set_representation(5, Vector([1, 4, 2]), {Vector([4, 0, 0]), Vector([0, 0, 1])}):</Text-field>
+</Input>
+</Group>
+<Group hide-input="false" labelreference="L149" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L100" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L147" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L93" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L150" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group hide-input="false" labelreference="L148" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">currentSet := [seq(Vector([0, 0, 0]), 1..3)]:
 zeroVector := Vector([0, 0, 0]):
 BASEMOD := 3:
 MODPOWER := 2:</Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L91" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L158" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"><Font foreground="[153,153,153]">#Iterate through all possible combinations of vectors</Font>
 do
     newSet := {seq(currentSet[v], v=1..numelems(currentSet))};
@@ -424,10 +524,35 @@ do
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
         <Font foreground="[153,153,153]">#Now, we'll check to see if any vector is an embedded form of some of the other vectors in newSet</Font>
 
-        <Font foreground="[153,153,153]">#Check and see if the first p^c(v) has any vectors in its DIR set expression with invertible coefficients</Font>
+        newList = [seq(newSet[v], v=1..numelems(newSet))];
+        for v from 1 to numelems(newList) do
+            subset2 := {seq(newList[x], x=1..v-1)};
 
-         
+            <Font foreground="[153,153,153]">#Check and see if the first p^c(v) has any vectors in its DIR set expression with invertible coefficients</Font>
+            DIRrep := dir_set_representation(BASEMOD^MODPOWER, newList[v], subset2);
+            replaced := false;
+
+            for i from 1 to numelems(DIRrep) do
+                if ((not ((DIRrep[i][1] mod BASEMOD) = 0)) and 
+                    (additive_order(BASEMOD^MODPOWER, DIRrep[i][2]) &gt;= additive_order(BASEMOD^MODPOWER, newList[v]))) then
+                    <Font foreground="[153,153,153]">#Find DIRrep[i][2] in newSet, replace it with newList[v]</Font>
+                    for tempVect in newSet do
+                        if (Equal(tempVect, DIRrep[i][2])) then
+                            newSet minus= {tempVect};
+                            newSet union= {newList[v]};
+                            replaced := true;
+                            break;
+                        fi;
+                    od;
+                fi;
+
+                if (replaced) then
+                    break;
+                fi;
+            od;
+        od;   
     fi;
+    <Font foreground="[153,153,153]">#Now, newSet should have no vectors that are &quot;between&quot; the spans of the other vectors</Font>
 
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
         print(&quot;The set&quot;, newSet, &quot;is not dimensionally independent.&quot;);
@@ -457,19 +582,7 @@ do
        Equal(currentSet[3], zeroVector)):</Text-field>
 </Input>
 </Group>
-<Group labelreference="L99" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L90" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L95" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L88" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L162" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
