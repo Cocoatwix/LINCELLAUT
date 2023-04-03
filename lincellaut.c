@@ -6399,8 +6399,6 @@ and the number of columns must be 1.\n");
 				*/
 			}
 			
-			PRINTOMCATALOGUE
-			
 			//Now, output the tree structures to a file, if desired
 			if (mapOutputFileName != NULL)
 			{
@@ -6410,6 +6408,7 @@ and the number of columns must be 1.\n");
 				
 				else
 				{
+					printf("Unique mapping structures:\n");
 					CREATEHEADER(mapOutputFile, FALSE);
 					
 					for (int T = 0; T < orbitMapsCount; T += 1)
@@ -6459,7 +6458,6 @@ and the number of columns must be 1.\n");
 									//We don't need to increment mapIndexCount[currentLayer] here as 
 									// it'll be incremented above in the next loop
 								}
-								getchar();
 							}
 							while (currentLayer > 0);
 							mapIndexCount[0] += 1;
@@ -6469,6 +6467,11 @@ and the number of columns must be 1.\n");
 				}
 				if (fclose(mapOutputFile) == EOF)
 					fprintf(stderr, "Unable to save unique orbit map structures to output file.\n");
+			}
+			
+			else
+			{
+				PRINTOMCATALOGUE
 			}
 			
 			
