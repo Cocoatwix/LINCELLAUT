@@ -5704,10 +5704,14 @@ and the number of columns must be 1.\n");
 			char* outputFileBaseName = NULL;
 			int   fileCounter = 0; //For numbering the different files created by the tool
 			
+			//File for holding the unique mapping structures found while computing
+			FILE* mapOutputFile     = NULL;
+			char* mapOutputFileName = NULL;
+			int   currentLayer; //For keeping track of which layer we're printing from orbitMapsCatalogue
+			
 			//Matrices for starting and stopping computation, if requested
 			BigIntMatrixTP resumeMatrix   = NULL;
 			BigIntMatrixTP sentinelMatrix = NULL;
-			
 			
 			//For compressing the output file
 			/*
@@ -5767,6 +5771,10 @@ and the number of columns must be 1.\n");
 			int stemCollectionIndices[maxPower];
 			BigIntMatrixTP stemCollection[maxPower]; //For holding stems in the correct order
 			
+			//For outputting unique tree structures to an output file
+			int subCount[maxPower-1]; //Counts how many children nodes each node has in the respective layer
+			int mapIndexCount[maxPower]; //Where we are in the currently-being-printed tree
+			
 			if (argc > 3)
 			{
 				SET_BIG_NUM(argv[3], baseMod, "Unable to read modulus from command line.");
@@ -5778,26 +5786,39 @@ and the number of columns must be 1.\n");
 			
 			if ((argc > 4) && (!strcmp(argv[4], "TRUE")))
 			{
-				outputFileName = malloc(MAXSTRLEN*sizeof(char));
+				outputFileName     = malloc(MAXSTRLEN*sizeof(char));
+				mapOutputFileName  = malloc(MAXSTRLEN*sizeof(char));
 				outputFileBaseName = malloc(MAXSTRLEN*sizeof(char));
 				outputFileBaseName[0] = '\0';
+				mapOutputFileName[0]  = '\0';
 				strcat(outputFileBaseName, "orbitmaps2 ");
+				strcat(mapOutputFileName,  "orbitmaps2 maps ");
 				strcat(outputFileBaseName, argv[2]);
+				strcat(mapOutputFileName,  argv[2]);
 				strcat(outputFileBaseName, " ");
+				strcat(mapOutputFileName,  " ");
 				append_BigIntT(outputFileBaseName, baseMod);
+				append_BigIntT(mapOutputFileName,  baseMod);
 				strcat(outputFileBaseName, " F");
+				strcat(mapOutputFileName,  " F");
 				for (int row = 0; row < big_rows(initialA); row += 1)
 					for (int col = 0; col < big_rows(initialA); col += 1)
 					{
 						append_BigIntT(outputFileBaseName, big_element(initialA, row, col));
+						append_BigIntT(mapOutputFileName, big_element(initialA, row, col));
+						
 						if ((row != big_rows(initialA)-1) || (col != big_rows(initialA)-1))
+						{
 							strcat(outputFileBaseName, " ");
+							strcat(mapOutputFileName,  " ");
+						}
 						else
 							strcat(outputFileBaseName, " f");
 					}
 				strcpy(outputFileName, outputFileBaseName);
 				append_int(outputFileName, fileCounter);
 				strcat(outputFileName, ".txt");
+				strcat(mapOutputFileName, ".txt");
 				
 				outputFile = fopen(outputFileName, "a");
 				if (outputFile == NULL)
@@ -5882,33 +5903,36 @@ and the number of columns must be 1.\n");
 				temps[t] = empty_BigIntT(1);
 			
 			//Macro for printing out header information to the output file
-			#define CREATEHEADER \
-			fprintf(outputFile, "base:\n"); \
-			for (int row = 0; row < big_rows(initialA); row += 1) \
+			#define CREATEHEADER(OF, printBase) \
+			if (printBase) \
 			{ \
-				for (int col = 0; col < big_rows(initialA); col += 1) \
+				fprintf(OF, "base:\n"); \
+				for (int row = 0; row < big_rows(initialA); row += 1) \
 				{ \
-					if (col != 0) \
-						fprintf(outputFile, " "); \
-					fprinti(outputFile, matrixLiftElements[0][row][col]); \
+					for (int col = 0; col < big_rows(initialA); col += 1) \
+					{ \
+						if (col != 0) \
+							fprintf(OF, " "); \
+						fprinti(OF, matrixLiftElements[0][row][col]); \
+					} \
+					fprintf(OF, "\n"); \
 				} \
-				fprintf(outputFile, "\n"); \
 			} \
 			if (resumeMatrix != NULL) \
 			{ \
-				fprintf(outputFile, "start:\n");      \
-				fprintbm(outputFile, resumeMatrix);   \
+				fprintf(OF, "start:\n");      \
+				fprintbm(OF, resumeMatrix);   \
 			} \
 			if (sentinelMatrix != NULL) \
 			{ \
-				fprintf(outputFile, "end:\n");        \
-				fprintbm(outputFile, sentinelMatrix); \
+				fprintf(OF, "end:\n");        \
+				fprintbm(OF, sentinelMatrix); \
 			} \
-			fprintf(outputFile, "~\n")
+			fprintf(OF, "~\n")
 			
 			if (outputFile != NULL)
 			{
-				CREATEHEADER;
+				CREATEHEADER(outputFile, TRUE);
 			}
 			
 			//Check to see if our given matrix is invertible
@@ -6342,7 +6366,7 @@ and the number of columns must be 1.\n");
 					//If file created successfully, make sure to add the file header to the top
 					else
 					{
-						CREATEHEADER;
+						CREATEHEADER(outputFile, TRUE);
 					}
 				}
 				
@@ -6367,13 +6391,86 @@ and the number of columns must be 1.\n");
 				
 				//Now, I'd like to print out orbitMapsCatalogue to see what that looks like
 				//Only print them out when we add a new tree to the catalogue
+				/*
 				if (isNewTree)
 				{
 					PRINTOMCATALOGUE
 				}
+				*/
 			}
 			
 			PRINTOMCATALOGUE
+			
+			//Now, output the tree structures to a file, if desired
+			if (mapOutputFileName != NULL)
+			{
+				mapOutputFile = fopen(mapOutputFileName, "a");
+				if (mapOutputFile == NULL)
+					fprintf(stderr, "Unable to create output file for saving unique orbit map structures.\n");
+				
+				else
+				{
+					CREATEHEADER(mapOutputFile, FALSE);
+					
+					for (int T = 0; T < orbitMapsCount; T += 1)
+					{
+						for (int i = 0; i < maxPower; i += 1)
+						{
+							if (i < maxPower-1)
+								subCount[i] = 0;
+							mapIndexCount[i] = 0;
+						}
+						
+						fprintf(mapOutputFile, ":%d\n", T);
+						printf(":%d\n", T);
+						do
+						{
+							//Generate the number of nodes we need to print in each layer for the current layer 0 node
+							for (int L = 0; L < maxPower-1; L += 1)
+								subCount[L] = orbitMapsCatalogue[T].nodes[L][mapIndexCount[L]].subNodes;
+							
+							//Now, iterate through the tree
+							fprintf(mapOutputFile, "0 %d\n", orbitMapsCatalogue[T].nodes[0][mapIndexCount[0]].cyclen);
+							printf("0 %d\n", orbitMapsCatalogue[T].nodes[0][mapIndexCount[0]].cyclen);
+							currentLayer = 1;
+							do
+							{
+								if (subCount[currentLayer-1] > 0)
+								{
+									fprintf(mapOutputFile, "%d %d\n", currentLayer, 
+									                                  orbitMapsCatalogue[T].nodes[currentLayer][mapIndexCount[currentLayer]].cyclen);
+									printf("%d %d\n", currentLayer, orbitMapsCatalogue[T].nodes[currentLayer][mapIndexCount[currentLayer]].cyclen);
+									subCount[currentLayer-1] -= 1; //currentLayer should never be zero here due to the while condition
+									mapIndexCount[currentLayer] += 1;
+									
+									//Keep going down until we find the lowest layer of the tree to consecutively print
+									if (currentLayer < maxPower-1)
+										currentLayer += 1;
+								}
+								
+								//Recalculate subCount, if needed
+								else
+								{
+									currentLayer -= 1;
+									if ((currentLayer > 0) && (subCount[currentLayer-1] > 0))
+										for (int L = currentLayer; L < maxPower-1; L += 1)
+											subCount[L] = orbitMapsCatalogue[T].nodes[L][mapIndexCount[L]].subNodes;
+										
+									//We don't need to increment mapIndexCount[currentLayer] here as 
+									// it'll be incremented above in the next loop
+								}
+								getchar();
+							}
+							while (currentLayer > 0);
+							mapIndexCount[0] += 1;
+						}
+						while (mapIndexCount[maxPower-1] < orbitMapsCatalogue[T].layerCount[maxPower-1]);
+					}
+				}
+				if (fclose(mapOutputFile) == EOF)
+					fprintf(stderr, "Unable to save unique orbit map structures to output file.\n");
+			}
+			
 			
 			//For printing out letters as cycle lengths 
 			//Make sure to output what each letter means if we're using outputType == compressedStems
@@ -6401,6 +6498,7 @@ and the number of columns must be 1.\n");
 				if (fclose(outputFile) == EOF)
 					fprintf(stderr, "Unable to save output file.\n");
 			FREE(outputFileName);
+			FREE(mapOutputFileName);
 			FREE(outputFileBaseName);
 			
 			resumeMatrix   = free_BigIntMatrixT(resumeMatrix);
