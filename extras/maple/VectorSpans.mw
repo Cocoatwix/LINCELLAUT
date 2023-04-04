@@ -97,31 +97,25 @@
 <Task-table>
     <Task-category name="&lt;default&gt;"/>
 </Task-table>
-<Task/>
+<Task/><CodeEditor-ExecGroup view="presentation" labelreference="L270" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="constants" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">with (LinearAlgebra[Modular]):
+
+Equal := LinearAlgebra[Equal]:
+RowDimension := LinearAlgebra[RowDimension]:
+
+zeroVector := Vector([0, 0, 0]):
+</EC-CodeEditor></CodeEditor-ExecGroup>
 <Group hide-input="false" labelreference="L1" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">with (LinearAlgebra[Modular]):</Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L2" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">Equal := LinearAlgebra[Equal]:</Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L6" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">RowDimension := LinearAlgebra[RowDimension]:</Text-field>
-</Input>
-<Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L44" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L49" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false">additive_order := proc(modulus::integer, vect::Vector)::integer;
-<Font foreground="[153,153,153]">    description &quot;Returns the additive order of the given vector under the given modulus.&quot;</Font>;
-    local count, tempVect, zeroVect;
+<Group labelreference="L182" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L234" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc additive_order" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">additive_order := proc(modulus::integer, vect::Vector)::integer;
+    description &quot;Returns the additive order of the given vector under the given modulus.&quot;;
+    local count, tempVect;
+    global zeroVector;
 
-    zeroVect := Vector(RowDimension(vect));
     count := 0;
 
     do
@@ -129,29 +123,19 @@
         tempVect := count*vect mod modulus;
     until (Equal(tempVect, zeroVector));
     return count;
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L105" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L183" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L106" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L107" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L124" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false">mod_span := proc(modulus::integer, gens::set(Vector))::set(Vector);
-    <Font foreground="[153,153,153]">description &quot;Returns a set representing the span of the given set of vectors under the given modulus.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L238" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc mod_span" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">mod_span := proc(modulus::integer, gens::set(Vector))::set(Vector);
+    description &quot;Returns a set representing the span of the given set of vectors under the given modulus.&quot;;
     local i, span, coeffis, zeroCoeffis, tempVect, tempVect2, isNew;
+    global zeroVector;
 
-<Font foreground="[153,153,153]">    #Preventing the empty set from causing issues</Font>
+    #Preventing the empty set from causing issues
     if (gens = {}) then
-        return {Vector()};
+        return {zeroVector};
     fi;
     
     coeffis := [seq(0, 1..numelems(gens))];
@@ -159,17 +143,17 @@ end proc:</Text-field>
     span := {};
 
     do
-        <Font foreground="[153,153,153]">#Increment coefficients for forming our linear combination</Font>
+        #Increment coefficients for forming our linear combination
         for i from 1 to numelems(coeffis) do
             if (coeffis[i] + 1 = modulus) then
-                coeffis[i] := 0;
+                subsop(i=0, coeffis);
             else
-                coeffis[i] += 1;
+                subsop(i=coeffis[i]+1, coeffis);
                 break;
             fi;
         od;
 
-        <Font foreground="[153,153,153]">#Calculate next vector to add to span</Font>
+        #Calculate next vector to add to span
         tempVect := Vector(RowDimension(gens[1]));
         for i from 1 to numelems(coeffis) do
             tempVect += coeffis[i]*gens[i];
@@ -177,7 +161,7 @@ end proc:</Text-field>
 
         tempVect mod= modulus;
 
-        <Font foreground="[153,153,153]">#Check to see if our vector is already in the set</Font>
+        #Check to see if our vector is already in the set
         isNew := true;
         for tempVect2 in span do
             if (Equal(tempVect, tempVect2)) then
@@ -187,29 +171,18 @@ end proc:</Text-field>
         od;
 
         if (isNew) then
-            span := span union {tempVect};
+            span union= {tempVect};
         fi;
     until (evalb(coeffis = zeroCoeffis));
     
     return span;
-end proc:</Text-field>
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group hide-input="false" labelreference="L205" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L132" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L137" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L139" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L135" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">in_span := proc(vect::Vector, span::set(Vector))::boolean;
-    <Font foreground="[153,153,153]">description &quot;Returns true if the given vector is in the given span, false otherwise.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L243" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc in_span" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">in_span := proc(vect::Vector, span::set(Vector))::boolean;
+    description &quot;Returns true if the given vector is in the given span, false otherwise.&quot;;
     local tempVect;
     
     for tempVect in span do
@@ -219,24 +192,13 @@ end proc:</Text-field>
     od;
 
     return false;
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L111" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L242" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L140" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L116" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L114" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">span_intersect := proc(set1::set(Vector), set2::set(Vector))::set(Vector);
-<Font foreground="[153,153,153]">    description &quot;Returns the intersection of the two given sets of vectors.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L245" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc span_intersect" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">span_intersect := proc(set1::set(Vector), set2::set(Vector))::set(Vector);
+    description &quot;Returns the intersection of the two given sets of vectors.&quot;;
     local tempVect, tempVect2, intersectSet;
 
     intersectSet := {};
@@ -251,24 +213,13 @@ end proc:</Text-field>
     od;
 
     return intersectSet;
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L142" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L199" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group hide-input="false" labelreference="L123" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L127" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L141" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">equal_span := proc(span1::set(Vector), span2::set(Vector))::boolean;
-    <Font foreground="[153,153,153]">description &quot;Returns true if the given spans are equal, false otherwise.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L247" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc equal_span" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">equal_span := proc(span1::set(Vector), span2::set(Vector))::boolean;
+    description &quot;Returns true if the given spans are equal, false otherwise.&quot;;
     local tempVect, tempVect2, inBoth;
 
     if not (numelems(span1) = numelems(span2)) then
@@ -277,7 +228,7 @@ end proc:</Text-field>
         for tempVect in span1 do
             inBoth := false;
 
-<Font foreground="[153,153,153]">            #Search through span2 to ensure each vector found in span1 is there</Font>
+            #Search through span2 to ensure each vector found in span1 is there
             for tempVect2 in span2 do
                 if (Equal(tempVect, tempVect2)) then
                     inBoth := true;
@@ -292,24 +243,13 @@ end proc:</Text-field>
 
         return true;
     fi;
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L125" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L203" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L130" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L128" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L115" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">dir_set_representation := proc(modulus::integer, vect::Vector, repset::set(Vector))::set(list);
-    <Font foreground="[153,153,153]">description &quot;Returns a representation of the passed vector using the given set if possible, returns the empty set otherwise. The representation represents a polynomial expression in the following way: {[coefficient, vector], [coefficient, vector], ...}.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L249" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc dir_set_representation" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">dir_set_representation := proc(modulus::integer, vect::Vector, repset::set(Vector))::set(list);
+    description &quot;Returns a representation of the passed vector using the given set if possible, returns the empty set otherwise. The representation represents a polynomial expression in the following way: {[coefficient, vector], [coefficient, vector], ...}.&quot;;
     local i, coeffis, zeroCoeffis, tempVect, DIRrep;
 
     if (repset = {}) then
@@ -321,7 +261,7 @@ end proc:</Text-field>
     DIRrep := {};
 
     do
-        <Font foreground="[153,153,153]">#Check to see if our current coefficients create vect</Font>
+        #Check to see if our current coefficients create vect
         tempVect := Vector(RowDimension(repset[1]));
         for i from 1 to numelems(coeffis) do
             tempVect += coeffis[i]*repset[i];
@@ -329,7 +269,7 @@ end proc:</Text-field>
 
         tempVect mod= modulus;
 
-        <Font foreground="[153,153,153]">#If we found a set of coefficients that work, return them</Font>
+        #If we found a set of coefficients that work, return them
         if (Equal(tempVect, vect)) then
            for i from 1 to numelems(coeffis) do
                DIRrep union= {[coeffis[i], repset[i]]};
@@ -337,36 +277,25 @@ end proc:</Text-field>
            return DIRrep;
         fi;
 
-        <Font foreground="[153,153,153]">#Increment coeffis</Font>
+        #Increment coeffis
         for i from 1 to numelems(coeffis) do
             if (coeffis[i] + 1 = modulus) then
-                coeffis[i] := 0;
+                subsop(i=0, coeffis);
             else
-                coeffis[i] += 1;
+                subsop(i=coeffis[i]+1, coeffis);
                 break;
             fi;
         od;
     until (evalb(coeffis = zeroCoeffis));
 
     return {};
-end proc:</Text-field>
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group hide-input="false" labelreference="L190" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" spaceabove="0" linebreak="space" rightmargin="0" linespacing="0.0" initial="0" firstindent="0" leftmargin="0" bulletsuffix="" alignment="left" bullet="none" spacebelow="0" pagebreak-before="false"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L113" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L119" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L117" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L129" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">minimum_multiple_in_span := proc(baseMod::integer, maxPower::integer, vect::Vector, DIspan::set(Vector))::integer;
-    <Font foreground="[153,153,153]">description &quot;Returns the first nonzero multiple of the given vector that's in the given span under the given modulus. Returns zero if the zeroth multiple is the only one in the span.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L251" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc minimum_multiple_in_span" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">minimum_multiple_in_span := proc(baseMod::integer, maxPower::integer, vect::Vector, DIspan::set(Vector))::integer;
+    description &quot;Returns the first nonzero multiple of the given vector that's in the given span under the given modulus. Returns zero if the zeroth multiple is the only one in the span.&quot;;
     local power, multVect, tempVect;
 
     power := 0;
@@ -382,34 +311,23 @@ end proc:</Text-field>
         power += 1;
     od;
     return 0;
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L143" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L226" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L144" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L145" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L160" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">is_dimensionally_independent := proc(modulus::integer, gens::set(Vector))::boolean;
-    <Font foreground="[153,153,153]">description &quot;Returns true if the given set of vectors is dimensionally independent, false otherwise.&quot;</Font>;
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L253" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc is_dimensionally_independent" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">is_dimensionally_independent := proc(modulus::integer, gens::set(Vector))::boolean;
+    description &quot;Returns true if the given set of vectors is dimensionally independent, false otherwise.&quot;;
     local tempVect, zeroVect, tempSet;
 
-<Font foreground="[153,153,153]">    #The empty set is dimensionally independent, as is any single vector</Font>
+    #The empty set is dimensionally independent, as is any single vector
     if (gens = {} or numelems(gens) = 1) then
         return true;
     fi;
 
     zeroVect := Vector(RowDimension(gens[1]));
 
-    <Font foreground="[153,153,153]">#Iterate through all vectors in gens, see if the DI property holds</Font>
+    #Iterate through all vectors in gens, see if the DI property holds
     for tempVect in gens do
         if (Equal(zeroVect, tempVect)) then
             return false;
@@ -422,24 +340,13 @@ end proc:</Text-field>
     od;
 
     return true;
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L153" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L223" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group labelreference="L151" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L155" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
-</Input>
-</Group>
-<Group labelreference="L163" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">DI_split := proc(modulus::integer, vect::Vector, repset::set(Vector))::Vector;
-<Font foreground="[153,153,153]">    description &quot;If vect is a lintear combination of the vectors in repset, plus some vector that's dimensionally independent  from repset, this procedure will return that dimensionally-independent part. Returns NULL if such a part doesn't exist.&quot;;</Font>
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L255" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="proc DI_split" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">DI_split := proc(modulus::integer, vect::Vector, repset::set(Vector))::Vector;
+    description &quot;If vect is a linear combination of the vectors in repset, plus some vector that's dimensionally independent from repset, this procedure will return that dimensionally-independent part. Returns NULL if such a part doesn't exist.&quot;;
     local i, coeffis, zeroCoeffis, maybeDI;
 
     coeffis := [seq(0, 1..numelems(repset))];
@@ -462,66 +369,54 @@ end proc:</Text-field>
         #Increment coeffis
         for i from 1 to numelems(coeffis) do
             if (coeffis[i] + 1 &gt;= modulus) then
-                coeffis[i] := 0;
+                subsop(i=0, coeffis);
             else
-                coeffis[i] += 1;
+                subsop(i=coeffis[i]+1, coeffis);
                 break;
             fi;
         od;
     until (evalb(coeffis = zeroCoeffis));
-end proc:</Text-field>
-</Input>
-</Group>
-<Group labelreference="L164" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+    return NULL;
+end proc:
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group hide-input="false" labelreference="L214" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L165" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L218" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L278" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="test cases" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">#Some useful test cases
+is_dimensionally_independent(2, {Vector([1, 0, 0])}):
+equal_span(mod_span(5, {Vector([1, 0]), Vector([0, 1])}), mod_span(5, {Vector([4, 4]), Vector([3, 1])})):
+dir_set_representation(5, Vector([1, 4, 2]), {Vector([4, 0, 0]), Vector([0, 0, 1])}):
+minimum_multiple_in_span(5, 2, Vector([1, 0]), mod_span(25, {Vector([1, 5]), Vector([1, 6])})):
+DI_split(9, Vector([1, 3, 0]), {Vector([1, 0, 0])}):
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group labelreference="L256" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group hide-input="false" labelreference="L171" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">is_dimensionally_independent(2, {Vector([1, 0, 0])}):</Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L170" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">equal_span(mod_span(5, {Vector([1, 0]), Vector([0, 1])}), mod_span(5, {Vector([4, 4]), Vector([3, 1])})):</Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L169" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">dir_set_representation(5, Vector([1, 4, 2]), {Vector([4, 0, 0]), Vector([0, 0, 1])}):</Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L172" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">minimum_multiple_in_span(5, 2, Vector([1, 0]), mod_span(25, {Vector([1, 5]), Vector([1, 6])}));</Text-field>
-</Input>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUkjbW5HNiMvSSttb2R1bGVuYW1lRzYiSSxUeXBlc2V0dGluZ0dJKF9zeXNsaWJHRic2JFEiMUYnLyUsbWF0aHZhcmlhbnRHUSdub3JtYWxGJw==">IiIi</Equation></Text-field>
-</Output>
-</Group>
-<Group hide-input="false" labelreference="L174" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L273" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L168" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group labelreference="L222" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group>
-<Group hide-input="false" labelreference="L173" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">currentSet := [seq(Vector([0, 0, 0]), 1..3)]:
-zeroVector := Vector([0, 0, 0]):
+</Group><CodeEditor-ExecGroup view="presentation" labelreference="L266" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="main setup" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">currentSet := [seq(Vector([0, 0, 0]), 1..3)]:
 BASEMOD := 3:
-MODPOWER := 2:</Text-field>
-</Input>
-</Group>
-<Group hide-input="false" labelreference="L175" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
-<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"><Font foreground="[153,153,153]">#Iterate through all possible combinations of vectors</Font>
+MODPOWER := 2:
+</EC-CodeEditor></CodeEditor-ExecGroup><CodeEditor-ExecGroup view="presentation" hide-input="false" labelreference="L263" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="main" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">#Iterate through all possible combinations of vectors
 do
     newSet := {seq(currentSet[v], v=1..numelems(currentSet))};
+    newSetSpan := mod_span(BASEMOD^MODPOWER, newSet);
+
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
-        <Font foreground="[153,153,153]">#First, check if there are any zero vectors in currentSet</Font>
+        #First, check if there are any zero vectors in currentSet
         for tempVect in currentSet do
             if (Equal(tempVect, zeroVector)) then
-               <Font foreground="[153,153,153]"> #Find zero vector in newSet and remove it</Font>
+                #Find zero vector in newSet and remove it
                 for tempVect2 in newSet do
                     if (Equal(tempVect, tempVect2)) then
                         newSet minus= {tempVect2};
@@ -531,15 +426,15 @@ do
             fi;
         od;
     fi;
-<Font foreground="[153,153,153]">    #There should now no longer be any zero vectors in newSet</Font>
+    #There should now no longer be any zero vectors in newSet
 
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
-        <Font foreground="[153,153,153]">#Now, we'll check to see if there are any duplicate vectors in newSet</Font>
+        #Now, we'll check to see if there are any duplicate vectors in newSet
         newList := [seq(newSet[v], v=1..numelems(newSet))];
         for v1 from 1 to numelems(newList) do
             for v2 from v1+1 to numelems(newList) do
                 if (Equal(newList[v1], newList[v2])) then
-                    <Font foreground="[153,153,153]">#Find duplicate in newSet, remove it</Font>
+                    #Find duplicate in newSet, remove it
                     for tempVect in newSet do
                         if (Equal(tempVect, newList[v1])) then
                             newSet minus= {tempVect};
@@ -550,16 +445,16 @@ do
             od;
         od;
     fi;
-<Font foreground="[153,153,153]">    #There should now no longer be any duplicates in newSet</Font>
+    #There should now no longer be any duplicates in newSet
 
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
-        <Font foreground="[153,153,153]">#Now, we'll make sure each vector is actually required for the span of newSet</Font>
+        #Now, we'll make sure each vector is actually required for the span of newSet
         newList := [seq(newSet[v], v=1..numelems(newSet))];
         for v from 1 to numelems(newList) do
             subset1 := {seq(newList[x], x=1..v)};
             subset2 := {seq(newList[x], x=1..v-1)};
             if (equal_span(mod_span(BASEMOD^MODPOWER, subset1), mod_span(BASEMOD^MODPOWER, subset2))) then
-                <Font foreground="[153,153,153]">#The vector at position v isn't needed for the span of newSet. Remove it</Font>
+                #The vector at position v isn't needed for the span of newSet. Remove it
                 for tempVect in newSet do
                     if (Equal(tempVect, newList[v])) then
                         newSet minus= {tempVect};
@@ -569,29 +464,29 @@ do
             fi;
         od;
     fi;
-<Font foreground="[153,153,153]">    #There should now no longer be any vectors which don't contribute to the span in newSet</Font>
+    #There should now no longer be any vectors which don't contribute to the span in newSet
 
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
-        <Font foreground="[153,153,153]">#Now, we'll check to see if any vector is an embedded form of some of the other vectors in newSet</Font>
+        #Now, we'll check to see if any vector is an embedded form of some of the other vectors in newSet
 
-        newList = [seq(newSet[v], v=1..numelems(newSet))];
+        newList := [seq(newSet[v], v=1..numelems(newSet))];
         for v from 1 to numelems(newList) do
             subset2 := {seq(newList[x], x=1..v-1)};
             subsetspan := mod_span(BASEMOD^MODPOWER, subset2);
 
-            <Font foreground="[153,153,153]">#Check and see if the first p^c(v) has any vectors in its DIR set expression with invertible coefficients</Font>
+            #Check and see if the first p^c(v) has any vectors in its DIR set expression with invertible coefficients
             multInSet := minimum_multiple_in_span(BASEMOD, MODPOWER, newList[v], subsetspan);
             DIRrep := dir_set_representation(BASEMOD^MODPOWER, multInSet*newList[v], subset2);
             replaced := false;
 
-<Font foreground="[153,153,153]">            #Helpful testing info</Font>
-            print(&quot;subset2&quot;, subset2, &quot;subsetspan&quot;, subsetspan);
-            print(&quot;multInSet&quot;, multInSet, &quot;DIRrep&quot;, DIRrep);
+            #Helpful testing info
+            #print(&quot;subset2&quot;, subset2, &quot;subsetspan&quot;, subsetspan);
+            #print(&quot;multInSet&quot;, multInSet, &quot;DIRrep&quot;, DIRrep);
 
             for i from 1 to numelems(DIRrep) do
                 if ((not ((DIRrep[i][1] mod BASEMOD) = 0)) and 
                 (additive_order(BASEMOD^MODPOWER, DIRrep[i][2]) &gt;= additive_order(BASEMOD^MODPOWER, multInSet*newList[v]))) then
-                    <Font foreground="[153,153,153]">#Find DIRrep[i][2] in newSet, replace it with newList[v]</Font>
+                    #Find DIRrep[i][2] in newSet, replace it with newList[v]
                     for tempVect in newSet do
                         if (Equal(tempVect, DIRrep[i][2])) then
                             newSet minus= {tempVect};
@@ -600,6 +495,16 @@ do
                             break;
                         fi;
                     od;
+
+                    #We'll also remove DIRrep[i][2] from newList and replace it with 0 since we don't need it anymore
+                    if (replaced) then
+                        for x from 1 to numelems(newList) do
+                            if (Equal(newList[x], DIRrep[i][2])) then
+                                subsop(x=zeroVector, newList);
+                                break;
+                            fi;
+                        od;
+                    fi;
                 fi;
 
                 if (replaced) then
@@ -608,18 +513,53 @@ do
             od;
         od;   
     fi;
-    <Font foreground="[153,153,153]">#Now, newSet should have no vectors that are &quot;between&quot; the spans of the other vectors</Font>
+    #Now, newSet should have no vectors that are &quot;between&quot; the spans of the other vectors
+
+    if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
+        newList := [seq(newSet[v], v=1..numelems(newSet))];
+        for v from 1 to numelems(newSet) do
+            subset2 := {seq(newList[x], x=1..v-1)};
+
+            tempVect := DI_split(BASEMOD^MODPOWER, newList[v], subset2);
+            #If there's a bit of newList[v] we can break off that's DI, swap it in to newSet
+            if not (tempVect = NULL) then
+                for x from 1 to numelems(newSet) do
+                    if (Equal(newList[v], newSet[x])) then
+                        newSet minus= newSet[x];
+                        newSet union= tempVect;
+                        subsop(v=tempVect, newList);
+                        break;
+                    fi;
+                od;
+            fi;
+        od;
+    fi;
+    #Now, newSet shouldn't contain any vectors which would be DI if not for a linear combination of the other vectors added to it
 
     if not (is_dimensionally_independent(BASEMOD^MODPOWER, newSet)) then
         print(&quot;The set&quot;, newSet, &quot;is not dimensionally independent.&quot;);
         break;
     fi;
 
-    <Font foreground="[153,153,153]">#Increment through our vectors
+    #Making sure the span of newSet is preserved from the above operations
+    newerSetSpan := mod_span(BASEMOD^MODPOWER, newSet);
+    if not (equal_span(newSetSpan, newerSetSpan)) then
+         print(&quot;span(newSet) changed.&quot;);
+         print(currentSet);
+         break;
+    fi;
+
+    #Increment through our vectors
     #This could be done more efficiently
-    </Font>finishedIncrementing := false;<Font foreground="[153,153,153]">
-    </Font>for tempVect in currentSet do
-        for elem from 1 to RowDimension(tempVect) do
+    finishedIncrementing := false;
+    secondIsIncrementing := false;
+    for tempVect in currentSet do
+        for elem from 1 to RowDimension(tempVect) do 
+        	  #This has to be here, or else the logic doesn't work out
+            if (secondIsIncrementing and elem = RowDimension(tempVect)-1) then
+                print(currentSet);
+            fi;
+            
             if (tempVect[elem] + 1 = BASEMOD^MODPOWER) then
                 tempVect[elem] := 0;
             else
@@ -628,31 +568,28 @@ do
                 break;
             fi;
         od;
+
         
         if (finishedIncrementing) then
             break;
         fi;
-    od;<Font foreground="[153,153,153]">
-</Font>until (Equal(currentSet[1], zeroVector) and 
+
+        #This is to keep track of where we are in the computation
+        secondIsIncrementing := true;
+    od;
+until (Equal(currentSet[1], zeroVector) and 
        Equal(currentSet[2], zeroVector) and
-       Equal(currentSet[3], zeroVector)):</Text-field>
-</Input>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYqLUkjbXNHRiQ2I1Eoc3Vic2V0MkYnLUkjbW9HRiQ2LVEoJmNvbW1hO0YnLyUsbWF0aHZhcmlhbnRHUSdub3JtYWxGJy8lJmZlbmNlR1EmZmFsc2VGJy8lKnNlcGFyYXRvckdRJXRydWVGJy8lKXN0cmV0Y2h5R0Y4LyUqc3ltbWV0cmljR0Y4LyUobGFyZ2VvcEdGOC8lLm1vdmFibGVsaW1pdHNHRjgvJSdhY2NlbnRHRjgvJSdsc3BhY2VHUSYwLjBlbUYnLyUncnNwYWNlR1EsMC4zMzMzMzMzZW1GJy1JI21pR0YkNiVRKCZlbXB0eTtGJy8lJ2l0YWxpY0dGOy9GNFEnaXRhbGljRidGLy1GLDYjUStzdWJzZXRzcGFuRidGLy1JKG1mZW5jZWRHRiQ2Ji1GWDYoLUYjNiYtSSdtdGFibGVHRiQ2Ni8lK2ZvcmVncm91bmRHUShbMCwwLDBdRicvJSlyZWFkb25seUdGOC8lJmFsaWduR1ElYXhpc0YnLyUpcm93YWxpZ25HUSliYXNlbGluZUYnLyUsY29sdW1uYWxpZ25HUSdjZW50ZXJGJy8lK2dyb3VwYWxpZ25HUSd8ZnJsZWZ0fGhyRicvJS9hbGlnbm1lbnRzY29wZUdGOy8lLGNvbHVtbndpZHRoR1ElYXV0b0YnLyUmd2lkdGhHRmBwLyUrcm93c3BhY2luZ0dRJjEuMGV4RicvJS5jb2x1bW5zcGFjaW5nR1EmMC44ZW1GJy8lKXJvd2xpbmVzR1Elbm9uZUYnLyUsY29sdW1ubGluZXNHRltxLyUmZnJhbWVHRltxLyUtZnJhbWVzcGFjaW5nR1EsMC40ZW1+MC41ZXhGJy8lKmVxdWFscm93c0dGOC8lLWVxdWFsY29sdW1uc0dGOC8lLWRpc3BsYXlzdHlsZUdGOC8lJXNpZGVHUSZyaWdodEYnLyUwbWlubGFiZWxzcGFjaW5nR0ZocEZbb0Zeb0YzRjMvSSttc2VtYW50aWNzR0YkUSpDb2xWZWN0b3JGJy8lJW9wZW5HUScmbHNxYjtGJy8lJmNsb3NlR1EnJnJzcWI7RidGXnJGMy9GYnJRJyZsY3ViO0YnL0ZlclEnJnJjdWI7RidGMw==">LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYpLUkjbXNHRiQ2I1Eoc3Vic2V0MkYnLUkjbW9HRiQ2LVEoJmNvbW1hO0YnLyUsbWF0aHZhcmlhbnRHUSdub3JtYWxGJy8lJmZlbmNlR1EmZmFsc2VGJy8lKnNlcGFyYXRvckdRJXRydWVGJy8lKXN0cmV0Y2h5R0Y4LyUqc3ltbWV0cmljR0Y4LyUobGFyZ2VvcEdGOC8lLm1vdmFibGVsaW1pdHNHRjgvJSdhY2NlbnRHRjgvJSdsc3BhY2VHUSYwLjBlbUYnLyUncnNwYWNlR1EsMC4zMzMzMzMzZW1GJy1JI21pR0YkNiVRKCZlbXB0eTtGJy8lJ2l0YWxpY0dGOy9GNFEnaXRhbGljRidGLy1GLDYjUStzdWJzZXRzcGFuRidGLy1JKG1mZW5jZWRHRiQ2Ji1GWDYoLUYjNiMtSSdtdGFibGVHRiQ2Ni8lK2ZvcmVncm91bmRHUShbMCwwLDBdRicvJSlyZWFkb25seUdGOC8lJmFsaWduR1ElYXhpc0YnLyUpcm93YWxpZ25HUSliYXNlbGluZUYnLyUsY29sdW1uYWxpZ25HUSdjZW50ZXJGJy8lK2dyb3VwYWxpZ25HUSd8ZnJsZWZ0fGhyRicvJS9hbGlnbm1lbnRzY29wZUdGOy8lLGNvbHVtbndpZHRoR1ElYXV0b0YnLyUmd2lkdGhHRmBwLyUrcm93c3BhY2luZ0dRJjEuMGV4RicvJS5jb2x1bW5zcGFjaW5nR1EmMC44ZW1GJy8lKXJvd2xpbmVzR1Elbm9uZUYnLyUsY29sdW1ubGluZXNHRltxLyUmZnJhbWVHRltxLyUtZnJhbWVzcGFjaW5nR1EsMC40ZW1+MC41ZXhGJy8lKmVxdWFscm93c0dGOC8lLWVxdWFsY29sdW1uc0dGOC8lLWRpc3BsYXlzdHlsZUdGOC8lJXNpZGVHUSZyaWdodEYnLyUwbWlubGFiZWxzcGFjaW5nR0ZocEYzL0krbXNlbWFudGljc0dGJFEqQ29sVmVjdG9yRicvJSVvcGVuR1EnJmxzcWI7RicvJSZjbG9zZUdRJyZyc3FiO0YnRl5yRjMvRmJyUScmbGN1YjtGJy9GZXJRJyZyY3ViO0Yn</Equation></Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYqLUkjbXNHRiQ2I1EqbXVsdEluU2V0RictSSNtb0dGJDYtUSgmY29tbWE7RicvJSxtYXRodmFyaWFudEdRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR1EldHJ1ZUYnLyUpc3RyZXRjaHlHRjgvJSpzeW1tZXRyaWNHRjgvJShsYXJnZW9wR0Y4LyUubW92YWJsZWxpbWl0c0dGOC8lJ2FjY2VudEdGOC8lJ2xzcGFjZUdRJjAuMGVtRicvJSdyc3BhY2VHUSwwLjMzMzMzMzNlbUYnLUkjbW5HRiQ2JFEiMEYnRjNGLy1GLDYjUSdESVJyZXBGJ0YvLUkjbWlHRiQ2JVEoJmVtcHR5O0YnLyUnaXRhbGljR0Y7L0Y0USdpdGFsaWNGJ0Yz">LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYpLUkjbXNHRiQ2I1EqbXVsdEluU2V0RictSSNtb0dGJDYtUSgmY29tbWE7RicvJSxtYXRodmFyaWFudEdRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR1EldHJ1ZUYnLyUpc3RyZXRjaHlHRjgvJSpzeW1tZXRyaWNHRjgvJShsYXJnZW9wR0Y4LyUubW92YWJsZWxpbWl0c0dGOC8lJ2FjY2VudEdGOC8lJ2xzcGFjZUdRJjAuMGVtRicvJSdyc3BhY2VHUSwwLjMzMzMzMzNlbUYnLUkjbW5HRiQ2JFEiMEYnRjNGLy1GLDYjUSdESVJyZXBGJ0YvLUkjbWlHRiQ2JVEoJmVtcHR5O0YnLyUnaXRhbGljR0Y7L0Y0USdpdGFsaWNGJw==</Equation></Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYqLUkjbXNHRiQ2I1Eoc3Vic2V0MkYnLUkjbW9HRiQ2LVEoJmNvbW1hO0YnLyUsbWF0aHZhcmlhbnRHUSdub3JtYWxGJy8lJmZlbmNlR1EmZmFsc2VGJy8lKnNlcGFyYXRvckdRJXRydWVGJy8lKXN0cmV0Y2h5R0Y4LyUqc3ltbWV0cmljR0Y4LyUobGFyZ2VvcEdGOC8lLm1vdmFibGVsaW1pdHNHRjgvJSdhY2NlbnRHRjgvJSdsc3BhY2VHUSYwLjBlbUYnLyUncnNwYWNlR1EsMC4zMzMzMzMzZW1GJy1JKG1mZW5jZWRHRiQ2Ji1GTTYoLUYjNiYtSSdtdGFibGVHRiQ2OS1JJG10ckdGJDYoLUkkbXRkR0YkNiotSSNtbkdGJDYkUSIxRidGMy8lK2ZvcmVncm91bmRHUShbMCwwLDBdRicvJSlyZWFkb25seUdGOC8lKXJvd2FsaWduR1EhRicvJSxjb2x1bW5hbGlnbkdGYW8vJStncm91cGFsaWduR0Zhby8lKHJvd3NwYW5HRmluLyUrY29sdW1uc3BhbkdGaW5Gam5GXW9GX29GYm9GZG8tRlc2KC1GWjYqLUZnbjYkUSIzRidGM0ZqbkZdb0Zfb0Zib0Zkb0Zmb0Zob0ZqbkZdb0Zfb0Zib0Zkby1GVzYoLUZaNiotRmduNiRRIjBGJ0YzRmpuRl1vRl9vRmJvRmRvRmZvRmhvRmpuRl1vRl9vRmJvRmRvRmpuRl1vLyUmYWxpZ25HUSVheGlzRicvRmBvUSliYXNlbGluZUYnL0Zjb1EnY2VudGVyRicvRmVvUSd8ZnJsZWZ0fGhyRicvJS9hbGlnbm1lbnRzY29wZUdGOy8lLGNvbHVtbndpZHRoR1ElYXV0b0YnLyUmd2lkdGhHRmVxLyUrcm93c3BhY2luZ0dRJjEuMGV4RicvJS5jb2x1bW5zcGFjaW5nR1EmMC44ZW1GJy8lKXJvd2xpbmVzR1Elbm9uZUYnLyUsY29sdW1ubGluZXNHRmByLyUmZnJhbWVHRmByLyUtZnJhbWVzcGFjaW5nR1EsMC40ZW1+MC41ZXhGJy8lKmVxdWFscm93c0dGOC8lLWVxdWFsY29sdW1uc0dGOC8lLWRpc3BsYXlzdHlsZUdGOC8lJXNpZGVHUSZyaWdodEYnLyUwbWlubGFiZWxzcGFjaW5nR0ZdckZqbkZdb0YzRjMvSSttc2VtYW50aWNzR0YkUSpDb2xWZWN0b3JGJy8lJW9wZW5HUScmbHNxYjtGJy8lJmNsb3NlR1EnJnJzcWI7RidGY3NGMy9GZ3NRJyZsY3ViO0YnL0Zqc1EnJnJjdWI7RidGLy1GLDYjUStzdWJzZXRzcGFuRidGLy1GTTYmLUYjNjZGTy1GMDYtUSIsRidGM0Y2RjlGPEY+RkBGQkZERkZGSS1GTTYoLUYjNiYtRlQ2OS1GVzYoLUZaNiotRmduNiRRIjJGJ0YzRmpuRl1vRl9vRmJvRmRvRmZvRmhvRmpuRl1vRl9vRmJvRmRvLUZXNigtRlo2Ki1GZ242JFEiNkYnRjNGam5GXW9GX29GYm9GZG9GZm9GaG9Gam5GXW9GX29GYm9GZG9GYXBGam5GXW9GaHBGW3FGXXFGX3FGYXFGY3FGZnFGaHFGW3JGXnJGYXJGY3JGZXJGaHJGanJGXHNGXnNGYXNGam5GXW9GM0YzRmNzRmZzRmlzRmNzRmd0LUZNNigtRiM2Ji1GVDY5RmpvRmFwRmFwRmpuRl1vRmhwRltxRl1xRl9xRmFxRmNxRmZxRmhxRltyRl5yRmFyRmNyRmVyRmhyRmpyRlxzRl5zRmFzRmpuRl1vRjNGM0Zjc0Zmc0Zpc0Zjc0ZndC1GTTYoLUYjNiYtRlQ2OS1GVzYoLUZaNiotRmduNiRRIjRGJ0YzRmpuRl1vRl9vRmJvRmRvRmZvRmhvRmpuRl1vRl9vRmJvRmRvRmpvRmFwRmpuRl1vRmhwRltxRl1xRl9xRmFxRmNxRmZxRmhxRltyRl5yRmFyRmNyRmVyRmhyRmpyRlxzRl5zRmFzRmpuRl1vRjNGM0Zjc0Zmc0Zpc0Zjc0ZndC1GTTYoLUYjNiYtRlQ2OS1GVzYoLUZaNiotRmduNiRRIjVGJ0YzRmpuRl1vRl9vRmJvRmRvRmZvRmhvRmpuRl1vRl9vRmJvRmRvRmd1RmFwRmpuRl1vRmhwRltxRl1xRl9xRmFxRmNxRmZxRmhxRltyRl5yRmFyRmNyRmVyRmhyRmpyRlxzRl5zRmFzRmpuRl1vRjNGM0Zjc0Zmc0Zpc0Zjc0ZndC1GTTYoLUYjNiYtRlQ2OUZndUZhcEZhcEZqbkZdb0ZocEZbcUZdcUZfcUZhcUZjcUZmcUZocUZbckZeckZhckZjckZlckZockZqckZcc0Zec0Zhc0ZqbkZdb0YzRjNGY3NGZnNGaXNGY3NGZ3QtRk02KC1GIzYmLUZUNjktRlc2KC1GWjYqLUZnbjYkUSI3RidGM0ZqbkZdb0Zfb0Zib0Zkb0Zmb0Zob0ZqbkZdb0Zfb0Zib0Zkb0Zqb0ZhcEZqbkZdb0ZocEZbcUZdcUZfcUZhcUZjcUZmcUZocUZbckZeckZhckZjckZlckZockZqckZcc0Zec0Zhc0ZqbkZdb0YzRjNGY3NGZnNGaXNGY3NGZ3QtRk02KC1GIzYmLUZUNjktRlc2KC1GWjYqLUZnbjYkUSI4RidGM0ZqbkZdb0Zfb0Zib0Zkb0Zmb0Zob0ZqbkZdb0Zfb0Zib0Zkb0ZndUZhcEZqbkZdb0ZocEZbcUZdcUZfcUZhcUZjcUZmcUZocUZbckZeckZhckZjckZlckZockZqckZcc0Zec0Zhc0ZqbkZdb0YzRjNGY3NGZnNGaXNGY3NGZ3QtRk02KC1GIzYmLUZUNjlGYXBGYXBGYXBGam5GXW9GaHBGW3FGXXFGX3FGYXFGY3FGZnFGaHFGW3JGXnJGYXJGY3JGZXJGaHJGanJGXHNGXnNGYXNGam5GXW9GM0YzRmNzRmZzRmlzRmNzRmpuRl1vRjNGM0ZcdEZedEYz">LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYpLUkjbXNHRiQ2I1Eoc3Vic2V0MkYnLUkjbW9HRiQ2LVEoJmNvbW1hO0YnLyUsbWF0aHZhcmlhbnRHUSdub3JtYWxGJy8lJmZlbmNlR1EmZmFsc2VGJy8lKnNlcGFyYXRvckdRJXRydWVGJy8lKXN0cmV0Y2h5R0Y4LyUqc3ltbWV0cmljR0Y4LyUobGFyZ2VvcEdGOC8lLm1vdmFibGVsaW1pdHNHRjgvJSdhY2NlbnRHRjgvJSdsc3BhY2VHUSYwLjBlbUYnLyUncnNwYWNlR1EsMC4zMzMzMzMzZW1GJy1JKG1mZW5jZWRHRiQ2Ji1GTTYoLUYjNiMtSSdtdGFibGVHRiQ2OS1JJG10ckdGJDYmLUkkbXRkR0YkNigtSSNtbkdGJDYkUSIxRidGMy8lKXJvd2FsaWduR1EhRicvJSxjb2x1bW5hbGlnbkdGXG8vJStncm91cGFsaWduR0Zcby8lKHJvd3NwYW5HRmluLyUrY29sdW1uc3BhbkdGaW5Gam5GXW9GX28tRlc2Ji1GWjYoLUZnbjYkUSIzRidGM0ZqbkZdb0Zfb0Zhb0Zjb0ZqbkZdb0Zfby1GVzYmLUZaNigtRmduNiRRIjBGJ0YzRmpuRl1vRl9vRmFvRmNvRmpuRl1vRl9vLyUrZm9yZWdyb3VuZEdRKFswLDAsMF1GJy8lKXJlYWRvbmx5R0Y4LyUmYWxpZ25HUSVheGlzRicvRltvUSliYXNlbGluZUYnL0Zeb1EnY2VudGVyRicvRmBvUSd8ZnJsZWZ0fGhyRicvJS9hbGlnbm1lbnRzY29wZUdGOy8lLGNvbHVtbndpZHRoR1ElYXV0b0YnLyUmd2lkdGhHRmVxLyUrcm93c3BhY2luZ0dRJjEuMGV4RicvJS5jb2x1bW5zcGFjaW5nR1EmMC44ZW1GJy8lKXJvd2xpbmVzR1Elbm9uZUYnLyUsY29sdW1ubGluZXNHRmByLyUmZnJhbWVHRmByLyUtZnJhbWVzcGFjaW5nR1EsMC40ZW1+MC41ZXhGJy8lKmVxdWFscm93c0dGOC8lLWVxdWFsY29sdW1uc0dGOC8lLWRpc3BsYXlzdHlsZUdGOC8lJXNpZGVHUSZyaWdodEYnLyUwbWlubGFiZWxzcGFjaW5nR0ZdckYzL0krbXNlbWFudGljc0dGJFEqQ29sVmVjdG9yRicvJSVvcGVuR1EnJmxzcWI7RicvJSZjbG9zZUdRJyZyc3FiO0YnRmNzRjMvRmdzUScmbGN1YjtGJy9GanNRJyZyY3ViO0YnRi8tRiw2I1Erc3Vic2V0c3BhbkYnRi8tRk02Ji1GIzYzRk8tRjA2LVEiLEYnRjNGNkY5RjxGPkZARkJGREZGRkktRk02KC1GIzYjLUZUNjktRlc2Ji1GWjYoLUZnbjYkUSIyRidGM0ZqbkZdb0Zfb0Zhb0Zjb0ZqbkZdb0Zfby1GVzYmLUZaNigtRmduNiRRIjZGJ0YzRmpuRl1vRl9vRmFvRmNvRmpuRl1vRl9vRlxwRmNwRmZwRmhwRltxRl1xRl9xRmFxRmNxRmZxRmhxRltyRl5yRmFyRmNyRmVyRmhyRmpyRlxzRl5zRmFzRjNGY3NGZnNGaXNGY3NGZ3QtRk02KC1GIzYjLUZUNjlGZW9GXHBGXHBGY3BGZnBGaHBGW3FGXXFGX3FGYXFGY3FGZnFGaHFGW3JGXnJGYXJGY3JGZXJGaHJGanJGXHNGXnNGYXNGM0Zjc0Zmc0Zpc0Zjc0ZndC1GTTYoLUYjNiMtRlQ2OS1GVzYmLUZaNigtRmduNiRRIjRGJ0YzRmpuRl1vRl9vRmFvRmNvRmpuRl1vRl9vRmVvRlxwRmNwRmZwRmhwRltxRl1xRl9xRmFxRmNxRmZxRmhxRltyRl5yRmFyRmNyRmVyRmhyRmpyRlxzRl5zRmFzRjNGY3NGZnNGaXNGY3NGZ3QtRk02KC1GIzYjLUZUNjktRlc2Ji1GWjYoLUZnbjYkUSI1RidGM0ZqbkZdb0Zfb0Zhb0Zjb0ZqbkZdb0Zfb0ZndUZccEZjcEZmcEZocEZbcUZdcUZfcUZhcUZjcUZmcUZocUZbckZeckZhckZjckZlckZockZqckZcc0Zec0Zhc0YzRmNzRmZzRmlzRmNzRmd0LUZNNigtRiM2Iy1GVDY5Rmd1RlxwRlxwRmNwRmZwRmhwRltxRl1xRl9xRmFxRmNxRmZxRmhxRltyRl5yRmFyRmNyRmVyRmhyRmpyRlxzRl5zRmFzRjNGY3NGZnNGaXNGY3NGZ3QtRk02KC1GIzYjLUZUNjktRlc2Ji1GWjYoLUZnbjYkUSI3RidGM0ZqbkZdb0Zfb0Zhb0Zjb0ZqbkZdb0Zfb0Zlb0ZccEZjcEZmcEZocEZbcUZdcUZfcUZhcUZjcUZmcUZocUZbckZeckZhckZjckZlckZockZqckZcc0Zec0Zhc0YzRmNzRmZzRmlzRmNzRmd0LUZNNigtRiM2Iy1GVDY5LUZXNiYtRlo2KC1GZ242JFEiOEYnRjNGam5GXW9GX29GYW9GY29Gam5GXW9GX29GZ3VGXHBGY3BGZnBGaHBGW3FGXXFGX3FGYXFGY3FGZnFGaHFGW3JGXnJGYXJGY3JGZXJGaHJGanJGXHNGXnNGYXNGM0Zjc0Zmc0Zpc0Zjc0ZndC1GTTYoLUYjNiMtRlQ2OUZccEZccEZccEZjcEZmcEZocEZbcUZdcUZfcUZhcUZjcUZmcUZocUZbckZeckZhckZjckZlckZockZqckZcc0Zec0Zhc0YzRmNzRmZzRmlzRmNzRjNGXHRGXnQ=</Equation></Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYqLUkjbXNHRiQ2I1EqbXVsdEluU2V0RictSSNtb0dGJDYtUSgmY29tbWE7RicvJSxtYXRodmFyaWFudEdRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR1EldHJ1ZUYnLyUpc3RyZXRjaHlHRjgvJSpzeW1tZXRyaWNHRjgvJShsYXJnZW9wR0Y4LyUubW92YWJsZWxpbWl0c0dGOC8lJ2FjY2VudEdGOC8lJ2xzcGFjZUdRJjAuMGVtRicvJSdyc3BhY2VHUSwwLjMzMzMzMzNlbUYnLUkjbW5HRiQ2JFEiM0YnRjNGLy1GLDYjUSdESVJyZXBGJ0YvLUkobWZlbmNlZEdGJDYmLUZUNiYtRiM2KEZMLUYwNi1RIixGJ0YzRjZGOUY8Rj5GQEZCRkRGRkZJLUZUNigtRiM2Ji1JJ210YWJsZUdGJDY5LUkkbXRyR0YkNigtSSRtdGRHRiQ2Ki1GTTYkUSIxRidGMy8lK2ZvcmVncm91bmRHUShbMCwwLDBdRicvJSlyZWFkb25seUdGOC8lKXJvd2FsaWduR1EhRicvJSxjb2x1bW5hbGlnbkdGXnAvJStncm91cGFsaWduR0ZecC8lKHJvd3NwYW5HRmZvLyUrY29sdW1uc3BhbkdGZm9GZ29Gam9GXHBGX3BGYXAtRl9vNigtRmJvNipGTEZnb0Zqb0ZccEZfcEZhcEZjcEZlcEZnb0Zqb0ZccEZfcEZhcC1GX282KC1GYm82Ki1GTTYkUSIwRidGM0Znb0Zqb0ZccEZfcEZhcEZjcEZlcEZnb0Zqb0ZccEZfcEZhcEZnb0Zqby8lJmFsaWduR1ElYXhpc0YnL0ZdcFEpYmFzZWxpbmVGJy9GYHBRJ2NlbnRlckYnL0ZicFEnfGZybGVmdHxockYnLyUvYWxpZ25tZW50c2NvcGVHRjsvJSxjb2x1bW53aWR0aEdRJWF1dG9GJy8lJndpZHRoR0Zfci8lK3Jvd3NwYWNpbmdHUSYxLjBleEYnLyUuY29sdW1uc3BhY2luZ0dRJjAuOGVtRicvJSlyb3dsaW5lc0dRJW5vbmVGJy8lLGNvbHVtbmxpbmVzR0Zqci8lJmZyYW1lR0Zqci8lLWZyYW1lc3BhY2luZ0dRLDAuNGVtfjAuNWV4RicvJSplcXVhbHJvd3NHRjgvJS1lcXVhbGNvbHVtbnNHRjgvJS1kaXNwbGF5c3R5bGVHRjgvJSVzaWRlR1EmcmlnaHRGJy8lMG1pbmxhYmVsc3BhY2luZ0dGZ3JGZ29Gam9GM0YzL0krbXNlbWFudGljc0dGJFEqQ29sVmVjdG9yRicvJSVvcGVuR1EnJmxzcWI7RicvJSZjbG9zZUdRJyZyc3FiO0YnRl10RmdvRmpvRjNGM0ZgdEZjdEYzL0ZhdFEnJmxjdWI7RicvRmR0UScmcmN1YjtGJ0Yz">LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYpLUkjbXNHRiQ2I1EqbXVsdEluU2V0RictSSNtb0dGJDYtUSgmY29tbWE7RicvJSxtYXRodmFyaWFudEdRJ25vcm1hbEYnLyUmZmVuY2VHUSZmYWxzZUYnLyUqc2VwYXJhdG9yR1EldHJ1ZUYnLyUpc3RyZXRjaHlHRjgvJSpzeW1tZXRyaWNHRjgvJShsYXJnZW9wR0Y4LyUubW92YWJsZWxpbWl0c0dGOC8lJ2FjY2VudEdGOC8lJ2xzcGFjZUdRJjAuMGVtRicvJSdyc3BhY2VHUSwwLjMzMzMzMzNlbUYnLUkjbW5HRiQ2JFEiM0YnRjNGLy1GLDYjUSdESVJyZXBGJ0YvLUkobWZlbmNlZEdGJDYmLUZUNiYtRiM2JUZMLUYwNi1RIixGJ0YzRjZGOUY8Rj5GQEZCRkRGRkZJLUZUNigtRiM2Iy1JJ210YWJsZUdGJDY5LUkkbXRyR0YkNiYtSSRtdGRHRiQ2KC1GTTYkUSIxRidGMy8lKXJvd2FsaWduR1EhRicvJSxjb2x1bW5hbGlnbkdGaW8vJStncm91cGFsaWduR0Zpby8lKHJvd3NwYW5HRmZvLyUrY29sdW1uc3BhbkdGZm9GZ29Gam9GXHAtRl9vNiYtRmJvNihGTEZnb0Zqb0ZccEZecEZgcEZnb0Zqb0ZccC1GX282Ji1GYm82KC1GTTYkUSIwRidGM0Znb0Zqb0ZccEZecEZgcEZnb0Zqb0ZccC8lK2ZvcmVncm91bmRHUShbMCwwLDBdRicvJSlyZWFkb25seUdGOC8lJmFsaWduR1ElYXhpc0YnL0Zob1EpYmFzZWxpbmVGJy9GW3BRJ2NlbnRlckYnL0ZdcFEnfGZybGVmdHxockYnLyUvYWxpZ25tZW50c2NvcGVHRjsvJSxjb2x1bW53aWR0aEdRJWF1dG9GJy8lJndpZHRoR0Zfci8lK3Jvd3NwYWNpbmdHUSYxLjBleEYnLyUuY29sdW1uc3BhY2luZ0dRJjAuOGVtRicvJSlyb3dsaW5lc0dRJW5vbmVGJy8lLGNvbHVtbmxpbmVzR0Zqci8lJmZyYW1lR0Zqci8lLWZyYW1lc3BhY2luZ0dRLDAuNGVtfjAuNWV4RicvJSplcXVhbHJvd3NHRjgvJS1lcXVhbGNvbHVtbnNHRjgvJS1kaXNwbGF5c3R5bGVHRjgvJSVzaWRlR1EmcmlnaHRGJy8lMG1pbmxhYmVsc3BhY2luZ0dGZ3JGMy9JK21zZW1hbnRpY3NHRiRRKkNvbFZlY3RvckYnLyUlb3BlbkdRJyZsc3FiO0YnLyUmY2xvc2VHUScmcnNxYjtGJ0ZddEYzRmB0RmN0RjMvRmF0UScmbGN1YjtGJy9GZHRRJyZyY3ViO0Yn</Equation></Text-field>
-</Output>
-<Output><Text-field style="2D Output" layout="Maple Output"><Equation executable="false" style="2D Output" display="LUklbXJvd0c2Iy9JK21vZHVsZW5hbWVHNiJJLFR5cGVzZXR0aW5nR0koX3N5c2xpYkdGJzYoLUkjbXNHRiQ2I1EoVGhlfnNldEYnLUkjbW9HRiQ2LVEoJmNvbW1hO0YnLyUsbWF0aHZhcmlhbnRHUSdub3JtYWxGJy8lJmZlbmNlR1EmZmFsc2VGJy8lKnNlcGFyYXRvckdRJXRydWVGJy8lKXN0cmV0Y2h5R0Y4LyUqc3ltbWV0cmljR0Y4LyUobGFyZ2VvcEdGOC8lLm1vdmFibGVsaW1pdHNHRjgvJSdhY2NlbnRHRjgvJSdsc3BhY2VHUSYwLjBlbUYnLyUncnNwYWNlR1EsMC4zMzMzMzMzZW1GJy1JKG1mZW5jZWRHRiQ2Ji1GIzYoLUZNNigtRiM2Ji1JJ210YWJsZUdGJDY5LUkkbXRyR0YkNigtSSRtdGRHRiQ2Ki1JI21uR0YkNiRRIjFGJ0YzLyUrZm9yZWdyb3VuZEdRKFswLDAsMF1GJy8lKXJlYWRvbmx5R0Y4LyUpcm93YWxpZ25HUSFGJy8lLGNvbHVtbmFsaWduR0Zjby8lK2dyb3VwYWxpZ25HRmNvLyUocm93c3BhbkdGW28vJStjb2x1bW5zcGFuR0Zbb0Zcb0Zfb0Zhb0Zkb0Zmby1GWTYoLUZmbjYqLUZpbjYkUSIzRidGM0Zcb0Zfb0Zhb0Zkb0Zmb0Zob0Zqb0Zcb0Zfb0Zhb0Zkb0Zmby1GWTYoLUZmbjYqLUZpbjYkUSIwRidGM0Zcb0Zfb0Zhb0Zkb0Zmb0Zob0Zqb0Zcb0Zfb0Zhb0Zkb0Zmb0Zcb0Zfby8lJmFsaWduR1ElYXhpc0YnL0Zib1EpYmFzZWxpbmVGJy9GZW9RJ2NlbnRlckYnL0Znb1EnfGZybGVmdHxockYnLyUvYWxpZ25tZW50c2NvcGVHRjsvJSxjb2x1bW53aWR0aEdRJWF1dG9GJy8lJndpZHRoR0ZncS8lK3Jvd3NwYWNpbmdHUSYxLjBleEYnLyUuY29sdW1uc3BhY2luZ0dRJjAuOGVtRicvJSlyb3dsaW5lc0dRJW5vbmVGJy8lLGNvbHVtbmxpbmVzR0Zici8lJmZyYW1lR0Zici8lLWZyYW1lc3BhY2luZ0dRLDAuNGVtfjAuNWV4RicvJSplcXVhbHJvd3NHRjgvJS1lcXVhbGNvbHVtbnNHRjgvJS1kaXNwbGF5c3R5bGVHRjgvJSVzaWRlR1EmcmlnaHRGJy8lMG1pbmxhYmVsc3BhY2luZ0dGX3JGXG9GX29GM0YzL0krbXNlbWFudGljc0dGJFEqQ29sVmVjdG9yRicvJSVvcGVuR1EnJmxzcWI7RicvJSZjbG9zZUdRJyZyc3FiO0YnRmVzLUYwNi1RIixGJ0YzRjZGOUY8Rj5GQEZCRkRGRkZJLUZNNigtRiM2Ji1GVjY5RlhGY3BGY3BGXG9GX29GanBGXXFGX3FGYXFGY3FGZXFGaHFGanFGXXJGYHJGY3JGZXJGZ3JGanJGXHNGXnNGYHNGY3NGXG9GX29GM0YzRmVzRmhzRlt0RmVzRlxvRl9vRjNGMy9GaXNRJyZsY3ViO0YnL0ZcdFEnJnJjdWI7RidGLy1GLDYjUUJpc35ub3R+ZGltZW5zaW9uYWxseX5pbmRlcGVuZGVudC5GJ0Yz">LV9JLFR5cGVzZXR0aW5nRzYkJSpwcm90ZWN0ZWRHSShfc3lzbGliRzYiSSxtcHJpbnRzbGFzaEdGKDYkNyVRKFRoZX5zZXRGKDwkLUknUlRBQkxFR0YoNiUiNW8nPnBuIlIhXCQqbyQtSSdNQVRSSVhHRig2IzclNyMtSSNtbkc2JEYmL0krbW9kdWxlbmFtZUdGKEYkNiNRIjFGKDcjLUY4NiNRIjNGKDcjLUY4NiNRIjBGKCZJJ1ZlY3RvckdGJTYjSSdjb2x1bW5HRigtRi82JSI1c1hxKG8iUiFcJCpvJC1GMzYjNyVGNkZCRkJGRlFCaXN+bm90fmRpbWVuc2lvbmFsbHl+aW5kZXBlbmRlbnQuRig3JUYsPCQtRkY2Iy9JJCVpZEdGKEYxLUZGNiMvRlZGTEZQ</Equation></Text-field>
-</Output>
-</Group>
-<Group labelreference="L167" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+       Equal(currentSet[3], zeroVector)):
+</EC-CodeEditor></CodeEditor-ExecGroup>
+<Group hide-input="false" labelreference="L216" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
-<Group labelreference="L166" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Group hide-input="false" labelreference="L217" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
+</Input>
+</Group>
+<Group labelreference="L184" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
