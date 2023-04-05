@@ -146,9 +146,9 @@ end proc:
         #Increment coefficients for forming our linear combination
         for i from 1 to numelems(coeffis) do
             if (coeffis[i] + 1 = modulus) then
-                subsop(i=0, coeffis);
+                coeffis := subsop(i=0, coeffis);
             else
-                subsop(i=coeffis[i]+1, coeffis);
+                coeffis := subsop(i=coeffis[i]+1, coeffis);
                 break;
             fi;
         od;
@@ -280,9 +280,9 @@ end proc:
         #Increment coeffis
         for i from 1 to numelems(coeffis) do
             if (coeffis[i] + 1 = modulus) then
-                subsop(i=0, coeffis);
+                coeffis := subsop(i=0, coeffis);
             else
-                subsop(i=coeffis[i]+1, coeffis);
+                coeffis := subsop(i=coeffis[i]+1, coeffis);
                 break;
             fi;
         od;
@@ -301,6 +301,7 @@ end proc:
     power := 0;
     while (power &lt; maxPower) do
         multVect := (baseMod^power)*vect;
+        multVect mod= baseMod^maxPower;
 
         for tempVect in DIspan do
             if (Equal(tempVect, multVect)) then
@@ -369,9 +370,9 @@ end proc:
         #Increment coeffis
         for i from 1 to numelems(coeffis) do
             if (coeffis[i] + 1 &gt;= modulus) then
-                subsop(i=0, coeffis);
+                coeffis := subsop(i=0, coeffis);
             else
-                subsop(i=coeffis[i]+1, coeffis);
+                coeffis := subsop(i=coeffis[i]+1, coeffis);
                 break;
             fi;
         od;
@@ -386,11 +387,14 @@ end proc:
 <Group labelreference="L218" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group><CodeEditor-ExecGroup view="presentation" labelreference="L278" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="test cases" expanded="false" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">#Some useful test cases
+</Group><CodeEditor-ExecGroup view="presentation" hide-input="false" labelreference="L278" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="test cases" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">#Some useful test cases
 is_dimensionally_independent(2, {Vector([1, 0, 0])}):
 equal_span(mod_span(5, {Vector([1, 0]), Vector([0, 1])}), mod_span(5, {Vector([4, 4]), Vector([3, 1])})):
-dir_set_representation(5, Vector([1, 4, 2]), {Vector([4, 0, 0]), Vector([0, 0, 1])}):
-minimum_multiple_in_span(5, 2, Vector([1, 0]), mod_span(25, {Vector([1, 5]), Vector([1, 6])})):
+minimum_multiple_in_span(3, 2, Vector([4, 0, 0]), mod_span(9, {Vector([3, 0, 0])})):
+
+dir_set_representation(9, Vector([3, 0, 0]), {Vector([3, 0, 0])}):
+
+
 DI_split(9, Vector([1, 3, 0]), {Vector([1, 0, 0])}):
 </EC-CodeEditor></CodeEditor-ExecGroup>
 <Group labelreference="L256" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
@@ -404,10 +408,12 @@ DI_split(9, Vector([1, 3, 0]), {Vector([1, 0, 0])}):
 <Group labelreference="L222" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
-</Group><CodeEditor-ExecGroup view="presentation" labelreference="L266" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="main setup" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">currentSet := [seq(Vector([0, 0, 0]), 1..3)]:
+</Group><CodeEditor-ExecGroup view="presentation" hide-input="false" labelreference="L266" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="main setup" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">currentSet := [seq(Vector([0, 0, 0]), 1..3)]:
+#currentSet := subsop(2=Vector([2, 0, 0]), currentSet):
 BASEMOD := 3:
 MODPOWER := 2:
 </EC-CodeEditor></CodeEditor-ExecGroup><CodeEditor-ExecGroup view="presentation" hide-input="false" labelreference="L263" drawlabel="true" applyint="true" applyrational="true" display="code"><EC-CodeEditor id="main" expanded="true" visible="true" pixel-width="500" pixel-height="200" code-language="text/maple" autofit="true" wrapping="true" show-border="false" code-line-numbers="true">#Iterate through all possible combinations of vectors
+print(&quot;currentSet&quot;, currentSet);
 do
     newSet := {seq(currentSet[v], v=1..numelems(currentSet))};
     newSetSpan := mod_span(BASEMOD^MODPOWER, newSet);
@@ -476,10 +482,14 @@ do
 
             #Check and see if the first p^c(v) has any vectors in its DIR set expression with invertible coefficients
             multInSet := minimum_multiple_in_span(BASEMOD, MODPOWER, newList[v], subsetspan);
-            DIRrep := dir_set_representation(BASEMOD^MODPOWER, multInSet*newList[v], subset2);
+            multVect := multInSet*newList[v];
+            multVect mod= BASEMOD^MODPOWER;
+            
+            DIRrep := dir_set_representation(BASEMOD^MODPOWER, multVect, subset2);
             replaced := false;
 
             #Helpful testing info
+            #print(&quot;newList[v]&quot;);
             #print(&quot;subset2&quot;, subset2, &quot;subsetspan&quot;, subsetspan);
             #print(&quot;multInSet&quot;, multInSet, &quot;DIRrep&quot;, DIRrep);
 
@@ -500,7 +510,7 @@ do
                     if (replaced) then
                         for x from 1 to numelems(newList) do
                             if (Equal(newList[x], DIRrep[i][2])) then
-                                subsop(x=zeroVector, newList);
+                                newList := subsop(x=zeroVector, newList);
                                 break;
                             fi;
                         od;
@@ -525,9 +535,9 @@ do
             if not (tempVect = NULL) then
                 for x from 1 to numelems(newSet) do
                     if (Equal(newList[v], newSet[x])) then
-                        newSet minus= newSet[x];
-                        newSet union= tempVect;
-                        subsop(v=tempVect, newList);
+                        newSet minus= {newSet[x]};
+                        newSet union= {tempVect};
+                        newList := subsop(v=tempVect, newList);
                         break;
                     fi;
                 od;
@@ -556,7 +566,7 @@ do
     for tempVect in currentSet do
         for elem from 1 to RowDimension(tempVect) do 
         	  #This has to be here, or else the logic doesn't work out
-            if (secondIsIncrementing and elem = RowDimension(tempVect)-1) then
+            if (secondIsIncrementing) then
                 print(currentSet);
             fi;
             
@@ -590,6 +600,10 @@ until (Equal(currentSet[1], zeroVector) and
 </Input>
 </Group>
 <Group labelreference="L184" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
+<Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal">#We left off at [Vector([0, 0, 0]), Vector([5, 4, 0]), Vector([0, 0, 0])]</Text-field>
+</Input>
+</Group>
+<Group labelreference="L279" drawlabel="true" applyint="true" applyrational="true" applyexponent="false">
 <Input><Text-field prompt="&gt; " style="Maple Input" layout="Normal"></Text-field>
 </Input>
 </Group>
