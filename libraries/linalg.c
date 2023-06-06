@@ -2130,9 +2130,10 @@ int big_row_echelon(const BigIntMatrixTP M,
 			//OR
 			//Checking to see whether the leading entry is nonzero and has an inverse
 			tempGCD = big_gcd(result->matrix[nonzero][focusRow+pivotColOffset], modulus);
+			
 			if ((compare_BigIntT(result->matrix[nonzero][focusRow+pivotColOffset], one) == 0) ||
 					((compare_BigIntT(result->matrix[nonzero][focusRow+pivotColOffset], zero) != 0) &&
-					 (compare_BigIntT(temp, one) == 0)))
+					 (compare_BigIntT(tempGCD, one) == 0)))
 			{
 				hasLeadEntry = TRUE;
 				
@@ -2164,10 +2165,14 @@ int big_row_echelon(const BigIntMatrixTP M,
 		{
 			#ifdef VERBOSE
 			printf("No nonzero, invertible leading entry could be found.\n");
-			printf("Attempting to add rows instead.\n");
+			//printf("Attempting to add rows instead.\n");
 			#endif
 			
 			//Check to see if we can add rows to get an invertible entry
+			//I DON'T THINK THIS WILL EVER WORK SINCE ADDING TWO NON-INVERTIBLE NUMBERS
+			// WILL RESULT IN ANOTHER NON-INVERTIBLE NUMBER
+			// I'M COMMENTING IT OUT FOR NOW
+			/*
 			for (int rowToMaybeAdd = focusRow+1; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
 			{
 				//Hopefully finding a row that we can add to our current row to get an invertible number
@@ -2244,18 +2249,19 @@ int big_row_echelon(const BigIntMatrixTP M,
 				if (hasLeadEntry)
 					break;
 			}
+			*/
 		}
 		
 		//If we couldn't find a suitable row to create an invertible element
 		if (!hasLeadEntry)
 		{
 			#ifdef VERBOSE
-			printf("No suitable row was found to create an invertible entry.\n");
+			//printf("No suitable row was found to create an invertible entry.\n");
 			printf("Settling for the \"least\" non-invertible element.\n");
 			#endif
 			
 			//Finding an element that can eliminate all elements below it
-			//This only works with prime-power moduli
+			//THIS ONLY WORKS WITH PRIME-POWER MODULI
 			leastNonInvIndex = 0;
 			copy_BigIntT(modulus, leastNonInvCount);
 			hasLeadEntry = FALSE; //Have we found a nonzero element?

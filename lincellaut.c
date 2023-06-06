@@ -3805,19 +3805,14 @@ and the number of columns must be 1.\n");
 						annihPolys[numOfAnnihPolys-1] = empty_BigPolyT();
 						copy_BigPolyT(OGtempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
 						
+						if (numOfAnnihPolys == 1)
+							printf("Unique annihilating polynomials:\n");
+						printp(annihPolys[numOfAnnihPolys-1]);
+						printf("\n");
+						
 						idealCoords = realloc(idealCoords, numOfAnnihPolys*sizeof(BigPolyTP));
 						idealCoords[numOfAnnihPolys-1] = empty_BigPolyT();
 					}
-				}
-			}
-			
-			if (numOfAnnihPolys > 0)
-			{
-				printf("Unique annihilating polynomials:\n");
-				for (int p = 0; p < numOfAnnihPolys; p += 1)
-				{
-					printp(annihPolys[p]);
-					printf("\n");
 				}
 			}
 			
@@ -6987,6 +6982,84 @@ and the number of columns must be 1.\n");
 			{
 				FREE(outputFileName);
 			}
+		}
+		
+		
+		//If we want to get a sense for what the cyclespace of a particular vector looks like
+		//This might become an extension of vectPolys, honestly
+		else if (!strcmp(argv[1], "2023"))
+		{
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
+			{
+				fprintf(stderr, "Given update matrix isn't square.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			//Number of row vectors to have in matrixToReduce
+			const int NUMOFCYCLESPACEGENERATORS = big_rows(INITIALMATRIX)+1;
+			
+			//This'll be used to get a sense for what the cyclespace of our initial matrix looks like
+			BigIntTP**     matrixElemsToReduce = malloc(NUMOFCYCLESPACEGENERATORS*sizeof(BigIntTP*));
+			BigIntMatrixTP matrixToReduce;
+			BigIntMatrixTP reducedMatrix;
+			
+			BigIntTP bigMod;
+			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			
+			BigIntMatrixTP iteratedVect = new_BigIntMatrixT(big_rows(INITIALMATRIX), 1);
+			BigIntMatrixTP tempVect     = new_BigIntMatrixT(big_rows(INITIALMATRIX), 1);
+			
+			
+			for (int i = 0; i < NUMOFCYCLESPACEGENERATORS; i += 1)
+			{
+				matrixElemsToReduce[i] = malloc(big_rows(INITIALMATRIX)*sizeof(BigIntTP));
+				for (int j = 0; j < big_rows(INITIALMATRIX); j += 1)
+					matrixElemsToReduce[i][j] = empty_BigIntT(1);
+			}
+			
+			copy_BigIntMatrixT(INITIALMATRIX, iteratedVect);
+			
+			//Iterate vector
+			for (int iteration = 0; iteration < NUMOFCYCLESPACEGENERATORS; iteration += 1)
+			{
+				//Put iterates into a matrix
+				for (int entry = 0; entry < big_rows(INITIALMATRIX); entry += 1)
+					copy_BigIntT(big_element(iteratedVect, entry, 0), matrixElemsToReduce[iteration][entry]);
+				
+				//Iterate vector
+				big_mat_mul(UPDATEMATRIX, iteratedVect, tempVect);
+				modbm(tempVect, bigMod);
+				copy_BigIntMatrixT(tempVect, iteratedVect);
+			}
+			
+			//Reduce matrix
+			matrixToReduce = new_BigIntMatrixT(NUMOFCYCLESPACEGENERATORS, big_rows(UPDATEMATRIX));
+			reducedMatrix  = new_BigIntMatrixT(NUMOFCYCLESPACEGENERATORS, big_rows(UPDATEMATRIX));
+			set_big_matrix(matrixToReduce, matrixElemsToReduce);
+			
+			printf("matrixToReduce:\n");
+			printbm(matrixToReduce);
+			
+			big_row_echelon(matrixToReduce, bigMod, reducedMatrix, NULL);
+			
+			printf("reducedMatrix:\n");
+			printbm(reducedMatrix);
+			
+			for (int i = 0; i < NUMOFCYCLESPACEGENERATORS; i += 1)
+			{
+				for (int j = 0; j < big_rows(INITIALMATRIX); j += 1)
+					matrixElemsToReduce[i][j] = free_BigIntT(matrixElemsToReduce[i][j]);
+				FREE(matrixElemsToReduce[i]);
+			}
+			FREE(matrixElemsToReduce);
+			
+			matrixToReduce = free_BigIntMatrixT(matrixToReduce);
+			reducedMatrix  = free_BigIntMatrixT(reducedMatrix);
+			iteratedVect   = free_BigIntMatrixT(iteratedVect);
+			tempVect       = free_BigIntMatrixT(tempVect);
+			
+			bigMod = free_BigIntT(bigMod);
 		}
 	}
 

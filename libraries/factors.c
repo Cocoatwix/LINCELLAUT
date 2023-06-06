@@ -63,13 +63,17 @@ BigIntTP big_gcd(const BigIntTP A, const BigIntTP B)
 	else if (compare_BigIntT(A, zero) == 0)
 	{
 		zero = free_BigIntT(zero);
-		return B;
+		greater = empty_BigIntT(1);
+		copy_BigIntT(B, greater);
+		return greater; //return B by value
 	}
 	
 	else if (compare_BigIntT(B, zero) == 0)
 	{
 		zero = free_BigIntT(zero);
-		return A;
+		greater = empty_BigIntT(1);
+		copy_BigIntT(A, greater);
+		return greater; //return A by value
 	}
 	
 	greater = empty_BigIntT(1);

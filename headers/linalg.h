@@ -34,6 +34,7 @@ int big_cols(const BigIntMatrixTP);
 int gen_cols(const GenericMatrixTP);
 
 /** What's the element at the given indices in the matrix? */
+//  Returns a reference to the elements
 int element(const IntMatrixTP, int, int);
 BigIntTP big_element(const BigIntMatrixTP, int, int);
 
