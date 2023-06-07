@@ -2097,6 +2097,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 			return 0;
 	
 	copy_BigIntMatrixT(M, result);
+	modbm(result, modulus); //Making sure no wacky entries throw our algorithm off
 	
 	zero = empty_BigIntT(1);
 	one  = new_BigIntT(numArr, 1);
@@ -2131,9 +2132,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 			//Checking to see whether the leading entry is nonzero and has an inverse
 			tempGCD = big_gcd(result->matrix[nonzero][focusRow+pivotColOffset], modulus);
 			
-			if ((compare_BigIntT(result->matrix[nonzero][focusRow+pivotColOffset], one) == 0) ||
-					((compare_BigIntT(result->matrix[nonzero][focusRow+pivotColOffset], zero) != 0) &&
-					 (compare_BigIntT(tempGCD, one) == 0)))
+			if (compare_BigIntT(tempGCD, one) == 0)
 			{
 				hasLeadEntry = TRUE;
 				
