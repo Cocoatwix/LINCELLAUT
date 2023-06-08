@@ -93,6 +93,11 @@ int clear_GenericMatrixT(GenericMatrixTP);
     otherwise. */
 int set_column(IntMatrixTP, const int*);
 
+/** Sets the given row of a given BigIntMatrixTP to
+    the given BigIntTPs.
+	Returns 1 on success, 0 otherwise. */
+int set_big_row(BigIntMatrixTP, const BigIntTP*, int);
+
 /** Sets the initialisation value to use with a
     GenericMatrixT's init function.
 	Returns 1 on success, 0 otherwise. */
@@ -183,6 +188,10 @@ int compare_GenericMatrixT(GenericMatrixTP, GenericMatrixTP);
     equal. Returns 0 otherwise. */
 int compare_BigIntMatrixT_cols(const BigIntMatrixTP, const BigIntMatrixTP, int);
 
+/** Takes a BigIntMatrixTP and resizes it according to the given rows and columns.
+    Returns 1 on success, 0 otherwise. */
+int resize_BigIntMatrixT(BigIntMatrixTP, int, int);
+
 /** Prints a given matrix to the console. */
 void printm(const IntMatrixTP);
 void printbm(const BigIntMatrixTP);
@@ -272,6 +281,14 @@ int big_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP, BigInt
 	Returns 1 upon reducing the matrix to the identity (or some slice of it), 
 	0 otherwise. */
 int big_reduced_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP, BigIntMatrixTP);
+
+/** Attepts to eliminate the bottom row of the BigIntMatrixTP using the
+    other rows. Performs no row swaps. The matrix is assumed to be in 
+	row echelon form (except for the chosen row to eliminate).
+	Returns 1 upon successfully eliminating the row, zero otherwise. */
+//NOTE: THIS FUNCTION ONLY WORKS FOR PRIME AND PRIME-POWER MODULI
+// BEHAVIOUR FOR OTHER MODULI IS UNDEFINED
+int big_eliminate_bottom(BigIntMatrixTP, const BigIntTP);
 
 /** Same as inverse(), but for BigIntMatrixTs. */
 BigIntMatrixTP big_inverse(const BigIntMatrixTP, const BigIntTP);

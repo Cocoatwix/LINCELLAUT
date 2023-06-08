@@ -3532,12 +3532,11 @@ int main(int argc, char* argv[])
 		// an update matrix up to a certain degree
 		else if (!strcmp(argv[1], "vectpolys"))
 		{
-			/* In the future, to find the generators of this ideal, simply get
-			 * the coefficients of each found annihilating polynomial, stack them
-			 * in a matrix, and row reduce. The non-zero polynomials will be the
-			 * ideals. */
-
-			bool foundFirstMonic = FALSE;
+			//For clearing out zero rows in idealMatrix
+			bool foundNonzero;
+			
+			//For deciding when to add shifts to idealMatrix
+			bool addedMaxShift;
 			
 			int deg;
 			int numArr[1] = {1};
@@ -3546,26 +3545,22 @@ int main(int argc, char* argv[])
 			
 			BigIntTP** tempPolyCoeffs = NULL;
 			BigPolyTP  tempAnnihPoly = NULL;
-			BigPolyTP  OGtempAnnihPoly = NULL;
 			
 			BigPolyTP  tempPoly  = NULL;
 			BigPolyTP  tempPoly2 = NULL;
-			BigPolyTP  tempPoly3 = NULL;
 			
-			BigPolyTP  zeroPoly;
-			BigPolyTP  onePoly = NULL;
-			
-			int rewriteDegree    = 0; //The lowest power of a polynomial variable we can rewrite
-			int numOfVectProps   = 0;
-			BigPolyTP* vectProps = NULL; //Keeps track of formulas for higher powers of the polynomial variable
-			BigPolyTP  rewriteConstant = NULL; //For getting multiples from vectProps
-			
-			BigIntTP* tempCoeffs;
-			BigIntTP* tempCoeffs2;
-			BigIntTP* tempCoeffs3;
+			BigPolyTP zeroPoly;
+			BigPolyTP onePoly = NULL;
+			BigPolyTP lambdaPoly = NULL;
+			BigIntTP  lambdaArr[2]; //For creating lambdaPoly
 			
 			int numOfAnnihPolys = 0;
 			BigPolyTP* annihPolys = NULL;
+			
+			//Holds found annihilating polynomials and their lambda multiples
+			BigIntMatrixTP idealMatrix = NULL;
+			BigIntMatrixTP tempIdealMatrix = NULL;
+			BigIntTP*      idealRow; //For adding new rows to idealMatrix
 			
 			BigIntMatrixTP A, v, zeroMat, tempMat, tempVect, zeroVect;
 			
@@ -3587,7 +3582,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//if (argc > 4)
-				
+
 			A = UPDATEMATRIX;
 			v = INITIALMATRIX;
 			
@@ -3616,19 +3611,24 @@ and the number of columns must be 1.\n");
 			
 			tempPolyCoeffs   = new_BigIntT_array(1, deg+1);
 			tempAnnihPoly    = new_BigPolyT(tempPolyCoeffs[0], deg+1);
-			OGtempAnnihPoly  = new_BigPolyT(tempPolyCoeffs[0], deg+1);
 			
 			tempPoly  = empty_BigPolyT();
 			tempPoly2 = empty_BigPolyT();
-			tempPoly3 = empty_BigPolyT();
 			
 			zeroPoly   = empty_BigPolyT();
 			onePoly    = constant_BigPolyT(one);
+			
+			lambdaArr[0] = temp;
+			lambdaArr[1] = one;
+			lambdaPoly = new_BigPolyT(lambdaArr, 2);
 			
 			zeroMat  = new_BigIntMatrixT(big_rows(A), big_cols(A));
 			tempMat  = new_BigIntMatrixT(big_rows(A), big_cols(A));
 			tempVect = new_BigIntMatrixT(big_rows(A), 1);
 			zeroVect = new_BigIntMatrixT(big_rows(A), 1);
+			
+			idealMatrix     = new_BigIntMatrixT(1, deg+1);
+			tempIdealMatrix = new_BigIntMatrixT(1, deg+1);
 			
 			printf("Matrix:\n");
 			printbm(A);
@@ -3641,134 +3641,96 @@ and the number of columns must be 1.\n");
 			//Loop over each possible polynomial, check if it's an annihilating one for v
 			while (!increment_BigIntT_array(tempPolyCoeffs, 1, deg+1, one, bigMod))
 			{
-				//When we find the first monic, calculate all future needed expressions
-				// representing higher polynomial variable powers
-				if ((foundFirstMonic) && (numOfVectProps == 0))
-				{
-					tempCoeffs  = extract_coefficients(annihPolys[numOfAnnihPolys-1]);
-					tempCoeffs2 = malloc(rewriteDegree*sizeof(BigIntTP));
-					
-					for (int coeff = 0; coeff < rewriteDegree; coeff += 1)
-					{
-						tempCoeffs2[coeff] = empty_BigIntT(1);
-						multiply_BigIntT(tempCoeffs[coeff], negOne, temp);
-						mod_BigIntT(temp, bigMod, tempCoeffs2[coeff]);
-					}
-					
-					//Now, create the actual polynomial representing this first polynomial term power
-					numOfVectProps += 1;
-					vectProps = realloc(vectProps, numOfVectProps*sizeof(BigPolyTP));
-					vectProps[numOfVectProps-1] = new_BigPolyT(tempCoeffs2, rewriteDegree);
-					
-					for (int i = 0; i < rewriteDegree; i += 1)
-					{
-						tempCoeffs[i]  = free_BigIntT(tempCoeffs[i]);
-						tempCoeffs2[i] = free_BigIntT(tempCoeffs2[i]);
-					}
-					FREE(tempCoeffs);
-					FREE(tempCoeffs2);
-					
-					//One polynomial for each power
-					tempCoeffs = extract_coefficients(vectProps[0]);
-					for (int p = rewriteDegree+1; p <= deg; p += 1)
-					{
-						tempCoeffs3 = extract_coefficients(vectProps[p-rewriteDegree-1]);
-						tempCoeffs2 = malloc((deg+1)*sizeof(BigIntTP));
-						for (int coeff = 0; coeff < rewriteDegree; coeff += 1)
-						{
-							tempCoeffs2[coeff] = empty_BigIntT(1);
-							multiply_BigIntT(tempCoeffs[coeff], tempCoeffs3[rewriteDegree-1], temp);
-							if (coeff != 0)
-								add_BigIntT(temp, tempCoeffs3[coeff-1], tempCoeffs2[coeff]);
-							else
-								copy_BigIntT(temp, tempCoeffs2[coeff]);
-							
-							//Now, take the modulus of each term
-							mod_BigIntT(tempCoeffs2[coeff], bigMod, temp);
-							copy_BigIntT(temp, tempCoeffs2[coeff]);
-						}
-						
-						//Create the actual polynomial
-						numOfVectProps += 1;
-						vectProps = realloc(vectProps, numOfVectProps*sizeof(BigPolyTP));
-						vectProps[numOfVectProps-1] = new_BigPolyT(tempCoeffs2, degree(annihPolys[numOfAnnihPolys-1]));
-						
-						for (int i = 0; i < rewriteDegree; i += 1)
-						{
-							tempCoeffs3[i]  = free_BigIntT(tempCoeffs3[i]);
-							tempCoeffs2[i] = free_BigIntT(tempCoeffs2[i]);
-						}
-						FREE(tempCoeffs3);
-						FREE(tempCoeffs2);
-					}
-					
-					for (int i = 0; i < rewriteDegree; i += 1)
-						tempCoeffs[i] = free_BigIntT(tempCoeffs[i]);
-					FREE(tempCoeffs);
-					
-					//Now, let's print out our relations to make sure they're reasonable
-					/*
-					for (int d = degree(annihPolys[numOfAnnihPolys-1]); d-degree(annihPolys[numOfAnnihPolys-1]) < numOfVectProps; d += 1)
-					{
-						printf("λ^%d = ", d);
-						printp(vectProps[d - degree(annihPolys[numOfAnnihPolys-1])]);
-						printf("\n");
-					}
-					*/
-				}
+				set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
 				
-				//Keeping track of tempAnnihPoly since it can be reduced below
-				set_BigPolyT(OGtempAnnihPoly, tempPolyCoeffs[0]);
-				
-				//If we can reduce our current polynomial using the already-found
-				// annihilating polynomial
-				if (rewriteDegree != 0)
-				{
-					resize_BigPolyT(tempAnnihPoly, rewriteDegree);
-					set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
-					
-					//Rewrite higher-order terms
-					for (int term = rewriteDegree; term <= deg; term += 1)
-					{
-						rewriteConstant = constant_BigPolyT(tempPolyCoeffs[0][term]);
-						multiply_BigPolyT(rewriteConstant, vectProps[term-rewriteDegree], tempPoly);
-						add_BigPolyT(tempPoly, tempAnnihPoly, tempPoly2);
-						mod_BigPolyT(tempPoly2, bigMod, tempAnnihPoly);
-					}
-				}
-				
-				else
-				{
-					resize_BigPolyT(tempAnnihPoly, deg+1);
-					set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]);
-				}
-				
+				//Evaluate polynomial
 				eval_BigPolyT(tempAnnihPoly, A, tempMat, bigMod);
 				big_mat_mul(tempMat, v, tempVect);
 				modbm(tempVect, bigMod);
 				
+				//If we found a new annihilating polynomial
 				if (compare_BigIntMatrixT(tempVect, zeroVect))
 				{
-					//If we found a new annihilating polynomial
-					if (! foundFirstMonic)
-					{
-						reduce_BigPolyT(tempAnnihPoly);
-						if (compare_BigIntT(leading_term(tempAnnihPoly), one) == 0)
+					//Whenever we find a new polynomial, we have to see whether it's in our ideal
+					//Add new polynomial to bottom of idealMatrix
+					set_big_row(idealMatrix, tempPolyCoeffs[0], big_rows(idealMatrix)-1);
+					
+					//Check to see whether the newly-added polynomial is in the ideal
+					if (!big_eliminate_bottom(idealMatrix, bigMod))
+					{						
+						//Now, we properly add this new annihilating polynomial to the ideal,
+						// along with adding all its lambda multiples to the matrix
+						addedMaxShift = FALSE;
+						while (!addedMaxShift)
 						{
-							rewriteDegree = degree(tempAnnihPoly);
-							foundFirstMonic = TRUE;
+							idealRow = extract_coefficients(tempAnnihPoly);
+							
+							set_big_row(idealMatrix, idealRow, big_rows(idealMatrix)-1);
+							resize_BigIntMatrixT(idealMatrix, big_rows(idealMatrix)+1, big_cols(idealMatrix));
+							resize_BigIntMatrixT(tempIdealMatrix, big_rows(tempIdealMatrix)+1, big_cols(tempIdealMatrix));
+							
+							//Once an additional shift will send a term off the side of the matrix,
+							// it's time to break the loop
+							if (!is_zero(idealRow[deg]))
+								addedMaxShift = TRUE;
+							
+							//Free idealRow -_-
+							for (int r = 0; r < deg+1; r += 1)
+								idealRow[r] = free_BigIntT(idealRow[r]);
+							FREE(idealRow);
+							
+							//Shift polynomial
+							multiply_BigPolyT(lambdaPoly, tempAnnihPoly, tempPoly);
+							mod_BigPolyT(tempPoly, bigMod, tempAnnihPoly);
+							resize_BigPolyT(tempAnnihPoly, deg+1);
 						}
+						
+						//Now, make sure idealMatrix is row reduced
+						big_row_echelon(idealMatrix, bigMod, tempIdealMatrix, NULL);
+						copy_BigIntMatrixT(tempIdealMatrix, idealMatrix);
+						
+						//Get rid of any extra zero rows that may have appeared
+						for (int row = big_rows(idealMatrix)-1; row >= 0; row -= 1)
+						{
+							foundNonzero = FALSE;
+							for (int col = 0; col < big_cols(idealMatrix); col += 1)
+								if (!is_zero(big_element(idealMatrix, row, col)))
+								{
+									foundNonzero = TRUE;
+									break;
+								}
+								
+							if (foundNonzero)
+								break;
+							
+							//Eliminate zero row
+							else
+							{
+								resize_BigIntMatrixT(idealMatrix, big_rows(idealMatrix)-1, big_cols(idealMatrix));
+								resize_BigIntMatrixT(tempIdealMatrix, big_rows(tempIdealMatrix)-1, big_cols(tempIdealMatrix));
+							}
+						}
+						
+						//Now, add back one extra zero row. 
+						resize_BigIntMatrixT(idealMatrix, big_rows(idealMatrix)+1, big_cols(idealMatrix));
+						resize_BigIntMatrixT(tempIdealMatrix, big_rows(tempIdealMatrix)+1, big_cols(tempIdealMatrix));
+						
+						//Add the actual annihilating polynomial to our list
+						set_BigPolyT(tempAnnihPoly, tempPolyCoeffs[0]); //Undoing any possible shifts
+						numOfAnnihPolys += 1;
+						annihPolys = realloc(annihPolys, numOfAnnihPolys*sizeof(BigPolyTP));
+						annihPolys[numOfAnnihPolys-1] = empty_BigPolyT();
+						copy_BigPolyT(tempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
+						
+						if (numOfAnnihPolys == 1)
+							printf("Unique annihilating polynomials:\n");
+						printp(annihPolys[numOfAnnihPolys-1]);
+						printf("\n");
+						
+						//Print out idealMatrix for my own sanity
+						printf("idealMatrix:\n");
+						printbm(idealMatrix);
 					}
-					
-					numOfAnnihPolys += 1;
-					annihPolys = realloc(annihPolys, numOfAnnihPolys*sizeof(BigPolyTP));
-					annihPolys[numOfAnnihPolys-1] = empty_BigPolyT();
-					copy_BigPolyT(OGtempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
-					
-					if (numOfAnnihPolys == 1)
-						printf("Unique annihilating polynomials:\n");
-					printp(annihPolys[numOfAnnihPolys-1]);
-					printf("\n");
 				}
 			}
 			
@@ -3782,14 +3744,9 @@ and the number of columns must be 1.\n");
 			zeroPoly         = free_BigPolyT(zeroPoly);
 			tempPoly         = free_BigPolyT(tempPoly);
 			tempPoly2        = free_BigPolyT(tempPoly2);
-			tempPoly3        = free_BigPolyT(tempPoly3);
+			lambdaPoly       = free_BigPolyT(lambdaPoly);
 			tempAnnihPoly    = free_BigPolyT(tempAnnihPoly);
-			OGtempAnnihPoly  = free_BigPolyT(OGtempAnnihPoly);
 			tempPolyCoeffs   = free_BigIntT_array(tempPolyCoeffs, 1, deg+1);
-			
-			for (int i = 0; i < numOfVectProps; i += 1)
-				vectProps[i] = free_BigPolyT(vectProps[i]);
-			FREE(vectProps);
 			
 			for (int i = 0; i < numOfAnnihPolys; i += 1)
 				annihPolys[i]  = free_BigPolyT(annihPolys[i]);
@@ -3799,6 +3756,8 @@ and the number of columns must be 1.\n");
 			tempMat  = free_BigIntMatrixT(tempMat);
 			tempVect = free_BigIntMatrixT(tempVect);
 			zeroVect = free_BigIntMatrixT(zeroVect);
+			
+			idealMatrix     = free_BigIntMatrixT(idealMatrix);
 		}
 		
 		

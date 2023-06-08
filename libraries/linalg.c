@@ -602,6 +602,23 @@ int set_column(IntMatrixTP v, const int* elements)
 }
 
 
+int set_big_row(BigIntMatrixTP A, const BigIntTP* newRow, int rowNum)
+/** Sets A->matrix[row] to the values in newRow.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((A == NULL) || (newRow == NULL))
+		return 0;
+	
+	if ((rowNum < 0) || (rowNum >= A->m))
+		return 0;
+	
+	for (int c = 0; c < A->n; c += 1)
+		copy_BigIntT(newRow[c], A->matrix[rowNum][c]);
+	
+	return 1;
+}
+
+
 int set_GenericMatrixT_initFunction(GenericMatrixTP a, void* (*f)(int))
 /** Sets the initialisation function for a GenericMatrixT
     (what it uses to initalise new elements of its matrix).
@@ -1037,6 +1054,74 @@ int compare_BigIntMatrixT_cols(const BigIntMatrixTP M1, const BigIntMatrixTP M2,
 		if (compare_BigIntT(M1->matrix[row][c], M2->matrix[row][c]) != 0)
 			return 0;
 		
+	return 1;
+}
+
+
+int resize_BigIntMatrixT(BigIntMatrixTP A, int newRows, int newCols)
+/** Takes A and resizes it to the new given coords.
+    Returns 1 on success, 0 otherwise. */
+{
+	if ((newRows < 1) || (newCols < 1))
+		return 0;
+	
+	if (A == NULL)
+		return 0;
+	
+	//No resizing to do here
+	if ((A->m == newRows) && (A->n == newCols))
+		return 1;
+	
+	int lowerRowBound = (A->m > newRows) ? newRows : A->m;
+	
+	//Adjust columns
+	for (int r = 0; r < lowerRowBound; r += 1)
+	{
+		//If we need to shrink our number of columns
+		if (A->n > newCols)
+		{
+			for (int c = newCols; c < A->n; c += 1)
+				A->matrix[r][c] = free_BigIntT(A->matrix[r][c]);
+			
+			A->matrix[r] = realloc(A->matrix[r], newCols*sizeof(BigIntTP));
+		}
+		
+		//If our columns are expanding
+		else
+		{
+			A->matrix[r] = realloc(A->matrix[r], newCols*sizeof(BigIntTP));
+			
+			for (int c = A->n; c < newCols; c += 1)
+				A->matrix[r][c] = empty_BigIntT(1);
+		}
+	}
+	
+	//Adjust rows
+	if (A->m > newRows)
+	{
+		for (int r = newRows; r < A->m; r += 1)
+		{
+			for (int c = 0; c < A->n; c += 1)
+				A->matrix[r][c] = free_BigIntT(A->matrix[r][c]);
+			
+			free(A->matrix[r]);
+		}
+		A->matrix = realloc(A->matrix, newRows*sizeof(BigIntTP*));
+	}
+	
+	else
+	{
+		A->matrix = realloc(A->matrix, newRows*sizeof(BigIntTP*));
+		for (int r = A->m; r < newRows; r += 1)
+		{
+			A->matrix[r] = malloc(newCols*sizeof(BigIntTP));
+			for (int c = 0; c < newCols; c += 1)
+				A->matrix[r][c] = empty_BigIntT(1);
+		}
+	}
+	
+	A->m = newRows;
+	A->n = newCols;
 	return 1;
 }
 
@@ -2514,6 +2599,65 @@ int big_reduced_row_echelon(const BigIntMatrixTP M,
 	temp2 = free_BigIntT(temp2);
 	
 	return perfectReducedRowEchelon;
+}
+
+
+int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod)
+/** Attempts to eliminate the bottom row of the given matrix.
+    This function assumes the matrix is in row echelon form.
+		Returns 1 upon successfully eliminating the row, 0 otherwise. */
+{
+	if ((A == NULL) || (bigMod == NULL))
+		return 0;
+	
+	BigIntTP zero      = empty_BigIntT(1);
+	BigIntTP GCDentry  = NULL;
+	BigIntTP GCDbottom = NULL;
+	
+	//Iterate over each row
+	for (int r = 0; r < A->m-1; r += 1)
+	{
+		//Find the leading entry on each row
+		for (int entry = 0; entry < A->n; entry += 1)
+			if (compare_BigIntT(zero, A->matrix[r][entry]) != 0)
+			{
+				//Now, check to see if we can eliminate the corresponding element
+				// in the bottom row
+				GCDbottom = big_gcd(bigMod, A->matrix[A->m-1][entry]);
+				GCDentry  = big_gcd(bigMod, A->matrix[r][entry]);
+				
+				//Eliminate corresponding entry
+				//This only works for prime and prime-power moduli
+				if (compare_BigIntT(GCDentry, GCDbottom) <= 0)
+					while (compare_BigIntT(zero, A->matrix[A->m-1][entry]) != 0)
+						big_row_add(A, A->m-1, r, bigMod);
+				
+				else
+				{
+					zero      = free_BigIntT(zero);
+					GCDentry  = free_BigIntT(GCDentry);
+					GCDbottom = free_BigIntT(GCDbottom);
+					return 0;
+				}
+				
+				GCDentry  = free_BigIntT(GCDentry);
+				GCDbottom = free_BigIntT(GCDbottom);
+				break;
+			}
+	}
+	
+	//Now, we check to see if the bottom row has been eliminated
+	for (int c = 0; c < A->n; c += 1)
+	{
+		if (compare_BigIntT(A->matrix[A->m-1][c], zero) != 0)
+		{
+			zero = free_BigIntT(zero);
+			return 0;
+		}
+	}
+	
+	zero = free_BigIntT(zero);
+	return 1;
 }
 
 
