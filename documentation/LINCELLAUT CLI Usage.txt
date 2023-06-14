@@ -64,9 +64,10 @@ vectprops [mod] [resume] [fileoutput]: This tool allows the user to iterate thro
  - The optional argument "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-vectpolys degree [mod] [fileoutput] (UNFINISHED): This tool allows the user to calculate ALL annihilating polynomials for a particular vector (the initial matrix listed in the .config file) under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
+vectpolys degree baseMod modPower [fileoutput] (UNFINISHED): This tool allows the user to calculate ALL annihilating polynomials for a particular vector (the initial matrix listed in the .config file) under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
  - The argument "degree" specifies the highest degree polynomial to look for. This argument expects a positive integer.
- - The optional argument "mod" allows the user to override the modulus provided in the config file. This argument expects an integer greater than 1.
+ - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
+ - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
  - The optional argument "fileoutput" specifies whether the tool should create an output file of all the polynomials found. The output file will have the name "vectpolys F<matrix> D<degree> <mod>.txt". The default value for this argument is FALSE. This argument expects TRUE or FALSE as its value.
 
 matprops maxpower [modulus]: This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.

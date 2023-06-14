@@ -1678,8 +1678,8 @@ int eval_BigPolyT(const BigPolyTP p, const BigIntMatrixTP A, BigIntMatrixTP resu
 	BigIntTP one;
 	
 	I       = identity_BigIntMatrixT(big_rows(A));
-	powMat  = new_BigIntMatrixT(big_rows(A), big_rows(A));
-	tempMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
+	powMat  = new_BigIntMatrixT(big_rows(A), big_cols(A));
+	tempMat = new_BigIntMatrixT(big_rows(A), big_cols(A));
 	
 	copy_BigIntMatrixT(tempMat, result); //Clear result before doing anything
 	
@@ -1700,7 +1700,6 @@ int eval_BigPolyT(const BigPolyTP p, const BigIntMatrixTP A, BigIntMatrixTP resu
 		else
 			copy_BigIntMatrixT(I, powMat);
 	
-		
 		while (compare_BigIntT(multCount, polyCoeffs[i]) <= 0)
 		{
 			big_mat_add(result, powMat, tempMat);
@@ -2178,7 +2177,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 		return 0;
 	
 	if (aux != NULL)
-		if ((aux->m != M->m) || (aux->n != M->n))
+		if ((aux->m != M->m))
 			return 0;
 	
 	copy_BigIntMatrixT(M, result);
@@ -2249,98 +2248,13 @@ int big_row_echelon(const BigIntMatrixTP M,
 		{
 			#ifdef VERBOSE
 			printf("No nonzero, invertible leading entry could be found.\n");
-			//printf("Attempting to add rows instead.\n");
 			#endif
-			
-			//Check to see if we can add rows to get an invertible entry
-			//I DON'T THINK THIS WILL EVER WORK SINCE ADDING TWO NON-INVERTIBLE NUMBERS
-			// WILL RESULT IN ANOTHER NON-INVERTIBLE NUMBER
-			// I'M COMMENTING IT OUT FOR NOW
-			/*
-			for (int rowToMaybeAdd = focusRow+1; rowToMaybeAdd < M->m; rowToMaybeAdd += 1)
-			{
-				//Hopefully finding a row that we can add to our current row to get an invertible number
-				copy_BigIntT(one, bigMult);
-				if (compare_BigIntT(result->matrix[rowToMaybeAdd][focusRow+pivotColOffset], zero) != 0)
-				{
-					while (compare_BigIntT(bigMult, modulus) < 0)
-					{
-						multiply_BigIntT(bigMult, result->matrix[rowToMaybeAdd][focusRow+pivotColOffset], temp);
-						add_BigIntT(temp, result->matrix[focusRow][focusRow+pivotColOffset], temp2);
-						big_num_inverse(temp2, modulus, tempInverse);
-						
-						#ifdef VERBOSE
-						printi(bigMult);
-						printf("*");
-						printi(result->matrix[rowToMaybeAdd][focusRow+pivotColOffset]);
-						printf(" + ");
-						printi(result->matrix[focusRow][focusRow+pivotColOffset]);
-						printf(" = ");
-						printi(temp2);
-						printf("\ntempInverse = ");
-						printi(tempInverse);
-						printf("\n");
-						#endif
-						
-						if (compare_BigIntT(tempInverse, zero) != 0)
-						{
-							//Add rows to get an invertible number as a leading entry
-							copy_BigIntT(bigMult, temp);
-							while (compare_BigIntT(temp, zero) > 0)
-							{
-								big_row_add(result, focusRow, rowToMaybeAdd, modulus);
-								big_row_add(aux, focusRow, rowToMaybeAdd, modulus);
-								
-								//Decrement temp
-								subtract_BigIntT(temp, one, temp2);
-								copy_BigIntT(temp2, temp);
-							}
-							
-							#ifdef VERBOSE
-							if (compare_BigIntT(bigMult, zero) != 0)
-							{
-								printf("Added row %d to row %d a total of ", rowToMaybeAdd, focusRow);
-								printi(bigMult);
-								compare_BigIntT(one, bigMult) == 0 ? printf(" time.\n") : printf(" times.\n");
-								printbm(result);
-							}
-							#endif
-							
-							//Now, get the leading entry to one
-							if (compare_BigIntT(tempInverse, one) != 0)
-							{
-								big_row_multiply(result, focusRow, tempInverse, modulus);
-								big_row_multiply(aux, focusRow, tempInverse, modulus);
-								
-								#ifdef VERBOSE
-								printf("Multipled row %d by ", focusRow);
-								printi(tempInverse);
-								printf(".\n");
-								printbm(result);
-								#endif
-							}
-							
-							hasLeadEntry = TRUE;
-							break;
-						}
-						
-						//Increment bigMult
-						add_BigIntT(bigMult, one, temp);
-						copy_BigIntT(temp, bigMult);
-					}
-				}
-				
-				if (hasLeadEntry)
-					break;
-			}
-			*/
 		}
 		
 		//If we couldn't find a suitable row to create an invertible element
 		if (!hasLeadEntry)
 		{
 			#ifdef VERBOSE
-			//printf("No suitable row was found to create an invertible entry.\n");
 			printf("Settling for the \"least\" non-invertible element.\n");
 			#endif
 			
@@ -2602,23 +2516,42 @@ int big_reduced_row_echelon(const BigIntMatrixTP M,
 }
 
 
-int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod)
+int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP annih)
 /** Attempts to eliminate the bottom row of the given matrix.
     This function assumes the matrix is in row echelon form.
+		If annih != NULL, then whatever row operations annihilate the bottom
+		row will be recorded as a polynomial and stored in annih.
 		Returns 1 upon successfully eliminating the row, 0 otherwise. */
 {
 	if ((A == NULL) || (bigMod == NULL))
 		return 0;
 	
-	BigIntTP zero      = empty_BigIntT(1);
-	BigIntTP GCDentry  = NULL;
-	BigIntTP GCDbottom = NULL;
+	int oneArr[1] = {1};
+	BigIntTP  zero      = empty_BigIntT(1);
+	BigIntTP  one       = NULL;
+	BigIntTP  temp      = NULL;
+	BigIntTP  GCDentry  = NULL;
+	BigIntTP  GCDbottom = NULL;
+	
+	BigIntTP* annihCoeffs; //Holds a poly representation of the row ops we do
+	BigPolyTP annihPoly;
+	
+	if (annih != NULL)
+	{
+		annihCoeffs = malloc((big_rows(A)-1)*sizeof(BigIntTP));
+		for (int i = 0; i < big_rows(A)-1; i += 1)
+			annihCoeffs[i] = empty_BigIntT(1);
+		
+		one  = new_BigIntT(oneArr, 1);
+		temp = empty_BigIntT(1);
+	}
 	
 	//Iterate over each row
 	for (int r = 0; r < A->m-1; r += 1)
 	{
 		//Find the leading entry on each row
 		for (int entry = 0; entry < A->n; entry += 1)
+		{
 			if (compare_BigIntT(zero, A->matrix[r][entry]) != 0)
 			{
 				//Now, check to see if we can eliminate the corresponding element
@@ -2629,14 +2562,34 @@ int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod)
 				//Eliminate corresponding entry
 				//This only works for prime and prime-power moduli
 				if (compare_BigIntT(GCDentry, GCDbottom) <= 0)
+				{
 					while (compare_BigIntT(zero, A->matrix[A->m-1][entry]) != 0)
+					{
 						big_row_add(A, A->m-1, r, bigMod);
+						
+						//Store row operations as polynomial
+						if (annih != NULL)
+						{
+							add_BigIntT(annihCoeffs[r], one, temp);
+							mod_BigIntT(temp, bigMod, annihCoeffs[r]);
+						}
+					}
+				}
 				
 				else
 				{
 					zero      = free_BigIntT(zero);
 					GCDentry  = free_BigIntT(GCDentry);
 					GCDbottom = free_BigIntT(GCDbottom);
+					temp      = free_BigIntT(temp);
+					one       = free_BigIntT(one);
+					
+					if (annih != NULL)
+					{
+						for (int i = 0; i < big_rows(A)-1; i += 1)
+							annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
+						free(annihCoeffs);
+					}
 					return 0;
 				}
 				
@@ -2644,6 +2597,7 @@ int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod)
 				GCDbottom = free_BigIntT(GCDbottom);
 				break;
 			}
+		}
 	}
 	
 	//Now, we check to see if the bottom row has been eliminated
@@ -2652,11 +2606,34 @@ int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod)
 		if (compare_BigIntT(A->matrix[A->m-1][c], zero) != 0)
 		{
 			zero = free_BigIntT(zero);
+			temp = free_BigIntT(temp);
+			one  = free_BigIntT(one);
+			
+			if (annih != NULL)
+			{
+				for (int i = 0; i < big_rows(A)-1; i += 1)
+					annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
+				free(annihCoeffs);
+			}
 			return 0;
 		}
 	}
 	
+	//Now, let's create our polynomial representation of the bottom row
+	if (annih != NULL)
+	{
+		annihPoly = new_BigPolyT(annihCoeffs, big_rows(A)-1);
+		copy_BigPolyT(annihPoly, annih);
+		
+		annihPoly = free_BigPolyT(annihPoly);
+		for (int i = 0; i < big_rows(A)-1; i += 1)
+			annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
+		free(annihCoeffs);
+	}
+	
 	zero = free_BigIntT(zero);
+	temp = free_BigIntT(temp);
+	one  = free_BigIntT(one);
 	return 1;
 }
 
