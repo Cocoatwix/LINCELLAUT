@@ -1,0 +1,649 @@
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+\usepackage[T1]{fontenc}
+
+\usepackage[parfill]{parskip}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+
+\usepackage{verbatim}
+
+%Max
+\newcommand\mathmax[1]{\textup{max}(#1)}
+
+%Span
+\newcommand\vecspan[1]{\textup{span}(#1)}
+
+%Cores
+\newcommand\core[3]{\textup{core}_{#1}^{#2}(#3)}
+
+%Defining environment for propositions
+\newcounter{propcounter}[section]
+\newenvironment{proposition}[1]
+{
+	\refstepcounter{propcounter}
+	\textbf{Proposition \thesection.\thepropcounter.} \emph{#1}
+	
+	\emph{Justification.}
+}
+{
+	\textbf{QED.} \\
+}
+
+\begin{document}
+	For this document, let $\mathds{Z}_n$ represent the integers modulo $n$. Let $\mathds{Z}_{n}^{M \times N}$ represent the set of all $M$ by $N$ matrices with elements 
+	from $\mathds{Z}_n$. Let $\mathds{Z}_{n}^{M}$ represent the set of all $M$ by $1$ column vectors with elements from $\mathds{Z}_n$. Note that $\mathds{Z}_{n}^M$ forms a 
+	$\mathds{Z}_{n}$-module.
+	
+	All relevant calculations are done modulo $p^k$ unless otherwise stated.
+		
+	\section{Dimensional Independence}
+		\label{sec:DI}
+		In $\mathds{Z}_{p^k}^L$, where $p$ is prime and $k \in \mathds{Z}^+$, a set of vectors $V$ is \emph{dimensionally independent} iff
+		\[
+			\forall \vec{v} \in V, \quad \vecspan{\vec{v}} \cap \vecspan{V \setminus \{\vec{v}\}} = \{\vec{0}\}
+		\]
+		and
+		\[
+			\forall \vec{v} \in V, \quad \vec{v} \not\equiv \vec{0}
+		\]
+		
+		As an example for why this definition may be useful, consider the vectors 
+		$
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				5 \\
+				0 \\
+				0
+			\end{smallmatrix}
+		\end{bmatrix}
+		$, $
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				0 \\
+				5 \\
+				0
+			\end{smallmatrix}
+		\end{bmatrix}
+		$, and $
+		\begin{bmatrix}
+			\begin{smallmatrix}
+				0 \\
+				0 \\
+				5
+			\end{smallmatrix}
+		\end{bmatrix}
+		$ modulo 25. These vectors aren't linearly independent since
+		\[
+			5\begin{bmatrix}
+				5 \\
+				0 \\
+				0
+			\end{bmatrix} + 
+			5\begin{bmatrix}
+				0 \\
+				5 \\
+				0
+			\end{bmatrix} + 
+			5\begin{bmatrix}
+				0 \\
+				0 \\
+				5
+			\end{bmatrix} \equiv \vec{0} \mod{25}
+		\]
+		However, in some sense, these vectors are still independent since one cannot be made from a linear combination of the others. Other than the zero vector, their
+		spans are disjoint, similar to the spans of linearly independent vectors. Although these vectors aren't linearly independent, there may still be certain properties
+		of linear independence that apply to these vectors. Dimensional independence aims to capture these properties.
+		
+		Before we start working with dimensionally-independent vectors, it's helpful to understand what it means for a specific vector to \emph{not} be dimensionally
+		independent to a set of vectors. Given some vector $\vec{u}$ and a set $V = \{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}$ that's dimensionally independent, if 
+		$\vec{u}$ isn't dimensionally-independent to $V$, then there must be some nonzero vector in $\vecspan{\vec{u}}$ that's also in $\vecspan{V}$. Symbolically, this
+		means
+		\[
+			\vecspan{\vec{u}} \cap \vecspan{V} \neq \{\vec{0}\}
+		\]
+		So, there exists a smallest $p^c$, $c \in \mathds{Z}^+$, such that
+		\[
+			p^c\vec{u} \in \vecspan{V}
+		\]
+		and
+		\[
+			p^c\vec{u} \not\equiv \vec{0}
+		\]
+		If, for some invertible element $a \in \mathds{Z}_{p^k}$, we had
+		\[
+			ap^c\vec{u} \in \vecspan{V}
+		\]
+		then $a^{-1}ap^c\vec{u} \equiv p^c\vec{u}$ would also be in $\vecspan{V}$, so we only need to consider prime-power multiples of $\vec{u}$. In fact, in any case 
+		where we need to check whether a vector's span intersects with some other set, it's sufficient to check only prime-power multiples of that vector for this very 
+		reason. 
+		
+		Since $p^c\vec{u} \in \vecspan{V}$, we can express $p^c\vec{u}$ as a linear combination of vectors in $V$:
+		\[
+			p^c\vec{u} \equiv a_1\vec{v}_1 + a_2\vec{v}_2 + \cdots + a_g\vec{v}_g
+		\]
+		So, for every such vector $\vec{u}$, there's some minimal prime-power multiple that can be written as a linear combination of the vectors in $V$. All higher 
+		prime-power multiples will also be able to be written as a linear combination of vectors in $V$ (simply by multiplying both sides of the above equation by the
+		appropriate power of $p$). This fact will be used repeatedly throughout the rest of the document.
+		
+		The following propositions will help solidify the connection between linear independence and dimensional independence.
+		
+		\begin{proposition}{If $V = \{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}$ is a dimensionally-independent set, then 
+		$\{a_1\vec{v}_1, a_2\vec{v}_2, \cdots, a_g\vec{v}_g\}$ is also a dimensionally-independent set for nonzero vectors $a_1\vec{v}_1$ to $a_g\vec{v}_g$.}
+			\label{prop:DImultset}
+			For any integer $a_i$, $\vecspan{a_i\vec{v}_i} \subseteq \vecspan{\vec{v}_i}$, so
+			\[
+				\vecspan{\vec{v}_i} \cap \vecspan{V \setminus \{\vec{v}_i\}} = \{\vec{0}\} \implies
+				\vecspan{a_i\vec{v}_i} \cap \vecspan{V \setminus \{\vec{v}_i\}} = \{\vec{0}\}
+			\]
+			As well, for any $\vec{v}_j \in V \setminus \{\vec{v}_i\}$,
+			\begin{align*}
+				& \vecspan{v_j} \cap \vecspan{\{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_i, \cdots, \vec{v}_g\} \setminus \{\vec{v}_j\}} = \{\vec{0}\} \\
+				\implies & 
+				\vecspan{v_j} \cap \vecspan{\{\vec{v}_1, \vec{v}_2, \cdots, a_i\vec{v}_i, \cdots, \vec{v}_g\} \setminus \{\vec{v}_j\}} = \{\vec{0}\}
+			\end{align*}
+			This means swapping any $\vec{v}_i$ in $V$ with $a_i\vec{v}_i$ (so long as $a_i\vec{v}_i \not\equiv \vec{0}$) would keep $V$ dimensionally independent.
+		\end{proposition}
+		
+		Proposition \ref{sec:DI}.\ref{prop:DImultset} essentially says that, if a set of vectors is dimensionally independent, then any multiples of those vectors will also 
+		be dimensionally independent, so long as none of those multiples are the zero vector.
+		\\ \\ \\ \\
+		\begin{proposition}{If $V = \{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}$ is dimensionally independent, then the equation
+		\[
+			a_1\vec{v}_1 + a_2\vec{v}_2 + \cdots + a_g\vec{v}_g \equiv \vec{0}
+		\]
+		has only the solution where each $a_i\vec{v}_i \equiv \vec{0}$.}
+			\label{prop:DIzerosum}
+			Assume that a second solution to
+			\[
+				a_1\vec{v}_1 + a_2\vec{v}_2 + \cdots + a_g\vec{v}_g \equiv \vec{0}
+			\]
+			exists where at least one term is nonzero. Rearranging, we see
+			\[
+				-a_i\vec{v}_i \equiv a_1\vec{v}_1 + a_2\vec{v}_2 + \cdots + a_{i-1}\vec{v}_{i-1} + a_{i+1}\vec{v}_{i+1} + \cdots + a_g\vec{v}_g
+			\]
+			for some nonzero term $-a_i\vec{v}_i$. But then
+			\[
+				-a_i\vec{v}_i \in \vecspan{V \setminus \{\vec{v}_i\}}
+			\]
+			which implies
+			\[
+				\vecspan{\vec{v}_i} \cap \vecspan{V \setminus \{\vec{v}_i\}} \neq \{\vec{0}\}
+			\]
+			This is a contradiction since $V$ is dimensionally independent. Therefore no such second solution can exist.
+		\end{proposition}
+		
+		Much like linearly-independent vectors, dimensionally-independent vectors can only sum to zero if each vector itself is zero. However, since nonzero multiples of
+		dimensionally-independent vectors can be zero, there may be multiple distinct linear combinations (that is, distinct sets of coefficients for each linear combination)
+		that result in a sum of zero.
+		
+		It turns out that, aside from dimensionally-independent vectors behaving similarly to linearly-independent vectors, there's also a direct link between sets of 
+		linearly-independent vectors and dimensionally-independent vectors.
+
+		\begin{proposition}{Given a set of dimensionally-independent vectors \\ 
+		$V = \{p^{\alpha_1}\vec{v}_1, p^{\alpha_2}\vec{v}_2, \cdots, p^{\alpha_g}\vec{v}_g\}$ for integers $0 \leq \alpha_i < k$ and where \\
+		$\forall \vec{v}_i \in V,\, \vec{v}_i \not\equiv \vec{0} \bmod{p}$, then the set 
+		\[
+			W = \{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}
+		\]
+		is linearly independent.}
+			\label{prop:DItoLI}
+			Assume $W$ isn't linearly independent. Then there exists a non-trivial solution to
+			\[
+				\sum_i p^{\beta_i}a_i\vec{v}_i \equiv \vec{0}
+			\]
+			where $a_i \not\equiv 0 \bmod{p}$ and $\beta_i \in \mathds{Z},\, \beta_i \geq 0$. Define $P$ as
+			\[
+				P = \mathmax{\{p^{\alpha_1-\beta_1},\, p^{\alpha_2-\beta_2},\, \cdots,\, p^{\alpha_g-\beta_g},\, 1\}}
+			\]
+			Then
+			\begin{equation}
+				\label{eq:DItoLIsum}
+				\sum_i Pp^{\beta_i}a_i\vec{v}_i \equiv \vec{0}
+			\end{equation}
+			
+			By construction of $P$, each $Pp^{\beta_i}a_i\vec{v}_i$ is now a multiple of some vector in $V$. At least one $Pp^{\beta_i}a_i\vec{v}_i$ is nonzero, since 
+			if $\alpha_j-\beta_j$ is the maximum difference between any $\alpha_i-\beta_i$, then $Pp^{\beta_j}a_j\vec{v}_j \equiv p^{\alpha_j}a_j\vec{v}$ which cannot be 
+			zero since $a_j$ has no factors of $p$. By proposition \ref{sec:DI}.\ref{prop:DIzerosum}, equation \ref{eq:DItoLIsum} implies the set $V$ isn't dimensionally 
+			independent. This is a contradiction, so $W$ must be linearly independent.
+		\end{proposition}
+		
+		Proposition \ref{sec:DI}.\ref{prop:DItoLI} shows that, given a set of dimensionally-independent vectors, there's a collection of corresponding sets of 
+		linearly-independent vectors. This fact will prove useful in section \ref{sec:PPC}, where we use it to strengthen the result of proposition 
+		\ref{sec:CDIS}.\ref{prop:DIsubmodule} for a particular type of submodule.
+		
+		We can also say something about dimensionally-independent vectors if they sum to a vector containing factors of $p$, the base of our prime-power modulus.
+		
+		\begin{proposition}{Let $\{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}$ be a dimensionally-independent set. If
+		\[
+			\vec{v}_1 + \vec{v}_2 + \cdots + \vec{v}_g \equiv p^c\vec{w}
+		\]
+		where $\vec{w} \not\equiv \vec{0} \bmod{p}$ and $0 \leq c < k$, then each $\vec{v}_i \equiv \vec{0} \bmod{p^c}$. Furthermore, at least one 
+		$\vec{v}_i \not\equiv \vec{0} \bmod{p^{c+1}}$.}
+			\label{prop:DIsumwithp}
+			Multiplying both sides of the given equation by $p^{k-c}$, we get
+			\[
+				p^{k-c}(\vec{v}_1 + \vec{v}_2 + \cdots + \vec{v}_g) \equiv p^k\vec{w} \equiv \vec{0}
+			\]
+			From Proposition \ref{sec:DI}.\ref{prop:DIzerosum}, the sum $\sum_{i=1}^{g} p^{k-c}\vec{v}_i$ can only equal zero if each vector in the sum is the zero vector. 
+			This means each $p^{k-c}\vec{v}_i \equiv \vec{0}$, and so each $\vec{v}_i$ must have at least a factor of $p^c$ in it. Therefore, 
+			$\vec{v}_i \equiv \vec{0} \bmod{p^c}$ for all $\vec{v}_i$.
+			
+			Now, let $\vec{v}_i \equiv p^c\vec{\nu}_i$. Then
+			\[
+				p^c(\vec{\nu}_1 + \vec{\nu}_2 + \cdots + \vec{\nu}_g) \equiv p^c\vec{w}
+			\]
+			$\vec{w} \not\equiv \vec{0} \bmod{p}$, so $p^{k-1}\vec{w} \not\equiv \vec{0}$. This implies
+			\[
+				p^{k-1}\vec{w} \equiv p^{k-1}(\vec{\nu}_1 + \vec{\nu}_2 + \cdots + \vec{\nu}_g) \not\equiv \vec{0}
+			\]
+			Therefore, at least one $p^{k-1}\vec{\nu}_i \not\equiv \vec{0}$, which means $\vec{\nu}_i \not\equiv \vec{0} \bmod{p}$, so then
+			\[
+				p^c\vec{\nu}_i \equiv \vec{v}_i \not\equiv \vec{0} \mod{p^{c+1}}
+			\]
+			for at least one $\vec{v}_i$.
+		\end{proposition}
+		
+		Proposition \ref{sec:DI}.\ref{prop:DIsumwithp} essentially guarantees that, when a set of dimensionally-independent vectors sum to a vector with a certain number
+		of factors of $p$, then the dimensionally-independent vectors themselves must have a certain number of factors of $p$. This fact ends up being crucial for showing
+		the result of proposition \ref{sec:CDIS}.\ref{prop:DIsubmodule}.
+		
+	\section{Creating Dimensionally-Independent Sets}
+		\label{sec:CDIS}
+		If we have a dimensionally-independent set, it's helpful to have an easy way to check whether adding a new vector to it will keep it dimensionally independent.
+		
+		\begin{proposition}{If $V = \{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}$ is dimensionally independent and $\vec{n} \not\equiv \vec{0}$ is a vector such that
+		$\vecspan{\vec{n}} \cap \vecspan{V} = \{\vec{0}\}$, then 
+		\[
+			V \cup \{\vec{n}\}
+		\]
+		is a dimensionally-independent set.}
+			\label{prop:easyDIcheck}
+			To show $V \cup \{\vec{n}\}$ is dimensionally independent, we must show that, for all $\vec{v} \in V$,
+			\[
+				\vecspan{\vec{v}} \cap \vecspan{(V \setminus \{\vec{v}\}) \cup \{\vec{n}\}} = \{\vec{0}\}
+			\]
+			Assume there exists some vector $\vec{v}_i \in V$ that doesn't follow the above relation. Then there exists a positive integer $c$ where
+			\[
+				p^c\vec{v}_i \equiv a_1\vec{v}_1 + a_2\vec{v}_2 + \cdots + a_{i-1}\vec{v}_{i-1} + a_{i+1}\vec{v}_{i+1} + \cdots + a_g\vec{v}_g + a_n\vec{n}
+			\]
+			and
+			\[
+				p^c\vec{v}_i \not\equiv \vec{0}
+			\]
+			Note that $a_n\vec{n} \not\equiv \vec{0}$ since $V$ is dimensionally independent. Rearranging, we see
+			\[
+				a_n\vec{n} \equiv p^c\vec{v_i} - a_1\vec{v}_1 - a_2\vec{v}_2 - \cdots - a_{i-1}\vec{v}_{i-1} - a_{i+1}\vec{v}_{i+1} - \cdots - a_g\vec{v}_g
+			\]
+			This implies
+			\[
+				\vecspan{\vec{n}} \cap \vecspan{V} \neq \{\vec{0}\}
+			\]
+			This is a contradiction, so no such $\vec{v}_i$ can exist. Then $V \cup \{\vec{n}\}$ is dimensionally independent.
+		\end{proposition}
+		
+		Proposition \ref{sec:CDIS}.\ref{prop:easyDIcheck} shows that, if all nonzero multiples of a vector are not in the span of a dimensionally-independent set, we can add
+		the vector to that set while retaining dimensional independence within the set.
+		
+		It's also useful to be able to say something about when adding a vector to a dimensionally-independent set does \emph{not} retain dimensional independence.
+		
+		\begin{proposition}{Let $V = \{\vec{v}_1, \vec{v}_2, \cdots, \vec{v}_g\}$ be a dimensionally-independent set, and let $\vec{u}$ be a nonzero vector such that
+		$V \cup \{\vec{u}\}$ is not dimensionally independent. If the maximum number of factors of $p$ of any vector in $V$ is less than or equal to the number of factors
+		of $p$ in $\vec{u}$, then given the sum
+		\[
+			p^c\vec{u} \equiv \sum_i a_i\vec{v}_i
+		\]
+		where $a_i\vec{v}_i \not\equiv \vec{0}$, then $a_i \equiv 0 \bmod{p^c}$ for all $a_i$.}
+			\label{prop:minpfactor}
+			By proposition \ref{sec:DI}.\ref{prop:DImultset} and \ref{sec:DI}.\ref{prop:DIsumwithp}, each of $a_i\vec{v}_i$ must have at least the same number of factors of 
+			$p$ as $p^c\vec{u}$. If each of $\vec{v}_i$ has at most the same number of factors of $p$ as $\vec{u}$, then each of $a_i$ must have at least a factor of $p^c$ 
+			in order for proposition \ref{sec:DI}.\ref{prop:DIsumwithp} to hold. So $a_i \equiv 0 \bmod{p^c}$ for all $a_i$.
+		\end{proposition}
+		
+		Intuitively, proposition \ref{sec:CDIS}.\ref{prop:minpfactor} says that, given a vector $\vec{u}$ that's not dimensionally independent to a 
+		dimensionally-independent set, the number of factors of $p$ in $\vec{u}$ can give some idea for what an expression for $p^c\vec{u}$ would look like in terms of the 
+		vectors in the dimensionally-independent set. Ultimately, it's this proposition which allows the next proposition to be shown.
+		
+		\begin{proposition}{Any nonempty submodule $M$ of $\mathds{Z}_{p^k}^L$ can be expressed as the span of a set of dimensionally-independent vectors.}
+			\label{prop:DIsubmodule}
+			If $M = \{\vec{0}\}$, then let $V = \emptyset$. $\vecspan{V} = \{\vec{0}\}$, and $V$ is dimensionally independent.
+			
+			Otherwise, every submodule is closed under taking linear combinations, so every submodule of $\mathds{Z}_{p^k}^L$ can be represented as the span of a set of 
+			vectors. Let 
+			\[
+				\hat{M} = \{\vec{m}_1, \vec{m}_2, \cdots, \vec{m}_g\}
+			\]
+			where $M = \vecspan{\hat{M}}$. Without loss of generality, assume $\vec{0} \not\in \hat{M}$.
+			
+			The following steps will produce a dimensionally-independent set of vectors whose span is $M$.
+			
+			1. Order the vectors in $\hat{M}$ by the number of factors of $p$ they have (least to greatest) and store them in an ordered list $S$. For example, if $\hat{M}$ 
+			were to look like 
+			\[
+				\hat{M} = \{p^2\vec{n}_1,\, p^3\vec{n}_2,\, \vec{n}_3,\, p^2\vec{n}_4,\, \vec{n}_5\}
+			\]
+			where $\vec{n}_1$ to $\vec{n}_5$ have no factors of $p$, then a valid list $S$ could look like
+			\[
+				S = [\vec{n}_3,\, \vec{n}_5,\, p^2\vec{n}_1,\, p^2\vec{n}_4,\, p^3\vec{n}_2]
+			\]
+			Another valid list $S$ could be
+			\begin{equation}
+				\label{eq:exampleS}
+				S = [\vec{n}_5,\, \vec{n}_3,\, p^2\vec{n}_4,\, p^2\vec{n}_1,\, p^3\vec{n}_2]
+			\end{equation}
+			The $i$-th element in $S$ is indexed as $S_i$. The number of elements in $S$ is represented as $|S|$. As an example, for the list $S$ specified by equation 
+			\ref{eq:exampleS}, $S_2 = \vec{n}_3$ and $|S| = 5$. We'll also initialise a set $V$ to be the empty set.
+			
+			2. Set $\vec{s} = S_1$.
+			
+			3. Check to see whether $V \cup \{\vec{s}\}$ is a dimensionally-independent set. If it is, replace $V$ with $V \cup \{\vec{s}\}$ and proceed to step 5.
+			Otherwise, continue to step 4.
+			
+			4. If $V \cup \{\vec{s}\}$ is not a dimensionally-independent set, then for some smallest $p^c$, $0 \leq c < k$, $c \in \mathds{Z}$, we have that
+			\[
+				p^c\vec{s} \equiv \sum_i a_i\vec{v}_i
+			\]
+			for vectors $\vec{v}_i \in V$ and nonzero $a_i \in \mathds{Z}_{p^k}$ where $a_i\vec{v}_i \not\equiv \vec{0}$ (refer to pp. 1-2). Because of the ordering of $S$, 
+			the vectors in $V$ are guaranteed to have at most the same number of factors of $p$ in them as $\vec{s}$. This means we can make use of proposition 
+			\ref{sec:CDIS}.\ref{prop:minpfactor} and rewrite the sum for $p^c\vec{s}$ as
+			\[
+				p^c\vec{s} \equiv p^c\sum_i b_i\vec{v}_i
+			\]
+			for different nonzero constants $b_i \in \mathds{Z}_{p^k}$ where $b_i\vec{v}_i \not\equiv \vec{0}$. Define $\vec{x}$ to be
+			\[
+				\vec{x} \equiv \vec{s} - \sum_i b_i\vec{v}_i
+			\]
+			If $\vec{x}$ happens to be the zero vector, discard it and proceed to step 5. 
+			
+			By construction, $p^c\vec{x} \equiv \vec{0}$. As well, for all $0 \leq f < c$, $f \in \mathds{Z}$, we have that
+			\begin{center}
+				\begin{tabular}{*{3}{l}}
+							   & $p^f\vec{x}$ & $\equiv\, p^f\vec{s} - p^f\sum_i b_i\vec{v}_i$ \\
+					$\implies$ & $p^f\vec{x}$ & $\not\in\, \vecspan{V}$
+				\end{tabular}
+			\end{center}
+			since $p^f\vec{x}$ is the sum of a vector in $\vecspan{V}$ and a vector not in $\vecspan{V}$. Note that $p^f\vec{s} \not\in \vecspan{V}$ since $p^c\vec{s}$ is 
+			the first nonzero multiple of $\vec{s}$ in $\vecspan{V}$.
+			
+			By proposition \ref{sec:CDIS}.\ref{prop:easyDIcheck}, this means the set $V \cup \{\vec{x}\}$ is dimensionally independent. Also, 
+			$\vecspan{V \cup \{\vec{s}\}} = \vecspan{V \cup \{\vec{x}\}}$ since
+			\[
+				\vec{x} \equiv \vec{s} - \sum_i b_i\vec{v}_i \implies \vec{s} \equiv \vec{x} + \sum_i b_i\vec{v}_i
+			\]
+			so any linear combination made with the vectors in $V \cup \{\vec{s}\}$ can be made with the vectors in $V \cup \{\vec{x}\}$, and vice versa.
+			
+			If the number of factors of $p$ in $\vec{x}$ is at most the same as the number of factors of $p$ in $\vec{s}$, replace $V$ with $V \cup \{\vec{x}\}$ and proceed 
+			to step 5. 
+			
+			Otherwise, if $\vec{s} = S_i$, insert $\vec{x}$ into $S$ somewhere greater than the $i$-th position so that the ordering of $S$ is preserved (i.e. the 
+			vectors in $S$ are still ordered from least number of factors of $p$ to greatest). Note that we're not removing the current $\vec{s}$ from $S$; we're 
+			increasing the number of vectors in $S$ by inserting $\vec{x}$. The list $S$, then, can be imagined as a queue of sorts, with the current $\vec{s}$ representing 
+			which element in the queue we're currently using.
+			
+			The instruction above ensures that the vector $\vec{x}$ can always be created in step 4; each vector $\vec{s}$ will always have at least the same number of 
+			factors of $p$ as any vector in $V$.
+			
+			5. If $\vec{s} = S_i$ where $i < |S|$, set $\vec{s} = S_{i+1}$ and return to step 3. Otherwise, continue to step 6. 
+			
+			Note that each vector in $S$ is equal to $\vec{s}$ only once, and so each vector in $S$ can lead to the insertion of only one extra vector into $S$ (via step 
+			4). However, the extra vector inserted into $S$ must necessarily have a greater number of factors of $p$ than the vector that led to its insertion (see step 4). 
+			Eventually, if vectors continue to be added, these new inserted vectors will be unable to lead to more inserted vectors since they'll have so many factors of $p$
+			that any vectors with a greater	number of factors of $p$ will be congruent to the zero vector (which step 4 will discard). Therefore, this process is guaranteed 
+			to eventually proceed to step 6; it is impossible to indefinitely insert vectors into $S$.
+			
+			6. $V$ should now be a dimensionally-independent set of vectors whose span is $M$.
+		\end{proposition}
+		
+		Proposition \ref{sec:CDIS}.\ref{prop:DIsubmodule} shows yet another link between linear independence and dimensional independence: every subspace can be expressed
+		as the span of a set of linearly-independent vectors, and every submodule can be expressed as the span of a set of dimensionally-independent vectors. While the
+		submodule case isn't as strong as the subspace case (e.g. every submodule doesn't necessarily have a basis), proposition \ref{sec:CDIS}.\ref{prop:DIsubmodule}
+		gives a guaranteed way to represent any nonzero submodule, which allows for stronger conditions to be derived for more specific types of submodules, which we'll see
+		in the next section.
+		
+	\section{Prime-Power Cores}
+		\label{sec:PPC}
+		Given a matrix $A \in \mathds{Z}_{p^k}^{L \times L}$ and the $\mathds{Z}_{p^k}$-module $\mathds{Z}_{p^k}^L$, the \emph{core of $A$}, represented as 
+		$\core{p^k}{L}{A}$ is defined to be the largest submodule $S \subseteq \mathds{Z}_{p^k}^L$ such that
+		\[
+			AS = S
+		\]
+		In other words, $\core{p^k}{L}{A}$ is the largest submodule of $\mathds{Z}_{p^k}^L$ where the action of multiplying by $A$ creates a bijection between 
+		$\core{p^k}{L}{A}$ and itself.
+		
+		It's known that $\core{p}{L}{A}$ will always be a free module---that is, a module that has a basis---since $\mathds{Z}_p^L$ is a vector space, so $\core{p}{L}{A}$ is 
+		also a vector space, meaning it necessarily has a basis. This section's goal is to show that $\core{p^k}{L}{A}$ is also always a free module. First, though, there 
+		are a few important concepts to introduce.
+		
+		For a vector $\vec{v} \in \mathds{Z}_{p^k}^L$ and a matrix $A \in \mathds{Z}_{p^k}^{L \times L}$, denote the \emph{orbit of $\vec{v}$ under $A$} as the set
+		$\{\vec{v}, A\vec{v}, A^2\vec{v}, \cdots\}$. 
+		
+		Because $\mathds{Z}_{p^k}^L$ has a finite number of elements, the orbit of every vector in $\mathds{Z}_{p^k}^L$ is guaranteed to be a finite set; once 
+		$A^i\vec{v} \equiv A^I\vec{v}$ (for some $i, I \in \mathds{Z}$, $i, I \geq 0$, $i > I$) each subsequent $A^j\vec{v}$ (for some $j \in \mathds{Z},\, j > i$) 
+		will be able to be written as $A^J(A^I\vec{v})$ for $J \in \mathds{Z}$, $0 \leq J < i-I$, and therefore won't add a new vector to the orbit of $\vec{v}$.
+		
+		The orbits of vectors in the core of a matrix have a few especially nice properties, one of which is described in the following proposition.
+
+		\begin{proposition}{If and only if $\vec{v} \in \core{p^k}{L}{A}$, then for some smallest $c \in \mathds{Z}^+$, 
+		\[
+			A^c\vec{v} \equiv \vec{v}
+		\]}
+			\label{prop:coreOrbits}
+			First, we'll show $\vec{v} \in \core{p^k}{L}{A} \implies A^c\vec{v} \equiv \vec{v}$.
+			
+			Assume $A^c\vec{v} \not\equiv \vec{v}$ for all $c$. Then for some $c,d \in \mathds{Z}^+, \, d < c$, we have
+			\begin{equation}
+				\label{eq:coreOrbitRelation}
+				A^c\vec{v} \equiv A^d\vec{v}
+			\end{equation}
+			where $c$ is the first such number with this property. This $c,d$ must exist as there are a finite number of vectors in $\mathds{Z}_{p^k}^L$. However, since 
+			$d \neq 0$, we also know
+			\[
+				A(A^{d-1}\vec{v}) \equiv A^d\vec{v}
+			\]
+			and
+			\begin{equation}
+				\label{eq:coreOrbitImpossibleRelation}
+				A^{d-1}\vec{v} \not\equiv A^{c-1}\vec{v}
+			\end{equation}
+			If equation \ref{eq:coreOrbitImpossibleRelation} wasn't true, it would contradict $c$ being the first number to satisfy equation \ref{eq:coreOrbitRelation}. So
+			\[
+				A(A^{c-1}\vec{v}) \equiv A(A^{d-1}\vec{v}) \equiv A^d\vec{v}
+			\]
+			meaning $A$ sends two different vectors to $A^d\vec{v}$. This is a contradiction since multiplication by $A$ must act as a bijection on vectors in 
+			$\core{p^k}{L}{A}$.	Therefore, there must be some smallest $c \in \mathds{Z}^+$ where $A^c\vec{v} \equiv \vec{v}$.
+			
+			Now, we'll show $A^c\vec{v} \equiv \vec{v} \implies \vec{v} \in \core{p^k}{L}{A}$.
+			
+			Let the orbit of $\vec{v}$ be denoted as $\{\vec{v}, A\vec{v}, A^2\vec{v}, \cdots\}$. By assumption,
+			\[
+				A^d\vec{v} \not\equiv \vec{v}, \quad d < c 
+			\]
+			The only vector $A$ maps to $\vec{v}$ is $A^{c-1}\vec{v}$. As well, a relation such as
+			\[
+				A^i\vec{v} \equiv A^d\vec{v}
+			\]
+			for some $i, d \in \mathds{Z}^+,\, i, d < c,\, i \neq d$ cannot exist as, if it did, then it would contradict the fact that $c$ is the smallest nonnegative 
+			integer where $A^c\vec{v} \equiv \vec{v}$ (using such a relation, $A^c\vec{v}$ could be reduced to some $A^x\vec{v}$ with $x < c$). Thus, every vector in the 
+			orbit of $\vec{v}$ is mapped to by only one unique vector, so $A$ acts as a bijection on the orbit of $\vec{v}$. This implies $\vec{v} \in \core{p^k}{L}{A}$.
+		\end{proposition}
+		
+		Via proposition \ref{sec:PPC}.\ref{prop:coreOrbits}, the core of a matrix can be thought of as the set of all vectors whose orbits form a loop---that is, every vector
+		in the orbit is mapped to by only one other vector. Under repeated multiplication by the matrix, vectors in the core will visit every vector in their orbit exactly 
+		once before returning to themselves.
+		
+		Given a single matrix $A \in \mathds{Z}_{p^{k+n}}^{L \times L}$, and given two modules $\mathds{Z}_{p^k}^{L}$ and $\mathds{Z}_{p^{k+n}}^L$, there are a few ways to 
+		relate the orbits of their vectors under this matrix. One such way is through \emph{embedding} vectors from $\mathds{Z}_{p^k}^L$ to $\mathds{Z}_{p^{k+n}}^L$.
+		
+		Define $\phi : \mathds{Z}_{p^{k}}^{L} \rightarrow p\mathds{Z}_{p^{k+1}}^{L}$ as $\phi(\vec{x}) = p\vec{x}$. This mapping is a module homomorphism since,
+		for $\vec{u}, \vec{v} \in \mathds{Z}_{p^k}^L$, $s, t \in \mathds{Z}_{p^k}$,
+		\[
+			\phi(s\vec{u} + t\vec{v}) = p(s\vec{u} + t\vec{v}) = ps\vec{u} + pt\vec{v} = sp\vec{u} + tp\vec{v} = s\phi(\vec{u}) + t\phi(\vec{v})
+		\]
+		This mapping also creates a bijection between the modules $\mathds{Z}_{p^k}^L$ and $p\mathds{Z}_{p^{k+1}}^L$ since
+		\begin{center}
+			\begin{tabular}{*{3}{l}}
+						   & $\phi(\vec{u}) \equiv \phi(\vec{v})$           &                 \\
+				$\implies$ & $\phi(\vec{u}) - \phi(\vec{v}) \equiv \vec{0}$ &                 \\
+				$\implies$ & $\phi(\vec{u} - \vec{v}) \equiv \vec{0}$       &                 \\
+				$\implies$ & $p(\vec{u} - \vec{v}) \equiv \vec{0}$          & $\mod{p^{k+1}}$ \\
+				$\implies$ & $\vec{u} - \vec{v} \equiv \vec{0}$             & $\mod{p^k}$     \\
+				$\implies$ & $\vec{u} \equiv \vec{v}$                       & $\mod{p^k}$     \\
+			\end{tabular}
+		\end{center}
+		so $\phi$ is injective, and for any vector of the form $p\vec{v} \in \mathds{Z}_{p^{k+1}}^L$, there's a vector $\vec{v} \in \mathds{Z}_{p^k}^L$ where 
+		$\phi(\vec{v}) = p\vec{v}$, so $\phi$ is surjective. Therefore, $\phi$ is a module isomorphism.
+		
+		One important property of $\phi$ to note is that it preserves matrix multiplication:
+		\begin{align*}
+			\phi(A\vec{v}) & \equiv p(A\vec{v} \bmod{p^k})     \\
+			               & \equiv p(A\vec{v}) \bmod{p^{k+1}} \\
+						   & \equiv A(p\vec{v}) \bmod{p^{k+1}} \\
+						   & \equiv A\phi(\vec{v}) \bmod{p^{k+1}}
+		\end{align*}
+		
+		Given a vector $\vec{v} \in \mathds{Z}_{p^k}^L$, the \emph{embed vector of $\vec{v}$ in $\mathds{Z}_{p^{k+1}}^L$} is given by $\phi(\vec{v})$. Embed vectors give us
+		an easy way to relate vectors in the core of a matrix between modules of differing prime-power moduli.
+		
+		\begin{proposition}{$\vec{v} \in \core{p^k}{L}{A} \Longleftrightarrow \phi(\vec{v}) \in \core{p^{k+1}}{L}{A}$.}
+			\label{prop:embedsInCore}
+			First, we'll show $\vec{v} \in \core{p^k}{L}{A} \implies \phi(\vec{v}) \in \core{p^{k+1}}{L}{A}$.
+			
+			If $\vec{v} \in \core{p^k}{L}{A}$, then by proposition \ref{sec:PPC}.\ref{prop:coreOrbits}, for some smallest $c \in \mathds{Z}^+$,
+			\begin{equation}
+				\label{eq:nonEmbeddedCoreRelation1}
+				A^c\vec{v} \equiv \vec{v}
+			\end{equation}
+			$\phi$ is a module isomorphism, so
+			\begin{equation}
+				\label{eq:embeddedCoreRelation1}
+				\phi(A^c\vec{v}) \equiv \phi(\vec{v}) \mod{p^{k+1}}
+			\end{equation}
+			No smaller $c$ can satisfy equation \ref{eq:embeddedCoreRelation1}. If such a smaller number existed, then it could be swapped in to equation 
+			\ref{eq:embeddedCoreRelation1} and $\phi^{-1}$ could be applied, which would contradict $c$ being the smallest such number that satisfies equation 
+			\ref{eq:nonEmbeddedCoreRelation1}. Since $\phi$ preserves matrix multiplication,
+			\[
+				A^c\phi(\vec{v}) \equiv \phi(\vec{v}) \mod{p^{k+1}}
+			\]
+			Since $c$ is the smallest possible positive integer with this property, proposition \ref{sec:PPC}.\ref{prop:coreOrbits} guarantees that 
+			$\phi(\vec{v}) \in \core{p^{k+1}}{L}{A}$.
+			
+			Next, we'll show $\phi(\vec{v}) \in \core{p^{k+1}}{L}{A} \implies \vec{v} \in \core{p^k}{L}{A}$.
+			
+			If $\phi(\vec{v}) \in \core{p^{k+1}}{L}{A}$, then by proposition \ref{sec:PPC}.\ref{prop:coreOrbits}, there exists some smallest $c \in \mathds{Z}^+$ where
+			\begin{equation}
+				\label{eq:embeddedCoreRelation2}
+				A^c\phi(\vec{v}) \equiv \phi(\vec{v}) \mod{p^{k+1}}
+			\end{equation}
+			$\phi$ preserves matrix multiplication, so
+			\[
+				\phi(A^c\vec{v}) \equiv \phi(\vec{v}) \mod{p^{k+1}}
+			\]
+			$\phi$ is a module isomorphism, so $\phi^{-1}$ can be applied on both sides of the above equation:
+			\[
+				A^c\vec{v} \equiv \vec{v}
+			\]
+			If $c$ wasn't the smallest positive integer where the above relation holds, then swapping $c$ for the actual smallest positive integer and applying $\phi$ 
+			on both sides would contradict $c$ being the smallest positive integer that satisfies equation \ref{eq:embeddedCoreRelation2}. Therefore $c$ is the smallest 
+			such integer, and proposition \ref{sec:PPC}.\ref{prop:coreOrbits} guarantees that $\vec{v} \in \core{p^k}{L}{A}$.
+		\end{proposition}
+		
+		Embed vectors are not the only possible way to relate similar cores. Another vector type we can use to relate cores is the \emph{lift vector}. For a vector 
+		$\vec{v} \in \mathds{Z}_{p^k}^L$, a \emph{lift vector of $\vec{v}$} is any vector $\vec{\ell} \in \mathds{Z}_{p^{k+n}}^L$ such that
+		\[
+			\vec{\ell} \equiv \vec{v} \mod{p^k}
+		\]
+		where $n \in \mathds{Z}^+$. This means $\vec{\ell}$ must take the form
+		\[
+			\vec{\ell} \equiv \vec{v} + p^k\vec{u} \mod{p^{k+n}}, \quad \vec{u} \in \mathds{Z}_{p^n}^L
+		\]
+		
+		Much like embed vectors, lift vectors provide a way to relate vectors within two related cores.
+		
+		\begin{proposition}{If $\vec{v} \in \mathds{Z}_{p^k}^L$ is in $\core{p^k}{L}{A}$, then a lift vector $\vec{\ell} \in \mathds{Z}_{p^{k+n}}^L$ of $\vec{v}$ exists
+		such that
+		\[
+			\vec{\ell} \in \core{p^{k+n}}{L}{A}
+		\]}
+			\label{prop:dropsInCore2Lifts}
+			$\vec{v} \in \core{p^k}{L}{A}$, so by proposition \ref{sec:PPC}.\ref{prop:coreOrbits} there exists a smallest $c \in \mathds{Z}^+$ such that
+			\[
+				A^c\vec{v} \equiv \vec{v}
+			\]
+			Using properties of modular arithmetic, we can lift this equation to a higher-power modulus:
+			\[
+				A^c\vec{v} \equiv \vec{v} + p^k\vec{u} \mod{p^{k+n}}, \quad \vec{u} \in \mathds{Z}_{p^n}^L
+			\]
+			Taking this new vector and multiplying it by $A^c$, we get
+			\[
+				A^c(\vec{v} + p^k\vec{u}) \equiv \vec{v} + p^k(\vec{u} + A^c\vec{u}) \mod{p^{k+n}}
+			\]
+			In general, if we continue taking these vectors and multiplying them by $A^c$, we'll get a sequence of vectors where each term looks like
+			\[
+				\vec{v} + p^k\vec{w}_i \mod{p^{k+n}}, \quad \vec{w}_i \in \mathds{Z}_{p^n}^L
+			\]
+			There are only a finite number of vectors in $\mathds{Z}_{p^n}^L$, so eventually $\vec{w}_x \equiv \vec{w}_y$ for some $x,y \in \mathds{Z},\, x > y$. Let 
+			$\vec{W}$ be the first such $\vec{w}_x$ where this occurs. Then, if we let
+			\[
+				\vec{\ell} \equiv \vec{v} + p^k\vec{W} \mod{p^{k+n}}
+			\]
+			then $\vec{\ell}$ is guaranteed to be in $\core{p^{k+n}}{L}{A}$ by construction. $\vec{\ell}$ also happens to be a lift of $\vec{v}$ since
+			\[
+				\vec{\ell} \equiv \vec{v} \mod{p^k}
+			\]
+		\end{proposition}
+		
+		While proposition \ref{sec:PPC}.\ref{prop:dropsInCore2Lifts} doesn't explicitly give us a corresponding vector for a given vector in a related core, it does 
+		guarantee such a vector exists. Using the concepts of embed and lift vectors, we can show that the cores of matrices in modules with prime-power moduli---which are 
+		submodules---must necessarily be spanned by a set of linearly-independent vectors, strengthening the result of proposition \ref{sec:CDIS}.\ref{prop:DIsubmodule}.
+		
+		\begin{proposition}{For any matrix $A \in \mathds{Z}_{p^k}^{L \times L}$, $\core{p^k}{L}{A}$ can be represented as the span of a set of linearly-independent vectors.
+		\footnote{Thank you to Dr. Franklin Mendivil for helping to condense this proposition!}}
+			\label{prop:coreBasis}
+			If $\core{p^k}{L}{A} = \{\vec{0}\}$, then let $M = \emptyset$. $\vecspan{M} = \{\vec{0}\}$, and $M$ is linearly independent.
+			
+			Otherwise, let $M = \{\vec{m}_1, \vec{m}_2, \cdots, \vec{m}_g\}$ be a set of dimensionally-independent vectors where $\vecspan{M} = \core{p^k}{L}{A}$ guaranteed 
+			by proposition \ref{sec:CDIS}.\ref{prop:DIsubmodule}.
+			
+			For each vector $\vec{m}_i \in M$, the following argument shows that $\vec{m}_i \not\equiv \vec{0} \bmod{p}$: 
+			
+			Let $\vec{m}_i \equiv p^{t_i}\vec{n}_i$ where $t_i \in \mathds{Z},\, t_i < k$ and $\vec{n}_i \not\equiv \vec{0} \bmod{p}$. By repeated application of proposition
+			\ref{sec:PPC}.\ref{prop:embedsInCore}, we know
+			\[
+				\vec{n}_i \in \core{p^{k-t_i}}{L}{A}
+			\]
+			
+			By proposition \ref{sec:PPC}.\ref{prop:dropsInCore2Lifts}, there exists a lift vector $\vec{\ell}_i$ of $\vec{n}_i$ such that 
+			\[
+				\vec{\ell}_i \in \core{p^k}{L}{A}. 
+			\]
+			Note that $p^{t_i}\vec{\ell}_i \equiv p^{t_i}(\vec{n}_i + p^{k-t_i}\vec{z}) \equiv p^{t_i}\vec{n}_i + p^k\vec{z} \equiv p^{t_i}\vec{n}_i \equiv \vec{m}_i$ for
+			some vector $\vec{z} \in \mathds{Z}_{p^k}^L$ since $\vec{\ell}_i$ is a lift of $\vec{n}_i$.
+			
+			Since $\vec{\ell}_i$ is in $\core{p^k}{L}{A}$, it must also be in $\vecspan{M}$. This means $\vec{\ell}_i$ can be represented as a linear combination of vectors
+			in $M$:
+			\[
+				\vec{\ell}_i \equiv \sum_j a_j\vec{m}_j
+			\]
+			where each $a_j \in \mathds{Z}_{p^k}$ and each $a_j\vec{m}_j \not\equiv \vec{0}$. This means
+			\[
+				\vec{m}_i \equiv p^{t_i}\vec{\ell}_i \equiv p^{t_i}\sum_j a_j\vec{m}_j
+			\]
+			
+			$M$ is a dimensionally-independent set, so 
+			\[
+				\vec{m}_i \equiv p^{t_i} \sum_j a_j\vec{m}_j \equiv p^{t_i}a_i\vec{m}_i
+			\]
+			The only way this equation can be true is if $t_i \equiv 0$. Therefore, $\vec{m}_i \equiv \vec{n}_i$, and $\vec{n} \not\equiv \vec{0} \bmod{p}$.
+			
+			With this argument, we can be sure that no vector in $M$ has a multiple of $p$ in it. By proposition \ref{sec:DI}.\ref{prop:DItoLI}, then, $M$ is guaranteed 
+			to be a set of linearly-independent vectors.
+		\end{proposition}
+		
+		Proposition \ref{sec:PPC}.\ref{prop:coreBasis} shows that the core of any matrix under a prime-power modulus is always a free module, meaning it has a basis. This
+		means any prime-power LCA system restricted to its core acts as an invertible prime-power LCA system.
+\end{document}

@@ -3691,7 +3691,6 @@ int main(int argc, char* argv[])
 			//Check each degree of polynomial possible; see if any of them annihilate currIter
 			for (int degCounter = 1; degCounter <= deg; degCounter += 1)
 			{
-				
 				//Make room for the vector we're checking in iterateMatrix
 				resize_BigIntMatrixT(iterateMatrix, big_rows(iterateMatrix)+1, big_cols(iterateMatrix));
 				resize_BigIntMatrixT(tempIterateMatrix, big_rows(tempIterateMatrix)+1, big_cols(tempIterateMatrix));
@@ -3766,7 +3765,7 @@ int main(int argc, char* argv[])
 							}
 						}
 						
-						for (int i = 0; i < big_rows(iterateMatrix)-1; i += 1)
+						for (int i = 0; i < degree(tempPoly); i += 1)
 							tempPolyCoeffs[i] = free_BigIntT(tempPolyCoeffs[i]);
 						FREE(tempPolyCoeffs);
 						
