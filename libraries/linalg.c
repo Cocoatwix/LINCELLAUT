@@ -2975,7 +2975,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A,
 /** Calculates A's minimum polynomial, using a given charaPoly,
 		and returns it in its factored form on success, NULL otherwise. 
 		This won't be tested for composite moduli. */
-{
+{	
 	BigPolyTP* tempMinPoly = NULL;
 	BigPolyTP* tempPoly = NULL;
 	BigPolyTP  tempCalcPoly = NULL; //For performing calculations
@@ -2985,6 +2985,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A,
 	//BigFactorsTP factoredMinPoly = NULL;
 	int unneededFactorsCount = 0;
 	
+	BigPolyTP onePoly    = NULL;
 	BigPolyTP negOnePoly = NULL;
 	
 	BigIntTP numOfFactors = NULL;
@@ -3026,6 +3027,8 @@ BigPolyTP* min_poly(const BigIntMatrixTP A,
 		one  = new_BigIntT(oneArr, 1);
 		zero = empty_BigIntT(1);
 		temp = empty_BigIntT(1);
+		
+		onePoly = constant_BigPolyT(one);
 		
 		subtract_BigIntT(mod, one, temp);
 		negOnePoly = constant_BigPolyT(temp);
@@ -3093,7 +3096,12 @@ BigPolyTP* min_poly(const BigIntMatrixTP A,
 				//Now, tempPoly should hold all the factors except for the one to exclude
 				//Let's evaluate the matrix in this polynomial and see if it's zero
 				clear_BigIntMatrixT(tempMat);
-				eval_factored_BigPolyT(tempPoly, A, tempMat, mod);
+				
+				//If we end up removing all factors, let the polynomial be the one polynomial
+				if (compare_BigIntT(constant(tempPoly[0]), zero) == 0)
+					eval_BigPolyT(onePoly, A, tempMat, mod);
+				else
+					eval_factored_BigPolyT(tempPoly, A, tempMat, mod);
 				
 				if (v != NULL)
 				{
@@ -3177,6 +3185,7 @@ BigPolyTP* min_poly(const BigIntMatrixTP A,
 	if (somePoly == NULL)
 		charaPoly = free_BigPolyT(charaPoly);
 	
+	onePoly      = free_BigPolyT(onePoly);
 	negOnePoly   = free_BigPolyT(negOnePoly);
 	tempCalcPoly = free_BigPolyT(tempCalcPoly);
 	
