@@ -7119,6 +7119,187 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to find a lift of a matrix where the cycle length stays the same
+		else if (!strcmp(argv[1], "stablelift"))
+		{
+			if (argc < 4)
+			{
+				printf(ANSI_COLOR_YELLOW "stablelift" ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
+			{
+				fprintf(stderr, "Update matrix must be square.\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
+			
+			int numArr[1] = {1};
+			BigIntTP baseMod;
+			int modPower;
+			BigIntTP bigMod;
+			BigIntTP biggerMod;
+			
+			int cycLen;
+			CycleInfoTP theCycle = NULL;
+			BigIntMatrixTP I;
+			
+			BigIntTP** matrixElements;
+			BigIntTP** matrixDeltaRows; //Holds the changes to the matrix in row form for row reduction
+			int deltaRowCounter = 0;
+			int deltaColCounter = 0;
+			
+			BigIntTP bigCycLen;
+			BigIntMatrixTP basePDigitMatrix; //UPDATE^cycLen mod baseMod^(modPower + 1)
+			BigIntMatrixTP tempMat;
+			BigIntMatrixTP tempPDigitMatrix; //<modified UPDATE>^cycLen mod baseMod^(modPower + 1)
+			
+			//Keeps track of what shifts we need to perform on UPDATEMATRIX to get a stable lift
+			BigIntMatrixTP matrixShiftWatcher = NULL; 
+			BigIntTP* matrixShiftWatcherRow;
+			
+			BigIntMatrixTP deltaRowsToReduce = NULL;
+			
+			BigIntTP temp;
+			
+			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of modulus from command line.");
+			
+			modPower = (int)strtol(argv[3], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read modulus power from command line.\n");
+				baseMod = free_BigIntT(baseMod);
+				FREE_VARIABLES;
+				return EXIT_FAILURE;
+			}
+			
+			//Construct modulus
+			temp      = empty_BigIntT(1);
+			bigMod    = new_BigIntT(numArr, 1);
+			biggerMod = empty_BigIntT(1);
+			for (int i = 0; i < modPower; i += 1)
+			{
+				multiply_BigIntT(bigMod, baseMod, temp);
+				copy_BigIntT(temp, bigMod);
+			}
+			copy_BigIntT(bigMod, biggerMod);
+			multiply_BigIntT(biggerMod, baseMod, temp);
+			copy_BigIntT(temp, biggerMod);
+			
+			//Get cycle length of matrix mod bigMod
+			I = identity_BigIntMatrixT(big_rows(UPDATEMATRIX));
+			big_floyd(UPDATEMATRIX, I, bigMod, &theCycle);
+			cycLen = omega(theCycle);
+			
+			//Extract matrix entries into a 2D array so we can manipulate them
+			matrixElements = new_BigIntT_array(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			for (int row = 0; row < big_rows(UPDATEMATRIX); row += 1)
+				for (int col = 0; col < big_rows(UPDATEMATRIX); col += 1)
+					copy_BigIntT(big_element(UPDATEMATRIX, row, col), matrixElements[row][col]);
+				
+			//Get ready to find matrix deltas
+			basePDigitMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			matrixDeltaRows  = new_BigIntT_array(big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX),
+			                                     big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX));
+			tempMat = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			
+			//THIS WILL ONLY WORK FOR SMALL ENOUGH CYCLELENGTHS
+			//FIX THIS LATER
+			numArr[0] = cycLen;
+			bigCycLen = new_BigIntT(numArr, 1);
+			powbm(UPDATEMATRIX, basePDigitMatrix, bigCycLen, biggerMod);
+			
+			tempPDigitMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			
+			//Go through all component places in the matrix,
+			// find how shifting the elements shifts the iterates
+			for (int rowToShift = 0; rowToShift < big_rows(UPDATEMATRIX); rowToShift += 1)
+			{
+				for (int colToShift = 0; colToShift < big_rows(UPDATEMATRIX); colToShift += 1)
+				{
+					//Shift specific element
+					add_BigIntT(bigMod, matrixElements[rowToShift][colToShift], temp);
+					mod_BigIntT(temp, biggerMod, matrixElements[rowToShift][colToShift]);
+					set_big_matrix(tempMat, matrixElements);
+					
+					//Calculate new deltas
+					powbm(tempMat, tempPDigitMatrix, bigCycLen, biggerMod);
+					printf("tempPDigitMatrix = \n");
+					printbm(tempPDigitMatrix);
+					printf("basePDigitMatrix = \n");
+					printbm(basePDigitMatrix);
+					deltaColCounter = 0;
+					for (int deltaRow = 0; deltaRow < big_rows(UPDATEMATRIX); deltaRow += 1)
+						for (int deltaCol = 0; deltaCol < big_rows(UPDATEMATRIX); deltaCol += 1)
+						{
+							if (compare_BigIntT(big_element(basePDigitMatrix, deltaRow, deltaCol), 
+							                    big_element(tempPDigitMatrix, deltaRow, deltaCol)) > 0)
+							{
+								subtract_BigIntT(big_element(basePDigitMatrix, deltaRow, deltaCol), 
+								                 big_element(tempPDigitMatrix, deltaRow, deltaCol),
+																 temp);
+								printi(big_element(basePDigitMatrix, deltaRow, deltaCol));
+								printf(" - ");
+								printi(big_element(tempPDigitMatrix, deltaRow, deltaCol));
+								printf(" = ");
+								printi(temp);
+								printf("\n");
+							}
+							else
+							{
+								subtract_BigIntT(big_element(tempPDigitMatrix, deltaRow, deltaCol),
+								                 big_element(basePDigitMatrix, deltaRow, deltaCol),
+																 temp);
+								printi(big_element(tempPDigitMatrix, deltaRow, deltaCol));
+								printf(" - ");
+								printi(big_element(basePDigitMatrix, deltaRow, deltaCol));
+								printf(" = ");
+								printi(temp);
+								printf("\n");
+							}
+							
+							divide_BigIntT(temp, bigMod, matrixDeltaRows[deltaRowCounter][deltaColCounter]);
+							deltaColCounter += 1;
+						}
+					
+					//Revert matrixElements
+					copy_BigIntT(big_element(UPDATEMATRIX, rowToShift, colToShift), matrixElements[rowToShift][colToShift]);
+					deltaRowCounter += 1;
+				}
+			}
+			
+			
+			//Just for testing
+			deltaRowsToReduce = new_BigIntMatrixT(big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX),
+			                                      big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX));
+			set_big_matrix(deltaRowsToReduce, matrixDeltaRows);
+			printbm(deltaRowsToReduce);
+			
+			temp      = free_BigIntT(temp);
+			bigMod    = free_BigIntT(bigMod);
+			baseMod   = free_BigIntT(baseMod);
+			biggerMod = free_BigIntT(biggerMod);
+			
+			theCycle = free_CycleInfoT(theCycle);
+			I = free_BigIntMatrixT(I);
+			
+			matrixElements  = free_BigIntT_array(matrixElements, big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			matrixDeltaRows = free_BigIntT_array(matrixDeltaRows, big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX),
+			                                                      big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX));
+			
+			bigCycLen = free_BigIntT(bigCycLen);
+			basePDigitMatrix = free_BigIntMatrixT(basePDigitMatrix);
+			tempPDigitMatrix = free_BigIntMatrixT(tempPDigitMatrix);
+			
+			tempMat            = free_BigIntMatrixT(tempMat);
+			matrixShiftWatcher = free_BigIntMatrixT(matrixShiftWatcher);
+			
+			deltaRowsToReduce = free_BigIntMatrixT(deltaRowsToReduce);
+		}
+		
+		
 		//If we want to get a sense for what the cyclespace of a particular vector looks like
 		//This might become an extension of vectPolys, honestly
 		else if (!strcmp(argv[1], "2023"))
@@ -7219,7 +7400,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		//printf(" - " ANSI_COLOR_YELLOW "core " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
@@ -7232,12 +7413,13 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "[mod] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "degree baseMod modPower [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
+		// printf(" - " ANSI_COLOR_YELLOW "charawalk" ANSI_COLOR_CYAN " step [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "stablelift" ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

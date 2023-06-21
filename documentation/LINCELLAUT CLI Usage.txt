@@ -14,7 +14,7 @@ chara [modulus]: This tool allows the user to find the characteristic equation o
 allcharas coeffs...: This tool allows the user to find all matrices with a particular characteristic polynomial defined as command line arguments. The size of the matrices is determined by the number of coefficients added, so adding zeros is required to pad the polynomial to the correct length. 
  - The argument(s) "coeffs" specify the coefficents to use for the characteristic polynomial, entered from the constant term to the coefficient on the highest power term. For example, the characteristic polynomial 5 + x^2 + 2x^3 would be entered as "5 0 1 2".
 
-core [modulus]: This tool allows the user to calculate how many vectors are in a given matrix's core under some modulus.
+core [modulus] (DEPRECATED): This tool allows the user to calculate how many vectors are in a given matrix's core under some modulus.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a particular matrix and print them to the console. This tool can also create an output file containing the orbits. The filename will be "orbits <modulus> F<matrix>.txt"
@@ -64,7 +64,7 @@ vectprops [mod] [resume] [fileoutput]: This tool allows the user to iterate thro
  - The optional argument "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-vectpolys degree baseMod modPower [fileoutput] (UNFINISHED): This tool allows the user to calculate ALL annihilating polynomials for a particular vector (the initial matrix listed in the .config file) under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
+vectpolys degree baseMod modPower [fileoutput] (UNFINISHED): This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
  - The argument "degree" specifies the highest degree polynomial to look for. This argument expects a positive integer.
  - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
  - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
@@ -74,7 +74,7 @@ matprops maxpower [modulus]: This tool allows the user to calculate some useful 
  - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-charawalk step [mod]: This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
+charawalk step [mod] (DEPRECATED): This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.
 
@@ -132,5 +132,9 @@ oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This to
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "resume" specifies whether to resume computation at a particular matrix (given by resume.matrix) and a particular modulus (specified in the .config file). This argument expects TRUE or FALSE.
  - The optional argument "fileoutput" specifies whether the tool should create a file output of the results it finds. The name of the file will follow the format "oddminpolysearch <maxpower> <size> <polysize> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE as it value.
+ 
+stablelift baseMod modPower: This tool allows the user to find a lift of a given matrix modulo (baseMod^modPower + 1) whose cycle length stays the same in the higher modulus.
+ - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
+ - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
  
 2023 (TEMPORARY): This tool takes the initial matrix specified in the .config file and calculates a matrix representation of its cyclespace under the given update matrix (also specified in the .config file). This tool will most likely be merged with "vectpolys" in the future.
