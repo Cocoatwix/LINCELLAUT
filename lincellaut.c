@@ -7154,6 +7154,8 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP tempMat, tempMat2;
 			BigIntMatrixTP tempPDigitMatrix; //<modified UPDATE>^cycLen mod baseMod^(modPower + 1)
 			
+			BigIntTP* baseDeltaRow; //The row we're trying to eliminate
+			
 			//Keeps track of what shifts we need to perform on UPDATEMATRIX to get a stable lift
 			BigIntMatrixTP matrixShiftWatcher = NULL; 
 			BigIntTP* matrixShiftWatcherRow;
@@ -7163,7 +7165,7 @@ int main(int argc, char* argv[])
 			//Holds the combination of matrix terms additions we need to get a stable lift
 			BigPolyTP deltaCombo;
 			BigIntTP* deltaComboCoeffs;
-			int matrixIndexCounter = 0; //Helps to create our stable lift
+			int matrixIndexCounter = 0; //Helps to index matrices as 1D arrays
 			
 			BigIntTP one, zero, temp, temp2, negOne;
 			
@@ -7230,7 +7232,32 @@ int main(int argc, char* argv[])
 			//FIX THIS LATER
 			numArr[0] = cycLen;
 			bigCycLen = new_BigIntT(numArr, 1);
+			
 			powbm(UPDATEMATRIX, basePDigitMatrix, bigCycLen, biggerMod);
+			baseDeltaRow = malloc(big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX)*sizeof(BigIntTP));
+			for (int r = 0; r < big_rows(basePDigitMatrix); r += 1)
+				for (int c = 0; c < big_rows(basePDigitMatrix); c += 1)
+				{
+					baseDeltaRow[matrixIndexCounter] = empty_BigIntT(1);
+					
+					if (r == c)
+						subtract_BigIntT(big_element(basePDigitMatrix, r, c), one, temp);
+					else
+						copy_BigIntT(big_element(basePDigitMatrix, r, c), temp);
+					
+					divide_BigIntT(temp, bigMod, baseDeltaRow[matrixIndexCounter]);
+					matrixIndexCounter += 1;
+				}
+			matrixIndexCounter = 0;
+			
+			printf("baseDeltaRow = [");
+			for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
+			{
+				if (i != 0)
+					printf(", ");
+				printi(baseDeltaRow[i]);
+			}
+			printf("]\n");
 			
 			tempPDigitMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
 			
@@ -7240,6 +7267,13 @@ int main(int argc, char* argv[])
 			{
 				for (int colToShift = 0; colToShift < big_rows(UPDATEMATRIX); colToShift += 1)
 				{
+					printf("~~~Beginning of loop~~~\n");
+					printf("matrixShiftWatcher:\n");
+					printbm(matrixShiftWatcher);
+					printf("deltaRowsToReduce:\n");
+					printbm(deltaRowsToReduce);
+					printf("\n");
+					
 					//Shift specific element
 					add_BigIntT(baseMod, matrixElements[rowToShift][colToShift], temp);
 					mod_BigIntT(temp, biggerMod, matrixElements[rowToShift][colToShift]);
@@ -7250,6 +7284,10 @@ int main(int argc, char* argv[])
 					
 					//Calculate new deltas
 					powbm(tempMat, tempPDigitMatrix, bigCycLen, biggerMod);
+					printf("basePDigitMatrix = \n");
+					printbm(basePDigitMatrix);
+					printf("tempPDigitMatrix = \n");
+					printbm(tempPDigitMatrix);
 					deltaColCounter = 0;
 					for (int deltaRow = 0; deltaRow < big_rows(UPDATEMATRIX); deltaRow += 1)
 						for (int deltaCol = 0; deltaCol < big_rows(UPDATEMATRIX); deltaCol += 1)
@@ -7262,17 +7300,11 @@ int main(int argc, char* argv[])
 							deltaColCounter += 1;
 						}
 					
-					//Prepare matrixShiftWatcher and deltaRowsToReduce for new rows
 					//So which modulus should I use? I think baseMod, but I'm not sure...
 					if (deltaRowCounter != 0)
-					{
-						big_row_echelon(deltaRowsToReduce, baseMod, deltaRowsToReduceTemp, matrixShiftWatcher);
-						copy_BigIntMatrixT(deltaRowsToReduceTemp, deltaRowsToReduce);
-						
 						resize_BigIntMatrixT(matrixShiftWatcher, big_rows(matrixShiftWatcher)+1, big_cols(matrixShiftWatcher));
-						resize_BigIntMatrixT(deltaRowsToReduce, big_rows(deltaRowsToReduce)+1, big_cols(deltaRowsToReduce));
-						resize_BigIntMatrixT(deltaRowsToReduceTemp, big_rows(deltaRowsToReduceTemp)+1, big_cols(deltaRowsToReduceTemp));
-					}
+					
+					set_big_row(deltaRowsToReduce, matrixDeltaRows[deltaRowCounter], deltaRowCounter);
 					
 					for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
 					{
@@ -7283,10 +7315,37 @@ int main(int argc, char* argv[])
 					}
 					set_big_row(matrixShiftWatcher, matrixShiftWatcherRow, deltaRowCounter);
 					
-					//Now, try to eliminate our most recent delta row to see if we found a stable lift
-					set_big_row(deltaRowsToReduce, matrixDeltaRows[deltaRowCounter], deltaRowCounter);
+					printf("After matrixShiftWatcher has been set\n");
+					printf("matrixShiftWatcher:\n");
+					printbm(matrixShiftWatcher);
+					printf("deltaRowsToReduce:\n");
+					printbm(deltaRowsToReduce);
+					printf("\n");
+					
+					//Prepare matrixShiftWatcher and deltaRowsToReduce for new rows
+					big_row_echelon(deltaRowsToReduce, baseMod, deltaRowsToReduceTemp, matrixShiftWatcher);
+					copy_BigIntMatrixT(deltaRowsToReduceTemp, deltaRowsToReduce);
+					
+					resize_BigIntMatrixT(deltaRowsToReduce, big_rows(deltaRowsToReduce)+1, big_cols(deltaRowsToReduce));
+					resize_BigIntMatrixT(deltaRowsToReduceTemp, big_rows(deltaRowsToReduceTemp)+1, big_cols(deltaRowsToReduceTemp));
+					
+					printf("After row echelon and resize\n");
+					printf("matrixShiftWatcher:\n");
+					printbm(matrixShiftWatcher);
+					printf("deltaRowsToReduce:\n");
+					printbm(deltaRowsToReduce);
+					printf("\n");
+					
+					//Now, try to eliminate baseDeltaRow to see if we found a stable lift
+					set_big_row(deltaRowsToReduce, baseDeltaRow, deltaRowCounter+1);
 					
 					//If we successfully eliminate the bottom row
+					printf("After baseDeltaRow is set\n");
+					printf("matrixShiftWatcher:\n");
+					printbm(matrixShiftWatcher);
+					printf("deltaRowsToReduce:\n");
+					printbm(deltaRowsToReduce);
+					printf("\n");
 					if (big_eliminate_bottom(deltaRowsToReduce, baseMod, deltaCombo))
 					{
 						printf("deltaCombo = ");
@@ -7303,7 +7362,7 @@ int main(int argc, char* argv[])
 						
 						//We need one of the bottom row plus whatever the polynomial specifies
 						deltaComboCoeffs = extract_coefficients(deltaCombo);
-						for (int dRow = 0; dRow < degree(deltaCombo); dRow += 1)
+						for (int dRow = 0; dRow < degree(deltaCombo)+1; dRow += 1)
 						{
 							if (compare_BigIntT(zero, deltaComboCoeffs[dRow]) == 0)
 								continue;
@@ -7317,6 +7376,17 @@ int main(int argc, char* argv[])
 								mod_BigIntT(temp, baseMod, matrixShiftWatcherRow[dElement]);
 							}
 						}
+						
+						/*
+						printf("matrixShiftWatcherRow = [");
+						for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
+						{
+							if (i != 0)
+								printf(", ");
+							printi(matrixShiftWatcherRow[i]);
+						}
+						printf("]\n");
+						*/
 						
 						//Now, we create the matrix
 						for (int mRow = 0; mRow < big_rows(UPDATEMATRIX); mRow += 1)
@@ -7336,19 +7406,15 @@ int main(int argc, char* argv[])
 						goto FOUNDSTABLELIFT;
 					}
 					
-					else
-					{
-						//Refresh bottom row of deltaRowsToReduce since it tried to be removed
-						set_big_row(deltaRowsToReduce, matrixDeltaRows[deltaRowCounter], deltaRowCounter);
-					}
-
-					deltaRowCounter += 1;
-					
+					printf("End of loop\n");
 					printf("matrixShiftWatcher:\n");
 					printbm(matrixShiftWatcher);
 					printf("deltaRowsToReduce:\n");
 					printbm(deltaRowsToReduce);
 					printf("\n");
+					
+
+					deltaRowCounter += 1;
 				}
 			}
 			
@@ -7378,8 +7444,12 @@ int main(int argc, char* argv[])
 			tempMat2           = free_BigIntMatrixT(tempMat2);
 			matrixShiftWatcher = free_BigIntMatrixT(matrixShiftWatcher);
 			for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
+			{
 				matrixShiftWatcherRow[i] = free_BigIntT(matrixShiftWatcherRow[i]);
+				baseDeltaRow[i]          = free_BigIntT(baseDeltaRow[i]);
+			}
 			FREE(matrixShiftWatcherRow);
+			FREE(baseDeltaRow);
 			
 			deltaRowsToReduce     = free_BigIntMatrixT(deltaRowsToReduce);
 			deltaRowsToReduceTemp = free_BigIntMatrixT(deltaRowsToReduceTemp);
