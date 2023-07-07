@@ -7122,9 +7122,15 @@ int main(int argc, char* argv[])
 		//If we want to find a lift of a matrix where the cycle length stays the same
 		else if (!strcmp(argv[1], "stablelift"))
 		{
+			/* This CLI tool might be able to be used to find Wall-Sun-Sun primes.
+			 * A Wall-Sun-Sun prime is one where, when finding a stable lift of the
+			 * 2x2 Fibonacci matrix, the stable lift is the same as the 2x2 Fibonacci
+			 * matrix...
+			 *
+			 */
 			if (argc < 4)
 			{
-				printf(ANSI_COLOR_YELLOW "stablelift" ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+				printf(ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower [stableLevel]" ANSI_COLOR_RESET "\n");
 				FREE_VARIABLES;
 				return EXIT_SUCCESS;
 			}
@@ -7169,6 +7175,15 @@ int main(int argc, char* argv[])
 			
 			BigIntTP one, zero, temp, temp2, negOne;
 			
+			//Currently only used for testing (set this to 0 if not testing)
+			//Tells the algorithm how many levels deep UPDATEMATRIX is as a 
+			// stable lift (is it the product of a previous stable lift computation?)
+			int stableLiftLevel = 0;
+			BigIntTP deltaMod;
+			BigIntTP liftCompMod;
+			//My usage of deltaMod and liftCompMod may be completely wrong
+			// We're gonna find out
+			
 			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of modulus from command line.");
 			
 			modPower = (int)strtol(argv[3], &tempStr, 10);
@@ -7180,19 +7195,39 @@ int main(int argc, char* argv[])
 				return EXIT_FAILURE;
 			}
 			
+			if (argc > 4)
+			{
+				stableLiftLevel = (int)strtol(argv[4], &tempStr, 10);
+				if (tempStr[0] != '\0')
+				{
+					fprintf(stderr, "Unable to read stable level from command line.\n");
+					baseMod = free_BigIntT(baseMod);
+					FREE_VARIABLES;
+					return EXIT_FAILURE;
+				}
+			}
+			
 			one    = new_BigIntT(numArr, 1);
 			zero   = empty_BigIntT(1);
 			temp   = empty_BigIntT(1);
 			temp2  = empty_BigIntT(1);
 			negOne = empty_BigIntT(1);
 			
-			//Construct modulus
-			bigMod    = new_BigIntT(numArr, 1);
-			biggerMod = empty_BigIntT(1);
+			//Construct moduli values
+			bigMod     = new_BigIntT(numArr, 1);
+			deltaMod   = new_BigIntT(numArr, 1);
+			biggerMod  = empty_BigIntT(1);
+			liftCompMod = new_BigIntT(numArr, 1);
 			for (int i = 0; i < modPower; i += 1)
 			{
 				multiply_BigIntT(bigMod, baseMod, temp);
 				copy_BigIntT(temp, bigMod);
+				
+				if (i == stableLiftLevel)
+					copy_BigIntT(temp, liftCompMod);
+				
+				if (i == modPower - stableLiftLevel - 1)
+					copy_BigIntT(temp, deltaMod);
 			}
 			copy_BigIntT(bigMod, biggerMod);
 			multiply_BigIntT(biggerMod, baseMod, temp);
@@ -7245,11 +7280,14 @@ int main(int argc, char* argv[])
 					else
 						copy_BigIntT(big_element(basePDigitMatrix, r, c), temp);
 					
-					divide_BigIntT(temp, bigMod, baseDeltaRow[matrixIndexCounter]);
+					divide_BigIntT(temp, deltaMod, baseDeltaRow[matrixIndexCounter]);
 					matrixIndexCounter += 1;
 				}
 			matrixIndexCounter = 0;
 			
+			//The row of matrix entry changes we're trying to eliminate
+			// Once we find a way to eliminate it, we've found a way to make a stablelift
+			/*
 			printf("baseDeltaRow = [");
 			for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
 			{
@@ -7258,6 +7296,7 @@ int main(int argc, char* argv[])
 				printi(baseDeltaRow[i]);
 			}
 			printf("]\n");
+			*/
 			
 			tempPDigitMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
 			
@@ -7267,12 +7306,17 @@ int main(int argc, char* argv[])
 			{
 				for (int colToShift = 0; colToShift < big_rows(UPDATEMATRIX); colToShift += 1)
 				{
+					//Since the rows of our working matrix get shifted as we work,
+					// matrixShiftWatcher keeps track of what components correspond to
+					// which changes
+					/*
 					printf("~~~Beginning of loop~~~\n");
 					printf("matrixShiftWatcher:\n");
 					printbm(matrixShiftWatcher);
 					printf("deltaRowsToReduce:\n");
 					printbm(deltaRowsToReduce);
 					printf("\n");
+					*/
 					
 					//Shift specific element
 					add_BigIntT(baseMod, matrixElements[rowToShift][colToShift], temp);
@@ -7283,11 +7327,23 @@ int main(int argc, char* argv[])
 					copy_BigIntT(big_element(UPDATEMATRIX, rowToShift, colToShift), matrixElements[rowToShift][colToShift]);
 					
 					//Calculate new deltas
+					
+					/* When trying to calculate deltas using an UPDATEMATRIX that's
+					 * already a stable lift, things get weird...
+					 * it seems like tempPDigitMatrix changes by increments of the
+					 * baseMod, not the bigMod like usual...
+					 * Maybe the amount we need to add for getting new shift matrices changes
+					 * when we're working with a stable lift, or maybe we need to do the
+					 * calculations under a different modulus
+					 *
+					 */
 					powbm(tempMat, tempPDigitMatrix, bigCycLen, biggerMod);
+					/*
 					printf("basePDigitMatrix = \n");
 					printbm(basePDigitMatrix);
 					printf("tempPDigitMatrix = \n");
 					printbm(tempPDigitMatrix);
+					*/
 					deltaColCounter = 0;
 					for (int deltaRow = 0; deltaRow < big_rows(UPDATEMATRIX); deltaRow += 1)
 						for (int deltaCol = 0; deltaCol < big_rows(UPDATEMATRIX); deltaCol += 1)
@@ -7296,7 +7352,8 @@ int main(int argc, char* argv[])
 							add_BigIntT(big_element(tempPDigitMatrix, deltaRow, deltaCol), temp, temp2);
 							mod_BigIntT(temp2, biggerMod, temp);
 							
-							divide_BigIntT(temp, bigMod, matrixDeltaRows[deltaRowCounter][deltaColCounter]);
+							//Change the modulus used here depending on how tempPDigitMatrix comes out
+							divide_BigIntT(temp, deltaMod, matrixDeltaRows[deltaRowCounter][deltaColCounter]);
 							deltaColCounter += 1;
 						}
 					
@@ -7315,45 +7372,57 @@ int main(int argc, char* argv[])
 					}
 					set_big_row(matrixShiftWatcher, matrixShiftWatcherRow, deltaRowCounter);
 					
+					/*
 					printf("After matrixShiftWatcher has been set\n");
 					printf("matrixShiftWatcher:\n");
 					printbm(matrixShiftWatcher);
 					printf("deltaRowsToReduce:\n");
 					printbm(deltaRowsToReduce);
 					printf("\n");
+					*/
 					
 					//Prepare matrixShiftWatcher and deltaRowsToReduce for new rows
-					big_row_echelon(deltaRowsToReduce, baseMod, deltaRowsToReduceTemp, matrixShiftWatcher);
+					big_row_echelon(deltaRowsToReduce, liftCompMod, deltaRowsToReduceTemp, matrixShiftWatcher);
 					copy_BigIntMatrixT(deltaRowsToReduceTemp, deltaRowsToReduce);
 					
 					resize_BigIntMatrixT(deltaRowsToReduce, big_rows(deltaRowsToReduce)+1, big_cols(deltaRowsToReduce));
 					resize_BigIntMatrixT(deltaRowsToReduceTemp, big_rows(deltaRowsToReduceTemp)+1, big_cols(deltaRowsToReduceTemp));
 					
+					/*
 					printf("After row echelon and resize\n");
 					printf("matrixShiftWatcher:\n");
 					printbm(matrixShiftWatcher);
 					printf("deltaRowsToReduce:\n");
 					printbm(deltaRowsToReduce);
 					printf("\n");
+					*/
 					
 					//Now, try to eliminate baseDeltaRow to see if we found a stable lift
 					set_big_row(deltaRowsToReduce, baseDeltaRow, deltaRowCounter+1);
 					
 					//If we successfully eliminate the bottom row
+					/*
 					printf("After baseDeltaRow is set\n");
 					printf("matrixShiftWatcher:\n");
 					printbm(matrixShiftWatcher);
 					printf("deltaRowsToReduce:\n");
 					printbm(deltaRowsToReduce);
 					printf("\n");
-					if (big_eliminate_bottom(deltaRowsToReduce, baseMod, deltaCombo))
+					*/
+					if (big_eliminate_bottom(deltaRowsToReduce, liftCompMod, deltaCombo))
 					{
+						//Used to keep track of all the different additions we need to do
+						// to get a stablelift
+						/*
 						printf("deltaCombo = ");
 						printp(deltaCombo);
 						printf("\nmatrixDeltaRows = \n");
+						*/
 						set_big_matrix(tempMat2, matrixDeltaRows);
+						/*
 						printbm(tempMat2);
 						printf("\n");
+						*/
 						
 						//We'll reuse matrixShiftWatcherRow for convenience
 						//It'll hold a representation of which components of the matrix need to be
@@ -7372,8 +7441,7 @@ int main(int argc, char* argv[])
 								multiply_BigIntT(big_element(matrixShiftWatcher, dRow, dElement), deltaComboCoeffs[dRow], temp2);
 								add_BigIntT(matrixShiftWatcherRow[dElement], temp2, temp);
 								
-								//May need to switch this to bigMod
-								mod_BigIntT(temp, baseMod, matrixShiftWatcherRow[dElement]);
+								mod_BigIntT(temp, liftCompMod, matrixShiftWatcherRow[dElement]);
 							}
 						}
 						
@@ -7406,13 +7474,14 @@ int main(int argc, char* argv[])
 						goto FOUNDSTABLELIFT;
 					}
 					
+					/*
 					printf("End of loop\n");
 					printf("matrixShiftWatcher:\n");
 					printbm(matrixShiftWatcher);
 					printf("deltaRowsToReduce:\n");
 					printbm(deltaRowsToReduce);
 					printf("\n");
-					
+					*/
 
 					deltaRowCounter += 1;
 				}
@@ -7420,14 +7489,16 @@ int main(int argc, char* argv[])
 			
 			FOUNDSTABLELIFT:
 			
-			one       = free_BigIntT(one);
-			zero      = free_BigIntT(zero);
-			temp      = free_BigIntT(temp);
-			temp2     = free_BigIntT(temp2);
-			negOne    = free_BigIntT(negOne);
-			bigMod    = free_BigIntT(bigMod);
-			baseMod   = free_BigIntT(baseMod);
-			biggerMod = free_BigIntT(biggerMod);
+			one         = free_BigIntT(one);
+			zero        = free_BigIntT(zero);
+			temp        = free_BigIntT(temp);
+			temp2       = free_BigIntT(temp2);
+			negOne      = free_BigIntT(negOne);
+			bigMod      = free_BigIntT(bigMod);
+			baseMod     = free_BigIntT(baseMod);
+			deltaMod    = free_BigIntT(deltaMod);
+			biggerMod   = free_BigIntT(biggerMod);
+			liftCompMod  = free_BigIntT(liftCompMod);
 			
 			theCycle = free_CycleInfoT(theCycle);
 			I = free_BigIntMatrixT(I);
@@ -7577,7 +7648,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "stablelift" ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "baseMod modPower stableLevel" ANSI_COLOR_RESET "\n");
 		
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to the included documentation.\n");

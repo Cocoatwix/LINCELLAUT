@@ -133,8 +133,9 @@ oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This to
  - The optional argument "resume" specifies whether to resume computation at a particular matrix (given by resume.matrix) and a particular modulus (specified in the .config file). This argument expects TRUE or FALSE.
  - The optional argument "fileoutput" specifies whether the tool should create a file output of the results it finds. The name of the file will follow the format "oddminpolysearch <maxpower> <size> <polysize> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE as it value.
  
-stablelift baseMod modPower: This tool allows the user to find a lift of a given matrix modulo (baseMod^modPower + 1) whose cycle length stays the same in the higher modulus.
+stablelift baseMod modPower [stableLevel] (UNFINISHED): This tool allows the user to find a lift of a given matrix modulo (baseMod^modPower + 1) whose cycle length stays the same in the higher modulus.
  - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
  - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
+ - The optional argument "stableLevel" specifies how many modulus power changes the update matrix needs before its cycle length begins increasing. The default value for this argument is zero. This argument expects a nonnegative integer.
  
 2023 (TEMPORARY): This tool takes the initial matrix specified in the .config file and calculates a matrix representation of its cyclespace under the given update matrix (also specified in the .config file). This tool will most likely be merged with "vectpolys" in the future.
