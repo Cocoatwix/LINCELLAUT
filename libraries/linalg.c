@@ -829,7 +829,7 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
     Returns a pointer to the new matrix on success, NULL
 		otherwise. */
 {
-	BigIntMatrixTP M;
+	BigIntMatrixTP M, I;
 	char* tempStr;
 	
 	FILE* matFile = fopen(matFilePath, "r");
@@ -850,7 +850,14 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
 	//Make space for the actual matrix data
 	M->matrix = malloc((M->m)*sizeof(BigIntTP*));
 	for (int row = 0; row < M->m; row+= 1)
+	{
 		M->matrix[row] = malloc((M->n)*sizeof(BigIntTP));
+		
+		//Setting matrix elements to NULL to prevent trying to
+		// free nothing if M gets freed
+		for (int col = 0; col < M->n; col += 1)
+			M->matrix[row][col] = NULL;
+	}
 	
 	tempStr = malloc(100*sizeof(char));
 	
@@ -865,6 +872,16 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
 				fclose(matFile);
 				free_BigIntMatrixT(M);
 				return NULL;
+			}
+			
+			//Check to see if the user is creating an identity matrix
+			if (tempStr[0] == 'I')
+			{
+				I = identity_BigIntMatrixT(M->m);
+				free(tempStr);
+				fclose(matFile);
+				free_BigIntMatrixT(M);
+				return I;
 			}
 			
 			//Actually store our value in the matrix
@@ -1330,7 +1347,7 @@ void big_rowsp(const BigIntMatrixTP A)
 {
 	bool isZero;
 	
-	printf("span(");
+	printf("span({");
 	for (int row = 0; row < A->m; row += 1)
 	{
 		isZero = row == 0 ? FALSE : TRUE;
@@ -1364,7 +1381,7 @@ void big_rowsp(const BigIntMatrixTP A)
 		}
 		
 	}
-	printf(")");
+	printf("})");
 }
 
 
