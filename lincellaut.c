@@ -5259,7 +5259,7 @@ int main(int argc, char* argv[])
 			int   groupCount = 0;
 			int   currCycleLength;
 			int   prevCycleLength; //Used to sort mappings by cycle length
-			int*  currOrbitMapMatch = NULL; //For organising output intogroupings of reductions
+			int*  currOrbitMapMatch = NULL; //For organising output into groupings of reductions
 			int** currOrbitMapGroup = NULL; //Holds the vectors that match our match
 			
 			int maxpower;     //Holds the max power as a regular int
@@ -5869,6 +5869,7 @@ int main(int argc, char* argv[])
 			
 			typedef struct orbitmaptree
 			{
+				int occurrences;  //How many times has this particular tree structure occurred?
 				int* layerCount; //How many nodes are on each layer?
 				OMN** nodes;     //Array of nodes
 			}
@@ -5877,6 +5878,13 @@ int main(int argc, char* argv[])
 			bool isNewTree; //For saying whether we've found a new tree to add to our collection
 			int orbitMapsCount     = 0;
 			OMT* orbitMapsCatalogue = NULL; //Holds all the different structures we encounter when computing orbit maps
+			
+			if (argc < 3)
+			{
+				printf(ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
+				FREE_VARIABLES;
+				return EXIT_SUCCESS;
+			}
 			
 			if (big_rows(initialA) != big_cols(initialA))
 			{
@@ -6267,7 +6275,7 @@ int main(int argc, char* argv[])
 				 
 				//Create a new orbitmaptree structure to mimic the tree we're printing
 				//Then, compare this structure with the ones we already have to see if it's unique
-				OMT tempTree = {calloc(maxPower, sizeof(int)), calloc(maxPower, sizeof(OMN*))};
+				OMT tempTree = {1, calloc(maxPower, sizeof(int)), calloc(maxPower, sizeof(OMN*))};
 
 				while (stemCollectionIndices[maxPower-1] < orbitRepsCount[maxPower-1])
 				{
@@ -6352,12 +6360,14 @@ int main(int argc, char* argv[])
 				}
 				
 				//Here's the place where we check whether the tree we just built is unique.
+				//Thanks, past me, for adding this comment. It is actually very useful
 				if (orbitMapsCount == 0)
 				{
 					isNewTree = TRUE;
 					orbitMapsCount += 1;
 					orbitMapsCatalogue = malloc(sizeof(OMT));
 					orbitMapsCatalogue[0] = tempTree;
+					tempTree.occurrences += 1;
 				}
 				
 				//Compare our most recent tree with all the other trees we have
@@ -6403,7 +6413,11 @@ int main(int argc, char* argv[])
 						
 						//If we found a matching tree to tempTree in orbitMapsCatalogue, we don't need to look any further
 						if (!isNewTree)
+						{
+							//Add +1 occurrence to the tree structure that's the same as tempTree
+							orbitMapsCatalogue[tree].occurrences += 1;
 							break;
+						}
 					}
 					
 					//If we found a new tree to add
@@ -6412,6 +6426,7 @@ int main(int argc, char* argv[])
 						orbitMapsCount += 1;
 						orbitMapsCatalogue = realloc(orbitMapsCatalogue, orbitMapsCount*sizeof(OMT));
 						orbitMapsCatalogue[orbitMapsCount-1] = tempTree;
+						tempTree.occurrences += 1;
 					}
 					
 					//Discard tree
@@ -6503,7 +6518,7 @@ int main(int argc, char* argv[])
 				printf("orbitMapsCatalogue:\n"); \
 				for (int T = 0; T < orbitMapsCount; T += 1) \
 				{ \
-					printf("%d:\n", T); \
+					printf("%d (%d):\n", T, orbitMapsCatalogue[T].occurrences); \
 					for (int L = 0; L < maxPower; L += 1) \
 					{ \
 						for (int N = 0; N < orbitMapsCatalogue[T].layerCount[L]; N += 1) \
@@ -6549,8 +6564,8 @@ int main(int argc, char* argv[])
 							mapIndexCount[i] = 0;
 						}
 						
-						fprintf(mapOutputFile, ":%d\n", T);
-						printf(":%d\n", T);
+						fprintf(mapOutputFile, ":%d (%d)\n", T, orbitMapsCatalogue[T].occurrences);
+						printf(":%d (%d)\n", T, orbitMapsCatalogue[T].occurrences);
 						do
 						{
 							//Generate the number of nodes we need to print in each layer for the current layer 0 node

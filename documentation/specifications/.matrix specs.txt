@@ -8,6 +8,11 @@ The following would be a valid 4x3 matrix in a .matrix format:
 2 2 2
 3 3 3
 
+A shortcut exists for specifying an identity matrix--simply type a capital I where the matrix entries would normally be placed. The following would be a valid 4x3 identity matrix in a .matrix format:
+
+4 3
+I
+
 lincellaut.c makes no attempt at filling in missing elements or interpreting wrongly-formatted files. It's the user's responsibility to make sure the .matrix file is formatted correctly.
 
 Note that changing the dimension numbers at the top of the file but not removing unwanted elements from the matrix below will not necessarily behave as one would expect. It's best to always ensure the number of elements in the matrix provided matches with what the dimension numbers specify.
