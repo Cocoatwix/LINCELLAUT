@@ -5870,6 +5870,8 @@ int main(int argc, char* argv[])
 			typedef struct orbitmaptree
 			{
 				int occurrences;  //How many times has this particular tree structure occurred?
+				BigIntMatrixTP matrixRep; //A matrix that causes this particular tree structure
+				
 				int* layerCount; //How many nodes are on each layer?
 				OMN** nodes;     //Array of nodes
 			}
@@ -6275,7 +6277,14 @@ int main(int argc, char* argv[])
 				 
 				//Create a new orbitmaptree structure to mimic the tree we're printing
 				//Then, compare this structure with the ones we already have to see if it's unique
-				OMT tempTree = {1, calloc(maxPower, sizeof(int)), calloc(maxPower, sizeof(OMN*))};
+				OMT tempTree = {
+												1, 
+				                new_BigIntMatrixT(big_rows(initialA), big_rows(initialA)), 
+												calloc(maxPower, sizeof(int)), 
+												calloc(maxPower, sizeof(OMN*))
+											 };
+				//Put the current matrix into the mapping to act as a representative
+				copy_BigIntMatrixT(currMat, tempTree.matrixRep);
 
 				while (stemCollectionIndices[maxPower-1] < orbitRepsCount[maxPower-1])
 				{
@@ -6436,6 +6445,7 @@ int main(int argc, char* argv[])
 						{
 							FREE(tempTree.nodes[layer]);
 						}
+						tempTree.matrixRep = free_BigIntMatrixT(tempTree.matrixRep);
 						FREE(tempTree.nodes);
 						FREE(tempTree.layerCount);
 					}
@@ -6519,6 +6529,8 @@ int main(int argc, char* argv[])
 				for (int T = 0; T < orbitMapsCount; T += 1) \
 				{ \
 					printf("%d (%d):\n", T, orbitMapsCatalogue[T].occurrences); \
+					printf("M\n"); \
+					printbm(orbitMapsCatalogue[T].matrixRep); \
 					for (int L = 0; L < maxPower; L += 1) \
 					{ \
 						for (int N = 0; N < orbitMapsCatalogue[T].layerCount[L]; N += 1) \
@@ -6532,15 +6544,6 @@ int main(int argc, char* argv[])
 					} \
 					printf("\n"); \
 				}
-				
-				//Now, I'd like to print out orbitMapsCatalogue to see what that looks like
-				//Only print them out when we add a new tree to the catalogue
-				/*
-				if (isNewTree)
-				{
-					PRINTOMCATALOGUE
-				}
-				*/
 			}
 			
 			//Now, output the tree structures to a file, if desired
@@ -6566,6 +6569,14 @@ int main(int argc, char* argv[])
 						
 						fprintf(mapOutputFile, ":%d (%d)\n", T, orbitMapsCatalogue[T].occurrences);
 						printf(":%d (%d)\n", T, orbitMapsCatalogue[T].occurrences);
+						
+						//Print the representative matrix for the mapping
+						fprintf(mapOutputFile, "M\n");
+						printf("M\n");
+						fprintbm(mapOutputFile, orbitMapsCatalogue[T].matrixRep);
+						printbm(orbitMapsCatalogue[T].matrixRep);
+						printf("~\n");
+						fprintf(mapOutputFile, "~\n");
 						do
 						{
 							//Generate the number of nodes we need to print in each layer for the current layer 0 node
@@ -6676,6 +6687,7 @@ int main(int argc, char* argv[])
 					{
 						FREE(orbitMapsCatalogue[om].nodes[layer]);
 					}
+					orbitMapsCatalogue[om].matrixRep = free_BigIntMatrixT(orbitMapsCatalogue[om].matrixRep);
 					FREE(orbitMapsCatalogue[om].nodes);
 					FREE(orbitMapsCatalogue[om].layerCount);
 				}
