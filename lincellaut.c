@@ -85,7 +85,7 @@ int main(int argc, char* argv[])
 	
 	if (system == NULL)
 	{
-		fprintf(stderr, "Unable to open config file. Check the config folder.\n");
+		fprintf(stderr, "Unable to open .config file. Check the config folder to ensure the file exists!\n");
 		return EXIT_FAILURE;
 	}
 	
@@ -119,9 +119,12 @@ int main(int argc, char* argv[])
 			//Getting modulus as string first in case we need to convert to BigIntT
 			if (fscanf(system, "%101s", bigintmodstring) != 1)
 			{
-				fprintf(stderr, "Unable to read modulus from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read modulus from .config file. " \
+				"Defaulting to a modulus of 3.\n");
+				bigintmodstring[0] = '3';
+				bigintmodstring[1] = '\0';
+				modulus = 3;
+				continue;
 			}
 			
 			if (strlen(bigintmodstring) < 10)
@@ -129,9 +132,9 @@ int main(int argc, char* argv[])
 				modulus = (int)strtol(bigintmodstring, &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
-					fprintf(stderr, "Invalid modulus provided in config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					fprintf(stderr, "Invalid modulus provided in .config file. " \
+					"Defaulting to a modulus of 3.\n");
+					modulus = 3;
 				}
 			}
 		}
@@ -141,9 +144,8 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%s", systemData) != 1)
 			{
-				fprintf(stderr, "Unable to read vector type from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read vector type from .config file. " \
+				"Defaulting to \"row\" vector type.\n");
 			}
 			
 			else
@@ -155,9 +157,9 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%d", &iterations) != 1)
 			{
-				fprintf(stderr, "Unable to read number of iterations from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read number of iterations from .config file. " \
+				"Defaulting to 1 iteration.\n");
+				iterations = 1;
 			}
 		}
 		
@@ -165,17 +167,18 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%s", updatefilepath) != 1)
 			{
-				fprintf(stderr, "Unable to read update matrix path from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read update matrix path from .config file. " \
+				"Continuing without setting an update matrix...\n");
+				updatefilepath = NULL;
+				UPDATEMATRIX = NULL;
+				continue;
 			}
 			
 			UPDATEMATRIX = read_BigIntMatrixT(updatefilepath);
 			if (UPDATEMATRIX == NULL)
 			{
-				fprintf(stderr, "Unable to set update matrix from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to set update matrix from .config file. " \
+				"Continuing without setting an update matrix...\n");
 			}
 		}
 		
@@ -183,17 +186,18 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%s", initialfilepath) != 1)
 			{
-				fprintf(stderr, "Unable to read initial vector path from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read initial matrix path from .config file. " \
+				"Continuing without setting an initial matrix...\n");
+				initialfilepath = NULL;
+				INITIALMATRIX = NULL;
+				continue;
 			}
 			
 			INITIALMATRIX = read_BigIntMatrixT(initialfilepath);
 			if (INITIALMATRIX == NULL)
 			{
-				fprintf(stderr, "Unable to set initial matrix from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to set initial matrix from .config file. " \
+				"Continuing without setting an initial matrix...\n");
 			}
 		}
 		
@@ -201,9 +205,9 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%s", resumefilepath) != 1)
 			{
-				fprintf(stderr, "Unable to read resume matrix path from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read resume matrix path from .config file. " \
+				"Continuing without setting a resume matrix...\n");
+				resumefilepath = NULL;
 			}
 		}
 		
@@ -211,9 +215,9 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%s", sentinelfilepath) != 1)
 			{
-				fprintf(stderr, "Unable to read sentinel matrix path from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read sentinel matrix path from .config file. " \
+				"Continuing without setting a sentinel matrix...\n");
+				sentinelfilepath = NULL;
 			}
 		}
 		
@@ -221,9 +225,10 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%101s", resumemodstring) != 1)
 			{
-				fprintf(stderr, "Unable to read resume modulus from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read resume modulus from .config file. " \
+				"Defaulting to a resume modulus of 3.\n");
+				resumemodstring[0] = '3';
+				resumemodstring[1] = '\0';
 			}
 		}
 		
@@ -231,9 +236,9 @@ int main(int argc, char* argv[])
 		{
 			if (fscanf(system, "%s", iterfilepath) != 1)
 			{
-				fprintf(stderr, "Unable to read iteration file path from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				fprintf(stderr, "Unable to read iteration file path from .config file. " \
+				"Continuing without setting an iteration file path...\n");
+				iterfilepath = NULL;
 			}
 		}
 	}
@@ -241,7 +246,7 @@ int main(int argc, char* argv[])
 	FREE(systemData);
 	if (fclose(system) == EOF)
 	{
-		fprintf(stderr, "Unable to close config file.\n");
+		fprintf(stderr, "Unable to properly close .config file.\n");
 		FREE_VARIABLES;
 		return EXIT_FAILURE;
 	}
