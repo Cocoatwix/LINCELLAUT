@@ -93,6 +93,7 @@ orbitmaps maxpower [modulus] [fileoutput]: This tool allows the user to generate
  - The optional argument "fileoutput" specifies whether the tool's output should be saved to a file (naming convention "orbitmaps [maxpower] [modulus] F[matrix].txt"). This also determines whether the program should output a .graph file for use with GRAPHVIS. This argument expects TRUE or FALSE. The default value is FALSE.
 
 orbitmaps2 maxpower [modulus] [fileoutput] [belowBound] [aboveBound]: This tool uses a slightly different approach to orbitmaps in order to find orbit representatives for some high-power modulus and then map them down to orbit representatives for the lower-power moduli. Specifically, if two orbits reduce to the same cycle, their orbit representatives will reduce to the same representative. As well, this tool calculates the orbit maps for ALL lifts of the given update matrix, not just the one matrix given.
+If quiet mode is active, this tool will only output data regarding the number of unique orbit mapping structures found, both on the console and in its output files.
 The tool sifts through matrices in the following way:
 1. Start with the given matrix. Perform relevant calculations.
 

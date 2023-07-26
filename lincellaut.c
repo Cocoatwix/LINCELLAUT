@@ -80,6 +80,9 @@ int main(int argc, char* argv[])
 	
 	VectorTypeT vectorType = row;
 	
+	//Whether to suppress certain output (decided via "quiet" key in .config file)
+	bool quietmode = FALSE;
+	
 	//Read .config file to get appropriate data loaded
 	FILE* system = fopen("config/system.config", "r");
 	
@@ -240,6 +243,19 @@ int main(int argc, char* argv[])
 				"Continuing without setting an iteration file path...\n");
 				iterfilepath = NULL;
 			}
+		}
+		
+		else if (!strcmp(systemData, "quiet"))
+		{
+			if (fscanf(system, "%s", systemData) != 1)
+			{
+				fprintf(stderr, "Unable to read value of \"quiet\" key in .config file. " \
+				"Quiet mode will be turned off.\n");
+			}
+			
+			else
+				if (!strcmp(systemData, "TRUE"))
+					quietmode = TRUE;
 		}
 	}
 	
@@ -2592,7 +2608,7 @@ int main(int argc, char* argv[])
 			
 			BigIntTP progressUpdateElement; //For keeping track of progress through a modulus
 			int progressRow = 1;
-			int progressCol = 2; //Used to decide which element in the matrix to look at for progress updates
+			int progressCol = 1; //Used to decide which element in the matrix to look at for progress updates
 			bool printProgress = TRUE;
 			
 			BigIntTP** currMatElements; //Holds matrix numbers so we can set the matrix easily
@@ -5847,23 +5863,6 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP resumeMatrix   = NULL;
 			BigIntMatrixTP sentinelMatrix = NULL;
 			
-			//For compressing the output file
-			/*
-			bool isNewCycLen;
-			
-			//For representing cycle lengths as letters instead of numbers, saving on space when outputting to a file
-			typedef struct cyclenchar
-			{
-				int cyclen; //the cycle length this character represents
-				char disp;  //the character to display in place of the cycle length
-			}
-			CLC;
-			
-			CLC* cyclenreplace = NULL;
-			int numofcyclenreplace = 0;
-			char* repchars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-			*/
-			
 			//For keeping track of the structures of the orbit maps
 			typedef struct orbitmapnode
 			{
@@ -5964,9 +5963,13 @@ int main(int argc, char* argv[])
 				strcat(outputFileName, ".txt");
 				strcat(mapOutputFileName, ".txt");
 				
-				outputFile = fopen(outputFileName, "a");
-				if (outputFile == NULL)
-					fprintf(stderr, "Unable to open output file. Continuing without saving...\n");
+				//Don't store any matrix data in quiet mode
+				if (!quietmode)
+				{
+					outputFile = fopen(outputFileName, "a");
+					if (outputFile == NULL)
+						fprintf(stderr, "Unable to open output file. Continuing without saving...\n");
+				}
 			}
 			
 			//If the user wants to resume computation at a particular matrix
@@ -6092,6 +6095,9 @@ int main(int argc, char* argv[])
 			
 			Ainv = free_BigIntMatrixT(Ainv);
 			
+			if (quietmode)
+				printf("Quiet mode is on. Only select data will be output.\n");
+			
 			//Let's calculate our base orbit reps, since those won't change throughout
 			// the course of the program running
 			orbitRepsCount[0] = big_orbit_reps(initialA, baseMod, orbitReps, orbitRepsCycleLengths);
@@ -6101,12 +6107,15 @@ int main(int argc, char* argv[])
 			while ((currPower > 1) && (!compare_BigIntMatrixT(sentinelMatrix, currMat)))
 			{
 				set_big_matrix(currMat, matrixLiftElements[maxPower-2]);
-				printf("M\n");
-				printbm(currMat);
-				if (outputFile != NULL)
+				if (!quietmode)
 				{
-					fprintf(outputFile, "M\n");
-					fprintbm(outputFile, currMat);
+					printf("M\n");
+					printbm(currMat);
+					if (outputFile != NULL)
+					{
+						fprintf(outputFile, "M\n");
+						fprintbm(outputFile, currMat);
+					}
 				}
 				
 				//Clear out all vectors from mod baseMod^currPower upward
@@ -6234,34 +6243,7 @@ int main(int argc, char* argv[])
 				while (currPower <= maxPower);
 				currPower -= 1; //Accounting for the weird way I set up this loop
 				
-				//Every time we print a cycle length, we check if we have a character for it
-				// If not, we add one
-				//I hate that I'm making a habit of using macros like this
-				// I'm a madman that needs to be stopped
-				#define CHARCYCLELEN(op, omega) \
-				isNewCycLen = TRUE; \
-				for (int w = 0; w < numofcyclenreplace; w += 1) \
-				{ \
-					if ((omega) == cyclenreplace[w].cyclen) \
-					{ \
-						isNewCycLen = FALSE; \
-						fprintf(op, "%c", cyclenreplace[w].disp); \
-						break; \
-					} \
-				} \
-				if (isNewCycLen) \
-				{ \
-					numofcyclenreplace += 1; \
-					cyclenreplace = realloc(cyclenreplace, numofcyclenreplace*sizeof(CLC)); \
-					CLC clc = {(omega), repchars[numofcyclenreplace-1]}; \
-					cyclenreplace[numofcyclenreplace-1] = clc; \
-					fprintf(op, "%c", cyclenreplace[numofcyclenreplace-1].disp); \
-				}
-				
-				//Now, print out the orbit reps
-				
-				// └ │ ├
-				//Need to save the next vector to be printed so that I can correctly print tree characters
+				//Now, print out the orbit reps (or at least, start preparing to)
 				
 				for (int i = 0; i < maxPower; i += 1)
 				{
@@ -6323,20 +6305,23 @@ int main(int argc, char* argv[])
 						{
 							for (int v = stemStart; v < maxPower; v += 1)
 							{
-								if (useTreeSpaces)
-									for (int i = 0; i < v; i += 1)
-										printf(" ");
-									
-								else
-									printf("%d ", v);
-								
-								for (int i = 0; i < big_rows(initialA); i += 1)
+								if (!quietmode)
 								{
-									if (i != 0)
-										printf(",");
-									printi(big_element(stemCollection[v], i, 0));
+									if (useTreeSpaces)
+										for (int i = 0; i < v; i += 1)
+											printf(" ");
+										
+									else
+										printf("%d ", v);
+								
+									for (int i = 0; i < big_rows(initialA); i += 1)
+									{
+										if (i != 0)
+											printf(",");
+										printi(big_element(stemCollection[v], i, 0));
+									}
+									printf(" %d\n", stemCollectionCycleLengths[v]);
 								}
-								printf(" %d\n", stemCollectionCycleLengths[v]);
 								
 								//Make space in orbitmaptree for vector
 								tempTree.layerCount[v] += 1;
@@ -6528,27 +6513,6 @@ int main(int argc, char* argv[])
 						CREATEHEADER(outputFile, TRUE);
 					}
 				}
-				
-				#define PRINTOMCATALOGUE \
-				printf("orbitMapsCatalogue:\n"); \
-				for (int T = 0; T < orbitMapsCount; T += 1) \
-				{ \
-					printf("%d (%d):\n", T, orbitMapsCatalogue[T].occurrences); \
-					printf("M\n"); \
-					printbm(orbitMapsCatalogue[T].matrixRep); \
-					for (int L = 0; L < maxPower; L += 1) \
-					{ \
-						for (int N = 0; N < orbitMapsCatalogue[T].layerCount[L]; N += 1) \
-						{ \
-							if (N != 0) \
-								printf(", "); \
-							printf("{%d, %d}", orbitMapsCatalogue[T].nodes[L][N].subNodes,  \
-																 orbitMapsCatalogue[T].nodes[L][N].cyclen); \
-						} \
-						printf("\n"); \
-					} \
-					printf("\n"); \
-				}
 			}
 			
 			//Now, output the tree structures to a file, if desired
@@ -6631,30 +6595,27 @@ int main(int argc, char* argv[])
 			
 			else
 			{
-				PRINTOMCATALOGUE
-			}
-			
-			
-			//For printing out letters as cycle lengths 
-			//Make sure to output what each letter means if we're using outputType == compressedStems
-			/*
-			printf("\n");
-			for (int c = 0; c < numofcyclenreplace; c += 1)
-			{
-				if (c != 0)
-					printf(";");
-				printf("%c=%d", cyclenreplace[c].disp, cyclenreplace[c].cyclen);
-				
-				if (outputFile != NULL)
+				//Print out mapping structures, just in a different way
+				printf("orbitMapsCatalogue:\n");
+				for (int T = 0; T < orbitMapsCount; T += 1)
 				{
-					fprintf(outputFile, "\n");
-					if (c != 0)
-						fprintf(outputFile, ";");
-					
-					fprintf(outputFile, "%c=%d", cyclenreplace[c].disp, cyclenreplace[c].cyclen);
+					printf("%d (%d):\n", T, orbitMapsCatalogue[T].occurrences);
+					printf("M\n");
+					printbm(orbitMapsCatalogue[T].matrixRep);
+					for (int L = 0; L < maxPower; L += 1)
+					{
+						for (int N = 0; N < orbitMapsCatalogue[T].layerCount[L]; N += 1)
+						{
+							if (N != 0)
+								printf(", ");
+							printf("{%d, %d}", orbitMapsCatalogue[T].nodes[L][N].subNodes, 
+																 orbitMapsCatalogue[T].nodes[L][N].cyclen);
+						}
+						printf("\n");
+					}
+					printf("\n");
 				}
 			}
-			*/
 			
 			//FREEEVERYTHING:
 			if (outputFile != NULL)
@@ -6713,11 +6674,6 @@ int main(int argc, char* argv[])
 			theCycle  = free_CycleInfoT(theCycle);
 			for (int i = 0; i < numOfTempVects; i += 1)
 				tempVects[i] = free_BigIntMatrixT(tempVects[i]);
-			
-			/*
-			if (cyclenreplace != NULL)
-				FREE(cyclenreplace);
-			*/
 		}
 		
 		
