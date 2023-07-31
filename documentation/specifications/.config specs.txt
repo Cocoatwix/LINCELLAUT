@@ -35,3 +35,5 @@ sentinel : This key specifies a file path where a "sentinel" matrix can be found
 itername : This key specifies a filename for creating a .iteration file. The .iteration extension should be included in the filename. This file is created when write_iteration() is called. This key expects a string (no quotes around the string).
 
 quiet : This key specifies whether to run certain tools in a "quiet" mode, suppressing certain output. This key expects TRUE or FALSE as its value. If the value of this key is not specified in the .config file, its value is assumed to be FALSE.
+
+outpath : This key specifies a default directory to place any output files LINCELLAUT may create. The directory specified must already exist for LINCELLAUT to make use of it. This key expects a string (no quotes around the string). If the value of this key is not specified in the .config file, LINCELLAUT's output files will be placed in the working directory.

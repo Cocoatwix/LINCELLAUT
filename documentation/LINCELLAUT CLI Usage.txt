@@ -27,12 +27,12 @@ splitorbits [modulus] [fileoutput]: This tool allows the user to calculate the o
 
 orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths. This tool assumes the modulus used is a prime number.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
- - The optional argument "fileoutput" says whether to output a text file with the found representative vectors. This argument expects a TRUE or FALSE. By default, this option is set to TRUE.
+ - The optional argument "fileoutput" says whether to output a text file with the found representative vectors. This argument expects a TRUE or FALSE. By default, this option is set to FALSE.
 
 branchreps [modulus]: This tool takes the given update matrix and finds a representative from all its transient branches. The tool also creates a text file with the name "branchreps [modulus] F[matrix].txt" which saves the found vectors.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
-orbitspaces [modulus] [minpolys] [fileoutput] (UNFINISHED): This tool allows users to calculate all unique orbit spaces within a given LCA, i.e. all submodules of the form span({v, Av, (A^2)v, ...}) where v is a vector and A is the update matrix.
+orbitspaces (UNFINISHED) [modulus] [minpolys] [fileoutput]: This tool allows users to calculate all unique orbit spaces within a given LCA, i.e. all submodules of the form span({v, Av, (A^2)v, ...}) where v is a vector and A is the update matrix.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "minpolys" specifies whether to calculate the relevant minimal polynomial attached to each cyclespace. Currently, this only works with prime moduli. This argument expects TRUE or FALSE as its value. The default value is FALSE.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "orbitspaces F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
@@ -64,7 +64,7 @@ vectprops [mod] [resume] [fileoutput]: This tool allows the user to iterate thro
  - The optional argument "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-vectpolys degree baseMod modPower [fileoutput] (UNFINISHED): This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
+vectpolys (UNFINISHED) degree baseMod modPower [fileoutput]: This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
  - The argument "degree" specifies the highest degree polynomial to look for. This argument expects a positive integer.
  - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
  - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
@@ -74,7 +74,7 @@ matprops maxpower [modulus]: This tool allows the user to calculate some useful 
  - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-charawalk step [mod] (DEPRECATED): This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
+charawalk (DEPRECATED) step [mod]: This tool steps around a matrix space (each element of the matrix constitutes a direction in which to walk) using the specified step size and computes the characteristic polynomial for each matrix it lands on (and factors the polynomial, too).
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.
 
@@ -87,7 +87,7 @@ dynamics [maxPower] [modulus] [allConfigs] [fileoutput]: This tool allows the us
  - The optional argument "allConfigs" specifies whether the program should find all possible configurations for the dynamics of the given matrix and all its lifts. When set to TRUE, an output file will not be created. This argument expects the value TRUE or FALSE. The default value is FALSE.
  - The optional argument "fileoutput" specifies whether the program should output a datafile (currently only applicable when allConfigs is FALSE). This argument expects TRUE or FALSE. The default is FALSE.
 
-orbitmaps maxpower [modulus] [fileoutput]: This tool allows the user to generate orbit representatives (and the respective cycle lengths) for some high-power modulus, then map how these orbits reduce down to orbits of lower-powered moduli.
+orbitmaps (DEPRECATED) maxpower [modulus] [fileoutput]: This tool allows the user to generate orbit representatives (and the respective cycle lengths) for some high-power modulus, then map how these orbits reduce down to orbits of lower-powered moduli.
  - The argument "maxpower" specifies the highest (initial) power to use for the modulus. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "fileoutput" specifies whether the tool's output should be saved to a file (naming convention "orbitmaps [maxpower] [modulus] F[matrix].txt"). This also determines whether the program should output a .graph file for use with GRAPHVIS. This argument expects TRUE or FALSE. The default value is FALSE.
@@ -134,7 +134,7 @@ oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This to
  - The optional argument "resume" specifies whether to resume computation at a particular matrix (given by resume.matrix) and a particular modulus (specified in the .config file). This argument expects TRUE or FALSE.
  - The optional argument "fileoutput" specifies whether the tool should create a file output of the results it finds. The name of the file will follow the format "oddminpolysearch <maxpower> <size> <polysize> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE as it value.
  
-stablelift baseMod modPower [stableLevel] (UNFINISHED): This tool allows the user to find a lift of a given matrix modulo (baseMod^modPower + 1) whose cycle length stays the same in the higher modulus.
+stablelift (UNFINISHED) baseMod modPower [stableLevel]: This tool allows the user to find a lift of a given matrix modulo (baseMod^modPower + 1) whose cycle length stays the same in the higher modulus.
  - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
  - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
  - The optional argument "stableLevel" specifies how many modulus power changes the update matrix needs before its cycle length begins increasing. The default value for this argument is zero. This argument expects a nonnegative integer.
