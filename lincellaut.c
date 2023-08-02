@@ -2634,6 +2634,7 @@ int main(int argc, char* argv[])
 				return EXIT_SUCCESS;
 			}
 			
+			
 			FILE* textOutput; 
 			char* textOutputName;
 			
@@ -2695,6 +2696,14 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Unable to read resume matrix from config file.\n");
 					FREE_VARIABLES;
 					return EXIT_FAILURE;
+				}
+				
+				if ((big_rows(currMat) != size) || (big_cols(currMat) != size))
+				{
+					fprintf(stderr, "Given resume matrix is of incorrect size (%dx%d instead of %dx%d).\n",
+					big_rows(currMat), big_cols(currMat), size, size);
+					FREE_VARIABLES;
+					return EXIT_SUCCESS;
 				}
 				
 				//Now, set the values for currMatElements
