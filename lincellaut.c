@@ -40,24 +40,24 @@ stackoverflow.com/questions/1190870
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-/** Frees all "global" variables we allocated memory for. */
-#define FREE_VARIABLES FREE(updatefilepath); \
-											 FREE(initialfilepath); \
-											 FREE(resumefilepath); \
-											 FREE(sentinelfilepath); \
-											 FREE(iterfilepath); \
-											 FREE(bigintmodstring); \
-											 FREE(resumemodstring); \
-											 FREE(outputprefix); \
-											 UPDATEMATRIX  = free_BigIntMatrixT(UPDATEMATRIX); \
-											 INITIALMATRIX = free_BigIntMatrixT(INITIALMATRIX);
-											 
 #define SET_BIG_NUM(str, bigint, msg) \
 if (strtoBIT((str), &(bigint)) != 1) \
 { \
 	fprintf(stderr, "%s\n", (msg)); \
-	FREE_VARIABLES; \
-	return EXIT_FAILURE; \
+	returnvalue = EXIT_FAILURE; \
+	goto FREE_VARIABLES; \
+}
+
+#define ADD_FILE_PREFIX(filepath) \
+if (haveOutputPrefix) \
+	strcat(filepath, outputprefix)
+	
+#define PROHIBIT_UNIXFLAGS \
+if (unixflagsCount > 0) \
+{ \
+	fprintf(stderr, "UNIX-like flags are currently not supported with this tool.\n"); \
+	returnvalue = EXIT_FAILURE; \
+	goto FREE_VARIABLES; \
 }
 
 
@@ -76,6 +76,17 @@ int main(int argc, char* argv[])
 			break;
 		}
 	
+	//Used to tell the program what to return when jumping to FREE_VARIABLES
+	int returnvalue = EXIT_SUCCESS;
+	
+	//Will hold key-value pairs if user prefers unix flags
+	//Size of unixflags will be argc/2
+	//Each key-value pair contains two strings
+	char*** unixflags = NULL;
+	char** oargv = NULL; //Ordered CLI arguments
+	char** kvpair; //Points to a key-value pair; basically a temp variable
+	int maxargc = 0; //Max number of CLI arguments our selected tool uses
+	
 	//The maximum length for a string in the .config file
 	const int MAXSTRLEN = 101;
 	
@@ -83,15 +94,6 @@ int main(int argc, char* argv[])
 	
 	//Whether to suppress certain output (decided via "quiet" key in .config file)
 	bool quietmode = FALSE;
-	
-	//Read .config file to get appropriate data loaded
-	FILE* system = fopen("config/system.config", "r");
-	
-	if (system == NULL)
-	{
-		fprintf(stderr, "Unable to open .config file. Check the config folder to ensure the file exists!\n");
-		return EXIT_FAILURE;
-	}
 	
 	int iterations;
 	int modulus;
@@ -106,6 +108,7 @@ int main(int argc, char* argv[])
 	char* sentinelfilepath = malloc(MAXSTRLEN*sizeof(char));
 	char* iterfilepath     = malloc(MAXSTRLEN*sizeof(char));
 	
+	bool haveOutputPrefix = FALSE; //Says whether we have a prefix to add to any output file paths
 	char* outputprefix = malloc(MAXSTRLEN*sizeof(char));
 	outputprefix[0] = '\0';
 	
@@ -117,6 +120,15 @@ int main(int argc, char* argv[])
 	
 	char* tempStr; //Holds temporary info when using string functions
 	
+	//Read .config file to get appropriate data loaded
+	FILE* system = fopen("config/system.config", "r");
+	
+	if (system == NULL)
+	{
+		fprintf(stderr, "Unable to open .config file. Check the config folder to ensure the file exists!\n");
+		returnvalue = EXIT_FAILURE;
+		goto FREE_VARIABLES;
+	}
 	
 	while (fscanf(system, "%10s", systemData) == 1)
 	{
@@ -271,6 +283,7 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
+				haveOutputPrefix = TRUE;
 				strcpy(outputprefix, systemData);
 				if (outputprefix[strlen(outputprefix)-1] != '/')
 					strcat(outputprefix, "/");
@@ -282,17 +295,54 @@ int main(int argc, char* argv[])
 	if (fclose(system) == EOF)
 	{
 		fprintf(stderr, "Unable to properly close .config file.\n");
-		FREE_VARIABLES;
-		return EXIT_FAILURE;
+		returnvalue = EXIT_FAILURE;
+		goto FREE_VARIABLES;
 	}
 	
 	//If we have command line arguments
 	if (argc > 1)
 	{
+		//First, create an array of any unix-type flags that were passed via the CLI
+		unixflags = malloc((argc/2)*sizeof(char**));
+		int unixflagsCount = 0;
+		
+		for (int i = 0; i < argc/2; i += 1)
+		{
+			unixflags[i] = malloc(2*sizeof(char*));
+			unixflags[i][0] = malloc(MAXSTRLEN*sizeof(char));
+			unixflags[i][1] = malloc(MAXSTRLEN*sizeof(char));
+			unixflags[i][0][0] = '\0';
+			unixflags[i][1][0] = '\0';
+		}
+		
+		for (int i = 2; i < argc; i += 1)
+		{
+			if (argv[i][0] == '-') //Found a unix flag
+			{
+				strcpy(unixflags[unixflagsCount][0], argv[i]+1);
+				i += 1;
+				strcpy(unixflags[unixflagsCount][1], argv[i]);
+				unixflagsCount += 1;
+			}
+		}
+		
+		//Let's see how the unix flags look
+		/*
+		printf("Flags:\n");
+		for (int i = 0; i < argc/2; i += 1)
+		{
+			if (unixflags[i][0][0] != '\0')
+				printf("%s\t%s\n", unixflags[i][0], unixflags[i][1]);
+		}
+		printf("\n");
+		*/
+		
 		//If we want to iterate the given update matrix
 		// This is written with IntMatrices because I don't yet have a "big_inverse()"
 		if (! strcmp(argv[1], "iterate"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntMatrixTP F;
 			BigIntMatrixTP F_2;
 			BigIntMatrixTP F_result = NULL;
@@ -315,8 +365,8 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Invalid number of iterations provided at command line.\n");
 					bigMod = free_BigIntT(bigMod);
 					
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -354,8 +404,8 @@ int main(int argc, char* argv[])
 				F_2 = free_BigIntMatrixT(F_2);
 				bigMod = free_BigIntT(bigMod);
 				
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_cols(F) != big_rows(F_2))
@@ -365,8 +415,8 @@ int main(int argc, char* argv[])
 				F_2 = free_BigIntMatrixT(F_2);
 				bigMod = free_BigIntT(bigMod);
 				
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Iterate F a few times
@@ -424,6 +474,8 @@ int main(int argc, char* argv[])
 		//Find the inverse of the update matrix
 		else if (!strcmp(argv[1], "inverse"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntMatrixTP F = read_BigIntMatrixT(updatefilepath);
 			BigIntMatrixTP Finv;
 			
@@ -432,8 +484,8 @@ int main(int argc, char* argv[])
 			if (F == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			printf("Update matrix:\n");
@@ -476,6 +528,8 @@ int main(int argc, char* argv[])
 		//Find the characteristic equation of the update matrix
 		else if (! strcmp(argv[1], "chara"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigMod = NULL;
 			
 			BigIntMatrixTP bigMatrix;
@@ -502,7 +556,8 @@ int main(int argc, char* argv[])
 			if (bigMatrix == NULL)
 			{
 				fprintf(stderr, "Unable to read matrix from %s.\n", updatefilepath);
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Actually calculate the characteristic equation here
@@ -535,6 +590,8 @@ int main(int argc, char* argv[])
 		//If the user wants to find all matrices with a particular characteristic polynomial
 		else if (! strcmp(argv[1], "allcharas"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigMod;
 			BigIntTP negOne;
 			
@@ -565,8 +622,8 @@ int main(int argc, char* argv[])
 			if (argc == 2)
 			{
 				printf("No characteristic polynomial was given on command line.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
@@ -702,166 +759,12 @@ int main(int argc, char* argv[])
 		}
 		
 		
-		//If we want to see how many vectors are in an IntMatrix's core
-		else if (! strcmp(argv[1], "core"))
-		{
-			BigIntMatrixTP A;
-			BigIntMatrixTP I = NULL;
-			BigIntMatrixTP vectToTest = NULL;
-			BigIntMatrixTP zeroVector;
-			BigIntMatrixTP tempVector;
-			
-			BigIntTP bigMod;
-			BigIntTP one;
-			BigIntTP zero;
-			BigIntTP temp;
-			BigIntTP kernelCount;
-			BigIntTP orderOfSpace;
-			
-			CycleInfoTP theCycle = NULL;
-			
-			BigIntTP** entriesToUse;
-			
-			int oneArr[1] = {1};
-			
-			bool checkedAllVects = FALSE;
-			bool nonSquareMatrix = FALSE;
-			
-			//If the user provided a modulus on the CLI
-			if (argc > 2)
-			{
-				SET_BIG_NUM(argv[2], bigMod, "Invalid modulus passed at command line.");
-			}
-			
-			else
-			{
-				SET_BIG_NUM(bigintmodstring, bigMod, "Invalid modulus passed in config file.");
-			}
-			
-			A = read_BigIntMatrixT(updatefilepath);
-			if (A == NULL)
-			{
-				fprintf(stderr, "Unable to read matrix file at %s.\n", updatefilepath);
-				return EXIT_FAILURE;
-			}
-			
-			entriesToUse = new_BigIntT_array(big_cols(A), 1);
-			
-			one  = new_BigIntT(oneArr, 1);
-			zero = empty_BigIntT(1);
-			temp = empty_BigIntT(1);
-			kernelCount = empty_BigIntT(1);
-			
-			vectToTest = new_BigIntMatrixT(big_cols(A), 1);
-			zeroVector = new_BigIntMatrixT(big_rows(A), 1);
-			tempVector = new_BigIntMatrixT(big_rows(A), 1);
-			
-			printf("Matrix:\n");
-			printbm(A);
-			printf("Modulus: ");
-			printi(bigMod);
-			printf("\n");
-			
-			//Only use floyd if we actually can
-			if ((big_rows(A)) == big_cols(A))
-			{
-				I = identity_BigIntMatrixT(big_rows(A));
-				big_floyd(A, I, bigMod, &theCycle);
-				
-				printf("Rep:\n");
-				printbm(rep(theCycle));
-			}
-			
-			//NOTE: this tool is NOT a good way to gauge how many unique vectors
-			// can be made with a given basis, since duplicates can appear without 
-			// zero vectors ever appearing.
-			else
-			{
-				nonSquareMatrix = TRUE;
-				printf("ker(A):\n");
-			}
-			
-			//Loop until all vectors have been checked
-			//This could be a lot more efficient if I understood how best to
-			// manipulate how the kernel vectors divide the plane
-			while (((nonSquareMatrix) || (tau(theCycle) != 0)) && (!checkedAllVects))
-			{
-				set_big_matrix(vectToTest, entriesToUse);
-				
-				if (nonSquareMatrix)
-					big_mat_mul(A, vectToTest, tempVector);
-				else
-					big_mat_mul(rep(theCycle), vectToTest, tempVector);
-				
-				modbm(tempVector, bigMod);
-				
-				//If we found a vector that maps to the origin
-				if (compare_BigIntMatrixT(tempVector, zeroVector))
-				{
-					add_BigIntT(kernelCount, one, temp);
-					copy_BigIntT(temp, kernelCount);
-					
-					if (nonSquareMatrix)
-					{
-						printbm(vectToTest);
-						printf("\n");
-					}
-				}
-				
-				//Increment to next vector
-				checkedAllVects = increment_BigIntT_array(entriesToUse, big_cols(A), 1, one, bigMod);
-			}
-			
-			printf("|ker(A)| = ");
-			printi(kernelCount);
-			
-			//It only makes sense to talk about the core of a square matrix
-			if (! nonSquareMatrix)
-			{
-				printf("\n|core(A)| = ");
-				
-				//Calculate number of vectors in our space,
-				// then compact it
-				orderOfSpace = new_BigIntT(oneArr, 1);
-				for (int i = 0; i < big_rows(A); i += 1)
-				{
-					multiply_BigIntT(orderOfSpace, bigMod, temp);
-					copy_BigIntT(temp, orderOfSpace);
-				}
-				
-				if (compare_BigIntT(zero, kernelCount) != 0)
-					divide_BigIntT(orderOfSpace, kernelCount, temp);
-				else
-					copy_BigIntT(orderOfSpace, temp);
-				
-				printi(temp);
-			}
-			printf("\n");
-			
-			
-			entriesToUse = free_BigIntT_array(entriesToUse, big_cols(A), 1);
-			
-			A          = free_BigIntMatrixT(A);
-			I          = free_BigIntMatrixT(I);
-			vectToTest = free_BigIntMatrixT(vectToTest);
-			zeroVector = free_BigIntMatrixT(zeroVector);
-			tempVector = free_BigIntMatrixT(tempVector);
-			
-			bigMod       = free_BigIntT(bigMod);
-			one          = free_BigIntT(one);
-			zero         = free_BigIntT(zero);
-			temp         = free_BigIntT(temp);
-			kernelCount  = free_BigIntT(kernelCount);
-			orderOfSpace = free_BigIntT(orderOfSpace);
-			
-			theCycle = free_CycleInfoT(theCycle);
-		}
-		
-		
 		//If the user wants to calculate the specific vectors in a
 		// matrix's orbits
 		else if (! strcmp(argv[1], "orbits"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigMod;
 			BigIntTP overflowCheck;
 			int smallMod;
@@ -917,15 +820,15 @@ int main(int argc, char* argv[])
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(A) != big_cols(A))
 			{
 				fprintf(stderr, "Given update matrix isn't square.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 				
 			//Creating filename and file
@@ -937,11 +840,8 @@ int main(int argc, char* argv[])
 				graphFileName = malloc(MAXSTRLEN*sizeof(char));
 				graphFileName[0] = '\0';
 				
-				if (outputprefix[0] != '\0')
-				{
-					strcat(outputFileName, outputprefix);
-					strcat(graphFileName, outputprefix);
-				}
+				ADD_FILE_PREFIX(outputFileName);
+				ADD_FILE_PREFIX(graphFileName);
 				
 				strcat(outputFileName, "orbits ");
 				strcat(graphFileName, "graph ");
@@ -1190,6 +1090,8 @@ int main(int argc, char* argv[])
 		// the given update matrix's minimal polynomial
 		else if (! strcmp(argv[1], "splitorbits"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			//Let's just hope we don't have more extensions than this
 			char* extensionNames[5] = {"α", "β", "δ", "ε", "θ"};
 			
@@ -1253,8 +1155,8 @@ int main(int argc, char* argv[])
 			{
 				fprintf(stderr, "Unable to read update matrix from %s.\n", updatefilepath);
 				bigMod = free_BigIntT(bigMod);
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(bigF) != big_cols(bigF))
@@ -1262,8 +1164,8 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Given matrix isn't square.\n");
 				bigMod = free_BigIntT(bigMod);
 				bigF = free_BigIntMatrixT(bigF);
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if (argc > 3)
@@ -1271,9 +1173,8 @@ int main(int argc, char* argv[])
 				{
 					fileOutputName = malloc(MAXSTRLEN*sizeof(char));
 					fileOutputName[0] = '\0';
-					
-					if (outputprefix[0] != '\0')
-						strcat(fileOutputName, outputprefix);
+
+					ADD_FILE_PREFIX(fileOutputName);
 					
 					strcat(fileOutputName, "splitorbits F");
 					
@@ -1656,6 +1557,8 @@ int main(int argc, char* argv[])
 		//If we want to find a representative from each of the update matrix's orbits
 		else if (! strcmp(argv[1], "orbitreps"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigMod;
 			BigIntTP one;
 			int oneArr[1] = {1};
@@ -1701,15 +1604,15 @@ int main(int argc, char* argv[])
 			if ((A == NULL))
 			{
 				fprintf(stderr, "Unable to read update matrix file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(A) != big_cols(A))
 			{
 				fprintf(stderr, "Given update matrix is not square.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			//First entry says how many cycle lengths we've found so far
@@ -1723,8 +1626,7 @@ int main(int argc, char* argv[])
 			outputfilename[0] = '\0';
 			
 			//If we have a default path to put output files into
-			if (outputprefix[0] != '\0')
-				strcat(outputfilename, outputprefix);
+			ADD_FILE_PREFIX(outputfilename);
 			
 			strcat(outputfilename, argv[1]); //orbitreps
 			strcat(outputfilename, " ");
@@ -1908,6 +1810,8 @@ int main(int argc, char* argv[])
 		//If we want to generate transient length representatives
 		else if (!strcmp(argv[1], "branchreps"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntMatrixTP A;
 			BigIntMatrixTP I;
 			BigIntMatrixTP currVect  = NULL;
@@ -1958,8 +1862,8 @@ int main(int argc, char* argv[])
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read matrix in %s.\n", updatefilepath);
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Checking to ensure a transient region exists
@@ -1973,14 +1877,13 @@ int main(int argc, char* argv[])
 				A = free_BigIntMatrixT(A);
 				I = free_BigIntMatrixT(I);
 				theCycle = free_CycleInfoT(theCycle);
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			fileName = malloc(MAXSTRLEN*sizeof(char));
 			fileName[0] = '\0';
-			if (outputprefix[0] != '\0')
-				strcat(fileName, outputprefix);
+			ADD_FILE_PREFIX(fileName);
 			
 			strcat(fileName, "branchreps ");
 			append_BigIntT(fileName, bigMod);
@@ -2308,6 +2211,8 @@ int main(int argc, char* argv[])
 		// within a given LCA system
 		else if (! strcmp(argv[1], "orbitspaces"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			bool calcMinPoly = FALSE; //Do we calculate min polys for each cyclespace?
 			bool newCyclespace;
 			
@@ -2351,8 +2256,8 @@ int main(int argc, char* argv[])
 			{
 				fprintf(stderr, "Unable to read update matrix from config file.\n");
 				bigMod = free_BigIntT(bigMod);
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(A) != big_cols(A))
@@ -2360,8 +2265,8 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Given update matrix is not square.\n");
 				A = free_BigIntMatrixT(A);
 				bigMod = free_BigIntT(bigMod);
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if (calcMinPoly)
@@ -2484,6 +2389,8 @@ int main(int argc, char* argv[])
 		//If the user wants to use Floyd's Cycle Detection Algorithm
 		else if (! strcmp(argv[1], "floyd"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigModulus;
 			BigIntMatrixTP initial;
 			BigIntMatrixTP update;
@@ -2508,14 +2415,16 @@ int main(int argc, char* argv[])
 			if ((initial == NULL) || (update == NULL))
 			{
 				fprintf(stderr, "Unable to read .matrix files.\n");
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			else if ((big_rows(initial) != big_cols(update)) ||
 			         (big_rows(initial) != big_rows(update)))
 		  {
 			  fprintf(stderr, "Given matrices have inappropriate dimensions for iterating.\n");
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 		  }
 			
 			//Get cycle info
@@ -2542,6 +2451,8 @@ int main(int argc, char* argv[])
 		//Generate some basic rotation matrices for the given modulus
 		else if (! strcmp(argv[1], "rots"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			bool has30 = TRUE;
 			bool has45 = TRUE;
 			
@@ -2555,7 +2466,8 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read modulus from command line.\n");
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -2617,6 +2529,8 @@ int main(int argc, char* argv[])
 		// that cycle with a cycle length less than the matrix itself
 		else if (! strcmp(argv[1], "cycmatsearch"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			//If user didn't provide enough arguments for the tool, explain how to use it
 			if (argc < 6)
 			{
@@ -2631,7 +2545,8 @@ int main(int argc, char* argv[])
 				printf(" - " ANSI_COLOR_CYAN "cycles..." ANSI_COLOR_RESET \
 				": A list of cycle lengths for their respective vectors.\n\n");
 				
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			
@@ -2680,7 +2595,8 @@ int main(int argc, char* argv[])
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read matrix size from command line.\n");
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			currMatElements = new_BigIntT_array(size, size);
@@ -2694,16 +2610,16 @@ int main(int argc, char* argv[])
 				if (currMat == NULL)
 				{
 					fprintf(stderr, "Unable to read resume matrix from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 				
 				if ((big_rows(currMat) != size) || (big_cols(currMat) != size))
 				{
 					fprintf(stderr, "Given resume matrix is of incorrect size (%dx%d instead of %dx%d).\n",
 					big_rows(currMat), big_cols(currMat), size, size);
-					FREE_VARIABLES;
-					return EXIT_SUCCESS;
+					returnvalue = EXIT_SUCCESS;
+					goto FREE_VARIABLES;
 				}
 				
 				//Now, set the values for currMatElements
@@ -2726,7 +2642,8 @@ int main(int argc, char* argv[])
 			if (argc < 5 + size)
 			{
 				printf("Too few cycles passed for given matrix size.\n");
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Get column vector cycles
@@ -2737,7 +2654,8 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read cycle lengths from command line.\n");
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -2765,8 +2683,7 @@ int main(int argc, char* argv[])
 			//Forming name for text file output.
 			textOutputName = malloc(MAXSTRLEN*sizeof(char));
 			textOutputName[0] = '\0';
-			if (outputprefix[0] != '\0')
-				strcat(textOutputName, outputprefix);
+			ADD_FILE_PREFIX(textOutputName);
 				
 			strcat(textOutputName, argv[1]); //cycmatsearch
 			strcat(textOutputName, " ");
@@ -2786,7 +2703,8 @@ int main(int argc, char* argv[])
 			if (textOutput == NULL)
 			{
 				fprintf(stderr, "Unable to create/open %s for writing.\n", textOutputName);
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Prepare to monitor whether the progress element in our matrix increased or not
@@ -2972,6 +2890,8 @@ int main(int argc, char* argv[])
 		//If we want to compute some "cycle converting matrices"
 		else if (!strcmp(argv[1], "cycconvmat"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigMod;
 			BigIntTP from;
 			BigIntTP to;
@@ -2997,8 +2917,8 @@ int main(int argc, char* argv[])
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix provided in config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 
 			sumMat = new_BigIntMatrixT(big_rows(A), big_rows(A));
@@ -3029,6 +2949,8 @@ int main(int argc, char* argv[])
 		//If we want to look for matrices that have CCMs equal to zero
 		else if (! strcmp(argv[1], "ccmzerosearch"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP   bigMod;
 			BigIntTP   zero;
 			BigIntTP   one;
@@ -3089,8 +3011,8 @@ int main(int argc, char* argv[])
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Invalid matrix size provided on command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//If the user wants to use the resume matrix
@@ -3109,8 +3031,7 @@ int main(int argc, char* argv[])
 			outputfilename[0] = '\0';
 			
 			//Maybe I should make this into a macro
-			if (outputprefix[0] != '\0')
-				strcat(outputfilename, outputprefix);
+			ADD_FILE_PREFIX(outputfilename);
 			
 			strcat(outputfilename, argv[1]); //ccmzerosearch
 			strcat(outputfilename, " ");
@@ -3379,6 +3300,8 @@ int main(int argc, char* argv[])
 		// "minimal" annihilating polynomial.
 		else if (!strcmp(argv[1], "vectprops"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			bool checkedAllVects = FALSE;
 			BigIntTP bigMod;
 			BigIntTP temp;
@@ -3417,8 +3340,8 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Unable to read matrix from config file.\n");
 				bigMod = free_BigIntT(bigMod);
 				one    = free_BigIntT(one);
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(bigF) != big_cols(bigF))
@@ -3427,8 +3350,8 @@ int main(int argc, char* argv[])
 				bigMod = free_BigIntT(bigMod);
 				one    = free_BigIntT(one);
 				bigF   = free_BigIntMatrixT(bigF);
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			
@@ -3481,8 +3404,7 @@ int main(int argc, char* argv[])
 					fileName = malloc(MAXSTRLEN*sizeof(char));
 					fileName[0] = '\0';
 					
-					if (outputprefix[0] != '\0')
-						strcat(fileName, outputprefix);
+					ADD_FILE_PREFIX(fileName);
 					
 					strcat(fileName, "vectprops F");
 					for (int x = 0; x < big_rows(bigF); x += 1)
@@ -3598,6 +3520,8 @@ int main(int argc, char* argv[])
 		// an update matrix up to a certain degree
 		else if (!strcmp(argv[1], "vectpolys"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			bool foundNonzero;       //For clearing out zero rows in idealMatrix
 			bool addedMaxShift;      //For deciding when to add shifts to idealMatrix
 			bool foundMonic = FALSE; //Once we've found a monic annihilating polynomial, it's over
@@ -3637,16 +3561,16 @@ int main(int argc, char* argv[])
 			if (argc <= 4)
 			{
 				printf(ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "degree baseMod modPower [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			deg = (int)strtol(argv[2], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read degree from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			SET_BIG_NUM(argv[3], baseMod, "Unable to read base of modulus from command line.");
@@ -3655,9 +3579,9 @@ int main(int argc, char* argv[])
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read modulus exponent from command line.\n");
-				FREE_VARIABLES;
 				baseMod = free_BigIntT(baseMod);
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			A = UPDATEMATRIX;
@@ -3666,8 +3590,8 @@ int main(int argc, char* argv[])
 			{
 				fprintf(stderr, "Given update matrix is not square.\n");
 				baseMod = free_BigIntT(baseMod);
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if ((big_rows(INITIALMATRIX) != big_rows(A)) || (big_cols(INITIALMATRIX) != 1))
@@ -3675,8 +3599,8 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Given vector's dimensions are invalid. The number of rows must be equal to the matrix's rows " \
 				"and the number of columns must be 1.\n");
 				baseMod = free_BigIntT(baseMod);
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			one    = new_BigIntT(numArr, 1);
@@ -4054,6 +3978,8 @@ int main(int argc, char* argv[])
 		// (simplify higher powers)
 		else if (! strcmp(argv[1], "matprops"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			int maxpower;
 			
 			BigIntTP bigMod;
@@ -4076,8 +4002,8 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read maxpower from command line.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -4089,8 +4015,8 @@ int main(int argc, char* argv[])
 				": The highest power of the update matrix to calculate an equivalent expression for.\n");
 				printf(" - " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 				": Overrides the modulus specified in the config file.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if (argc > 3)
@@ -4107,8 +4033,8 @@ int main(int argc, char* argv[])
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix from config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			charaPoly = chara_poly(A, bigMod);
@@ -4226,6 +4152,8 @@ int main(int argc, char* argv[])
 		// step sizes.
 		else if (! strcmp(argv[1], "charawalk"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			int counter;
 			int oneArr[1] = {1};
 			
@@ -4253,7 +4181,8 @@ int main(int argc, char* argv[])
 			if (startingMatrix == NULL)
 			{
 				fprintf(stderr, "Unable to read .matrix file at %s.\n", updatefilepath);
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Getting user provided step size
@@ -4366,6 +4295,8 @@ int main(int argc, char* argv[])
 		//If we want to see all possible cycle lengths for a particular modulus
 		else if (! strcmp(argv[1], "fibcyclelens"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			int justOne[] = {1};
 			BigIntTP bigModulus;
 			
@@ -4479,6 +4410,8 @@ int main(int argc, char* argv[])
 		// appear before multiples of powers of those numbers
 		else if (! strcmp(argv[1], "fibmultsearch"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			int hundred[] = {100};
 			int oneArr[]  = {001};
 			int zeroArr[] = {000};
@@ -4566,6 +4499,8 @@ int main(int argc, char* argv[])
 		// and transient lengths, then repeat for higher-powered moduli.
 		else if (! strcmp(argv[1], "dynamics"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			int highpower = 2;
 			int highmod;   //Holds the modulus raised to the correct power
 			int maxmod;    //Holds the highest mod we obtain; used for iterating through matrix lifts
@@ -4625,7 +4560,8 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read upper bound from command line.\n");
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -4636,7 +4572,8 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read modulus from command line.\n");
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -4654,13 +4591,15 @@ int main(int argc, char* argv[])
 			if (originalA == NULL)
 			{
 				fprintf(stderr, "Unable to read .matrix file at %s.\n", updatefilepath);
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			else if (rows(originalA) != cols(originalA))
 			{
 				printf("Update matrix provided is not square.\n");
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			printf("Matrix:\n");
@@ -4675,8 +4614,7 @@ int main(int argc, char* argv[])
 				outputfilename = malloc(MAXSTRLEN*sizeof(char));
 				outputfilename[0] = '\0';
 				
-				if (outputprefix[0] != '\0')
-					strcat(outputfilename, outputprefix);
+				ADD_FILE_PREFIX(outputfilename);
 				
 				strcat(outputfilename, argv[1]); //dynamics
 				strcat(outputfilename, " ");
@@ -5242,6 +5180,8 @@ int main(int argc, char* argv[])
 		//If the user wants to see how orbits from higher moduli map to lower moduli orbits
 		else if (! strcmp(argv[1], "orbitmaps"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			BigIntTP bigMod;
 			BigIntTP bigModPower; //Holds bigMod^maxpower
 			BigIntTP one;
@@ -5291,8 +5231,8 @@ int main(int argc, char* argv[])
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read maxpower from command line.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			else
@@ -5306,8 +5246,8 @@ int main(int argc, char* argv[])
 				printf(" - " ANSI_COLOR_CYAN "[fileoutput]" ANSI_COLOR_RESET \
 				": Says whether to create an output file.\n\n");
 				
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if (argc > 3)
@@ -5327,8 +5267,8 @@ int main(int argc, char* argv[])
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix provided in config file.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Create filename
@@ -5339,11 +5279,8 @@ int main(int argc, char* argv[])
 				graphFileName = malloc(MAXSTRLEN*sizeof(char));
 				graphFileName[0] = '\0';
 				
-				if (outputprefix[0] != '\0')
-				{
-					strcat(outputFileName, outputprefix);
-					strcat(graphFileName, outputprefix);
-				}
+				ADD_FILE_PREFIX(outputFileName);
+				ADD_FILE_PREFIX(graphFileName);
 				
 				strcat(outputFileName, "orbitmaps ");
 				strcat(graphFileName, "graph ");
@@ -5809,6 +5746,44 @@ int main(int argc, char* argv[])
 		//If the user wants to calculate the orbit maps for ALL lifts of a particular matrix
 		else if (! strcmp(argv[1], "orbitmaps2"))
 		{
+			//Eventually, this set up should be done before we call any tool's code
+			// Reference some table that specifies how many arguments each tool takes and
+			// malloc the list that way
+			maxargc = 6; //Total number of CLI arguments this tool takes
+			const char* ARGNAMES[] = {"maxpower", "modulus", "fileoutput", "belowBound", "aboveBound"};
+			oargv = malloc(maxargc*sizeof(char*)); //Ordered arguments
+			
+			for (int i = 0; i <= maxargc; i += 1)
+			{
+				oargv[i] = malloc(MAXSTRLEN*sizeof(char));
+				oargv[i][0] = '\0';
+			}
+			
+			//The duplicates
+			strcpy(oargv[0], "./lincellaut");
+			strcpy(oargv[1], "orbitmaps2");
+			
+			//Prep oargv for use below
+			if (unixflagsCount > 0)
+			{
+				for (int key = 0; key < unixflagsCount; key += 1)
+				{
+					kvpair = unixflags[key]; //Our current key-value pair
+					
+					//Compare our key to the arguments our tool takes
+					for (int toolArg = 0; toolArg < maxargc-1; toolArg += 1)
+						if (! strcmp(kvpair[0], ARGNAMES[toolArg]))
+						{
+							strcpy(oargv[toolArg+2], kvpair[1]);
+							break;
+						}
+				}
+			}
+			
+			else //Regular positional arguments
+				for (int i = 2; i < argc; i += 1)
+					strcpy(oargv[i], argv[i]);
+			
 			bool isNewVector;
 			bool isAInvertible;
 			bool useTreeSpaces = FALSE; //Says whether we should use spaces or numbers for tree indentation
@@ -5877,26 +5852,26 @@ int main(int argc, char* argv[])
 			int orbitMapsCount     = 0;
 			OMT* orbitMapsCatalogue = NULL; //Holds all the different structures we encounter when computing orbit maps
 			
-			if (argc < 3)
+			if (oargv[2][0] == '\0') //If the user hasn't given the mandatory argument
 			{
 				printf(ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(initialA) != big_cols(initialA))
 			{
 				fprintf(stderr, "Given update matrix isn't square.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
-			maxPower = (int)strtol(argv[2], &tempStr, 10);
+			maxPower = (int)strtol(oargv[2], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read maxPower from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			//Has to go here since we don't read maxPower until now
@@ -5910,32 +5885,29 @@ int main(int argc, char* argv[])
 			int subCount[maxPower-1]; //Counts how many children nodes each node has in the respective layer
 			int mapIndexCount[maxPower]; //Where we are in the currently-being-printed tree
 			
-			if (argc > 3)
+			if (oargv[3][0] != '\0')
 			{
-				SET_BIG_NUM(argv[3], baseMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[3], baseMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
 				SET_BIG_NUM(bigintmodstring, baseMod, "Unable to read modulus from config file.");
 			}
 			
-			if ((argc > 4) && (!strcmp(argv[4], "TRUE")))
+			if (!strcmp(oargv[4], "TRUE"))
 			{
 				outputFileName     = malloc(MAXSTRLEN*sizeof(char));
 				mapOutputFileName  = malloc(MAXSTRLEN*sizeof(char));
 				outputFileBaseName = malloc(MAXSTRLEN*sizeof(char));
 				outputFileBaseName[0] = '\0';
 				mapOutputFileName[0]  = '\0';
-				if (outputprefix[0] != '\0')
-				{
-					strcat(outputFileBaseName, outputprefix);
-					strcat(mapOutputFileName, outputprefix);
-				}
+				ADD_FILE_PREFIX(outputFileBaseName);
+				ADD_FILE_PREFIX(mapOutputFileName);
 				
 				strcat(outputFileBaseName, "orbitmaps2 ");
 				strcat(mapOutputFileName,  "orbitmaps2 maps ");
-				strcat(outputFileBaseName, argv[2]);
-				strcat(mapOutputFileName,  argv[2]);
+				strcat(outputFileBaseName, oargv[2]);
+				strcat(mapOutputFileName,  oargv[2]);
 				strcat(outputFileBaseName, " ");
 				strcat(mapOutputFileName,  " ");
 				append_BigIntT(outputFileBaseName, baseMod);
@@ -5971,42 +5943,43 @@ int main(int argc, char* argv[])
 			}
 			
 			//If the user wants to resume computation at a particular matrix
-			if ((argc > 5) && (!strcmp(argv[5], "TRUE")))
+			if (!strcmp(oargv[5], "TRUE"))
 			{
 				resumeMatrix = read_BigIntMatrixT(resumefilepath);
 				if (resumeMatrix == NULL)
 				{
 					fprintf(stderr, "Unable to read resume matrix from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 				
 				else if ((big_rows(resumeMatrix) != big_rows(initialA)) ||
 				         (big_cols(resumeMatrix) != big_cols(initialA)))
 				{
 					fprintf(stderr, "Given resume matrix doesn't match dimensions of update matrix.\n");
-					FREE_VARIABLES;
-					return EXIT_SUCCESS;
+					returnvalue = EXIT_SUCCESS;
+					goto FREE_VARIABLES;
 				}
 			}
+			printf(":)\n");
 			
 			//If the user wants to stop computation at a particular matrix
-			if ((argc > 6) && (!strcmp(argv[6], "TRUE")))
+			if (!strcmp(oargv[6], "TRUE"))
 			{
 				sentinelMatrix = read_BigIntMatrixT(sentinelfilepath);
 				if (sentinelMatrix == NULL)
 				{
 					fprintf(stderr, "Unable to read sentinel matrix from config file.\n");
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 				
 				else if ((big_rows(sentinelMatrix) != big_rows(initialA)) ||
 				         (big_cols(sentinelMatrix) != big_cols(initialA)))
 				{
 					fprintf(stderr, "Given sentinel matrix doesn't match dimensions of update matrix.\n");
-					FREE_VARIABLES;
-					return EXIT_SUCCESS;
+					returnvalue = EXIT_SUCCESS;
+					goto FREE_VARIABLES;
 				}
 			}
 	
@@ -6636,6 +6609,12 @@ int main(int argc, char* argv[])
 			resumeMatrix   = free_BigIntMatrixT(resumeMatrix);
 			sentinelMatrix = free_BigIntMatrixT(sentinelMatrix);
 			
+			for (int i = 0; i <= maxargc; i += 1)
+			{
+				FREE(oargv[i]);
+			}
+			FREE(oargv);
+			
 			one     = free_BigIntT(one);
 			baseMod = free_BigIntT(baseMod);
 			
@@ -6689,6 +6668,8 @@ int main(int argc, char* argv[])
 		// isn't a multiple of the minimal polynomial
 		else if (! strcmp(argv[1], "oddminpolysearch"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			int matSize;
 			int maxPower;
 			int currPower;
@@ -6724,24 +6705,24 @@ int main(int argc, char* argv[])
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read maxPower from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			matSize = (int)strtol(argv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read matrix size from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			polySize = (int)strtol(argv[4], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read polynomial size from command line.\n");
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (argc > 5)
@@ -6760,18 +6741,18 @@ int main(int argc, char* argv[])
 				if (currMat == NULL)
 				{
 					fprintf(stderr, "Unable to read resume matrix from %s.\n", resumefilepath);
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 				
 				if ((big_rows(currMat) != big_cols(currMat)) || (big_rows(currMat) != matSize))
 				{
 					fprintf(stderr, "Resume matrix given isn't the correct dimensions specified.\n");
-					FREE_VARIABLES;
 					currMat = free_BigIntMatrixT(currMat);
 					bigMod = free_BigIntT(bigMod);
 					
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 				
 				currMatElements = malloc(matSize*sizeof(BigIntTP*));
@@ -6805,8 +6786,7 @@ int main(int argc, char* argv[])
 				outputFileName = malloc(MAXSTRLEN*sizeof(char));
 				outputFileName[0] = '\0';
 				
-				if (outputprefix[0] != '\0')
-					strcat(outputFileName, outputprefix);
+				ADD_FILE_PREFIX(outputFileName);
 				
 				//Let's hope there's enough space in the string for all this!
 				strcat(outputFileName, "oddminpolysearch ");
@@ -7121,6 +7101,8 @@ int main(int argc, char* argv[])
 		//If we want to find a lift of a matrix where the cycle length stays the same
 		else if (!strcmp(argv[1], "stablelift"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			/* This CLI tool might be able to be used to find Wall-Sun-Sun primes.
 			 * A Wall-Sun-Sun prime is one where, when finding a stable lift of the
 			 * 2x2 Fibonacci matrix, the stable lift is the same as the 2x2 Fibonacci
@@ -7130,15 +7112,15 @@ int main(int argc, char* argv[])
 			if (argc < 4)
 			{
 				printf(ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower [stableLevel]" ANSI_COLOR_RESET "\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
 			{
 				fprintf(stderr, "Update matrix must be square.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			int numArr[1] = {1};
@@ -7190,8 +7172,8 @@ int main(int argc, char* argv[])
 			{
 				fprintf(stderr, "Unable to read modulus power from command line.\n");
 				baseMod = free_BigIntT(baseMod);
-				FREE_VARIABLES;
-				return EXIT_FAILURE;
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
 			}
 			
 			if (argc > 4)
@@ -7201,8 +7183,8 @@ int main(int argc, char* argv[])
 				{
 					fprintf(stderr, "Unable to read stable level from command line.\n");
 					baseMod = free_BigIntT(baseMod);
-					FREE_VARIABLES;
-					return EXIT_FAILURE;
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
 				}
 			}
 			
@@ -7532,11 +7514,13 @@ int main(int argc, char* argv[])
 		//This might become an extension of vectPolys, honestly
 		else if (!strcmp(argv[1], "2023"))
 		{
+			PROHIBIT_UNIXFLAGS
+			
 			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
 			{
 				fprintf(stderr, "Given update matrix isn't square.\n");
-				FREE_VARIABLES;
-				return EXIT_SUCCESS;
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
 			}
 			
 			//Number of row vectors to have in matrixToReduce
@@ -7642,16 +7626,40 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
-		//printf(" - " ANSI_COLOR_YELLOW "orbitmaps " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "baseMod modPower stableLevel" ANSI_COLOR_RESET "\n");
 		
+		printf("Tools marked with a \"*\" in the list can use \"UNIX-like\" arguments.\n");
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
-		"refer to the included documentation.\n");
+		"refer to documentation/'LINCELLAUT CLI Usage.txt'.\n");
 	}
 	
 	//Freeing memory
-	FREE_VARIABLES;
-	return EXIT_SUCCESS;
+	FREE_VARIABLES:
+	FREE(updatefilepath);
+	FREE(initialfilepath);
+	FREE(resumefilepath);
+	FREE(sentinelfilepath);
+	FREE(iterfilepath);
+	FREE(bigintmodstring);
+	FREE(resumemodstring);
+	FREE(outputprefix);
+	UPDATEMATRIX  = free_BigIntMatrixT(UPDATEMATRIX);
+	INITIALMATRIX = free_BigIntMatrixT(INITIALMATRIX);
+	
+	if (unixflags != NULL)
+	{
+		for (int r = 0; r < argc/2; r += 1)
+		{
+			for (int c = 0; c < 2; c += 1)
+			{
+				FREE(unixflags[r][c]);
+			}
+			FREE(unixflags[r]);
+		}
+		FREE(unixflags);
+	}
+	
+	return returnvalue;
 }
