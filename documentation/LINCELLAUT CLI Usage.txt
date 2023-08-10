@@ -1,6 +1,13 @@
-To make certain tasks easier, LINCELLAUT comes with lincellaut.c, which compiles to a program which can be run from the command line. Common linear algebra and LCA tasks were put into this program so that an entire program doesn't need to be created just to do some simple task. To see how to use lincellaut on the CLI, just run lincellaut on the CLI with no arguments. 
+To make certain tasks easier, LINCELLAUT comes with lincellaut.c which compiles to a program which can be run from the command line. Common linear algebra and LCA tasks were put into this program so that an entire program doesn't need to be created just to do some simple task. To see how to use lincellaut on the CLI, just run lincellaut on the CLI with no arguments. 
 
-The following is a list of all the currently available tasks within lincellaut.c.
+The following is a list of all the currently available tasks within lincellaut.c. Square brackets around an argument denote optional arguments. Note that an asterisk before the tool name specifies that "unix-like" command line arguments can be used, using key-value pairs in any order instead of positional arguments. For example, the following two calls to orbitmaps2 are equivalent:
+
+lincellaut orbitmaps2 3 5 TRUE 
+
+lincellaut orbitmaps2 -modulus 5 -fileoutput TRUE -maxpower 3
+
+If the user attempts to use "unix-like" arguments with tools that don't support it, LINCELLAUT will notify the user and exit.
+
 
 iterate [iterations]: This tool allows you to take an initial matrix and iterate it by an update matrix multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
  - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. Using a negative integer will get LINCELLAUT to compute the inverse of the update matrix and iterate that the specified number of times (e.g. an iteration count of -3 will iterate the inverse matrix 3 times, if it exists).
@@ -13,9 +20,6 @@ chara [modulus]: This tool allows the user to find the characteristic equation o
 
 allcharas coeffs...: This tool allows the user to find all matrices with a particular characteristic polynomial defined as command line arguments. The size of the matrices is determined by the number of coefficients added, so adding zeros is required to pad the polynomial to the correct length. 
  - The argument(s) "coeffs" specify the coefficents to use for the characteristic polynomial, entered from the constant term to the coefficient on the highest power term. For example, the characteristic polynomial 5 + x^2 + 2x^3 would be entered as "5 0 1 2".
-
-core [modulus] (DEPRECATED): This tool allows the user to calculate how many vectors are in a given matrix's core under some modulus.
- - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a particular matrix and print them to the console. This tool can also create an output file containing the orbits. The filename will be "orbits <modulus> F<matrix>.txt"
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
@@ -92,7 +96,7 @@ orbitmaps (DEPRECATED) maxpower [modulus] [fileoutput]: This tool allows the use
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "fileoutput" specifies whether the tool's output should be saved to a file (naming convention "orbitmaps [maxpower] [modulus] F[matrix].txt"). This also determines whether the program should output a .graph file for use with GRAPHVIS. This argument expects TRUE or FALSE. The default value is FALSE.
 
-orbitmaps2 maxpower [modulus] [fileoutput] [belowBound] [aboveBound]: This tool uses a slightly different approach to orbitmaps in order to find orbit representatives for some high-power modulus and then map them down to orbit representatives for the lower-power moduli. Specifically, if two orbits reduce to the same cycle, their orbit representatives will reduce to the same representative. As well, this tool calculates the orbit maps for ALL lifts of the given update matrix, not just the one matrix given.
+*orbitmaps2 maxpower [modulus] [fileoutput] [belowBound] [aboveBound]: This tool uses a slightly different approach to orbitmaps in order to find orbit representatives for some high-power modulus and then map them down to orbit representatives for the lower-power moduli. Specifically, if two orbits reduce to the same cycle, their orbit representatives will reduce to the same representative. As well, this tool calculates the orbit maps for ALL lifts of the given update matrix, not just the one matrix given.
 If quiet mode is active, this tool will only output data regarding the number of unique orbit mapping structures found, both on the console and in its output files.
 The tool sifts through matrices in the following way:
 1. Start with the given matrix. Perform relevant calculations.
