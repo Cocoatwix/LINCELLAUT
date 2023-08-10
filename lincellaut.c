@@ -5961,7 +5961,6 @@ int main(int argc, char* argv[])
 					goto FREE_VARIABLES;
 				}
 			}
-			printf(":)\n");
 			
 			//If the user wants to stop computation at a particular matrix
 			if (!strcmp(oargv[6], "TRUE"))
