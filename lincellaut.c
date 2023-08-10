@@ -5813,7 +5813,7 @@ int main(int argc, char* argv[])
 			bool isAInvertible;
 			bool useTreeSpaces = FALSE; //Says whether we should use spaces or numbers for tree indentation
 			
-			BigIntTP  baseMod; //The base prime
+			BigIntTP baseMod;  //The base prime
 			int maxPower;
 			int currPower = 1; //For keeping track of which layer of moduli we're on
 			
@@ -5821,6 +5821,9 @@ int main(int argc, char* argv[])
 			BigIntTP one;
 			const int numOfTemps = 3;
 			BigIntTP temps[numOfTemps];
+			
+			//For keeping track of how far we are in the computations
+			BigIntTP progressDenominator, progressNumerator;
 			
 			const BigIntMatrixTP initialA = UPDATEMATRIX;
 			BigIntMatrixTP Ainv = NULL;
@@ -6099,6 +6102,17 @@ int main(int argc, char* argv[])
 			printf("Mapping down from mod ");
 			printi(baseMod);
 			printf("^%d...\n", maxPower);
+			
+			//Getting the progress variables ready
+			progressNumerator   = empty_BigIntT(1);
+			progressDenominator = new_BigIntT(numArr, 1);
+			
+			//progressDenominator = p^{L*L}
+			for (int i = 0; i < big_rows(initialA)*big_rows(initialA); i += 1)
+			{
+				multiply_BigIntT(progressDenominator, baseMod, temps[0]);
+				copy_BigIntT(temps[0], progressDenominator);
+			}
 			
 			//Let's calculate our base orbit reps, since those won't change throughout
 			// the course of the program running
@@ -6468,6 +6482,17 @@ int main(int argc, char* argv[])
 					FREE(orbitRepsCycleLengths[level+1]);
 					orbitRepsCount[level+1] = 0;
 					
+					//Print progress report to stdout
+					if (level == 0)
+					{
+						add_BigIntT(one, progressNumerator, temps[0]);
+						copy_BigIntT(temps[0], progressNumerator);
+						printi(progressNumerator);
+						printf(" / ");
+						printi(progressDenominator);
+						printf(" computed...\n");
+					}
+					
 					//If we're done looking at all the matrix lifts that keep the
 					// lower vector lifts the same
 					if (step_BigIntT_array(matrixLiftElements[level], 
@@ -6638,6 +6663,9 @@ int main(int argc, char* argv[])
 			
 			one     = free_BigIntT(one);
 			baseMod = free_BigIntT(baseMod);
+			
+			progressNumerator   = free_BigIntT(progressNumerator);
+			progressDenominator = free_BigIntT(progressDenominator);
 			
 			for (int t = 0; t < numOfTemps; t += 1)
 				temps[t] = free_BigIntT(temps[t]);
