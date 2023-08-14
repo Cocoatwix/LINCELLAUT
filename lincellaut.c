@@ -5781,8 +5781,11 @@ int main(int argc, char* argv[])
 			}
 			
 			else //Regular positional arguments
+			{
 				for (int i = 2; i < argc; i += 1)
 					strcpy(oargv[i], argv[i]);
+				printf("modulus: %s\n", oargv[3]);
+			}
 			
 			bool isNewVector;
 			bool isAInvertible;
@@ -5852,12 +5855,17 @@ int main(int argc, char* argv[])
 			OMT;
 			
 			bool isNewTree; //For saying whether we've found a new tree to add to our collection
-			int orbitMapsCount     = 0;
+			int orbitMappingID;             //For printing out which mapping configuration a matrix's LCA belongs to
+			int orbitMapsCount      = 0;
 			OMT* orbitMapsCatalogue = NULL; //Holds all the different structures we encounter when computing orbit maps
+			
+			//For determining if different tree structures are actually equal
+			bool foundMatchingNode;
+			OMN* nodeTracker = NULL; 
 			
 			if (oargv[2][0] == '\0') //If the user hasn't given the mandatory argument
 			{
-				printf(ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
+				printf(ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 				returnvalue = EXIT_SUCCESS;
 				goto FREE_VARIABLES;
 			}
@@ -5872,7 +5880,7 @@ int main(int argc, char* argv[])
 			maxPower = (int)strtol(oargv[2], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
-				fprintf(stderr, "Unable to read maxPower from command line.\n");
+				fprintf(stderr, "Unable to read maxpower from command line.\n");
 				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
@@ -6355,6 +6363,12 @@ int main(int argc, char* argv[])
 					orbitMapsCatalogue = malloc(sizeof(OMT));
 					orbitMapsCatalogue[0] = tempTree;
 					tempTree.occurrences += 1;
+					
+					if (!quietmode)
+						printf("Belongs to mapping 0.\n");
+
+					if (outputFile != NULL)
+						fprintf(outputFile, "Belongs to mapping 0.\n");
 				}
 				
 				//Compare our most recent tree with all the other trees we have
@@ -6377,15 +6391,36 @@ int main(int argc, char* argv[])
 						}
 						
 						//If the layer counts were the same
-						if (isNewTree)
+						if (!isNewTree)
 						{
-							isNewTree = FALSE;
+							//isNewTree = FALSE;
 							for (int LC = 0; LC < maxPower; LC += 1)
 							{
+								//Here, nodes are copied into nodeTracker BY VALUE
+								//If I wanted to speed this code up, I could make nodeTracker
+								// hold references to those nodes
+								nodeTracker = realloc(nodeTracker, orbitMapsCatalogue[tree].layerCount[LC]*sizeof(OMT));
 								for (int N = 0; N < orbitMapsCatalogue[tree].layerCount[LC]; N += 1)
+									nodeTracker[N] = orbitMapsCatalogue[tree].nodes[LC][N];
+								
+								//Now, we make sure that each node in tempTree has a representative in nodeTracker
+								for (int N = 0; N < tempTree.layerCount[LC]; N += 1)
 								{
-									if ((orbitMapsCatalogue[tree].nodes[LC][N].subNodes != tempTree.nodes[LC][N].subNodes) ||
-									    (orbitMapsCatalogue[tree].nodes[LC][N].cyclen != tempTree.nodes[LC][N].cyclen))
+									foundMatchingNode = FALSE;
+									for (int matchN = 0; matchN < orbitMapsCatalogue[tree].layerCount[LC]; matchN += 1)
+									{
+										if ((nodeTracker[matchN].subNodes == tempTree.nodes[LC][N].subNodes) &&
+												(nodeTracker[matchN].cyclen   == tempTree.nodes[LC][N].cyclen))
+										{
+											foundMatchingNode = TRUE;
+											nodeTracker[matchN].cyclen = -1;
+											break;
+										}
+									}
+									
+									//If there was at least one node in our new tree that didn't match
+									// the tree we're looking at in the catalogue
+									if (!foundMatchingNode)
 									{
 										isNewTree = TRUE;
 										break;
@@ -6401,6 +6436,7 @@ int main(int argc, char* argv[])
 						//If we found a matching tree to tempTree in orbitMapsCatalogue, we don't need to look any further
 						if (!isNewTree)
 						{
+							orbitMappingID = tree;
 							//Add +1 occurrence to the tree structure that's the same as tempTree
 							orbitMapsCatalogue[tree].occurrences += 1;
 							break;
@@ -6410,6 +6446,12 @@ int main(int argc, char* argv[])
 					//If we found a new tree to add
 					if (isNewTree)
 					{
+						if (!quietmode)
+							printf("Belongs to mapping %d.\n", orbitMapsCount);
+						
+						if (outputFile != NULL)
+							fprintf(outputFile, "Belongs to mapping %d.\n", orbitMapsCount);
+						
 						orbitMapsCount += 1;
 						orbitMapsCatalogue = realloc(orbitMapsCatalogue, orbitMapsCount*sizeof(OMT));
 						orbitMapsCatalogue[orbitMapsCount-1] = tempTree;
@@ -6419,6 +6461,12 @@ int main(int argc, char* argv[])
 					//Discard tree
 					else
 					{
+						if (!quietmode)
+							printf("Belongs to mapping %d.\n", orbitMappingID);
+						
+						if (outputFile != NULL)
+							fprintf(outputFile, "Belongs to mapping %d.\n", orbitMappingID);
+						
 						for (int layer = 0; layer < maxPower; layer += 1)
 						{
 							FREE(tempTree.nodes[layer]);
@@ -6688,6 +6736,8 @@ int main(int argc, char* argv[])
 			theCycle  = free_CycleInfoT(theCycle);
 			for (int i = 0; i < numOfTempVects; i += 1)
 				tempVects[i] = free_BigIntMatrixT(tempVects[i]);
+			
+			FREE(nodeTracker);
 		}
 		
 		
@@ -7630,7 +7680,7 @@ int main(int argc, char* argv[])
 
 	
 	else
-	{
+	{		
 		printf(ANSI_COLOR_GREEN "LINCELLAUT by Zach Strong.\n" ANSI_COLOR_RESET);
 		printf("Usage: lincellaut <tool> [options]\n\n");
 		printf("Tools:\n");
@@ -7653,7 +7703,7 @@ int main(int argc, char* argv[])
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" * " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxPower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "baseMod modPower stableLevel" ANSI_COLOR_RESET "\n");
 		

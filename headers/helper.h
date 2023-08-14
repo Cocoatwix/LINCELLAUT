@@ -11,4 +11,9 @@ int num_digits(int);
 /** Appends an integer to the given string. */
 void append_int(char*, int);
 
+/** Sorts the given list of integers from least to greatest
+    using the quicksort algorithm. */
+//              list  size
+void quick_sort(int*, int);
+
 #endif //HELPER_H
