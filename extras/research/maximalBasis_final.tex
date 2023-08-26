@@ -1,0 +1,654 @@
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+\usepackage[T1]{fontenc}
+
+\usepackage[parfill]{parskip}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{natbib}
+
+\usepackage{dsfont}
+\usepackage{amssymb}
+
+\usepackage{verbatim}
+
+\newcommand\vecspan[1]{\textup{span}\left( #1 \right)}
+
+%\newcounter{propcounter}[section]
+\newcounter{propcounter}
+\newenvironment{proposition}[1]
+{
+	\refstepcounter{propcounter}
+	\textbf{Proposition \thepropcounter} - \emph{#1} \\
+	\emph{Justification.}
+}
+{
+	\textbf{QED.} \\
+}
+
+\begin{document}
+	Assume $p$ is a prime number, and $k$ and $L$ are positive integers.
+	
+	Let $\mathds{Z}_n$ represent the set of integers modulo $n$.
+	
+	Let $\mathds{Z}_n[X]$ represent the set of all polynomials with coefficients in $\mathds{Z}_n$.
+	
+	Let $\mathds{Z}_n^M$ represent the set of all $M \times 1$ vectors with entries in $\mathds{Z}_n$.
+	
+	Let $\mathds{Z}_n^{M \times N}$ represent the set of all $M \times N$ matrices with entries in $\mathds{Z}_n$.
+	
+	\section{Some Important Concepts}
+		Here, some specific nonstandard terms and concepts are defined. A few are also introduced in section \ref{sec:maxBasis}.
+		
+		The \emph{multiplicative order of an invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$} is the smallest positive integer $\omega$ where
+		\[
+			A^\omega \equiv I \mod{p^k}
+		\]
+		
+		The \emph{multiplicative order of a vector $\vec{v} \in \mathds{Z}_{p^k}^L$ under an invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$} is the smallest 
+		positive integer $\omega$ where
+		\[
+			A^\omega\vec{v} \equiv \vec{v} \mod{p^k}
+		\]
+		The multiplicative orders of vectors and matrices are the chief interest of this document.
+		
+		The \emph{orbit space} or \emph{cycle space} of a vector $\vec{v} \in \mathds{Z}_{p^k}^L$ under a matrix $A \in \mathds{Z}_{p^k}^{L \times L}$ is the submodule
+		\[
+			\mathcal{S}_{\vec{v}} = \sum_{i\,=\,0}^\infty \vecspan{\{A^i\vec{v}\}} \mod{p^k}
+		\]
+		In essence, the cycle space of $\vec{v}$ is the set of all vectors that can be made as linear combinations of its iterates 
+		($\vec{v}$, $A\vec{v}$, $A^2\vec{v}$, etc.). Though the cycle space is defined using an infinite sum, only the first few terms are needed. More specifically, the 
+		cycle space of $\vec{v}$ can be equivalently defined as
+		\[
+			\mathcal{S}_{\vec{v}} = \sum_{i\,=\,0}^{d-1} \vecspan{\{A^i\vec{v}\}} \mod{p^k}
+		\]
+		where $d$ is the smallest positive integer such that
+		\[
+			A^d\vec{v} \in \sum_{i\,=\,0}^{d-1} \vecspan{\{A^i\vec{v}\}} \mod{p^k}
+		\]
+		
+		The \emph{minimal annihilating polynomial} of a vector $\vec{v} \in \mathds{Z}_p^L$ under a matrix $A \in \mathds{Z}_p^{L \times L}$ is the monic polynomial 
+		$\mu(x)$ of least degree such that
+		\[
+			\mu(A)\vec{v} \equiv \vec{0} \mod{p}
+		\]
+		
+		Since there are a finite number of matrices in $\mathds{Z}_p^{L \times L}$, it must be the case that, for some $a, b \in \mathds{Z}^+$, $a \neq b$, we have that
+		\[
+			A^a \equiv A^b \mod{p}
+		\]
+		and so for any vector $\vec{v} \in \mathds{Z}_p^L$:
+		\begin{align*}
+			         & A^a\vec{v} \equiv A^b\vec{v} \mod{p} \\
+			\implies & (A^a - A^b)\vec{v} \equiv \vec{0}    \\
+			\implies & f(A)\vec{v} \equiv \vec{0} \text{ for } f(x) = x^a - x^b
+		\end{align*}
+		so at least one annihilating polynomial for $\vec{v}$ always exists. Since $\mathds{Z}_p$ is a field, $\mathds{Z}_p[X]$ is a principal ideal domain (see 
+		\citet{enwiki:PID}), meaning the ideal of annihilating polynomials for $\vec{v}$ must have a unique generator (one can verify that an annihilating polynomial 
+		multiplied by any other polynomial in $\mathds{Z}_p[X]$ is also an annihilating polynomial, so the set of annihilating polynomials indeed forms an ideal). This 
+		generator is the minimal annihilating polynomial.
+		
+		Minimal annihilating polynomials and cycle spaces are important constructs for our purposes. The following propositions will allow us to work with them more easily.
+		
+		\begin{proposition}{Under a given matrix $A \in \mathds{Z}_p^{L \times L}$, the degree of a vector's minimal annihilating polynomial is equal to the dimension of 
+		its cycle space.}
+			\label{prop:degOfS}
+			Let $\vec{v} \in \mathds{Z}_p^L$ be an arbitrary vector. Using the definition of cycle spaces, the dimension of $\mathcal{S}_{\vec{v}}$ will be the smallest
+			value of $d$ such that the set
+			\[
+				\bigcup_{i\,=\,0}^d \{A^i\vec{v}\} \mod{p}
+			\]
+			is linearly dependent.
+			
+			Let $D$ be the degree of the minimal annihilating polynomial of $\vec{v}$. Assume $d < D$. The set $\bigcup_{i\,=\,0}^d \{A^i\vec{v}\}$ is linearly dependent, 
+			so there exist nontrivial coefficients $a_0$ to $a_d$ in $\mathds{Z}_p$ such that
+			\[
+				\sum_{i\,=\,0}^d a_iA^i\vec{v} \equiv \vec{0} \mod{p}
+			\]
+			And so
+			\[
+				f(A)\vec{v} \equiv \vec{0} \text{ for } f(x) = \sum_{i\,=\,0}^d a_ix^i \mod{p}
+			\]
+			This is a contradiction since the degree of $f$, an annihilating polynomial, is less than the degree of the minimal annihilating polynomial. Therefore, the 
+			dimension of $\mathcal{S}_{\vec{v}}$ must be at least $D$. 
+			
+			Let $m(x)$ be the minimal annihilating polynomial of $\vec{v}$. Our set $\bigcup_{i\,=\,0}^d \{A^i\vec{v}\}$ will always be linearly dependent when $d = D$ since 
+			\begin{align*}
+				m(A)\vec{v} \equiv& \ \sum_{i\,=\,0}^D a_iA^i\vec{v} \\
+				            \equiv& \ \vec{0} \mod{p}
+			\end{align*}
+			for nontrivial constants $a_i \in \mathds{Z}_p$, so the dimension of $\mathcal{S}_{\vec{v}}$ is exactly $D$, the degree of the minimal annihilating polynomial for
+			$\vec{v}$.
+		\end{proposition}
+		
+		\begin{proposition}{For some $A \in \mathds{Z}_{p^k}^{L \times L}$, if $\vec{v} \in \mathds{Z}_{p^k}^L$ is a vector such that $\vec{v} \in \ker{(f(A))}$ for some 
+		polynomial $f$, then $\mathcal{S}_{\vec{v}} \subseteq \ker{(f(A))}$.}
+			\label{prop:SinK}
+			First, we can show that any $A^n\vec{v} \in \ker{(f(A))}$:
+			\begin{align*}
+				\vec{v} \in \ker{(f(A))} \implies& f(A)\vec{v} \equiv \vec{0} \mod{p^k} \\
+				                         \implies& A^nf(A)\vec{v} \equiv \vec{0}        \\
+										 \implies& f(A)(A^n\vec{v}) \equiv \vec{0}      \\
+										 \implies& A^n\vec{v} \in \ker{(f(A))} \text{ for some } n \in \mathds{Z}^+
+			\end{align*}
+			Since this is true, any linear combination of $A^n\vec{v}$ vectors is also in $\ker{(f(A))}$ (since kernels are submodules), and the set of all linear 
+			combinations of $A^n\vec{v}$ vectors is exactly $\mathcal{S}_{\vec{v}}$, so $\mathcal{S}_{\vec{v}} \subseteq \ker{(f(A))}$.
+		\end{proposition}
+		
+		It's also helpful to make explicit a particular property of modular arithmetic modulo $p^k$.
+		
+		\begin{proposition}{If $a \in \mathds{Z}^+$ is invertible modulo $p^k$, then $a$ is also invertible modulo $p^{k+\ell}$.}
+			\label{prop:liftInverses}
+			Let $\alpha$ be the inverse of $a$ modulo $p^k$. We know
+			\[
+				a\alpha \equiv 1 + p^kn \mod{p^{k+\ell}}
+			\]
+			for some $n \in \mathds{Z}_{p^\ell}$. Then
+			\[
+				a(\alpha - p^kn\alpha) \equiv 1 + p^kn - p^kn(1 + p^kn) \equiv 1 - p^{2k}n^2 \mod{p^{k+\ell}}
+			\]
+			since multiplication is associative and commutative in $\mathds{Z}_{p^{k+\ell}}$. Then
+			\[
+				a(1 - p^kn + p^{2k}n^2)\alpha \equiv 1 - p^{2k}n^2 + p^{2k}n^2(1 + p^kn) \equiv 1 + p^{3k}n^3 \mod{p^{k+\ell}}
+			\]
+			A general pattern emerges:
+			\[
+				a\alpha\sum_{i\,=\,0}^N (-1)^i p^{ik} n^i \equiv 1 + (-1)^N p^{(N+1)k}n^{N+1} \mod{p^{k+\ell}}
+			\]
+			for some $N \in \mathds{N}$. Then, if $(\mathcal{L}+1)k \geq k+\ell$,
+			\[
+				a\alpha\sum_{i\,=\,0}^\mathcal{L} (-1)^i p^{ik} n^i \equiv 1 + (-1)^\mathcal{L} p^{(\mathcal{L}+1)k}n^{\mathcal{L}+1} \equiv 1 \mod{p^{k+\ell}}
+			\]
+			So $\alpha\sum_{i\,=\,0}^\mathcal{L} (-1)^i p^{ik} n^i$ is the inverse of $a$ modulo $p^{k+\ell}$, meaning $a$ is invertible modulo $p^{k+\ell}$.
+		\end{proposition}
+	
+	\section{Maximal Basis}
+		\label{sec:maxBasis}
+		A \emph{maximal vector} $\vec{v} \in \mathds{Z}_{p^k}^L$ under an invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$ is a vector such that, if $\omega$ is the 
+		multiplicative order of $A$, then $\omega$ is also the multiplicative order of $\vec{v}$.
+
+		The name "maximal vector" comes from the fact that the multiplicative order of a vector is necessarily bounded by the multiplicative order of a matrix. Thus, if a 
+		vector's multiplicative order matches a matrix's multiplicative order, it has the highest, or maximal, possible multiplicative order.
+		
+		Our interest is in proving that, for any modulus $p^k$ and any invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$, there will always be at least one maximal 
+		vector $\vec{v} \in \mathds{Z}_{p^k}^L$. This is known to be true for $k=1$ via proposition 3 of \citet{Mendivil2012}; proposition \ref{prop:maxVectGuarantee} aims
+		to extend this for all $k$.
+		
+		First, though, an important property of maximal vectors we'll need to make use of:
+		
+		\begin{proposition}{If $\vec{v} \in \mathds{Z}_{p^k}^L$ is a maximal vector under the invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$, then $A^n\vec{v}$ is
+		also a maximal vector.}
+			\label{prop:Amax}
+			Let $\omega$ be the multiplicative order of $\vec{v}$ under $A$. Assume $A^n\vec{v}$ is not a maximal vector. Then there exists some number $\alpha < \omega$ 
+			such that
+			\[
+				A^\alpha(A^n\vec{v}) \equiv A^n(A^\alpha\vec{v}) \equiv A^n\vec{v} \mod{p^k}
+			\]
+			Multiplying by $A^{-n}$, we see
+			\[
+				A^\alpha\vec{v} \equiv \vec{v} \mod{p^k}
+			\]
+			This contradicts the fact that $\vec{v}$ is a maximal vector. So, if $\vec{v}$ is a maximal vector, $A^n\vec{v}$ must also be a maximal vector.
+		\end{proposition}
+		
+		Now, we can show that maximal vectors are rather common modulo $p$. In fact, under any invertible matrix modulo $p$, there will always be enough maximal vectors to 
+		span the entirety of the vector space!
+		
+		\begin{proposition}{Given an invertible matrix $A \in \mathds{Z}_p^{L \times L}$, we can form a basis for $\mathds{Z}_p^L$ using maximal vectors under the matrix 
+		$A$.}
+			\label{prop:maxBasis}
+			Let the minimal polynomial of $A$ be written as
+			\[
+				m(x) \equiv \prod_{i\,=\,1}^g f_i^{n_i}(x) \mod{p}
+			\]
+			for monic, coprime factors $\{f_i\}$ and positive integers $\{n_i\}$. By the Primary Decomposition Theorem, we know
+			\[
+				\mathds{Z}_p^L = \bigoplus_{i\,=\,1}^g \ker{(f_i^{n_i}(A))}
+			\]
+			where $\ker{(f_i^{n_i}(A))} \neq \{\vec{0}\}$. Let $K_i = \ker{(f_i^{n_i}(A))}$.
+			
+			By definition of the minimal polynomial, for each $K_i$, there exists a nonzero vector $\vec{x}_i \in K_i$ whose minimal annihilating polynomial is $f_i^{n_i}$. 
+			Otherwise, if no such $\vec{x}_i$ existed, then $f_i^{n_i}$ wouldn't be a factor of the minimal polynomial---it wouldn't be needed to annihilate every vector in
+			$\mathds{Z}_p^L$. By arguments used in proposition 3 of \citet{Mendivil2012}, then, we know the vector 
+			\[
+				\vec{\chi} \equiv \sum_{i\,=\,1}^g \vec{x}_i \mod{p}
+			\]
+			is a maximal vector. We also know the minimal annihilating polynomial of $\vec{\chi}$ is $m(x)$, since it's the smallest degree monic polynomial that annihilates 
+			all $\vec{x}_i$ in the sum for $\vec{\chi}$:
+			\begin{align*}
+				m(A)\vec{\chi} \equiv& \ m(A)(\vec{x}_1 + \vec{x}_2 + \cdots + \vec{x}_g)       \\
+				               \equiv& \ m(A)\vec{x}_1 + m(A)\vec{x}_2 + \cdots + m(A)\vec{x}_g \\
+							   \equiv& \ \vec{0} + \vec{0} + \cdots + \vec{0}                   \\
+							   \equiv& \ \vec{0} \mod{p}
+			\end{align*}
+			Therefore, by proposition \ref{prop:degOfS}, the dimension of $\mathcal{S}_{\vec{\chi}}$ is equal to the degree of $m(x)$. If we denote the degree of $m(x)$ by 
+			$D$, then this means the set
+			\[
+				B_{\vec{\chi}} = \bigcup_{i\,=\,0}^{D-1} \{A^i\vec{\chi}\}
+			\]
+			is linearly independent. In fact, $B_{\vec{\chi}}$ is the defining set of basis vectors for $\mathcal{S}_{\vec{\chi}}$. Note that $|B_{\vec{\chi}}| = D$.
+			
+			If $D = L$, then by proposition \ref{prop:Amax}, the set $B_{\vec{\chi}}$ is a basis of maximal vectors for $\mathds{Z}_p^L$. Otherwise, we need to find $L-D$ 
+			more vectors to form a basis. 
+			
+			If $d_i$ represents the degree of $f_i^{n_i}$, then 
+			\[
+				D = \sum_{i\,=\,1}^g d_i
+			\]
+			As well, $L$ can be written in terms of the dimensions of each $K_i$ by the Primary Decomposition Theorem:
+			\[
+				L = \sum_{i\,=\,1}^g \dim{(K_i)}
+			\]
+			So,
+			\[
+				L-D = \sum_{i\,=\,1}^g (\dim{(K_i)}-d_i)
+			\]
+			Each $d_i \leq \dim{(K_i)}$ since $d_i = \dim{(\mathcal{S}_{\vec{x}_i})}$ by proposition \ref{prop:degOfS}, and $\mathcal{S}_{\vec{x}_i} \subseteq K_i$ via 
+			proposition \ref{prop:SinK}, therefore
+			\[
+				\dim{(K_i)} \geq \dim{(\mathcal{S}_{\vec{x}_i})} \implies \dim{(K_i)} \geq d_i
+			\]
+			
+			This means we can rewrite $K_i$ as
+			\[
+				K_i = \mathcal{S}_{\vec{x}_i} \oplus \vecspan{\bigcup_{j\,=\,1}^{\dim{(K_i)}-d_i} \{\vec{b}_i^j\}}
+			\]
+			for some linearly-independent vectors $\vec{b}_i^j \in K_i \cap \mathcal{S}_{\vec{x}_i}'$ where $\mathcal{S}_{\vec{x}_i}'$ denotes all vectors not in 
+			$\mathcal{S}_{\vec{x}_i}$. Let 
+			\[
+				B_i = \bigcup_{j\,=\,1}^{\dim{(K_i)}-d_i} \{\vec{b}_i^j\}
+			\]
+			Note that $|B_i| = \dim{(K_i)}-d_i$.
+			
+			For each $\vec{b}_i^j \in B_i$, consider the vector
+			\[
+				\vec{x}_i + \vec{b}_i^j \mod{p}
+			\]
+			Using the same reasoning as was used to show that the minimal annihilating polynomial of $\vec{\chi}$ was $m(x)$, the minimal annihilating polynomial of this 
+			vector must be $f_i^{n_i}(x)$. Thus, the vector
+			\[
+				\vec{\epsilon_i^j} \equiv \vec{\chi} + \vec{b}_i^j \mod{p}
+			\]
+			must be a maximal vector for the same reason that $\vec{\chi}$ is a maximal vector.
+			
+			Is $\vec{\epsilon_i^j} \in \mathcal{S}_{\vec{\chi}}$? Assume it is. Then
+			\begin{align*}
+				\vec{\epsilon_i^j} \in \mathcal{S}_{\vec{\chi}} \implies& \vec{\chi} + \vec{b}_i^j \in \mathcal{S}_{\vec{\chi}} \\
+				                                                \implies& \vec{b}_i^j \in \mathcal{S}_{\vec{\chi}}
+			\end{align*}
+			since we know $\vec{\chi} \in \mathcal{S}_{\vec{\chi}}$. We also know $\mathcal{S}_{\vec{\chi}} \subseteq \sum_{h\,=\,1}^g \mathcal{S}_{\vec{x}_h}$ since 
+			$\vec{\chi} \equiv \sum_{h\,=\,1}^g \vec{x}_h$, so
+			\[
+				\vec{b}_i^j \in \sum_{h\,=\,1}^g \mathcal{S}_{\vec{x}_h}
+			\]
+
+			This means we can write $\vec{b}_i^j$ as a linear combination of vectors from each $\mathcal{S}_{\vec{x}_h}$. Let 
+			$\vec{s}_h \in \mathcal{S}_{\vec{x}_h} \setminus \{\vec{0}\}$ and let $a_h \in \mathds{Z}_p$. Then for nontrivial constants $a_1$ to $a_g$, we have that
+			\[
+				\vec{b}_i^j \equiv a_1\vec{s}_1 + a_2\vec{s}_2 + \cdots + a_g\vec{s}_g \mod{p}
+			\]
+			We know $\vec{b}_i^j \in K_i$, so $f_i^{n_i}(A)\vec{b}_i^j \equiv \vec{0}$. Therefore
+			\begin{align*}
+				      & \ f_i^{n_i}(A)\vec{b}_i^j \\
+				\equiv& \ f_i^{n_i}(A)(a_1\vec{s}_1 + a_2\vec{s}_2 + \cdots + a_g\vec{s}_g) \\
+				\equiv& \ f_i^{n_i}(A)a_1\vec{s}_1 + \cdots + f_i^{n_i}(A)a_{i-1}\vec{s}_{i-1} + 
+						  f_i^{n_i}(A)a_i\vec{s}_i + f_i^{n_i}(A)a_{i+1}\vec{s}_{i+1} + \cdots \\
+				\equiv& \ f_i^{n_i}(A)a_1\vec{s}_1 + \cdots + f_i^{n_i}(A)a_{i-1}\vec{s}_{i-1} + 
+				          f_i^{n_i}(A)a_{i+1}\vec{s}_{i+1} + \cdots + f_i^{n_i}(A)a_g\vec{s}_g \\
+				\equiv& \ \vec{0} \mod{p}
+			\end{align*}
+			since $\vec{s}_i \in K_i$ by proposition \ref{prop:SinK}. Therefore
+			\[
+				a_1\vec{s}_1 + a_2\vec{s}_2 + \cdots + a_{i-1}\vec{s}_{i-1} + a_{i+1}\vec{s}_{i+1} + \cdots + a_g\vec{s}_g \in K_i
+			\]
+			However, we know
+			\begin{align*}
+				        & (K_1 + K_2 + \cdots + K_{i-1} + K_{i+1} + \cdots + K_g) \cap K_i = \{\vec{0}\} \\
+				\implies& (\mathcal{S}_{\vec{x}_1} + \mathcal{S}_{\vec{x}_2} + \cdots + \mathcal{S}_{\vec{x}_{i-1}} + \mathcal{S}_{\vec{x}_{i+1}} + 
+				           \cdots + \mathcal{S}_{\vec{x}_g}) \cap K_i = \{\vec{0}\}
+			\end{align*}
+			by the Primary Decomposition Theorem (each $K_h$ is disjoint except for the zero vector). This means
+			\[
+				a_1\vec{s}_1 + a_2\vec{s}_2 + \cdots + a_{i-1}\vec{s}_{i-1} + a_{i+1}\vec{s}_{i+1} + \cdots + a_g\vec{s}_g \equiv \vec{0}
+			\]
+			The set $\{\vec{s}_1,\, \vec{s}_2,\, \cdots,\, \vec{s}_{i-1},\, \vec{s}_{i+1},\, \cdots,\, \vec{s}_g\}$ is linearly independent because each $\vec{s}_h \in K_h$.
+			Therefore, the only way this sum can be zero is if each $a_h \equiv 0$. Returning to our expression for $\vec{b}_i^j$, this means
+			\[
+				\vec{b}_i^j \equiv a_i\vec{s}_i
+			\]
+			We know $\vec{b}_i^j \not\in \mathcal{S}_{\vec{x}_i}$, so this is a contradiction. Therefore, $\vec{\epsilon_i^j} \not\in \mathcal{S}_{\vec{\chi}}$, and so each 
+			$\vec{\epsilon_i^j}$ must be linearly independent to the vectors in $B_{\vec{\chi}}$ (which is a basis for $\mathcal{S}_{\vec{\chi}}$).
+			
+			Now, let's form the set of all such $\vec{\epsilon_i^j}$:
+			\[
+				E = \{\vec{\chi} + \vec{b}_i^j : 1 \leq i \leq g,\, \vec{b}_i^j \in B_i\}
+			\]
+			Note that $|E| = \sum_{i\,=\,1}^g |B_i| = \sum_{i\,=\,1}^g (\dim{(K_i)}-d_i) = L-D$.
+			
+			Is the set $E$ linearly independent? Assume it isn't. Then for nontrivial constants $a_{i,j} \in \mathds{Z}_p$ we have that
+			\begin{align*}
+				        & \sum_{i\,=\,1}^g \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}\vec{\epsilon_i^j} \equiv \vec{0} \\
+				\implies& \sum_{i\,=\,1}^g \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i, j}(\vec{\chi} + \vec{b}_i^j) \equiv \vec{0}
+			\end{align*}
+			Let $\alpha \equiv \sum_{i\,=\,1}^g \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}$. Then
+			\[
+				\implies \sum_{i\,=\,1}^g \left( \alpha\vec{x}_i + \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}\vec{b}_i^j \right) \equiv \vec{0}
+			\]
+			If $\alpha \equiv 0 \bmod{p}$, then
+			\[
+				\implies \sum_{i\,=\,1}^g \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}\vec{b}_i^j \equiv \vec{0}
+			\]
+			This is impossible for nontrivial constants $a_{i,j}$ since the set of vectors $\vec{b}_i^j$ forms a linearly-independent set by definition. So 
+			$\alpha \not\equiv 0$. We have that
+			\[
+				\sum_{i\,=\,1}^g \left( \alpha\vec{x}_i + \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}\vec{b}_i^j \right) \equiv \vec{0}
+			\]
+			We know the vector $\alpha\vec{x}_i$ is linearly independent to $\sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}\vec{b}_i^j$ since 
+			\[
+				\vecspan{B_i} \cap \mathcal{S}_{\vec{x}_i} = \{\vec{0}\}
+			\]
+			and since $\alpha\vec{x}_i \not\equiv \vec{0}$, there's no way the term
+			\[
+				\alpha\vec{x}_i + \sum_{j\,=\,1}^{\dim{(K_i)}-d_i} a_{i,j}\vec{b}_i^j
+			\]
+			can equal zero. As well, since this term is an element of $K_i$ (it is annihilated by $f_i^{n_i}(A)$), it is linearly independent to all other terms in the
+			sum since they will all be elements of a $K_h \neq K_i$. Therefore, this sum can never give the zero vector since nonzero linearly-independent vectors cannot sum
+			to zero. This means the set $E$ must be linearly independent.
+			
+			Finally, since $B_{\vec{\chi}}$ and $E$ are linearly-independent sets, and since all vectors in $E$ are linearly independent to the vectors in $B_{\vec{\chi}}$,
+			this means the set $B_{\vec{\chi}} \cup E$ is a linearly-independent set of $D + (L - D) = L$ maximal vectors. Therefore, the set $B_{\vec{\chi}} \cup E$ forms
+			a basis of maximal vectors for $\mathds{Z}_p^L$.
+		\end{proposition}
+		
+		At a high level, proposition \ref{prop:maxBasis} says that if a matrix expression is to annihilate all maximal vectors in $\mathds{Z}_p^L$ under some invertible 
+		matrix, it must annihilate \emph{all} vectors in $\mathds{Z}_p^L$. Since we can form a basis of maximal vectors, the span of maximal vectors is the entire space
+		$\mathds{Z}_p^L$, so to annihilate all maximal vectors is to annihilate $\mathds{Z}_p^L$ entirely.
+	
+	\section{Maximal Vectors Modulo $p^k$}
+		Before we can show that a maximal vector always exists modulo $p^k$ under some invertible matrix, we need to first understand a little bit about how matrices and
+		vectors behave under different powers of a prime-power modulus.
+		
+		\begin{proposition}{Assume $p^k > p$ and that $p$ is an odd prime. If $A^\omega \equiv I + p^{k-1}B \bmod{p^k}$ for an invertible matrix 
+		$A \in \mathds{Z}_{p^k}^{L \times L}$, a generic matrix $B \in \mathds{Z}_p^{L \times L}$, and a positive integer $\omega$, then 
+		$A^{p\omega} \equiv I + p^kB \bmod{p^{k+1}}$.}
+			\label{prop:liftIterate}
+			If $A^\omega \equiv I + p^{k-1}B \bmod{p^k}$, then
+			\[
+				A^\omega \equiv I + p^{k-1}B + p^kC \mod{p^{k+1}}
+			\]
+			for some matrix $C \in \mathds{Z}_p^{L \times L}$. Calculating $A^{2\omega}$, we see
+			\begin{align*}
+				A^{2\omega} \equiv& \ (I + p^{k-1}B + p^kC)^2                                                   \\
+							\equiv& \ I + 2p^{k-1}B + 2p^kC + p^{2k-2}B^2 + p^{2k-1}CB + p^{2k-1}BC + p^{2k}C^2 \\
+							\equiv& \ I + 2p^{k-1}B + 2p^kC + \binom{2}{2}p^{2k-2}B^2 \mod{p^{k+1}}
+			\end{align*}
+			We notice that a possible general form for $A^{n\omega}$ arises:
+			\[
+				A^{n\omega} \overset{?}{\equiv} I + np^{k-1}B + np^kC + \binom{n}{2}p^{2k-2}B^2 \mod{p^{k+1}}
+			\]
+			Both $A^\omega$ and $A^{2\omega}$ follow this form. If we're given the expression
+			\[
+				A^{r\omega} \equiv I + rp^{k-1}B + rp^kC + \binom{r}{2}p^{2k-2}B^2 \mod{p^{k+1}}
+			\]
+			then
+			\begin{align*}
+				A^{(r+1)\omega} \equiv& \ (I + p^{k-1}B + p^kC)(I + rp^{k-1}B + rp^kC + \binom{r}{2}p^{2k-2}B^2) \\
+				                \equiv& \ I + p^{k-1}B + p^kC + rp^{k-1}B + rp^{2k-2}B^2 + rp^{2k-1}CB + rp^kC \\
+								      & \ + rp^{2k-1}BC + rp^{2k}C^2 + \binom{r}{2}p^{2k-2}B^2 + \binom{r}{2}p^{3k-3}B^3 + \binom{r}{2}p^{3k-2}CB^2 \\
+								\equiv& \ I + (r+1)p^{k-1}B + (r+1)p^kC + \left(r + \binom{r}{2}\right)p^{2k-2}B^2 \mod{p^{k+1}} \\
+								\equiv& \ I + (r+1)p^{k-1}B + (r+1)p^kC + \binom{r+1}{2}p^{2k-2}B^2
+			\end{align*}
+			So
+			\begin{align*}
+				        & A^{r\omega}     \equiv I + rp^{k-1}B     + rp^kC     + \binom{r}{2}p^{2k-2}B^2   \mod{p^{k+1}} \\
+				\implies& A^{(r+1)\omega} \equiv I + (r+1)p^{k-1}B + (r+1)p^kC + \binom{r+1}{2}p^{2k-2}B^2 \mod{p^{k+1}}
+			\end{align*}
+			Therefore, by induction, we can say
+			\[
+				A^{n\omega} \equiv I + np^{k-1}B + np^kC + \binom{n}{2}p^{2k-2}B^2 \mod{p^{k+1}}
+			\]
+			Setting $n=p$ yields
+			\begin{align*}
+				A^{p\omega} \equiv& \ I + pp^{k-1} + pp^kC + \binom{p}{2}p^{2k-2}B^2 \\
+				            \equiv& \ I + p^kB + p^{k+1}C + \frac{p-1}{2}p^{2k-1}B^2 \\
+							\equiv& \ I + p^kB \mod{p^{k+1}}
+			\end{align*}
+			since $p$ is an odd prime.
+		\end{proposition}
+		
+		\begin{proposition}{Suppose that $\omega$ is the multiplicative order of $A$ modulo $p^k$. Then, the multiplicative order of $A$ modulo $p^{k+1}$ is either $\omega$ 
+		or $p\omega$. As well, for odd primes $p$, if the multiplicative order of $A$ increased by a factor of $p$ for a lower power of the modulus, then the
+		multiplicative order must increase by a factor of $p$ for all higher powers of the modulus.}
+			\label{prop:cycLenInc}
+			Let the multiplicative order of $A$ modulo $p^{k+1}$ be $\Omega$. Assume that $\omega \nmid \Omega$. Then $\Omega = m\omega + n$ for some nonnegative integers 
+			$m$ and $n$ where $1 \leq n < \omega$. This means
+			\begin{align*}
+				        & A^\Omega \equiv I \mod{p^{k+1}}   \\
+				\implies& A^\Omega \equiv I \mod{p^k}       \\
+				\implies& A^{m\omega}A^n \equiv I \mod{p^k} \\
+				\implies& A^n \equiv I \mod{p^k}
+			\end{align*}
+			This is a contradiction since $n < \omega$, yet $\omega$ is the multiplicative order of $A$ modulo $p^k$. Therefore $\omega \mid \Omega$.
+			
+			We know that $A^\omega \equiv I \bmod{p^k}$, so
+			\[
+				A^\omega \equiv I + p^kB \mod{p^{k+1}}
+			\]
+			for some $B \in \mathds{Z}_p^{L \times L}$. If $B \equiv 0$, then we have
+			\[
+				A^\omega \equiv I \mod{p^{k+1}}
+			\]
+			In this case, since $\omega \mid \Omega$, we know $\Omega = \omega$.
+			
+			Otherwise, if $B \not\equiv 0$, we can check successive powers of $A^\omega$ to find the first that is equivalent to the identity matrix. Since 
+			$\omega \mid \Omega$, we can be sure that the first value of $n\omega$ such that $A^{n\omega} \equiv I \bmod{p^{k+1}}$ is indeed the multiplicative order of $A$
+			modulo $p^{k+1}$. Computing $A^{2\omega}$, we see
+			\begin{align*}
+				A^{2\omega} \equiv& \ (I + p^kB)^2 \\
+				            \equiv& \ I + 2p^kB + p^{2k}B^2 \\
+							\equiv& \ I + 2p^kB \mod{p^{k+1}}
+			\end{align*}
+			It seems that
+			\[
+				A^{n\omega} \overset{?}{\equiv} I + np^kB \mod{p^{k+1}}
+			\]
+			This is certainly the case for $n=1$ and $n=2$. Assuming we're given the expression
+			\[
+				A^{r\omega} \equiv I + rp^kB \mod{p^{k+1}}
+			\]
+			then
+			\begin{align*}
+				A^{(r+1)\omega} \equiv& \ (I + p^kB)(I + rp^kB) \\
+				                \equiv& \ I + p^kB + rp^kB + rp^{2k}B \\
+								\equiv& \ I + (r+1)p^kB \mod{p^{k+1}}
+			\end{align*}
+			So
+			\[
+				A^{r\omega} \equiv I + rp^kB \implies A^{(r+1)\omega} \equiv I + (r+1)p^kB \mod{p^{k+1}}
+			\]
+			By induction, we can say that
+			\[
+				A^{n\omega} \equiv I + np^kB \mod{p^{k+1}}
+			\]
+			Setting $n=p$, we see
+			\begin{align*}
+				A^{p\omega} \equiv& \ I + pp^kB \\
+							\equiv& \ I \mod{p^{k+1}}
+			\end{align*}
+			No positive value of $n$ smaller than $p$ will cause this cancellation. Therefore, in the case where $B \not\equiv 0$, $\Omega = p\omega$.
+			
+			These are all the possibilities we need to consider, so $\Omega = \omega$ or $\Omega = p\omega$.
+			
+			Now, we'll prove that the multiplicative order of $A$ increasing by a factor of $p$ for a lower power of the modulus means that the multiplicative order of $A$ 
+			must always increase by a factor of $p$ for higher powers of the modulus. We'll now assume that $p$ is an odd prime. If, let's say, $\psi$ is the multiplicative 
+			order of $A$ modulo $p^\ell$ for some $\ell \in \mathds{Z}^+$, and $p\psi$ is the multiplicative order of $A$ modulo $p^{\ell + 1}$, then we know
+			\[
+				A^\psi \equiv I + p^\ell C \mod{p^{\ell+1}}
+			\]
+			for some nonzero $C \in \mathds{Z}_p^{L \times L}$. Proposition \ref{prop:liftIterate} guarantees that
+			\[
+				A^{p^w\psi} \equiv I + p^{\ell+w}C \mod{p^{\ell+1+w}}
+			\]
+			for positive integers $w$. There is no possible way $A^{p^w\psi} \equiv I \bmod{p^{\ell+1+w}}$, meaning $p^w\psi$ can never be the multiplicative order of $A$
+			modulo $p^{\ell+1+w}$. This means the multiplicative order of $A$ must increase by a factor of $p$ for each increment of $w$.
+		\end{proposition}
+		
+		\begin{proposition}{A set of basis vectors for $\mathds{Z}_{p^k}^L$ is also a set of basis vectors for $\mathds{Z}_{p^{k+\ell}}^L$.}
+			\label{prop:basisLift}
+			Assume the set $\mathcal{B} = \{\vec{b}_1,\, \vec{b}_2,\, \cdots,\, \vec{b}_L\}$ forms a basis for $\mathds{Z}_{p^k}^L$. Because the set $\mathcal{B}$ is
+			linearly independent, the matrix
+			\[
+				B = \begin{bmatrix}
+					\vec{b}_1 & \vec{b}_2 & \cdots & \vec{b}_L
+				\end{bmatrix} \mod{p^k}
+			\]
+			must be invertible by the Invertible Matrix Theorem, meaning the determinant must also be invertible. 
+			
+			Considering the matrix $B$ modulo $p^{k+\ell}$, we see the determinant of this matrix must still be invertible by proposition \ref{prop:liftInverses}. 
+			Therefore, by the Invertible Matrix Theorem, $B$ modulo $p^{k+\ell}$ must also be invertible, meaning its column vectors form a basis for 
+			$\mathds{Z}_{p^{k+\ell}}^L$ (since there are $L$ linearly-independent column vectors).
+		\end{proposition}
+		
+		\begin{proposition}{Given an invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$ with a multiplicative order modulo $p^k$ of $\omega$, and a maximal vector 
+		$\vec{v} \in \mathds{Z}_{p^k}^L$ modulo $p^k$, then the multiplicative order of $\vec{v}$ modulo $p^{k+1}$ is either $\omega$ or $p\omega$.}
+			\label{prop:maxCycLenInc}
+			Let $\Omega$ be the multiplicative order of $\vec{v}$ modulo $p^{k+1}$. Assume that $\omega \nmid \Omega$. Then $\Omega = m\omega + n$ for nonnegative integers 
+			$m$ and $n$ where $1 \leq n < \omega$.
+			But then
+			\begin{align*}
+				        & A^\Omega\vec{v} \equiv \vec{v} \mod{p^{k+1}}   \\
+				\implies& A^\Omega\vec{v} \equiv \vec{v} \mod{p^k}       \\
+				\implies& A^{m\omega}A^n\vec{v} \equiv \vec{v} \mod{p^k} \\
+				\implies& A^n\vec{v} \equiv \vec{v} \mod{p^k}
+			\end{align*}
+			which is a contradiction since $n < \omega$, yet $\vec{v}$ is a maximal vector modulo $p^k$. Therefore, $\omega \mid \Omega$.
+			
+			We know $A^\omega \equiv I \bmod{p^k}$, so
+			\[
+				A^\omega\vec{v} \equiv \vec{v} + p^kB\vec{v} \mod{p^{k+1}}
+			\]
+			for some matrix $B \in \mathds{Z}_p^{L \times L}$.
+			
+			If $B \equiv 0$, then we have
+			\[
+				A^\omega\vec{v} \equiv \vec{v} \mod{p^{k+1}}
+			\]
+			and since $\omega \mid \Omega$, this means $\Omega = \omega$.
+			
+			Otherwise, if $B \not\equiv 0$, we can look at successive powers of $A^\omega$ and find the first where a product with itself and $\vec{v}$ returns $\vec{v}$.
+			If $\vec{v} \in \ker{(p^kB)}$, then
+			\begin{align*}
+				A^\omega\vec{v} \equiv& \ \vec{v} + p^kB\vec{v} \\
+				                \equiv& \ \vec{v} \mod{p^{k+1}}
+			\end{align*}
+			and in this case $\Omega = \omega$.
+			
+			Calculating $A^{2\omega}$, we see
+			\begin{align*} 
+				A^{2\omega}\vec{v} \equiv& \ (I + p^kB)^2\vec{v} \\
+				                   \equiv& \ (I + 2p^kB + p^{2k}B^2)\vec{v} \\
+								   \equiv& \ \vec{v} + 2p^kB\vec{v} \mod{p^{k+1}}
+			\end{align*}
+			Note that if $\vec{v} \in \ker{(2p^kB)}$, then
+			\[
+				2p^kB\vec{v} \equiv \vec{0} \implies p^kB\vec{v} \equiv \vec{0} \mod{p^{k+1}}
+			\]
+			In fact, $\vec{v} \in \ker{(qp^kB)} \Leftrightarrow \vec{v} \in \ker{(p^kB)}$ for all $q \in \mathds{Z}_p^+$, so whenever $\vec{v}$ is annihilated by $qp^kB$, 
+			$\Omega = \omega$. From now on, assume $\vec{v}$ is not annihilated by $qp^kB$.
+			
+			The above expression for $A^{2\omega}\vec{v}$ suggests a general form for $A^{n\omega}\vec{v}$:
+			\[
+				A^{n\omega}\vec{v} \overset{?}{\equiv} \vec{v} + np^kB\vec{v} \mod{p^{k+1}}
+			\]
+			We've confirmed this pattern is true for $n=1$ and $n=2$. If we're given the expression
+			\[
+				A^{r\omega}\vec{v} \equiv \vec{v} + rp^kB\vec{v} \mod{p^{k+1}}
+			\]
+			then
+			\begin{align*}
+				A^{(r+1)\omega}\vec{v} \equiv& \ (I + p^kB)(I + rp^kB)\vec{v} \\
+				                       \equiv& \ (I + (r+1)p^kB + rp^{2k}B^2)\vec{v} \\
+									   \equiv& \ \vec{v} + (r+1)p^kB\vec{v} \mod{p^{k+1}}
+			\end{align*}
+			So
+			\[
+				A^{r\omega}\vec{v} \equiv \vec{v} + rp^kB\vec{v} \implies A^{(r+1)\omega}\vec{v} \equiv \vec{v} + (r+1)p^kB\vec{v} \mod{p^{k+1}}
+			\]
+			By induction, this means
+			\[
+				A^{n\omega}\vec{v} \equiv \vec{v} + np^kB\vec{v} \mod{p^{k+1}}
+			\]
+			Plugging $n=p$ into the above relation gives us
+			\begin{align*}
+				A^{p\omega}\vec{v} \equiv& \ \vec{v} + pp^kB\vec{v} \\
+				                   \equiv& \ \vec{v} \mod{p^{k+1}}
+			\end{align*}
+			$n=p$ is the first such substitution that causes this cancellation. Therefore, when $\vec{v} \not\in \ker{(p^kB)}$ and when $B \not\equiv 0$, $\Omega = p\omega$.
+			
+			These are all the cases we need to consider, so $\Omega = \omega$ or $\Omega = p\omega$.
+		\end{proposition}
+		
+		Now, we have everything we need to show that a maximal vector modulo $p^k$ always exists under an invertible matrix.
+		
+		\begin{proposition}{Given an invertible matrix $A \in \mathds{Z}_{p^k}^{L \times L}$, a maximal vector exists modulo $p^k$ for odd primes $p$.}
+			\label{prop:maxVectGuarantee}
+			An invertible matrix modulo $p^k$ remains invertible modulo $p$ since, by the Invertible Matrix Theorem, a matrix is invertible when its determinant is 
+			invertible, and if the determinant of a matrix is invertible modulo $p^k$, it must also be invertible modulo $p$ (via modular reduction).
+			
+			So, $A \bmod{p}$ is invertible, meaning proposition \ref{prop:maxBasis} guarantees that a basis of maximal vectors under $A \bmod{p}$ exists for $\mathds{Z}_p^L$.
+			We'll call this basis $\mathcal{B}$.
+			
+			Now, assume that, modulo $p$, $\omega$ is the multiplicative order of $A$. Because each $\vec{b} \in \mathcal{B}$ is a maximal vector, we know $\omega$ is also 
+			the multiplicative order of $\vec{b}$ modulo $p$.
+			
+			If we now look at $A \bmod{p^2}$ (which is also invertible by the same argument as above), proposition \ref{prop:cycLenInc} tells us that the multiplicative order
+			of $A$ modulo $p^2$, which we'll label as $\Omega$, is either $\omega$ or $p\omega$. If $\Omega = \omega$, then all the vectors in $\mathcal{B}$ must still be 
+			maximal vectors. Otherwise, if some $\vec{b} \in \mathcal{B}$ was no longer a maximal vector modulo $p^2$, then we'd have that
+			\[
+				A^n\vec{b} \equiv \vec{b} \mod{p^2} \implies A^n\vec{b} \equiv \vec{b} \mod{p}
+			\]
+			where $n < \omega$, which is a contradiction to the fact that $\vec{b}$ is a maximal vector modulo $p$. In the case where $\Omega = \omega$, we don't need to do
+			any more work to find maximal vectors; our set $\mathcal{B}$ contains $L$ of them.
+			
+			It's possible that, for every increase of our modulus, from $p$ to $p^2$ to $p^3$, all the way to $p^k$, the multiplicative order of $A$ remains as $\omega$. If 
+			this is the case, then $\mathcal{B}$ will still contain $L$ maximal vectors; we don't need to do any more work to find them.
+			
+			Otherwise, let's assume that $p^\ell$, where $p < p^\ell < p^k$, is the first modulus where the multiplicative order of $A$ increases from $\omega$ to 
+			$p\omega$. In this case, we have that
+			\[
+				A^\omega \equiv I + p^{\ell-1}B \mod{p^\ell}
+			\]
+			for some nonzero matrix $B \in \mathds{Z}_p^{L \times L}$. By proposition \ref{prop:maxCycLenInc}, the multiplicative order of $\vec{b} \in \mathcal{B}$ modulo 
+			$p^\ell$ is either $\omega$ or $p\omega$. Calculating $A^\omega\vec{b}$, we see
+			\[
+				A^\omega\vec{b} \equiv \vec{b} + p^{\ell-1}B\vec{b} \mod{p^\ell}
+			\]
+			It's possible that $\vec{b} \in \ker{(p^{\ell-1}B)}$, in which case the multiplicative order of $\vec{b}$ is $\omega$. However, by proposition 
+			\ref{prop:basisLift}, $\mathcal{B}$ forms a basis for $\mathds{Z}_{p^\ell}^L$, so at least one vector $\vec{\beta} \in \mathcal{B}$ must not be in the kernel of $p^{\ell-1}B$. Otherwise, if no such vector 
+			existed, then $p^{\ell-1}B$ would annihilate all the vectors of a basis, meaning it would necessarily be the zero matrix. We know $p^{\ell-1}B \not\equiv 0$, 
+			since $A^\omega \not\equiv I$ by assumption, so such a vector $\vec{\beta}$ must exist.
+			
+			Therefore,
+			\begin{align*}
+				A^\omega\vec{\beta} \equiv& \ \vec{\beta} + p^{\ell-1}B\vec{\beta} \mod{p^\ell} \\
+				                \not\equiv& \ \vec{\beta}
+			\end{align*}
+			The multiplicative order of $\vec{\beta}$ cannot possibly be $\omega$ from the above equation, so it must be $p\omega$, meaning it is a maximal vector modulo 
+			$p^\ell$. As well, by proposition \ref{prop:liftIterate}, the matrix $B$ in the expression for $A^\omega \bmod{p^\ell}$ will be the same matrix $B$ in the 
+			expressions for $A^{p^x\omega} \bmod{p^{\ell+x}}$ for positive integers $x$, so all higher powers will have that
+			\begin{align*}
+				A^{p^x\omega}\vec{\beta} \equiv& \ \vec{\beta} + p^{\ell+x-1}B\vec{\beta} \mod{p^{\ell+x}} \\
+				                     \not\equiv& \ \vec{\beta}
+			\end{align*}
+			So long as $\vec{\beta}$ is a maximal vector modulo $p^{\ell+x-1}$, the above equation shows that it must also be a maximal vector modulo $p^{\ell+x}$ by 
+			applying proposition \ref{prop:maxCycLenInc} (since proposition \ref{prop:cycLenInc} guarantees that $p^{x+1}\omega$ is the multiplicative order of $A$ modulo 
+			$p^{\ell+x}$). Therefore, by applying the above reasoning up to modulo $p^k$, $\vec{\beta}$ must also be a maximal vector modulo $p^k$.
+		\end{proposition}
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+\end{document}

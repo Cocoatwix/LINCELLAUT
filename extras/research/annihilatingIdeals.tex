@@ -1,0 +1,409 @@
+
+%Maybe I should specify that the generators of annideals that I'm talking about are dimensionally-independent?
+
+\documentclass[a4paper, reqno, 12pt]{amsart}
+\usepackage[T1]{fontenc}
+\usepackage[parfill]{parskip}
+\usepackage[margin=3cm]{geometry}
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{dsfont}
+
+\usepackage{natbib}
+
+\usepackage{verbatim}
+
+%vector span
+\newcommand\vecspan[1]{\textup{span}\left(#1\right)}
+
+%small vectors
+\newcommand\smallvec[1]{\left[\begin{smallmatrix}#1\end{smallmatrix}\right]}
+
+%does not exist
+\newcommand\DNE{\textup{DNE}}
+
+
+%proposition environment
+\newcounter{propcounter}[section]
+\newenvironment{proposition}[1]
+{
+	\refstepcounter{propcounter}
+	\textbf{Proposition \thesection.\thepropcounter.} \emph{#1}
+	
+	\emph{Justification.}
+}
+{
+	\textbf{QED.} \\
+}
+
+%addendum environment
+\newcounter{addcounter}[section]
+\newenvironment{addendum}[1]
+{
+	\refstepcounter{addcounter}
+	\textbf{Addendum \thesection.\theaddcounter.} \emph{#1} \\
+}
+{
+	$\circ$ \\
+}
+
+\begin{document}
+	For the entirety of this document, let $p$ be a prime. Also let $L$ and $k$ be positive integers with $k > 1$.
+	
+	\section{Annihilating Polynomials Modulo $p^k$}
+		\label{sec:AP}
+		Given a vector $\vec{v} \in \mathds{Z}_{p^k}^{L}$ and a matrix $A \in \mathds{Z}^{L \times L}$, an \emph{annihilating polynomial of $\vec{v}$ under $A \bmod{p^k}$} 
+		is any polynomial $f(x)$ such that
+		\[
+			f(A)\vec{v} \equiv \vec{0} \mod{p^k}
+		\]
+		
+		Modulo $p$, a vector $\vec{v}$ has a \emph{minimal annihilating polynomial}, a monic annihilating polynomial that divides every nonzero annihilating polynomial of 
+		$\vec{v}$ (see section 2 of \citet{Mendivil2012}).
+		
+		Our interest in this document is considering what the set of all annihilating polynomials for a given vector $\vec{v}$ will look like.
+		
+		Immediately, we know the set of all annihilating polynomials for a vector $\vec{v} \in \mathds{Z}_{p^k}^L$ will be an ideal of $\mathds{Z}_{p^k}[X]$, the set of all 
+		polynomials with coefficients in $\mathds{Z}_{p^k}$. To see why, assume we have a set of arbitrary annihilating polynomials for $\vec{v}$, denoted as $a_1(x)$, 
+		$a_2(x)$, etc. If all of these are annihilating polynomials under a matrix $A$, then for arbitrary polynomials $\alpha_1(x)$, $\alpha_2(x)$, etc.,
+		\begin{align*}
+				   & \, \alpha_1(A)a_1(A)\vec{v} + \alpha_2(A)a_2(A)\vec{v} + \cdots \\
+			\equiv & \, \alpha_1(A)\vec{0} + \alpha_2(A)\vec{0} + \cdots             \\
+			\equiv & \, \vec{0}
+		\end{align*}
+		A sum of arbitrary polynomial multiples of our annihilating polynomials is also an annihilating polynomial. Therefore, the set of annihilating polynomials is closed 
+		under addition and taking polynomial multiples, meaning it is an ideal of the set $\mathds{Z}_{p^k}[X]$.
+		
+		If we concern ourselves only with the modulo $p$ case, then the ideal of annihilating polynomials for $\vec{v}$ becomes a principal ideal since the minimal 
+		polynomial divides all nonzero annihilating polynomials, meaning every annihilating polynomial is some polynomial multiple of the minimal polynomial, and therefore 
+		the minimal polynomial is the sole generator for the ideal.
+		
+		In the prime-power case (modulo $p^k$), there can be more than one generator for the set of annihilating polynomials. For example, take the matrix
+		\[
+			A = \begin{bmatrix}
+				2 & 7 & 1 & 6 \\
+				0 & 5 & 3 & 6 \\
+				4 & 5 & 7 & 5 \\
+				5 & 1 & 1 & 2
+			\end{bmatrix} \mod{9}
+		\]
+		The vector 
+		\[
+			\vec{v} = \begin{bmatrix}
+				1 \\
+				0 \\
+				0 \\
+				0
+			\end{bmatrix}
+		\]
+		is annihilated by the polynomials $3 + 6A + 3A^2 + 3A^3$, and $1 + 6A + 2A^3 + A^4$. Neither one of these polynomials is a polynomial multiple of the other, so 
+		both of them are needed to generate the vector's ideal of annihilating polynomials.
+		
+		Is there anything we can say about the generators of the ideal of annihilating polynomials in the prime-power case?
+		
+		\begin{proposition}{Say we're given $\vec{v} \in \mathds{Z}_{p^k}^{L}$, $A \in \mathds{Z}^{L \times L}$, and $f(x)$, an annihilating polynomial of 
+		$\vec{v} \bmod{p^k}$, with leading term $p^{\alpha}a_dx^d$, $\alpha < k$, and where $a_d^{-1}$ exists. Any annihilating polynomial with leading term 
+		$p^{\alpha+\beta}b_{d+q}x^{d+q}$, $\beta, q \geq 0$, $\alpha+\beta < k$, $b_{d+q} \not\equiv 0$, can be written as the sum of a polynomial multiple of 
+		$f(x)$ and another annihilating polynomial with degree less than $d+q$.}
+			\label{prop:splitBiggerPoly}
+			Let 
+			\[
+				f(x) = p^{\alpha}a_dx^d + a_{d-1}x^{d-1} + a_{d-2}x^{d-2} + \cdots + a_2x^2 + a_1x + a_0
+			\]
+			and let an arbitrary annihilating polynomial matching our assumptions be written as
+			\[
+				g(x) = p^{\alpha+\beta}b_{d+q}x^{d+q} + b_{d+q-1}x^{d+q-1} + b_{d+q-2}x^{d+q-2} + \cdots + b_2x^2 + b_1x + b_0
+			\]
+			Multiplying $f(x)$ by $p^{\beta}b_{d+q}a_d^{-1}x^q$ makes its leading term equal to the leading term in $g(x)$:
+			\[
+				p^{\beta}b_{d+q}a_d^{-1}x^qf(x) = p^{\alpha+\beta}b_{d+q}x^{d+q} + p^{\beta}b_{d+q}a_d^{-1}x^q(a_{d-1}x^{d-1} + a_{d-2}x^{d-2} + \cdots + a_1x + a_0)
+			\]
+			Therefore, there exists some polynomial $r(x)$ with degree less than $d+q$ such that
+			\[
+				p^{\beta}b_{d+q}a_d^{-1}x^qf(x) + r(x) = g(x)
+			\]
+			Also, since $f(x)$ and $g(x)$ are annihilating polynomials, $r(x)$ must also be an annihilating polynomial since
+			\begin{center}
+				\begin{tabular}{crclclc}
+							   & $p^{\beta}b_{d+q}a_d^{-1}x^qf(A)\vec{v}$ & $+$ & $r(A)\vec{v}$ & $=$ & $g(A)\vec{v}$ & $\mod{p^k}$ \\
+					$\implies$ &                                $\vec{0}$ & $+$ & $r(A)\vec{v}$ & $=$ & $\vec{0}$     & $\mod{p^k}$
+				\end{tabular}
+			\end{center}
+		\end{proposition}
+		
+		\begin{proposition}{Modulo $p^k$, a maximum of one polynomial per degree is needed as a generator for a vector's ideal of annihilating polynomials---namely, a 
+		polynomial with the fewest factors of $p$ on its leading term's coefficient.}
+			\label{prop:oneGenPerDegree}
+			Assume we're given an annihilating polynomial $q(x)$ of degree $n$ with the fewest number of factors of $p$ on its leading term's coefficient (when compared to 
+			all other degree $n$ annihilating polynomials), say $p^{\alpha}$. Proposition \ref{sec:AP}.\ref{prop:splitBiggerPoly} then says that any other annihilating 
+			polynomial $s(x)$ of degree $n$ with at least a factor of $p^\alpha$ on its leading term's coefficient can be written as
+			\[
+				s(x) = aq(x) + r(x)
+			\]
+			where $a \in \mathds{Z}_{p^k}$ and where $r(x)$ is at most an $n-1$ degree annihilating polynomial. Therefore, any polynomial of degree $n$ can be written as 
+			the sum of a scaled $q(x)$ and a smaller degree annihilating polynomial, meaning $q(x)$ is the only degree $n$ polynomial needed as a generator for the ideal of
+			annihilating polynomials.
+		\end{proposition}
+		
+		\begin{proposition}{Let $q(x)$ be an annihilating polynomial for some vector of degree $n$ with a factor of $p^\alpha$ in its leading term's coefficient. Any 
+		annihilating polynomial of degree $n+1$ with at least a factor of $p^\alpha$ in its leading term's coefficient can't be a generator for the ideal of annihilating 
+		polynomials for the given vector.}
+			\label{prop:sameFactorHigherPoly}
+			Let
+			\[
+				q(x) = a_np^\alpha x^n + \sum_{i\,=\,0}^{n-1} a_ix^i
+			\]
+			with $a_n$ being invertible, and let
+			\[
+				s(x) = b_{n+1}p^\alpha x^{n+1} + \sum_{i\,=\,0}^{n} b_ix^i
+			\]
+			be an arbitrary annihilating polynomial for our vector with degree $n+1$ that has at least a factor of $p^\alpha$ in its leading term's coefficient. By 
+			proposition \ref{sec:AP}.\ref{prop:splitBiggerPoly}, we can write $s(x)$ as
+			\[
+				s(x) = b_{n+1}a_n^{-1}xq(x) + r(x)
+			\]
+			with $r(x)$ an annihilating polynomial for the vector of degree at most $n$. Since $q(x)$ and $r(x)$ are both degree $n$ annihilating polynomials, they must be
+			generated by polynomials in the ideal of annihilating polynomials with at most degree $n$. Therefore, $s(x)$ cannot possibly be a generator for the ideal since
+			it can be represented as the sum of annihilating polynomials that are generated by generators with at most degree $n$.
+		\end{proposition}
+		
+		Proposition \ref{sec:AP}.\ref{prop:sameFactorHigherPoly} shows that each new higher-degree generator we find for the ideal of annihilating polynomials of some 
+		vector must have a lesser number of factors of $p$ on its leading term's coefficient. Otherwise, it can't possibly be a new generator.
+		
+		Before we continue, we must define a mapping which will prove useful in the next proposition. Define 
+		$\phi_n : \mathds{Z}_{p^k}[X] \rightarrow p^n\mathds{Z}_{p^{k+n}}[X]$ as $\phi_n(f(x)) = p^nf(x)$. This mapping is injective since
+		\begin{center}
+			\begin{tabular}{ccccl}
+						   & $\phi_n(f(x))$      & $\equiv$ & $\phi_n(g(x))$ & $\mod{p^{k+n}}$ \\
+				$\implies$ & $p^nf(x)$           & $\equiv$ & $p^ng(x)$      & $\mod{p^{k+n}}$ \\
+				$\implies$ & $p^nf(x) - p^ng(x)$ & $\equiv$ & $0$            & $\mod{p^{k+n}}$ \\
+				$\implies$ & $p^n(f(x) - g(x))$  & $\equiv$ & $0$            & $\mod{p^{k+n}}$ \\
+				$\implies$ & $f(x) - g(x)$       & $\equiv$ & $0$            & $\mod{p^k}$     \\
+				$\implies$ & $f(x)$              & $\equiv$ & $g(x)$         & $\mod{p^k}$
+			\end{tabular}
+		\end{center}
+		
+		The mapping is also surjective since for each $p^ng(x) \in p^n\mathds{Z}_{p^{k+n}}[X]$, there exists a $g(x) \in \mathds{Z}_{p^k}[X]$ such that 
+		$\phi_n(g(x)) = p^ng(x) \bmod{p^{k+n}}$. Therefore, $\phi_n$ is an isomorphism between $\mathds{Z}_{p^k}[X]$ and $p^n\mathds{Z}_{p^{k+n}}[X]$.
+		
+		\begin{proposition}{Given a vector $\vec{v} \in \mathds{Z}_{p^k}^{L}$ and a matrix $A \in \mathds{Z}^{L \times L}$, if the minimal annihilating polynomial of 
+		$\vec{v}$ has degree $d$, then the smallest degree annihilating polynomials for $\vec{v} \bmod{p^k}$ will always be of degree $d$.}
+			\label{prop:smallestAnnihDegree}
+			First, we'll show that the degree of any annihilating polynomial for $\vec{v} \bmod{p^k}$ must have a degree of at least $d$. Assume that there exists some 
+			nonzero annihilating polynomial $f(x) \bmod{p^k}$ with degree less than $d$. There are two cases to consider.
+			
+			\emph{Case 1 - At least one term in $f(x)$ does not have a factor of $p$ in its coefficient.} In this case, we can make use of the fact that congruences mod 
+			$p^k$ must also hold mod $p$. Since one term has no factors of $p$, $f(x)$ will reduce modulo $p$ to a 
+			nonzero polynomial. Therefore,
+			\[
+				f(A)\vec{v} \equiv \vec{0} \mod{p^k} \implies f(A)\vec{v} \equiv \vec{0} \mod{p}
+			\]
+			This isn't possible since all nonzero annihilating polynomials mod $p$ must be polynomial multiples of the minimal polynomial, and the degree of $f(x)$ is too 
+			low to be such a multiple.
+			
+			\emph{Case 2 - All terms in $f(x)$ have at least one factor of $p$ in their coefficients.} In this case, we can use the $\phi_n$ isomorphism to "unembed" the 
+			polynomial into some lower modulus. Symbolically, if $p^\alpha g(x) = f(x)$, where $g(x)$ has no factors of $p$ in at least one of its coefficients, and 
+			$z(x) = 0$, then
+			\begin{center}
+				\begin{tabular}{crcll}
+							   &                     $p^\alpha g(A)\vec{v}$ & $\equiv$ & $\vec{0}$                         & $\mod{p^k}$            \\
+					$\implies$ &                     $p^\alpha g(A)\vec{v}$ & $\equiv$ & $z(A)\vec{v}$                     & $\mod{p^k}$            \\
+					$\implies$ & $\phi_{\alpha}^{-1}(p^\alpha g(A))\vec{v}$ & $\equiv$ & $\phi_{\alpha}^{-1}(z(A))\vec{v}$ & $\mod{p^k}$            \\
+					$\implies$ &                              $g(A)\vec{v}$ & $\equiv$ & $z(A)\vec{v}$                     & $\mod{p^{k - \alpha}}$ \\
+					$\implies$ &                              $g(A)\vec{v}$ & $\equiv$ & $\vec{0}$                         & $\mod{p^{k - \alpha}}$
+				\end{tabular}
+			\end{center}
+			The last implication puts us back in case 1, so
+			\[
+				g(A)\vec{v} \equiv \vec{0} \mod{p^{k - \alpha}} \implies g(A)\vec{v} \equiv \vec{0} \mod{p}
+			\]
+			As with case 1, this isn't possible since all nonzero annihilating polynomials mod $p$ must be polynomial multiples of the minimal polynomial, and the degree 
+			of $g(x)$ is too low to be such a multiple.
+			
+			Both cases lead to a contradiction, meaning our assumption that such a $f(x)$ exists is false. Therefore, there is no nonzero annihilating polynomial mod $p^k$ 
+			with degree less than $d$.
+			
+			Next, we'll show that there will always exist an annihilating polynomial mod $p^k$ with a degree of $d$. Let the minimal annihilating polynomial of $\vec{v}$ mod
+			$p$ be denoted as $m(x)$. Then
+			\[
+				m(A)\vec{v} \equiv \vec{0} \mod{p}
+			\]
+			Using the $\phi_n$ isomorphism, we can embed this relation to higher power moduli. The above relation becomes
+			\[
+				p^{k-1}m(A)\vec{v} \equiv \vec{0} \mod{p^k}
+			\]
+			meaning the polynomial $p^{k-1}m(x)$ is an annihilating polynomial of degree $d$ modulo $p^k$. Since all annihilating polynomials must have a degree of at least $
+			d$, this means the smallest degree annihilating polynomials modulo $p^k$ will always have a degree of $d$.
+		\end{proposition}
+		
+		Proposition \ref{sec:AP}.\ref{prop:smallestAnnihDegree} shows that, when looking for generators for ideals of annihilating polynomials modulo $p^k$, we don't need to
+		look through polynomials of degree less than the relevant vector's minimal polynomial modulo $p$.
+		
+	\section{Predicting Generators}
+		\label{sec:PG}
+		Consider an arbitrary vector $\vec{v} \in \mathds{Z}_{p^k}^L$ and an arbitrary matrix $A \in \mathds{Z}^{L \times L}$. It turns out that the relationship between the
+		vectors $\vec{v},\, A\vec{v},\, A^2\vec{v},\,$ etc., determines how many generators are needed for a particular vector's ideal of annihilating polynomials. The 
+		following propositions will shed light on this.
+		
+		\begin{proposition}{If and only if $p^jA^n\vec{v}$, $0 \leq j < k$, nonnegative $n \in \mathds{Z}$, can be represented as a linear combination of the vectors 
+		$\vec{v},\, A\vec{v},\, A^2\vec{v},\, \cdots,\, A^{n-1}\vec{v}$, then there will exist an annihilating polynomial for $\vec{v}$ of degree $n$ with the coefficient 
+		on its leading term having a factor of $p^j$.}
+			\label{prop:annihPolyExistence}
+			First, we'll show $p^jA^n\vec{v}$ having a linear combination representation leads to an annihilating polynomial existing.
+			
+			Let
+			\[
+				p^jA^n\vec{v} \equiv \sum_{i\,=\,0}^{n-1} a_iA^i\vec{v}
+			\]
+			for constants $a_i \in \mathds{Z}_{p^k}$. Then
+			\[
+				p^jA^n\vec{v} - \sum_{i\,=\,0}^{n-1} a_iA^i\vec{v} \equiv \vec{0}
+			\]
+			and so
+			\[
+				f(x) = p^jx^n - \sum_{i\,=\,0}^{n-1} a_ix^i
+			\]
+			is an annihilating polynomial of degree $n$ for $\vec{v}$ with a factor of $p^j$ on the coefficient of its leading term.
+			
+			Next, we'll show the annihilating polynomial existing leads to the linear combination representation for $p^jA^n\vec{v}$.
+			
+			Let 
+			\[
+				f(x) = p^jx^n - \sum_{i\,=\,0}^{n-1} a_ix^i
+			\]
+			be an annihilating polynomial for $\vec{v}$. Then
+			\[
+				f(A)\vec{v} = p^jA^n\vec{v} - \left(\sum_{i\,=\,0}^{n-1} a_iA^i \right)\vec{v} \equiv \vec{0}
+			\]
+			and so
+			\[
+				p^jA^n\vec{v} \equiv \sum_{i\,=\,0}^{n-1} a_iA^i\vec{v}
+			\]
+			so $p^jA^n\vec{v}$ can be written as a linear combination of the vectors $\vec{v}$, $A\vec{v}$, $A^2\vec{v}$, $\cdots$, $A^{n-1}\vec{v}$.
+		\end{proposition}
+		
+		Note that if $\alpha p^jA^n\vec{v}$ can be represented as a linear combination, with $\alpha$ being invertible, then $p^jA^n\vec{v}$ can also be represented as a 
+		linear combination (and vice versa) since $\alpha^{-1}$ can simply be multiplied to remove the constant. Therefore, we only need to concern ourselves with the 
+		representations of prime-power multiples of iterations of $\vec{v}$ when applying proposition \ref{sec:PG}.\ref{prop:annihPolyExistence}.
+		%Before we make use of proposition 2.1, it's important to establish...
+		Proposition \ref{sec:PG}.\ref{prop:annihPolyExistence} proves especially useful in predicting the ideal generators for a vector's annihilating polynomials when 
+		lifting said vector to a higher-power modulus. First, though, it's important to establish some notation that'll help us work with prime-power multiples of a 
+		particular vector.
+		
+		For an arbitrary vector $\vec{v} \in \mathds{Z}_{p^k}^{L}$ and an arbitrary matrix $A \in \mathds{Z}^{L \times L}$, let $p^{j_n}$ represent the smallest power of $p$
+		such that 
+		\[
+			p^{j_n}A^n\vec{v} \in \vecspan{\{\vec{v},\, A\vec{v},\, A^2\vec{v},\, \cdots,\, A^{n-1}\vec{v}\}}
+		\]
+		and let $P_{\vec{v}} = [j_0,\, j_1,\, j_2,\, \cdots]$ be an ordered list of the exponents of each $p^{j_n}$ (in order of increasing $n$). If no such $p^{j_n}$ exists 
+		for a given $n$, then set $j_n$ as DNE in $P_{\vec{v}}$.
+		
+		\begin{proposition}{Let $j_m$ represent the $m$-th element of $P_{\vec{v}}$ for some $\vec{v} \in \mathds{Z}_{p^k}^L$ and some $A \in \mathds{Z}^{L \times L}$. 
+		If $j_m$ exists, then $j_{m+1} \leq j_m$.}
+			\label{prop:monotonicP}
+			If $j_m$ exists, then we have
+			\[
+				p^{j_m}A^m\vec{v} \in \vecspan{\{\vec{v},\, A\vec{v},\, A^2\vec{v},\, \cdots,\, A^{m-1}\vec{v}\}}
+			\]
+			By proposition \ref{sec:PG}.\ref{prop:annihPolyExistence}, an annihilating polynomial of degree $m$ exists with a factor of $p^{j_m}$ in the leading term's 
+			coefficient. Denote it as
+			\[
+				f(x) = p^{j_m}x^m + \sum_{i\,=\,0}^{m-1} a_ix^i
+			\]
+			for constants $a_i \in \mathds{Z}_{p^k}$. $f(x)$ is an annihilating polynomial for $\vec{v}$, so
+			\[
+				f(A)\vec{v} \equiv \vec{0}
+			\]
+			Then
+			\[
+				Af(A)\vec{v} \equiv \vec{0}
+			\]
+			which implies
+			\[
+				xf(x) = p^{j_m}x^{m+1} + \sum_{i\,=\,0}^{m-1} a_ix^{i+1}
+			\]
+			is also an annihilating polynomial of $\vec{v}$. By proposition 2.1, this implies
+			\[
+				p^{j_m}A^{m+1}\vec{v} \in \vecspan{\{\vec{v},\, A\vec{v},\, A^2\vec{v},\, \cdots,\, A^m\vec{v}\}}
+			\]
+			So then the value of $j_{m+1}$ must be at most the value of $j_m$.
+		\end{proposition}
+		
+		Proposition \ref{sec:PG}.\ref{prop:monotonicP} shows that the sequence of all existing elements in $P_{\vec{v}}$ is nonincreasing. 
+		
+		Finally, we have enough to describe a general process for finding all the generators of a vector's ideal of annihilating polynomials.
+		
+		First, generate $P_{\vec{v}}$ for your given vector $\vec{v} \in \mathds{Z}_{p^k}^L$. Let $j_n$ index the $n$-th element of $P_{\vec{v}}$. Next, find the first 
+		value in $P_{\vec{v}}$ that exists. By proposition \ref{sec:AP}.\ref{prop:smallestAnnihDegree}, this should occur at $j_d$, where $d$ is the degree of the minimal 
+		annihilating polynomial of $\vec{v}$. Then, proposition \ref{sec:PG}.\ref{prop:annihPolyExistence} guarantees that, using the expression for $p^{j_d}A^d\vec{v}$ 
+		written as a linear combination of the terms $A^0\vec{v}$ to $A^{d-1}\vec{v}$, an annihilating polynomial of degree $d$ can be formed. Since $p^{j_d}$ is the least 
+		number of factors of $p$ needed to multiply $A^d\vec{v}$ by in order to find its linear combination in terms of the other iterations of $\vec{v}$, we can be sure 
+		that no annihilating polynomials exist of degree $d$ with less factors of $p$ on its leading term's coefficient.
+		
+		Proposition \ref{sec:AP}.\ref{prop:oneGenPerDegree} tells us that we only need one generator per degree, so we can safely start looking for higher-degree 
+		annihilating polynomials once we find one of a particular degree. Repeatedly applying proposition \ref{sec:AP}.\ref{prop:sameFactorHigherPoly}, we see that any 
+		higher-degree generator must have less factors of $p$ on its leading term than all the generators that came before it. This can only occur for degrees where the 
+		corresponding value in the sequence $P_{\vec{v}}$ decreases. Therefore, via proposition \ref{sec:PG}.\ref{prop:annihPolyExistence}, if $j_n$ represents a value in 
+		$P_{\vec{v}}$ that's smaller than all the values that came before it in the sequence, then an annihilating polynomial of degree $n$ can be formed in the same manner 
+		as above, and this polynomial will serve as a generator for the ideal. This same logic can be applied repeatedly to find all generators.
+		
+		Once we find a $j_i$ where $j_i = 0$, that'll mark the last generator needed since having no factors of $p$ on a leading term's coefficient is the lowest number of 
+		factors of $p$ possible; the entries of $P_{\vec{v}}$ can't continue to decrease after this. $P_{\vec{v}}$ must eventually have a value of zero somewhere in its 
+		sequence since by proposition \ref{sec:PG}.\ref{prop:monotonicP}, $P_{\vec{v}}$ is nonincreasing, and eventually, any vector $\vec{v}$ will fall into a cycle, 
+		meaning for some powers of $A$, we'll have
+		\[
+			A^x\vec{v} \equiv A^y\vec{v}, \quad x,y \in \mathds{Z}^+ \cup \{0\}, \quad y < x
+		\]
+		and so $A^x\vec{v} \in \vecspan{A^y\vec{v}}$, meaning $j_x = 0$. This is enough to show a last generator will always exist.
+		
+		This process can be implemented fairly easily into computer software to find the generators of a vector's ideal of annihilating polynomials. This process is much
+		faster than manually checking every possible polynomial to see if it's annihilating; all this process requires is iterating the vector $\vec{v}$ to obtain its
+		iterations, then using matrix row reduction with these vectors to find how to write each relevant vector iteration (or a prime-power multiple of it) in terms of the
+		other vectors.
+		
+		This method of finding generators for an ideal of annihilating polynomials has some interesting implications.
+		
+		\begin{proposition}{Modulo $p^k$, the maximum number of generators for the ideal of annihilating polynomials of a vector $\vec{v}$ is $k$.}	
+			\label{prop:maxGens}
+			Via proposition \ref{sec:AP}.\ref{prop:sameFactorHigherPoly}, we know that if a generator exists of degree $d$, then any generators with degree $> d$ must have 
+			a lesser factor of $p$ on its leading term's coefficient. Therefore, the maximum number of new generators we can find is the maximum number of numbers we can 
+			list where the number of factors of $p$ decreases with each term. Modulo $p^k$, the maximum number of terms in such a sequence is $k$.
+		\end{proposition}
+		
+	\section{Miscellaneous}
+		\label{sec:M}
+		It is very much possible for a vector modulo $p^k$ to have more than one generator for its ideal of annihilating polynomials (as we've seen), though it's also
+		possible for it to have \emph{only} one. If, for a vector $\vec{v} \in \mathds{Z}_{p^k}^L$, $P_{\vec{v}}$ were to look something like
+		\[
+			P_{\vec{v}} = [\DNE,\, \DNE,\, \cdots,\, \DNE,\, 0,\, 0,\, 0,\, \cdots]
+		\]
+		then the vector $\vec{v}$ would have only one generator. In such a case, we can make use of tools previously reserved only for when the modulus is prime. 
+		
+		\begin{proposition}{At least one generator for a vector's ideal of annihilating polynomials must be monic.}
+			\label{prop:monicExistence}
+			For any vector $\vec{v} \in \mathds{Z}_{p^k}^L$ and a given $A \in \mathds{Z}^{L \times L}$, $\vec{v}$ is guaranteed to eventually fall into a cycle under 
+			iteration by $A$ (since there are a finite number of vectors in $\mathds{Z}_{p^k}^L$). Therefore, for some nonnegative $c,f \in \mathds{Z}$, $c > f$, we have that
+			\[
+				A^c\vec{v} \equiv A^f\vec{v}
+			\]
+			and so
+			\[
+				A^c\vec{v} - A^f\vec{v} \equiv \vec{0}
+			\]
+			which means the polynomial $g(x) = x^c - x^f$ is an annihilating polynomial for $\vec{v}$. No sum of polynomials with factors of $p$ in their leading terms' 
+			coefficients could ever construct such a polynomial since polynomials with invertible leading term coefficients would be needed to create the $x^c$ term. 
+			Therefore, a monic annihilating polynomial is always guaranteed as one of the generators in a vector's ideal of annihilating polynomials.
+		\end{proposition}
+		
+		Proposition \ref{sec:M}.\ref{prop:monicExistence} is straightforward, maybe even obvious, yet it allows for a very strong tool to be used that was previously only
+		applied to when the modulus is prime. If a vector has only one generator in its ideal of annihilating polynomials, then proposition 
+		\ref{sec:M}.\ref{prop:monicExistence} guarantees that the generator is monic. This allows for the \emph{order} of the generator to be found (as defined in 
+		\citet{Patterson2008}). As such, the Minimal Polynomial Theorem outlined in \citet{Patterson2008} can be applied to vectors whose ideal of annihilating polynomials 
+		has only a single generator. Nowhere in the proof does it make use of the fact that the arithmetic is being done modulo a prime. It relies on two facts: that 
+		the ideal of annihilating polynomials is principal, and that the order of the ideal's generator can be calculated. As long as the vector's ideal of annihilating 
+		polynomials has a single generator, these two facts hold.
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+\end{document}

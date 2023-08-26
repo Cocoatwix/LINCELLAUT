@@ -1,1 +1,0 @@
-The LaTeX files in this directory are ideas that I've had at various times during my research assistantship. They may or may not be of any use!
