@@ -1,0 +1,153 @@
+
+\documentclass[12pt, a4paper, reqno]{amsart}
+\usepackage[T1]{fontenc}
+
+\usepackage[parfill]{parskip}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{natbib}
+
+\usepackage{dsfont}
+
+%Comments?
+\usepackage{verbatim}
+
+%Defining all the stuff we need for proofs
+\usepackage{amsthm}
+%\newtheorem{prop}{Proposition}[section]
+\newtheorem{prop}{Proposition}
+\renewcommand\qedsymbol{\textbf{QED}}
+
+\newcommand\notdivides{\ \nmid \ }
+\newcommand\divides{\ | \ }
+\newcommand\lcm[1]{\textup{lcm}(#1)}
+
+\begin{document}
+	\begin{prop}
+		\label{prop:extensionOrder}
+		Let $p$ be an odd prime and $K$ be an algebraic extension field of $\mathds{Z}_p$. Then, the multiplicative order of any element in $K^*$---the set of invertible 
+		elements in $K$---divides $p^d - 1$, where $d$ is the degree of the extension.
+	\end{prop}
+	\begin{proof}
+		The finite abelian group $K^*$ under the operation of multiplication modulo $p$ has $p^d - 1$ elements, and thus its order is $p^d - 1$. By Lagrange's Theorem, 
+		any element in $K^*$ must have a multiplicative order dividing the group's order. %(https://mathworld.wolfram.com/LagrangesGroupTheorem.html)
+	\end{proof}
+	\begin{comment}
+	\begin{proof}
+		Let $A \in \mathds{Z}_{p}^{d \times d}$ be an invertible matrix whose minimal polynomial is $f(x)$. Such matrices can always be created by finding the companion 
+		matrix to $f(x)$ and performing a change of basis on it using an arbitrary matrix whose determinant is one. Note that $A$ will satisfy the same algebraic properties
+		as $\alpha$, mainly that $f(A) \equiv 0 \bmod{p}$. Therefore, the multiplicative order of $A$ will be equal to the multiplicative order of $\alpha$. (CAN I JUSTIFY 
+		THIS MORE FORMALLY?)
+		
+		Since the minimal polynomial of $A$ is irreducible, the minimal annihilating polynomial under $A$ for all nonzero vectors $\vec{v} \in \mathds{Z}_p^d$ 
+		is $f(x)$ (since the minimal annihilating polynomial under $A$ for any vector in a vector space must divide the minimal polynomial of $A$). By the Minimal 
+		Polynomial Theorem (via \citet{Patterson2008}), this means every nonzero vector in $\mathds{Z}_p^d$ has the same multiplicative order. Let $r$ be this 
+		multiplicative order. There are $p^d - 1$ nonzero vectors in $\mathds{Z}_p^d$, and so for all nonzero vectors to have the same multiplicative order under an 
+		invertible matrix, $r \divides p^d - 1$.
+		
+		As well, since $A^{r}\vec{v} \equiv \vec{v} \bmod{p}$ for all vectors $\vec{v} \in \mathds{Z}_p^d$, this means $A^r \equiv I \bmod{p}$ since the identity is the
+		only matrix with this property. Thus, the multiplicative order of $A$ is $r$, and so the multiplicative order of $\alpha$ is also $r$. Therefore, the multiplicative
+		order of $\alpha$ divides $p^d - 1$.
+	\end{proof}
+	\end{comment}
+	
+	\begin{prop}
+		\label{prop:staticMinPoly}
+		Let $p$ be an odd prime, $L$ a positive integer, $A \in \mathds{Z}_p^{L \times L}$, and $K$ an algebraic extension field of $\mathds{Z}_p$. Then the minimal 
+		polynomial of $A$ over $K$ is the same as over $\mathds{Z}_p$.
+	\end{prop}
+	\begin{proof}
+		We see that $\mathds{Z}_p \subseteq K$, and so the minimal polynomial of $A$ over $K$ must contain the same factors as the minimal polynomial over $\mathds{Z}_p$ if 
+		it is to annihilate all vectors in $K^{L \times L}$. As well, the minimal polynomial of $A$ over $\mathds{Z}_p$ is still an annihilating polynomial for $A$ over 
+		$K$, so no additional factors are needed for the minimal polynomial of $A$ over $K$.
+	\end{proof}
+	
+	\begin{prop}
+		Let $p$ be an odd prime and $L$ be a positive integer. Let $A \in \mathds{Z}_{p}^{L \times L}$ be an invertible matrix modulo $p$. Then the multiplicative order of
+		$A$ is a multiple of $p$ if and only if the minimal polynomial of $A$ has a repeated factor.
+	\end{prop}
+	\begin{proof}
+		Let the minimal polynomial of $A$ be represented as $m(x)$, and let $K$ be the splitting field of $m(x)$ over $\mathds{Z}_p$. By proposition 
+		\ref{prop:staticMinPoly}, the minimal polynomial of $A$ remains the same over any algebraic extension field of $\mathds{Z}_p$. Thus, we 
+		can work over the field $K$ to deduce properties of $m(x)$.
+		
+		As well, let the multiplicative order of $A$ be denoted as $\omega$.
+		
+		First, we'll show that $m(x)$ having a repeated factor implies that $\omega$ is a multiple of $p$.
+		
+		Assume that $m(x)$ has a repeated factor. If $m(x)$ has a repeated factor over $\mathds{Z}_p$, then it'll surely have a repeated linear factor over $K$, so we can 
+		write $m(x) = (x - c)^2\mu(x)$, where $c \in K$ and $\mu(x) \in K[X]$.
+		
+		Now, note that, since $\omega$ is the multiplicative order of $A$, and since $A$ is invertible, we have that
+		\begin{alignat*}{2}
+			         & A^\omega \equiv I & \mod{p} \\
+			\implies & A^\omega - I \equiv 0 & \mod{p}.
+		\end{alignat*}
+		This shows $x^\omega - 1$ is an annihilating polynomial for $A$. Over $\mathds{Z}_p$, all annihilating polynomials for $A$ are polynomial multiples of the minimal
+		polynomial of $A$ (since $\mathds{Z}_p[X]$ is a principle ideal domain), so we have that
+		\begin{alignat*}{3}
+			         & m(x) & \divides & x^\omega - 1      \\
+			\implies & (x - c)^2 & \divides & x^\omega - 1 \\
+			\implies & (x - c) & \divides & x^\omega - 1.
+		\end{alignat*}
+		Dividing $(x^\omega - 1)$ by $(x - c)$, we see that
+		\begin{equation}
+			\label{eq:firstDivision}
+			\frac{x^\omega - 1}{x - c} = \sum_{i\,=\,0}^{\omega-1} c^ix^{\omega - 1 - i}.
+		\end{equation}
+		For this division to make sense, multiplying the constant term of the quotient by the constant term of the divisor should result in the constant term in the
+		dividend. Therefore,
+		\begin{align*}
+			         & c^{\omega - 1}(-c) \equiv -1 \mod{p} \\
+			\implies & c^\omega \equiv 1 \mod{p}.
+		\end{align*}
+		For this congruence to hold, $\omega$ must be a multiple of the multiplicative order of $c$. Since $c$ is an eigenvalue for $A$, this will always hold true.
+		
+		We also know that $(x - c)^2 \divides (x^\omega - 1)$, so $(x - c)$ should divide the quotient obtained in equation \ref{eq:firstDivision}:
+		\[
+			\frac{\sum_{i\,=\,0}^{\omega-1} c^ix^{\omega - 1 - i}}{x - c} = \sum_{i\,=\,0}^{\omega - 2} (i+1)c^ix^{\omega - 2 - i}.
+		\]
+		Again, multiplying the constant term of the quotient by the constant term of the divisor should result in the constant term in the dividend. Therefore,
+		\begin{alignat*}{4}
+			         & (\omega - 1)c^{\omega - 2}(-c) \ & \equiv & \ c^{\omega - 1} & \mod{p} \\
+			\implies & (1 - \omega)c^{\omega - 1}     \ & \equiv & \ c^{\omega - 1} & \mod{p} \\
+		\end{alignat*}
+		The only way this congruence can be satisfied is if $(1 - \omega) \equiv 1 \bmod{p}$, which implies that $\omega \equiv 0 \bmod{p}$. So, $\omega$ is a multiple of 
+		$p$.
+		
+		Now, we'll show that $\omega$ being a multiple of $p$ implies $m(x)$ has a repeated factor.
+		
+		To show this, assume otherwise. That is, assume that $p \divides \omega$, but $m(x)$ does \emph{not} have a repeated factor. Thus, over the splitting field $K$, 
+		$m(x)$ can be written as
+		\[
+			m(x) = \prod_{i\,=\,0}^{\ell} (x - c_i), \quad c_i \in K,
+		\]
+		for some positive integer $\ell$, where for all $0 \leq i \leq \ell$ and $0 \leq j \leq \ell$, $i \neq j \implies c_i \not\equiv c_j \bmod{p}$. Then, by the Primary 
+		Decomposition Theorem, this means the vector space $K^L$ can be decomposed as
+		\[
+			K^L = \bigoplus_{i\,=\,0}^{\ell} \ker(A - c_iI)
+		\]
+		where each kernel contains at least one nonzero vector. Due to the fact that each factor in $m(x)$ is linear, each kernel corresponds to an 
+		eigenspace with an eigenvalue given by one of $c_i$. Let $E_i = \ker(A - c_iI)$.
+		
+		Now, by proposition 3 of \citet{Mendivil2012}, there exists at least one nonzero vector from each of $E_i$ we can sum together to obtain a maximal vector, a vector 
+		whose multiplicative order equals $\omega$. From this same proposition, we know $\omega = \lcm{\omega_1, \omega_2, \cdots, \omega_\ell}$ where $\omega_i$ is the 
+		maximum multiplicative order possible for a vector in $E_i$. 
+		
+		Since each $E_i$ is an eigenspace, each $\omega_i$ is simply the multiplicative order of the eigenvalue of $E_i$. If the eigenvalue of $E_i$ is in $\mathds{Z}_p$, 
+		then by Fermat's Little Theorem we know the multiplicative order of the eigenvalue must divide $p-1$, so $\omega_i$ must also divide $p-1$. Otherwise, if the 
+		eigenvalue of $E_i$ is in $K \setminus \mathds{Z}_p$, then proposition \ref{prop:extensionOrder} tells us that the multiplicative order of the eigenvalue must 
+		divide $p^d - 1$, where $d$ is the degree of the particular extension where the eigenvalue is obtained from. So, $\omega_i$ must also divide $p^d - 1$.
+		
+		Importantly, we see that $p$ doesn't divide $p-1$ nor $p^d-1$. This means that $\omega = \lcm{\omega_1, \omega_2, \cdots, \omega_\ell}$ cannot be a multiple of $p$. 
+		This is a contradiction since $p \divides \omega$. Thus, our assumption that $m(x)$ doesn't contain a repeated factor must be incorrect.
+		
+	\end{proof}
+	
+	\bibliographystyle{plainnat}
+	\bibliography{../refs.bib}
+\end{document}

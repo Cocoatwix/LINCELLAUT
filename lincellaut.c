@@ -19,6 +19,7 @@ stackoverflow.com/questions/1190870
 #include <limits.h> //So I can get the maximum integer
 
 #include <time.h> //For seeding random numbers 
+#include <math.h>
 
 #include "headers/helper.h"
 #include "headers/bigint.h" //Arbitrary precision
@@ -111,6 +112,11 @@ int main(int argc, char* argv[])
 	bool haveOutputPrefix = FALSE; //Says whether we have a prefix to add to any output file paths
 	char* outputprefix = malloc(MAXSTRLEN*sizeof(char));
 	outputprefix[0] = '\0';
+	
+	//Creating some default BigIntTPs that are used often
+	int oneArr[1] = {1};
+	BigIntTP zero = empty_BigIntT(1);
+	BigIntTP one  = new_BigIntT(oneArr, 1);
 	
 	BigIntMatrixTP UPDATEMATRIX  = NULL;
 	BigIntMatrixTP INITIALMATRIX = NULL;
@@ -616,9 +622,6 @@ int main(int argc, char* argv[])
 			BigIntMatrixTP currVect;
 			CycleInfoTP theCycle = NULL;
 			
-			int oneArr[1] = {1};
-			BigIntTP one;
-			
 			if (argc == 2)
 			{
 				printf("No characteristic polynomial was given on command line.\n");
@@ -628,7 +631,6 @@ int main(int argc, char* argv[])
 			
 			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			
-			one = new_BigIntT(oneArr, 1);
 			negOne = empty_BigIntT(1);
 			subtract_BigIntT(bigMod, one, negOne);
 			negOnePoly = new_BigPolyT(&negOne, 1);
@@ -737,7 +739,6 @@ int main(int argc, char* argv[])
 			
 			
 			bigMod = free_BigIntT(bigMod);
-			one    = free_BigIntT(one);
 			negOne = free_BigIntT(negOne);
 			
 			currMatElements  = free_BigIntT_array(currMatElements, big_rows(currMat), big_rows(currMat));
@@ -773,7 +774,6 @@ int main(int argc, char* argv[])
 			int tempVectCount = 0;
 			BigIntTP tempIndex1;
 			BigIntTP tempIndex2;
-			BigIntTP zero;
 			
 			BigIntMatrixTP  A;
 			BigIntMatrixTP  currVect;
@@ -786,7 +786,6 @@ int main(int argc, char* argv[])
 			bool foundNewOrbit = FALSE;
 			
 			int oneArr[1] = {1};
-			BigIntTP one;
 			BigIntTP temp;
 			BigIntTP temp2;
 			BigIntTP temp3;
@@ -870,14 +869,12 @@ int main(int argc, char* argv[])
 			currVectElements = new_BigIntT_array(big_rows(A), 1);
 			currVect = new_BigIntMatrixT(big_rows(A), 1);
 			
-			one = new_BigIntT(oneArr, 1);
 			temp = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
 			temp3 = empty_BigIntT(1);
 			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
 			
-			zero = empty_BigIntT(1);
 			tempIndex1 = empty_BigIntT(1);
 			tempIndex2 = empty_BigIntT(1);
 			
@@ -1069,7 +1066,6 @@ int main(int argc, char* argv[])
 			
 			currVectElements = free_BigIntT_array(currVectElements, big_rows(A), 1);
 			currVect = free_BigIntMatrixT(currVect);
-			one = free_BigIntT(one);
 			
 			tempVect  = free_BigIntMatrixT(tempVect);
 			tempVect2 = free_BigIntMatrixT(tempVect);
@@ -1130,8 +1126,6 @@ int main(int argc, char* argv[])
 			
 			bool moreVectors = TRUE;
 			
-			int oneArr[1] = {1};
-			BigIntTP one;
 			BigIntTP temp;
 			BigIntTP temp2;
 			
@@ -1192,7 +1186,6 @@ int main(int argc, char* argv[])
 						fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
 				}
 				
-			one   = new_BigIntT(oneArr, 1);
 			temp  = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
 			
@@ -1545,7 +1538,6 @@ int main(int argc, char* argv[])
 			FREE(foundReps);
 			FREE(numOfCyclesFound);
 			
-			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
 			bigMod = free_BigIntT(bigMod);
@@ -1560,8 +1552,6 @@ int main(int argc, char* argv[])
 			PROHIBIT_UNIXFLAGS
 			
 			BigIntTP bigMod;
-			BigIntTP one;
-			int oneArr[1] = {1};
 			
 			BigIntMatrixTP A;
 			BigIntMatrixTP currVect;
@@ -1649,8 +1639,6 @@ int main(int argc, char* argv[])
 			currVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
-			
-			one = new_BigIntT(oneArr, 1);
 			
 			//Increment through all possible vectors
 			printf("Matrix:\n");
@@ -1795,7 +1783,6 @@ int main(int argc, char* argv[])
 			FREE(foundCycleLengths);
 			
 			bigMod = free_BigIntT(bigMod);
-			one    = free_BigIntT(one);
 			
 			theCycle = free_CycleInfoT(theCycle);
 
@@ -1837,8 +1824,6 @@ int main(int argc, char* argv[])
 			int sizeOfCatalogue = 0;
 			
 			BigIntTP bigMod;
-			BigIntTP one;
-			int oneArr[1] = {1};
 			
 			bool isNewRoot;
 			bool foundGrowth; //If we've found the place where a vector grows from
@@ -1896,8 +1881,6 @@ int main(int argc, char* argv[])
 			outputFile = fopen(fileName, "a");
 			if (outputFile == NULL)
 				fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
-			
-			one = new_BigIntT(oneArr, 1);
 			
 			branches    = malloc(sizeof(BigIntMatrixTP*));
 			branches[0] = malloc(3*sizeof(BigIntMatrixTP));
@@ -2188,7 +2171,6 @@ int main(int argc, char* argv[])
 			
 			free_BigIntT_array(currVectElements, big_rows(A), 1);
 			
-			one    = free_BigIntT(one);
 			bigMod = free_BigIntT(bigMod);
 			
 			A         = free_BigIntMatrixT(A);
@@ -2215,9 +2197,6 @@ int main(int argc, char* argv[])
 			
 			bool calcMinPoly = FALSE; //Do we calculate min polys for each cyclespace?
 			bool newCyclespace;
-			
-			int numArr[1] = {1};
-			BigIntTP one;
 			
 			BigIntTP bigMod;
 			BigIntTP** currVectElements;
@@ -2278,7 +2257,6 @@ int main(int argc, char* argv[])
 			printi(bigMod);
 			printf("\n\n");
 			
-			one = new_BigIntT(numArr, 1);
 			currVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect  = new_BigIntMatrixT(big_rows(A), 1);
 			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
@@ -2368,7 +2346,6 @@ int main(int argc, char* argv[])
 				FREE(minpolys);
 			}
 			
-			one    = free_BigIntT(one);
 			bigMod = free_BigIntT(bigMod);
 			
 			charaPoly   = free_BigPolyT(charaPoly);
@@ -2555,8 +2532,6 @@ int main(int argc, char* argv[])
 			
 			BigIntTP maxMod;  //What's the largest modulus we should search to?
 			BigIntTP currMod; //What modulus are we currently checking?
-			BigIntTP one;
-			BigIntTP zero;
 			
 			BigIntTP temp;
 			BigIntTP temp2;
@@ -2585,7 +2560,6 @@ int main(int argc, char* argv[])
 			int nextIteration; //Used to keep track of which iteration of the matrix to check next
 			int cycleLCM = 1;
 			
-			int oneArr[] = {1};
 			int start[] = {2}; //Modulus to start with
 			
 			int* colVectCycles; //Holds the different cycle lengths 
@@ -2659,8 +2633,6 @@ int main(int argc, char* argv[])
 				}
 			}
 			
-			one   = new_BigIntT(oneArr, 1);
-			zero  = empty_BigIntT(1);
 			temp  = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
 			
@@ -2863,8 +2835,6 @@ int main(int argc, char* argv[])
 			//Freeing memory
 			maxMod  = free_BigIntT(maxMod);
 			currMod = free_BigIntT(currMod);
-			one     = free_BigIntT(one);
-			zero    = free_BigIntT(zero);
 			temp    = free_BigIntT(temp);
 			temp2   = free_BigIntT(temp2);
 			
@@ -2952,8 +2922,6 @@ int main(int argc, char* argv[])
 			PROHIBIT_UNIXFLAGS
 			
 			BigIntTP   bigMod;
-			BigIntTP   zero;
-			BigIntTP   one;
 			BigIntTP   temp;
 			BigIntTP   temp2;
 			BigIntTP   prevLastElement; //Holds the last element in the matrix; for debugging
@@ -2972,7 +2940,6 @@ int main(int argc, char* argv[])
 			
 			int matSize;
 			int indexCounter; //For freeing and printing
-			int oneArr[1] = {1};
 			
 			//Holds the cycle length of each matrix and vector we check
 			int cycleLengthArray[1] = {0};
@@ -3055,8 +3022,6 @@ int main(int argc, char* argv[])
 			currMatElements  = new_BigIntT_array(matSize, matSize);
 			currVectElements = new_BigIntT_array(matSize, 1);
 			
-			zero = empty_BigIntT(1);
-			one  = new_BigIntT(oneArr, 1);
 			currMat  = new_BigIntMatrixT(matSize, matSize);
 			zeroMat  = new_BigIntMatrixT(matSize, matSize);
 			currVect = new_BigIntMatrixT(matSize, 1);
@@ -3283,8 +3248,6 @@ int main(int argc, char* argv[])
 			theCycle = free_CycleInfoT(theCycle);
 			
 			bigMod = free_BigIntT(bigMod);
-			zero   = free_BigIntT(zero);
-			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
 			
@@ -3305,9 +3268,6 @@ int main(int argc, char* argv[])
 			bool checkedAllVects = FALSE;
 			BigIntTP bigMod;
 			BigIntTP temp;
-			
-			int numArr[1] = {1};
-			BigIntTP one = new_BigIntT(numArr, 1);
 			
 			BigIntTP** currVectElements;
 			BigIntTP*  vectPropElements; //The coeffs for the min poly we're testing on currVect
@@ -3339,7 +3299,6 @@ int main(int argc, char* argv[])
 			{
 				fprintf(stderr, "Unable to read matrix from config file.\n");
 				bigMod = free_BigIntT(bigMod);
-				one    = free_BigIntT(one);
 				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
@@ -3348,7 +3307,6 @@ int main(int argc, char* argv[])
 			{
 				fprintf(stderr, "Given update matrix isn't square.\n");
 				bigMod = free_BigIntT(bigMod);
-				one    = free_BigIntT(one);
 				bigF   = free_BigIntMatrixT(bigF);
 				returnvalue = EXIT_SUCCESS;
 				goto FREE_VARIABLES;
@@ -3502,7 +3460,6 @@ int main(int argc, char* argv[])
 				vectPropElements[i] = free_BigIntT(vectPropElements[i]);
 			FREE(vectPropElements);
 			
-			one    = free_BigIntT(one);
 			temp   = free_BigIntT(temp);
 			bigMod = free_BigIntT(bigMod);
 			
@@ -3527,10 +3484,9 @@ int main(int argc, char* argv[])
 			bool foundMonic = FALSE; //Once we've found a monic annihilating polynomial, it's over
 			
 			int deg;
-			int numArr[1] = {1};
 
 			int modPower;
-			BigIntTP baseMod, bigMod, zero, one, temp, temp2;
+			BigIntTP baseMod, bigMod, temp, temp2;
 			
 			BigIntTP* tempPolyCoeffs        = NULL;
 			BigIntTP* tempPolyRewriteCoeffs = NULL; //Used for rewriting polynomial term expressions using iterateRowValueMat
@@ -3603,8 +3559,6 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			one    = new_BigIntT(numArr, 1);
-			zero   = empty_BigIntT(1);
 			temp   = empty_BigIntT(1);
 			temp2  = empty_BigIntT(1);
 			
@@ -3938,8 +3892,6 @@ int main(int argc, char* argv[])
 				*/
 			}
 			
-			one    = free_BigIntT(one);
-			zero   = free_BigIntT(zero);
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
 			bigMod = free_BigIntT(bigMod);
@@ -3986,9 +3938,6 @@ int main(int argc, char* argv[])
 			BigIntTP temp  = NULL;
 			BigIntTP temp2 = NULL;
 			BigIntTP temp3 = NULL;
-			BigIntTP zero  = NULL;
-			BigIntTP one   = NULL;
-			int oneArr[1]  = {1};
 			
 			BigIntMatrixTP A;
 			BigPolyTP charaPoly;
@@ -4048,8 +3997,6 @@ int main(int argc, char* argv[])
 				temp  = empty_BigIntT(1);
 				temp2 = empty_BigIntT(1);
 				temp3 = empty_BigIntT(1);
-				zero  = empty_BigIntT(1);
-				one   = new_BigIntT(oneArr, 1);
 				OGcoeffs = extract_coefficients(charaPoly);
 				
 				//Now we need to divide by the leading coefficient, if it exists
@@ -4138,8 +4085,6 @@ int main(int argc, char* argv[])
 			temp   = free_BigIntT(temp);
 			temp2  = free_BigIntT(temp2);
 			temp3  = free_BigIntT(temp3);
-			zero   = free_BigIntT(zero);
-			one    = free_BigIntT(one);
 			
 			A = free_BigIntMatrixT(A);
 			
@@ -4155,14 +4100,11 @@ int main(int argc, char* argv[])
 			PROHIBIT_UNIXFLAGS
 			
 			int counter;
-			int oneArr[1] = {1};
 			
 			BigIntTP mod  = NULL;
 			BigIntTP step = NULL; //How much to step in each direction in the matrix space
 			BigIntTP temp;
 			BigIntTP temp2;
-			BigIntTP zero;
-			BigIntTP one;
 			
 			//Holds the BigIntTPs describing what matrix we're
 			// currently testing
@@ -4217,8 +4159,6 @@ int main(int argc, char* argv[])
 			
 			temp  = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
-			zero  = empty_BigIntT(1);
-			one   = new_BigIntT(oneArr, 1);
 			
 			theCycle = new_CycleInfoT();
 			
@@ -4279,8 +4219,6 @@ int main(int argc, char* argv[])
 			step  = free_BigIntT(step);
 			temp  = free_BigIntT(temp);
 			temp2 = free_BigIntT(temp2);
-			zero  = free_BigIntT(zero);
-			one   = free_BigIntT(one);
 			
 			charaPoly = free_BigPolyT(charaPoly);
 			
@@ -4297,7 +4235,6 @@ int main(int argc, char* argv[])
 		{
 			PROHIBIT_UNIXFLAGS
 			
-			int justOne[] = {1};
 			BigIntTP bigModulus;
 			
 			int* cycleLengths = malloc(30*sizeof(int));
@@ -4312,8 +4249,6 @@ int main(int argc, char* argv[])
 			BigIntTP currY = empty_BigIntT(1);
 			
 			BigIntTP tempInt = empty_BigIntT(1);
-			BigIntTP one     = new_BigIntT(justOne, 1);
-			BigIntTP zero    = empty_BigIntT(1);
 			
 			int ok;
 			
@@ -4399,8 +4334,6 @@ int main(int argc, char* argv[])
 			currY     = free_BigIntT(currY);
 			
 			tempInt  = free_BigIntT(tempInt);
-			one      = free_BigIntT(one);
-			zero     = free_BigIntT(zero);
 			
 			FREE(cycleLengths);
 		}
@@ -4414,15 +4347,11 @@ int main(int argc, char* argv[])
 			
 			int hundred[] = {100};
 			int oneArr[]  = {001};
-			int zeroArr[] = {000};
 			int start[]   = {001}; //Where the program starts counting
 			//int debugCounter = 0; //For debugging
 			BigIntTP upperbound;
 			BigIntTP currNum = new_BigIntT(start, 1);
 			BigIntTP counter = new_BigIntT(oneArr, 1);
-			
-			BigIntTP zero    = new_BigIntT(zeroArr, 1);
-			BigIntTP one     = new_BigIntT(oneArr, 1);
 			
 			BigIntTP fibA    = new_BigIntT(oneArr, 1);
 			BigIntTP fibB    = empty_BigIntT(1);
@@ -4487,8 +4416,6 @@ int main(int argc, char* argv[])
 			upperbound = free_BigIntT(upperbound);
 			currNum    = free_BigIntT(currNum);
 			counter    = free_BigIntT(counter); 
-			zero       = free_BigIntT(zero);
-			one        = free_BigIntT(one);
 			fibA       = free_BigIntT(fibA);
 			fibB       = free_BigIntT(fibB);
 			fibTemp    = free_BigIntT(fibTemp);
@@ -5184,7 +5111,6 @@ int main(int argc, char* argv[])
 			
 			BigIntTP bigMod;
 			BigIntTP bigModPower; //Holds bigMod^maxpower
-			BigIntTP one;
 			BigIntTP temp;
 			BigIntTP temp2;
 			
@@ -5307,7 +5233,6 @@ int main(int argc, char* argv[])
 					fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
 			}
 			
-			one   = new_BigIntT(oneArr, 1);
 			temp  = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
 			
@@ -5705,7 +5630,6 @@ int main(int argc, char* argv[])
 			
 			bigMod      = free_BigIntT(bigMod);
 			bigModPower = free_BigIntT(bigModPower);
-			one         = free_BigIntT(one);
 			temp        = free_BigIntT(temp);
 			temp2       = free_BigIntT(temp2);
 			
@@ -5796,7 +5720,6 @@ int main(int argc, char* argv[])
 			int currPower = 1; //For keeping track of which layer of moduli we're on
 			
 			int numArr[1] = {1};
-			BigIntTP one;
 			const int numOfTemps = 3;
 			BigIntTP temps[numOfTemps];
 			
@@ -6023,7 +5946,6 @@ int main(int argc, char* argv[])
 			orbitRepsCount = calloc(maxPower, sizeof(int));
 			orbitRepsCycleLengths = calloc(maxPower, sizeof(int*));
 			
-			one = new_BigIntT(numArr, 1);
 			for (int i = 0; i < numOfTempVects; i += 1)
 				tempVects[i] = new_BigIntMatrixT(big_rows(initialA), 1);
 			
@@ -6687,7 +6609,6 @@ int main(int argc, char* argv[])
 			}
 			FREE(oargv);
 			
-			one     = free_BigIntT(one);
 			baseMod = free_BigIntT(baseMod);
 			
 			progressNumerator   = free_BigIntT(progressNumerator);
@@ -6767,8 +6688,6 @@ int main(int argc, char* argv[])
 			BigPolyTP remainderPoly = NULL;
 			BigPolyTP zeroPoly      = NULL;
 			
-			int oneArr[1] = {1};
-			BigIntTP one;
 			BigIntTP temp;
 			BigIntTP coeffCompare;
 			
@@ -6882,7 +6801,6 @@ int main(int argc, char* argv[])
 				
 			}
 			
-			one  = new_BigIntT(oneArr, 1);
 			temp = empty_BigIntT(1);
 			
 			zeroPoly = constant_BigPolyT(temp);
@@ -7145,7 +7063,6 @@ int main(int argc, char* argv[])
 			currMatElements = free_BigIntT_array(currMatElements, matSize, matSize);
 			currMat = free_BigIntMatrixT(currMat);
 			
-			one          = free_BigIntT(one);
 			temp         = free_BigIntT(temp);
 			currMod      = free_BigIntT(currMod);
 			//coeffCompare = free_BigIntT(coeffCompare);
@@ -7235,7 +7152,7 @@ int main(int argc, char* argv[])
 			BigIntTP* deltaComboCoeffs;
 			int matrixIndexCounter = 0; //Helps to index matrices as 1D arrays
 			
-			BigIntTP one, zero, temp, temp2, temp3, temp4, negOne;
+			BigIntTP temp, temp2, temp3, temp4, negOne;
 			
 			//Tells the algorithm how many levels deep UPDATEMATRIX is as a 
 			// stable lift (is it the product of a previous stable lift computation?)
@@ -7287,8 +7204,6 @@ int main(int argc, char* argv[])
 			if (debugMode)
 				printf("stableLiftLevel: %d\n", stableLiftLevel);
 			
-			one    = new_BigIntT(numArr, 1);
-			zero   = empty_BigIntT(1);
 			negOne = empty_BigIntT(1);
 			
 			//Construct moduli values
@@ -7605,8 +7520,6 @@ is not zero, then we haven't found a stable lift yet.\n");
 			
 			FOUNDSTABLELIFT:
 			
-			one         = free_BigIntT(one);
-			zero        = free_BigIntT(zero);
 			temp        = free_BigIntT(temp);
 			temp2       = free_BigIntT(temp2);
 			temp3       = free_BigIntT(temp3);
@@ -7736,6 +7649,308 @@ is not zero, then we haven't found a stable lift yet.\n");
 			
 			coolPoly = free_BigPolyT(coolPoly);
 		}
+		
+		//If we want to look through all the CCMs of a particular matrix
+		// of the form C_{ab -> a} to see if all vectors that get scaled
+		// by a factor of b have a cycle length that divides a
+		else if (!strcmp(argv[1], "2024"))
+		{
+			PROHIBIT_UNIXFLAGS
+			
+			//Allows us to take some computational shortcuts if specified as TRUE
+			bool primeModulusUsed = FALSE;
+			
+			//For formatting cycle lengths below
+			bool dividesSomething = FALSE;
+			
+			//Disabling this tool for now
+			/*
+			if (argc > 2)
+				if (!strcmp(argv[2], "TRUE"))
+					primeModulusUsed = TRUE;
+			*/
+			
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
+			{
+				fprintf(stderr, "Given update matrix isn't square.\n");
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
+			}
+			
+			BigIntTP bigMod;
+			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
+			
+			//For making CCMs
+			BigIntTP bigFrom = empty_BigIntT(1);
+			BigIntTP bigTo   = empty_BigIntT(1);
+			
+			//Used when primeModulusUsed and we want to check
+			// multiples of a particular vector
+			BigIntTP tempNum   = empty_BigIntT(1);
+			BigIntTP tempCount = empty_BigIntT(1);
+			
+			//Used for holding all the cycle lengths we find
+			int  cycleLengthsLength = 0;
+			int* cycleLengths = NULL;
+			bool newCycleLength = FALSE;
+			
+			//These are for storing the cycle lengths of each vector
+			// as we collect all the possible cycle lengths. These
+			// prevent us from having to recompute it on-the-fly
+			// when we start playing around with the CCMs
+			//Note: this probably makes this particular program
+			// impossible to scale to larger LCAs. It also won't
+			// work when primeModulusUsed.
+			int  currentVector = 0;
+			int  howManyVectors = pow(modulus, big_rows(UPDATEMATRIX));
+			int* cycleLengthsForVectors = malloc(howManyVectors*sizeof(int));
+			
+			//Used for holding all cycle lengths which are
+			// multiples of the corresponding cycle lengths at the
+			// index of the subarray
+			//
+			//...there's some interesting stuff going on with
+			// this particular part of the program. This
+			// sometimes speeds up the program drastically,
+			// while other times it grinds it to a halt.
+			// What's the difference between these cases?
+			int*  cycleLengthMultiplesLengths = NULL;
+			int** cycleLengthMultiples        = NULL;
+			
+			BigIntMatrixTP A        = UPDATEMATRIX; //Just a pointer to make my life easier
+			CycleInfoTP    theCycle = new_CycleInfoT();
+			
+			//Vector used for finding cycle lengths of the matrix
+			BigIntMatrixTP newVect      = new_BigIntMatrixT(big_rows(A), 1);
+			BigIntTP**     newVectArr   = new_BigIntT_array(big_rows(A), 1);
+			BigIntMatrixTP tempVect     = new_BigIntMatrixT(big_rows(A), 1);
+			BigIntMatrixTP tempVect2    = new_BigIntMatrixT(big_rows(A), 1);
+			BigIntMatrixTP tempVectMult = new_BigIntMatrixT(big_rows(A), 1); //Used for checking multiples of knownVects
+			
+			BigIntMatrixTP newCCM = new_BigIntMatrixT(big_rows(A), big_cols(A));
+			int beta = 0; // from/to
+			
+			//We'll store a list of vectors here that we've already found the cycle
+			// lengths of. If the newVect we're considering is a multiple of one
+			// of the vectors in this list, we don't need to run Floyd's Cycle
+			// Detection Algorithm on it since we know the cycle length will be
+			// the same as the multiple we've already found. This is only true
+			// if the modulus is prime, hence the flag.
+			int knownVectsLength = 0;
+			BigIntMatrixTP* knownVects = NULL;
+			
+			//Let's find all the vectors' cycle lengths for this matrix
+			do
+			{
+				set_big_matrix(newVect, newVectArr);
+				newCycleLength = TRUE;
+				
+				//First, let's make sure we haven't already found the cycle length
+				// to a multiple of newVect
+				if (primeModulusUsed)
+				{
+					for (int i = 0; i < knownVectsLength; i += 1)
+					{
+						//Check every multiple of knownVects[i], from tempCount = 1 to tempCount = bigMod - 1
+						copy_BigIntT(one, tempCount);
+						clear_BigIntMatrixT(tempVectMult);
+						
+						while (compare_BigIntT(tempCount, bigMod) < 0)
+						{
+							//Get next multiple of knownVects[i]
+							big_mat_add(tempVectMult, knownVects[i], tempVect);
+							modbm(tempVect, bigMod);
+							copy_BigIntMatrixT(tempVect, tempVectMult);
+							
+							//If newVect is a multiple of a vector we've already searched
+							if (compare_BigIntMatrixT(tempVectMult, newVect))
+							{
+								newCycleLength = FALSE;
+								break;
+							}
+							
+							add_BigIntT(tempCount, one, tempNum);
+							copy_BigIntT(tempNum, tempCount);
+						}
+						
+						if (!newCycleLength)
+							break;
+					}
+				}
+				
+				//If we get here, we should run Floyd's Cycle Detecting Algorithm
+				// like normal to see if we've found a vector with a new cycle length
+				if (newCycleLength)
+				{
+					if (primeModulusUsed)
+					{
+						//Add new vector to knownVects
+						knownVectsLength += 1;
+						knownVects = realloc(knownVects, knownVectsLength*sizeof(BigIntMatrixTP));
+						knownVects[knownVectsLength-1] = new_BigIntMatrixT(big_rows(A), 1);
+						copy_BigIntMatrixT(newVect, knownVects[knownVectsLength-1]);
+					}
+					
+					big_floyd(A, newVect, bigMod, &theCycle);
+					cycleLengthsForVectors[currentVector] = omega(theCycle);
+					currentVector += 1;
+					
+					//Check to see if we already have the found cycle length
+					if ((cycleLengthsLength != 0))
+					{
+						for (int i = 0; i < cycleLengthsLength; i += 1)
+							if (cycleLengths[i] == omega(theCycle))
+							{
+								newCycleLength = FALSE;
+								break;
+							}
+					}
+				}
+				
+				//If we get here, it means we've actually found a new cycle length
+				if (newCycleLength)
+				{
+					//Add new cycle length to our list
+					cycleLengthsLength += 1;
+					cycleLengths = realloc(cycleLengths, cycleLengthsLength*sizeof(int));
+					cycleLengths[cycleLengthsLength-1] = omega(theCycle);
+				}
+			}
+			while (!increment_BigIntT_array(newVectArr, big_rows(A), 1, one, bigMod));
+			
+			//We've now found all the cycle lengths for the given LCA.
+			//Let's prepare to create the CCMs of the form we care about.
+			cycleLengthMultiples        = calloc(cycleLengthsLength, sizeof(int*));
+			cycleLengthMultiplesLengths = calloc(cycleLengthsLength, sizeof(int));
+			
+			//Let's print out all the cycle lengths we found
+			//As well, we need to compute which CCMs fit the form C_{ab -> a}.
+			// We do this by checking which cycle lengths are multiples of
+			// each other.
+			printf("Found cycle lengths:\n");
+			for (int i = 0; i < cycleLengthsLength; i += 1)
+			{
+				dividesSomething = FALSE;
+				printf("%d ", cycleLengths[i]);
+				
+				//Now, let's see which numbers in the list are such that
+				// the gcm of them and cycleLengths[i] > 1.
+				for (int j = 0; j < cycleLengthsLength; j += 1)
+				{
+					if ((i != j) && (cycleLengths[j] % cycleLengths[i] == 0))
+					{
+						//Record which number cycleLengths[i] divides
+						cycleLengthMultiplesLengths[i] += 1;
+						cycleLengthMultiples[i] = realloc(cycleLengthMultiples[i], 
+						                                  cycleLengthMultiplesLengths[i]*sizeof(int));
+						cycleLengthMultiples[i][cycleLengthMultiplesLengths[i]-1] = cycleLengths[j];
+						
+						//Command line formatting
+						if (!dividesSomething)
+							printf("| ");
+						else
+							printf(", ");
+						
+						dividesSomething = TRUE;
+						printf("%d", cycleLengths[j]);
+					}
+				}
+				printf("\n");
+			}
+			
+			if (primeModulusUsed)
+				printf("\nNumber of vectors in knownVects: %d\n", knownVectsLength);
+			
+			printf("\nCCMs:\n\n");
+			
+			//Now, we have everything we need to start making the CCMs
+			for (int to = 0; to < cycleLengthsLength; to += 1)
+			{
+				for (int from = 0; from < cycleLengthMultiplesLengths[to]; from += 1)
+				{
+					clear_BigIntMatrixT(newCCM);
+					
+					//FIX THIS IF I EVER WANT TO DEAL WITH REALLY BIG CYCLE LENGTHS
+					set_bunch(bigTo, 0, cycleLengths[to]);
+					set_bunch(bigFrom, 0, cycleLengthMultiples[to][from]);
+					ccm(A, newCCM, bigFrom, bigTo, bigMod);
+					
+					beta = (cycleLengthMultiples[to][from] / cycleLengths[to]) % modulus;
+					currentVector = 0;
+					
+					printf("\nC_{%d -> %d}\n", cycleLengthMultiples[to][from], cycleLengths[to]);
+					printbm(newCCM);
+					printf("Beta = %d\n\n", beta);
+					
+					//Now comes the fun part!
+					//For every vector in our module, check whether the CCM
+					// scales the vector by the factor difference between
+					// from and to. If it does, we then want to check whether 
+					// that vector originally had a cycle length that
+					// divided to.
+					
+					/* ~~ CURRENTLY, I'M IGNORING THE CASE WHERE BETA = 0 ~~ */
+					if (beta != 0)
+					{
+						do
+						{
+							set_big_matrix(newVect, newVectArr);
+							big_mat_mul(newCCM, newVect, tempVect);
+							modbm(tempVect, bigMod);
+							
+							//Check to see if tempVect = beta*newVect
+							clear_BigIntMatrixT(tempVectMult);
+							for (int i = 0; i < beta; i += 1)
+							{
+								big_mat_add(tempVectMult, newVect, tempVect2);
+								copy_BigIntMatrixT(tempVect2, tempVectMult);
+							}
+							modbm(tempVectMult, bigMod);
+							
+							if (compare_BigIntMatrixT(tempVectMult, tempVect))
+							{
+								printf("Vector ");
+								printbm_row(newVect);
+								printf(" gets scaled by %d by the CCM and has a cycle length of %d.\n", 
+								beta, cycleLengthsForVectors[currentVector]);
+							}
+							
+							currentVector += 1;
+						}
+						while(!increment_BigIntT_array(newVectArr, big_rows(A), 1, one, bigMod));
+					}
+				}
+			}
+			
+			//Freeing memory
+			FREE(cycleLengths);
+			
+			bigTo     = free_BigIntT(bigTo);
+			bigMod    = free_BigIntT(bigMod);  
+			bigFrom   = free_BigIntT(bigFrom);
+			tempNum   = free_BigIntT(tempNum);
+			tempCount = free_BigIntT(tempCount);
+			
+			newVect      = free_BigIntMatrixT(newVect);
+			tempVect     = free_BigIntMatrixT(tempVect);
+			tempVect2    = free_BigIntMatrixT(tempVect2);
+			theCycle     = free_CycleInfoT(theCycle);
+			tempVectMult = free_BigIntMatrixT(tempVectMult);
+			
+			newCCM = free_BigIntMatrixT(newCCM);
+			
+			newVectArr = free_BigIntT_array(newVectArr, big_rows(A), 1);
+			
+			for (int i = 0; i < knownVectsLength; i += 1)
+				knownVects[i] = free_BigIntMatrixT(knownVects[i]);
+			FREE(knownVects);
+			
+			for (int i = 0; i < cycleLengthsLength; i += 1)
+			{
+				FREE(cycleLengthMultiples[i]);
+			}
+			FREE(cycleLengthMultiplesLengths);
+		}
 	}
 
 	
@@ -7782,6 +7997,10 @@ is not zero, then we haven't found a stable lift yet.\n");
 	FREE(bigintmodstring);
 	FREE(resumemodstring);
 	FREE(outputprefix);
+	
+	one  = free_BigIntT(one);
+	zero = free_BigIntT(zero);
+	
 	UPDATEMATRIX  = free_BigIntMatrixT(UPDATEMATRIX);
 	INITIALMATRIX = free_BigIntMatrixT(INITIALMATRIX);
 	

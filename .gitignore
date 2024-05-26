@@ -2,8 +2,9 @@
 objects/*.o
 objects/*.so
 
-#Keep the executable out of the repo
+#Keep the executables out of the repo
 lincellaut
+extras/irreducible
 
 #We don't need specific data in the repo, either
 *.matrix

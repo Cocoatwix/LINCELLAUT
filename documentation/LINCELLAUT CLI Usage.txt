@@ -1,6 +1,6 @@
 To make certain tasks easier, LINCELLAUT comes with lincellaut.c which compiles to a program which can be run from the command line. Common linear algebra and LCA tasks were put into this program so that an entire program doesn't need to be created just to do some simple task. To see how to use lincellaut on the CLI, just run lincellaut on the CLI with no arguments. 
 
-The following is a list of all the currently available tasks within lincellaut.c. Square brackets around an argument denote optional arguments. Note that an asterisk before the tool name specifies that "unix-like" command line arguments can be used, using key-value pairs in any order instead of positional arguments. For example, the following two calls to orbitmaps2 are equivalent:
+The following is a list of all the currently available tasks within lincellaut.c. Square brackets around an argument denote optional arguments. Note that an asterisk (*) before the tool name specifies that "unix-like" command line arguments can be used, using key-value pairs in any order instead of positional arguments. For example, the following two calls to orbitmaps2 are equivalent:
 
 lincellaut orbitmaps2 3 5 TRUE 
 
@@ -143,3 +143,6 @@ stablelift baseMod modPower: This tool allows the user to find a lift of a given
  - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
  
 2023 (TEMPORARY): This tool takes the initial matrix specified in the .config file and calculates a matrix representation of its cyclespace under the given update matrix (also specified in the .config file). This tool will most likely be merged with "vectpolys" in the future.
+
+2024 [prime] (TEMPORARY): This tool looks at all CCMs of the form C_{ab -> a} for a given matrix and checks whether all vectors that are eigenvectors for the CMM with eigenvalue b have cycle lengths that divide a.
+ - The optional argument "prime" specifies whether the modulus used is prime or not. If it is, then some computational shortcuts can be used to speed up the tool. Currently, it's unknown whether these shortcuts actually speed up the program or not. This argument expects TRUE or FALSE. The default value is FALSE.
