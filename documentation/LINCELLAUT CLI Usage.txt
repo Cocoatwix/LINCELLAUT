@@ -12,8 +12,14 @@ If the user attempts to use "unix-like" arguments with tools that don't support 
 iterate [iterations]: This tool allows you to take an initial matrix and iterate it by an update matrix multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
  - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. Using a negative integer will get LINCELLAUT to compute the inverse of the update matrix and iterate that the specified number of times (e.g. an iteration count of -3 will iterate the inverse matrix 3 times, if it exists).
 
-inverse [modulus]: This tool allows you to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
- - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
+inverse [modulus]: This tool allows the user to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
+ 
+factor [modulus]: This tool allows the user to factor the polynomial specified by the polynomial key in the .config file under the specified modulus. Note that the modulus given must be a prime number.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
+ 
+order [modulus] (UNFINISHED): This tool takes the polynomial specified by the polynomial key in the .config file and computes its order mod the given modulus. The order of a polynomial p(x) is the smallest natural number c such that p(x) divides x^c - 1.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
 
 chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.

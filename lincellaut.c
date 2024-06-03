@@ -1,6 +1,6 @@
 
 /* A simple program for calculating various things about linear
- *  cellular automaton.
+ *  cellular automata.
  *
  * Mar 27, 2022
  *
@@ -103,11 +103,12 @@ int main(int argc, char* argv[])
 	char* bigintmodstring = malloc(MAXSTRLEN*sizeof(char));
 	char* resumemodstring = malloc(MAXSTRLEN*sizeof(char));
 	
-	char* updatefilepath   = malloc(MAXSTRLEN*sizeof(char));
-	char* initialfilepath  = malloc(MAXSTRLEN*sizeof(char));
-	char* resumefilepath   = malloc(MAXSTRLEN*sizeof(char));
-	char* sentinelfilepath = malloc(MAXSTRLEN*sizeof(char));
-	char* iterfilepath     = malloc(MAXSTRLEN*sizeof(char));
+	char* updatefilepath     = malloc(MAXSTRLEN*sizeof(char));
+	char* initialfilepath    = malloc(MAXSTRLEN*sizeof(char));
+	char* resumefilepath     = malloc(MAXSTRLEN*sizeof(char));
+	char* sentinelfilepath   = malloc(MAXSTRLEN*sizeof(char));
+	char* polynomialfilepath = malloc(MAXSTRLEN*sizeof(char));
+	char* iterfilepath       = malloc(MAXSTRLEN*sizeof(char));
 	
 	bool haveOutputPrefix = FALSE; //Says whether we have a prefix to add to any output file paths
 	char* outputprefix = malloc(MAXSTRLEN*sizeof(char));
@@ -243,6 +244,16 @@ int main(int argc, char* argv[])
 				fprintf(stderr, "Unable to read sentinel matrix path from .config file. " \
 				"Continuing without setting a sentinel matrix...\n");
 				sentinelfilepath = NULL;
+			}
+		}
+		
+		else if (! strcmp(systemData, "polynomial"))
+		{
+			if (fscanf(system, "%s", polynomialfilepath) != 1)
+			{
+				fprintf(stderr, "Unable to read polynomial path from .config file. " \
+				"Continuing without setting a polynomial...\n");
+				polynomialfilepath = NULL;
 			}
 		}
 		
@@ -504,7 +515,7 @@ int main(int argc, char* argv[])
 			}
 			else
 			{
-				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
 			}
 			
 			Finv = big_inverse(F, bigMod);
@@ -528,6 +539,174 @@ int main(int argc, char* argv[])
 			Finv = free_BigIntMatrixT(Finv);
 			
 			bigMod = free_BigIntT(bigMod);
+		}
+		
+		
+		//Factor the given polynomial from the .config file
+		else if (!strcmp(argv[1], "factor"))
+		{
+			PROHIBIT_UNIXFLAGS
+			
+			BigIntTP bigMod;
+			
+			//If the user specified a modulus at the command line
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
+			}
+			
+			BigPolyTP P = read_BigPolyT(polynomialfilepath);
+			if (P == NULL)
+			{
+				fprintf(stderr, "Unable to read polynomial at %s.\n", polynomialfilepath);
+				bigMod = free_BigIntT(bigMod);
+				
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			//Now, let's factor the polynomial
+			BigFactorsTP factoredP = factor_BigPolyT(P, bigMod);
+			printf("Original: ");
+			printp(P);
+			printf("\nFactored mod ");
+			printi(bigMod);
+			printf(": ");
+			printpf(factoredP);
+			printf("\n");
+			
+			P = free_BigPolyT(P);
+			factoredP = free_BigFactorsT(factoredP);
+			bigMod = free_BigIntT(bigMod);
+		}
+		
+		
+		//Find the order of the given polynomial
+		else if (!strcmp(argv[1], "order"))
+		{
+			PROHIBIT_UNIXFLAGS
+			
+			int order = 0; //Holds the order of the polynomial
+			
+			BigIntTP bigMod, negOne;
+			BigIntTP* lambdaCoeffs;
+			
+			BigPolyTP P, unityPoly, negOnePoly, zeroPoly, lambdaPoly;
+			BigPolyTP tempPoly, quotientPoly, remainderPoly;
+			
+			BigFactorsTP factoredP;
+			BigPolyTP* coprimeFactors;
+			
+			//If the user specified a modulus at the command line
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
+			}
+			
+			P = read_BigPolyT(polynomialfilepath);
+			if (P == NULL)
+			{
+				fprintf(stderr, "Unable to read polynomial at %s.\n", polynomialfilepath);
+				bigMod = free_BigIntT(bigMod);
+				
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			//Initialise helper polynomials
+			tempPoly = empty_BigPolyT();
+			zeroPoly = constant_BigPolyT(zero);
+			quotientPoly = empty_BigPolyT();
+			remainderPoly = empty_BigPolyT();
+			
+			//These are for creating polynomials of the form x^c - 1
+			negOne = empty_BigIntT(1);
+			subtract_BigIntT(bigMod, one, negOne);
+			negOnePoly = constant_BigPolyT(negOne);
+			
+			lambdaCoeffs = malloc(2*sizeof(BigIntTP));
+			lambdaCoeffs[0] = zero;
+			lambdaCoeffs[1] = one;
+			lambdaPoly = new_BigPolyT(lambdaCoeffs, 2);
+			
+			//Create x^1 - c
+			lambdaCoeffs[0] = negOne;
+			unityPoly = new_BigPolyT(lambdaCoeffs, 2);
+			
+			//The order of a polynomial will be the lcm of the multiplicative orders
+			// of the algebraic objects defined by its factors... I think.
+			//So, let's factor the polynomial and get the multiplicative orders.
+			factoredP = factor_BigPolyT(P, bigMod);
+			coprimeFactors = extract_coprime_factors(factoredP);
+			
+			//TEST THIS WITH A POLYNOMIAL THAT HAS REPEATED ROOTS
+			printf("P: ");
+			printp(P);
+			printf("\nFactored P: ");
+			printpf(factoredP);
+			printf("\nCoprime factors of P: ");
+			for (int i = 0; i < count_unique_factors(factoredP); i += 1)
+			{
+				if (i != 0)
+					printf(", ");
+				printp(coprimeFactors[i]);
+			}
+			printf("\n");
+			
+			order += 1;
+			
+			/*
+			//Now, we loop until we find the order of the polynomial
+			for (order = 1; ; order += 1)
+			{
+				divide_BigPolyT(unityPoly, P, quotientPoly, remainderPoly, bigMod);
+				if (compare_BigPolyT(remainderPoly, zeroPoly) == 0)
+				{
+					printp(P);
+					printf(" mod ");
+					printi(bigMod);
+					printf(" has order %d.\n", order);
+					
+					break;
+				}
+				
+				//Create x^{c+1} - 1
+				multiply_BigPolyT(unityPoly, lambdaPoly, tempPoly);
+				add_BigPolyT(tempPoly, negOnePoly, unityPoly);
+				add_BigPolyT(unityPoly, lambdaPoly, tempPoly);
+				mod_BigPolyT(tempPoly, bigMod, unityPoly);
+				
+				if (order % 100 == 0)
+					printf("Current degree of unityPoly: %d\n", order);
+			}
+			*/
+			
+			FREE(lambdaCoeffs);
+			
+			negOne = free_BigIntT(negOne);
+			bigMod = free_BigIntT(bigMod);
+			
+			P = free_BigPolyT(P);
+			tempPoly = free_BigPolyT(tempPoly);
+			zeroPoly = free_BigPolyT(zeroPoly);
+			unityPoly = free_BigPolyT(unityPoly);
+			negOnePoly = free_BigPolyT(negOnePoly);
+			lambdaPoly = free_BigPolyT(lambdaPoly);
+			quotientPoly = free_BigPolyT(quotientPoly);
+			remainderPoly = free_BigPolyT(remainderPoly);
+			
+			for (int i = 0; i < count_unique_factors(factoredP); i += 1)
+				coprimeFactors[i] = free_BigPolyT(coprimeFactors[i]);
+			FREE(coprimeFactors);
+			factoredP = free_BigFactorsT(factoredP);
 		}
 		
 		
@@ -3186,7 +3365,7 @@ int main(int argc, char* argv[])
 						fprintf(outputFile, " (%d)\n", cycleLengthCounts[indexCounter-1]);
 						
 						fprintf(outputFile, "Chara poly: ");
-						fprintpf(outputFile, charaPolyFactors);
+						old_fprintpf(outputFile, charaPolyFactors);
 						fprintf(outputFile, "\n\n");
 						
 						//Saving file
@@ -7962,6 +8141,8 @@ is not zero, then we haven't found a stable lift yet.\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
@@ -7988,11 +8169,14 @@ is not zero, then we haven't found a stable lift yet.\n");
 	}
 	
 	//Freeing memory
+	//Maybe I should try and put all these variables in
+	// an array so I can free them with a for loop?
 	FREE_VARIABLES:
 	FREE(updatefilepath);
 	FREE(initialfilepath);
 	FREE(resumefilepath);
 	FREE(sentinelfilepath);
+	FREE(polynomialfilepath);
 	FREE(iterfilepath);
 	FREE(bigintmodstring);
 	FREE(resumemodstring);

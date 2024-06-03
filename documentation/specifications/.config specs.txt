@@ -32,6 +32,8 @@ resumeMod : This key specifies a modulus to resume computations at. Currently, i
 
 sentinel : This key specifies a file path where a "sentinel" matrix can be found in .matrix format. The .matrix extension should be included in the filename. This matrix is used to denote a particular stopping point for a computation over many matrices. For example, it's used with the orbitmaps2 tool to signify where computation of orbit maps should stop. This allows different chunks of the matrix space to be analysed using the same program on different processes. This key expects a string (no quotes around string).
 
+polynomial : This key specifies a file path where a polynomial to use within LINCELLAUT can be found in .polynomial format. The file extension should be included in the filename. This key expects a string (no quotes around the string).
+
 itername : This key specifies a filename for creating a .iteration file. The .iteration extension should be included in the filename. This file is created when write_iteration() is called. This key expects a string (no quotes around the string).
 
 quiet : This key specifies whether to run certain tools in a "quiet" mode, suppressing certain output. This key expects TRUE or FALSE as its value. If the value of this key is not specified in the .config file, its value is assumed to be FALSE.

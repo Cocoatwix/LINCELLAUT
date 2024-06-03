@@ -239,6 +239,65 @@ BigPolyTP new_BigPolyT(const BigIntTP* coefficients, int size)
 }
 
 
+BigPolyTP read_BigPolyT(const char* filepath)
+/** Reads a polynomial from a .polynomial file specified 
+    by filepath. Returns a pointer to the BigPolyT on
+	  success, NULL otherwise. */
+{
+	//This was copy-pasted from read_BigIntMatrixT() and
+	// changed to fit the BigPolyT datatype. Hopefully
+	// everything works!
+	
+	BigPolyTP P;
+	char* tempStr;
+	
+	FILE* polyFile = fopen(filepath, "r");
+	
+	if (polyFile == NULL)
+		return NULL;
+	
+	P = malloc(sizeof(BigPolyT));
+	
+	//Get size of the polynomial
+	if (fscanf(polyFile, "%d", &(P->size)) != 1)
+	{
+		fclose(polyFile);
+		free(P);
+		return NULL;
+	}
+	
+	//Make space for the polynomial's coefficients
+	P->coeffs = calloc((P->size), sizeof(BigIntTP));
+	
+	tempStr = malloc(100*sizeof(char));
+	
+	//Now, read the data
+	for (int elem = 0; elem < P->size; elem += 1)
+	{
+		if (fscanf(polyFile, "%100s", tempStr) != 1)
+		{
+			free(tempStr);
+			fclose(polyFile);
+			free_BigPolyT(P);
+			return NULL;
+		}
+		
+		//Actually store our coefficient
+		strtoBIT(tempStr, &(P->coeffs[elem]));
+	}
+	
+	if (fclose(polyFile) == EOF)
+	{
+		free(tempStr);
+		free_BigPolyT(P);
+		return NULL;
+	}
+	
+	free(tempStr);
+	return P;
+}
+
+
 BigPolyTP constant_BigPolyT(const BigIntTP constant)
 /** Creates a constant BigPolyTP, returns it. */
 {
@@ -1028,6 +1087,39 @@ BigPolyTP* extract_factors(const BigFactorsTP toExtract)
 }
 
 
+BigPolyTP* extract_coprime_factors(const BigFactorsTP toExtract)
+/** Same as extract_factors(), except repeated roots will be
+    multiplied together and stored in the array, rather than
+		listing all of them out separately. */
+{
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	BigIntTP temp = empty_BigIntT(1);
+	
+	BigPolyTP onePoly   = constant_BigPolyT(one);
+	BigPolyTP tempPoly  = empty_BigPolyT();
+	BigPolyTP* coprimeFactors = malloc(toExtract->size*sizeof(BigPolyTP));
+	
+	for (int i = 0; i < toExtract->size; i += 1)
+	{
+		//FIX THIS IN THE FUTURE
+		//THIS WILL BREAK IF THE EXPONENT IS TOO HIGH
+		set_bunch(temp, 0, toExtract->exponents[i]);
+		pow_BigPolyT(toExtract->factors[i], temp, tempPoly);
+		
+		coprimeFactors[i] = empty_BigPolyT();
+		copy_BigPolyT(tempPoly, coprimeFactors[i]);
+	}
+	
+	one = free_BigIntT(one);
+	temp = free_BigIntT(temp);
+	onePoly = free_BigPolyT(onePoly);
+	tempPoly  = free_BigPolyT(tempPoly);
+	
+	return coprimeFactors;
+}
+
+
 int count_factors(const BigFactorsTP f)
 /** Returns the number of factors in f, accounting for
     repeated roots. */
@@ -1037,6 +1129,25 @@ int count_factors(const BigFactorsTP f)
 		count += f->exponents[i];
 	
 	return count;
+}
+
+
+int count_unique_factors(const BigFactorsTP f)
+/** Returns the number of unique factors within f. */
+{
+	return f->size;
+}
+
+
+int collect_factors(BigFactorsTP f)
+/** Fixes any duplicate factors within f->factors.
+    Returns 1 on success, 0 otherwise. */
+{
+	fprintf(stderr, "collect_factors(");
+	fprintpf(stderr, f);
+	fprintf(stderr, ") within algebra.c has not been implemented.");
+	
+	return 0;
 }
 
 
@@ -1298,15 +1409,22 @@ void old_printpf(const BigPolyTP* factors)
 }
 
 
-void printpf(const BigFactorsTP f)
-/** Prints a BigFactorsT to stdout. */
+void fprintpf(FILE* stream, const BigFactorsTP f)
+/** Prints a BigFactorsT to the given file stream. */
 {
 	for (int i = 0; i < f->size; i += 1)
 	{
-		printf("(");
-		printp(f->factors[i]);
-		printf(")^%d", f->exponents[i]);
+		fprintf(stream, "(");
+		fprintp(stream, f->factors[i]);
+		fprintf(stream, ")^%d", f->exponents[i]);
 	}
+}
+
+
+void printpf(const BigFactorsTP f)
+/** Prints a BigFactorsT to stdout. */
+{
+	fprintpf(stdout, f);
 }
 
 
@@ -1538,7 +1656,7 @@ void printp(const BigPolyTP p)
 }
 
 
-void fprintpf(FILE* file, const BigPolyTP* factors)
+void old_fprintpf(FILE* file, const BigPolyTP* factors)
 /** Prints a factorised BigPolyT to stdout. */
 {
 	BigIntTP indexCounter;

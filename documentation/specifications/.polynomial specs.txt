@@ -1,0 +1,8 @@
+A .polynomial file specifies a polynomial expression for the program to use. The first line of the file specifies how many terms the polynomial needs, including zero terms. For example, the polynomial x^2 + 3 needs 3 terms: 3, 0x, and 1x^2. The second line lists the coefficients of the polynomial, ordered in ascending degree order.
+
+The following is a valid .polynomial format to specify the polynomial x^2 + 3:
+
+3
+3 0 1
+
+lincellaut.c makes no attempt at filling in missing coefficients or interpreting wrongly-formatted files. It's the user's responsibility to make sure the .polynomial file is formatted correctly.

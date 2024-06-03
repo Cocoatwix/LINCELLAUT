@@ -8,6 +8,7 @@ extras/irreducible
 
 #We don't need specific data in the repo, either
 *.matrix
+*.polynomial
 *.graph
 outputs/*
 

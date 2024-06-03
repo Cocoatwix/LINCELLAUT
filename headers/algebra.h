@@ -35,6 +35,11 @@ void* free_MultiVarExtT(void*);
     returns a pointer to it. */
 BigPolyTP new_BigPolyT(const BigIntTP*, int);
 
+/** Reads a polynomial from a .polynomial file specified 
+    by the path given. Returns a pointer to the BigPolyT on
+	success, NULL otherwise. */
+BigPolyTP read_BigPolyT(const char*);
+
 /** Creates a constant polynomial with the given BigIntTP
     as the constant term. Returns a pointer to the new
 	constant. */
@@ -142,9 +147,25 @@ int add_factor(BigFactorsTP, const BigPolyTP, int);
 	appear as many times as its exponent demands. */
 BigPolyTP* extract_factors(const BigFactorsTP);
 
+/** Same as extract_factors(), but repeated factors will be multipled
+    together into one factor. */
+BigPolyTP* extract_coprime_factors(const BigFactorsTP);
+
 /** Returns the number of factors in the given BigFactorsTP,
     taking into account repeated roots. */
 int count_factors(const BigFactorsTP);
+
+/** Counts the number of unique factors in the given
+    BigFactorsTP. This function assumes there are no
+	duplicate factors within the BigFactorsTP factors
+	array. */
+int count_unique_factors(const BigFactorsTP);
+
+/** If any repeated factors are treated as different factors
+    within the BigFactorsTP factors array, this function will
+	collect them into a single factor. Returns 1 on success, 
+	0 otherwise. */
+int collect_factors(BigFactorsTP);
 
 /** Compares two BigPolyTPs to see if they're equal (have the
     same coefficients). 
@@ -189,9 +210,10 @@ void fprintmve(FILE*, const MultiVarExtTP);
 void printmve_row(const void*);
 void fprintmve_row(FILE*, const void*);
 
-/** Same as printp and printpf, but it prints to a file stream. */
+/** Same as printp, printpf, and old_fprintpf but it prints to a file stream. */
 void fprintp(FILE*, const BigPolyTP);
-void fprintpf(FILE*, const BigPolyTP*);
+void fprintpf(FILE*, const BigFactorsTP);
+void old_fprintpf(FILE*, const BigPolyTP*);
 
 /** Adds the first two polynomials, stores the sum in the third.
     This function assumes all polynomials passed have been
@@ -240,10 +262,9 @@ int diff_BigPolyT(const BigPolyTP, BigPolyTP);
 		how many factors are in the pointer. */
 BigPolyTP* old_factor_BigPolyT(const BigPolyTP, const BigIntTP);
 
-/** Factors polynomials under the given modulus. 
-	Returns an array of BigPolyTs, each one representing an
-	irreducible factor of the given polynomial. The first BigPolyT 
-	in the array is a constant telling how many factors are in the array. */
+/** Factors polynomials under the given modulus (assumed prime). 
+	Returns a BigFactorsTP representing the factorisation
+	of the given polynomial.*/
 BigFactorsTP factor_BigPolyT(const BigPolyTP, const BigIntTP);
 
 /** Adds two MultiVarExtTs together, assuming they have the same size
