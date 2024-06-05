@@ -590,7 +590,8 @@ int main(int argc, char* argv[])
 		{
 			PROHIBIT_UNIXFLAGS
 			
-			int order = 0; //Holds the order of the polynomial
+			int order = 1;     //Holds the total order of the polynomial
+			int tempOrder = 0; //Holds the order of the polynomial extension
 			
 			BigIntTP bigMod, negOne;
 			BigIntTP* lambdaCoeffs;
@@ -600,6 +601,14 @@ int main(int argc, char* argv[])
 			
 			BigFactorsTP factoredP;
 			BigPolyTP* coprimeFactors;
+			
+			int tArray[1] = {1};        //For initialising value of iterationExt
+			BigIntTP* polyCoeffs;       //Holds the coeffs for a MultiVarExtT's min poly
+			MultiVarExtTP oneExt;       //Holds the number 1 for comparison purposes
+			MultiVarExtTP tempExt;      //Holds temporary results of computations
+			MultiVarExtTP factorExt;    //Extension representing a factor of the given polynomial
+			MultiVarExtTP iterationExt; //Extension for iterating factorExt (holds 1*<extension>)
+			
 			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
@@ -646,8 +655,7 @@ int main(int argc, char* argv[])
 			//So, let's factor the polynomial and get the multiplicative orders.
 			factoredP = factor_BigPolyT(P, bigMod);
 			coprimeFactors = extract_coprime_factors(factoredP);
-			
-			//TEST THIS WITH A POLYNOMIAL THAT HAS REPEATED ROOTS
+
 			printf("P: ");
 			printp(P);
 			printf("\nFactored P: ");
@@ -661,8 +669,74 @@ int main(int argc, char* argv[])
 			}
 			printf("\n");
 			
-			order += 1;
+			//Now, we need to create MultiVarExtTs for each coprimeFactor
+			// and find out what their multiplicative orders are
+			for (int f = 0; f < count_unique_factors(factoredP); f += 1)
+			{
+				//Making sure we're not considering factors of the form x^k
+				divide_BigPolyT(coprimeFactors[f], lambdaPoly, quotientPoly, remainderPoly, bigMod);
+				if (compare_BigPolyT(remainderPoly, zeroPoly) != 0)
+				{
+					//Creating the field extension defined by the given factor of
+					// our polynomial so we can find its order
+					oneExt       = new_MultiVarExtT(1);
+					tempExt      = new_MultiVarExtT(1);
+					factorExt    = new_MultiVarExtT(1);
+					iterationExt = new_MultiVarExtT(1);
+					set_MultiVarExtT_mod(oneExt, bigMod);
+					set_MultiVarExtT_mod(factorExt, bigMod);
+					set_MultiVarExtT_mod(iterationExt, bigMod);
+					
+					polyCoeffs = extract_coefficients(coprimeFactors[f]);
+					add_extension(oneExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					add_extension(tempExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					add_extension(factorExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					add_extension(iterationExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					
+					for (int i = 0; i < degree(coprimeFactors[f])+1; i += 1)
+						polyCoeffs[i] = free_BigIntT(polyCoeffs[i]);
+					FREE(polyCoeffs);
+					
+					//Setting the values of our extensions to prepare for iteration
+					increment_MultiVarExtT(oneExt);
+					increment_MultiVarExtT(factorExt);
+					set_MultiVarExtT_coefficient(iterationExt, tArray, one);
+					
+					//Now, we iterate until factorExt becomes 1 again
+					tempOrder = 0;
+					do
+					{
+						tempOrder += 1;
+						mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
+						reduce_MultiVarExtT(tempExt);
+						copy_MultiVarExtT(tempExt, factorExt);
+					}
+					while (compare_MultiVarExtT(factorExt, oneExt) != 1);
+					//Really, it would be nice to have a function that just checks
+					// whether the MultiVarExtT is one or not, but I'm too lazy to
+					// program that right now.
+					
+					//Build up order of the entire polynomial using LCM
+					printf("Order of ");
+					printp(coprimeFactors[f]);
+					printf(" mod ");
+					printi(bigMod);
+					printf(": %d\n", tempOrder);
+					
+					order = LCM(order, tempOrder);
+					
+					oneExt = free_MultiVarExtT(oneExt);
+					tempExt = free_MultiVarExtT(tempExt);
+					factorExt = free_MultiVarExtT(factorExt);
+					iterationExt = free_MultiVarExtT(iterationExt);
+				}
+			}
 			
+			printf("Order of ");
+			printp(P);
+			printf(": %d\n", order);
+			
+			//The old, rudamentary way of finding the order
 			/*
 			//Now, we loop until we find the order of the polynomial
 			for (order = 1; ; order += 1)

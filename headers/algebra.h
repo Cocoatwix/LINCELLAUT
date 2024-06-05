@@ -61,7 +61,8 @@ int reduce_BigPolyT(BigPolyTP);
 int resize_BigPolyT(BigPolyTP, int);
 
 /** Allocates space for a new MultiVarExtT, returns a
-    pointer to it. Returns NULL on error. */
+    pointer to it. The integer specifies how many
+	extensions to keep track of. Returns NULL on error. */
 void* new_MultiVarExtT(int);
 
 /** Sets the modulus value for the given MultiVarExtT.
@@ -79,11 +80,21 @@ int add_extension(MultiVarExtTP, const BigIntTP*, int, const char*);
 int remove_extension(MultiVarExtTP);
 
 /** Returns a pointer to the coefficient at the given
-    position. Returns NULL on error. */
+    position. Each element of the int pointer specifies what power
+	of a particular extension we're looking at on the term we're
+	interested in. 
+	
+	For example, if we wanted the coefficient on the (α^7)(β^2)(γ)
+	term, where α is the first extension, β is the second, and γ
+	is the third, then our int pointer should be {7, 2, 1}.
+	
+	Returns NULL on error. */
 BigIntTP get_MultiVarExtT_coefficient(const MultiVarExtTP, const int*);
 
 /** Sets a particular value for the given MultiVarExtT's coefficient.
     The MultiVarExtT must be fully set before this function can be used.
+	See above comment on get_MultiVarExtT_coefficient() to understand
+	how to format the int pointer.
 	Returns 1 on success, 0 otherwise. */
 int set_MultiVarExtT_coefficient(MultiVarExtTP, const int*, const BigIntTP);
 

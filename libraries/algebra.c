@@ -3093,7 +3093,7 @@ BigPolyTP* old_factor_BigPolyT(const BigPolyTP A, const BigIntTP mod)
 						printi(M);
 						printf("\ntempPoly = ");
 						printp(tempPoly);
-						printf("\n");
+						printf(" --- stuck here?\n");
 					#endif
 					
 					modulo_pow_BigPolyT(h, M, mod, tempPoly);
@@ -3806,8 +3806,6 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 			}
 		}
 	}
-	
-	
 	
 	for (int i = 0; i < b->numOfExtensions; i += 1)
 	{
