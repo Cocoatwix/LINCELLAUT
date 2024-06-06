@@ -673,7 +673,7 @@ int main(int argc, char* argv[])
 			coprimeFactors = extract_coprime_factors(factoredP);
 			
 			printf("** Hey, you should test this with some different polynomials to make sure \
-			it's working as intended **\n");
+it's working as intended **\n");
 
 			printf("P: ");
 			printp(P);
@@ -727,6 +727,10 @@ int main(int argc, char* argv[])
 					pow_BigIntT(bigMod, temp2, temp);
 					subtract_BigIntT(temp, one, orderMustDivide);
 					
+					/* REMOVE THIS ONCE TESTING IS DONE */
+					resize_BigIntT(orderMustDivide, 1);
+					set_bunch(orderMustDivide, 0, 360);
+					
 					//So, whatever the order of our extension is, it must divide orderMustDivide
 					//Let's go through all the possible divisors and find the one that works
 					primeFactors = prime_factors_of_BigIntT(orderMustDivide);
@@ -758,8 +762,18 @@ int main(int argc, char* argv[])
 						{
 							//Create OrderStructs here
 							
+							//Printing out the current factorisation of our factor for testing
+							for (int i = 0; i < numOfFactors; i += 1)
+							{
+								if (i != 0)
+									printf("*");
+								printi(primeFactors[factorPositions[i]+1]);
+							}
+							printf("\n");
+							
 							//Increment factorPositions to next unique factor
 							positionOfInterest = numOfFactors - 1;
+							//printf("Used: ");
 							while (positionOfInterest >= 0)
 							{
 								//Print some stuff out here, showing what's actually going on under the hood
@@ -774,15 +788,18 @@ int main(int argc, char* argv[])
 								printf("]\n");
 								getchar();
 								*/
-							
+								
 								factorPositions[positionOfInterest] += 1;
 								
 								//If our positionOfInterest goes too far
 								if (factorPositions[positionOfInterest] > extract_bunch(primeFactors[0], 0) - (numOfFactors - positionOfInterest))
 								{
-									//Push all relevant positions forward
-									for (int i = positionOfInterest + 1; i < numOfFactors; i += 1)
-										factorPositions[i] = factorPositions[positionOfInterest-1] + 2 + (i - positionOfInterest);
+									//printf("Rollover: ");
+									//Push all relevant positions forward... except if our position of interest is 0.
+									// In that case, we don't need to push anything forward since we're done
+									if (positionOfInterest > 0)
+										for (int i = positionOfInterest; i < numOfFactors; i += 1)
+											factorPositions[i] = factorPositions[positionOfInterest-1] + 2 + (i - positionOfInterest);
 									
 									//Roll over to next positionOfInterest
 									positionOfInterest -= 1;
@@ -792,10 +809,11 @@ int main(int argc, char* argv[])
 								else if (compare_BigIntT(primeFactors[factorPositions[positionOfInterest]+1],
 								                         primeFactors[factorPositions[positionOfInterest]]) == 0)
 							  {
+									//printf("Skip similar: ");
 									//Increment current position again
 									//Push all relevant positions forward
 									for (int i = positionOfInterest + 1; i < numOfFactors; i += 1)
-										factorPositions[i] = factorPositions[positionOfInterest-1] + 2 + (i - positionOfInterest);
+										factorPositions[i] = factorPositions[positionOfInterest] + 1 + (i - positionOfInterest);
 							  }
 								
 								//If we have a good set of factorPositions that'll give us a new factor
@@ -803,9 +821,8 @@ int main(int argc, char* argv[])
 								else
 									break;
 							}
-							
-							//2 2 2 3 5... test this to see if factors are repeated or something
 						}
+						//printf("---------\n");
 					}
 					FREE(factorPositions);
 					
@@ -839,6 +856,11 @@ int main(int argc, char* argv[])
 					tempExt = free_MultiVarExtT(tempExt);
 					factorExt = free_MultiVarExtT(factorExt);
 					iterationExt = free_MultiVarExtT(iterationExt);
+					
+					for (int i = 1; i <= extract_bunch(primeFactors[0], 0); i += 1)
+						primeFactors[i] = free_BigIntT(primeFactors[i]);
+					primeFactors[0] = free_BigIntT(primeFactors[0]);
+					FREE(primeFactors);
 				}
 			}
 			
@@ -853,11 +875,6 @@ int main(int argc, char* argv[])
 			negOne = free_BigIntT(negOne);
 			bigMod = free_BigIntT(bigMod);
 			orderMustDivide = free_BigIntT(orderMustDivide);
-			
-			for (int i = 1; i <= extract_bunch(primeFactors[0], 0); i += 1)
-				primeFactors[i] = free_BigIntT(primeFactors[i]);
-			primeFactors[0] = free_BigIntT(primeFactors[0]);
-			FREE(primeFactors);
 			
 			P = free_BigPolyT(P);
 			tempPoly = free_BigPolyT(tempPoly);
