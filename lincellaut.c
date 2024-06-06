@@ -593,7 +593,8 @@ int main(int argc, char* argv[])
 			int order = 1;     //Holds the total order of the polynomial
 			int tempOrder = 0; //Holds the order of the polynomial extension
 			
-			BigIntTP bigMod, negOne;
+			BigIntTP bigMod, negOne, temp, temp2;
+			BigIntTP orderMustDivide; //The number which our extensions' orders must divide
 			BigIntTP* lambdaCoeffs;
 			
 			BigPolyTP P, unityPoly, negOnePoly, zeroPoly, lambdaPoly;
@@ -609,6 +610,18 @@ int main(int argc, char* argv[])
 			MultiVarExtTP factorExt;    //Extension representing a factor of the given polynomial
 			MultiVarExtTP iterationExt; //Extension for iterating factorExt (holds 1*<extension>)
 			
+			//These are for getting all the possible orders
+			// for a given extension
+			typedef struct ordstruct
+			{
+				BigIntTP possibleOrder;
+				BigIntTP* factors;
+			} *OrderStructTP;
+			
+			int positionOfInterest;
+			int* factorPositions; //This will help up create divisors of orderMustDivide
+			BigIntTP* primeFactors;
+			OrderStructTP possibleOrders;
 			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
@@ -630,7 +643,10 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			//Initialise helper polynomials
+			//Initialise helper variables
+			temp = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
+			orderMustDivide = empty_BigIntT(1);
 			tempPoly = empty_BigPolyT();
 			zeroPoly = constant_BigPolyT(zero);
 			quotientPoly = empty_BigPolyT();
@@ -655,6 +671,9 @@ int main(int argc, char* argv[])
 			//So, let's factor the polynomial and get the multiplicative orders.
 			factoredP = factor_BigPolyT(P, bigMod);
 			coprimeFactors = extract_coprime_factors(factoredP);
+			
+			printf("** Hey, you should test this with some different polynomials to make sure \
+			it's working as intended **\n");
 
 			printf("P: ");
 			printp(P);
@@ -702,7 +721,97 @@ int main(int argc, char* argv[])
 					increment_MultiVarExtT(factorExt);
 					set_MultiVarExtT_coefficient(iterationExt, tArray, one);
 					
+					//Now, compute the value which any extension's order must divide (p^d - 1)
+					//THIS WILL NOT WORK FOR EXTREMELY HIGH VALUES
+					set_bunch(temp2, 0, degree(coprimeFactors[f]));
+					pow_BigIntT(bigMod, temp2, temp);
+					subtract_BigIntT(temp, one, orderMustDivide);
+					
+					//So, whatever the order of our extension is, it must divide orderMustDivide
+					//Let's go through all the possible divisors and find the one that works
+					primeFactors = prime_factors_of_BigIntT(orderMustDivide);
+					
+					printi(bigMod);
+					printf("^%d - 1 = ", degree(coprimeFactors[f]));
+					printi(orderMustDivide);
+					
+					printf("\nPrime factors: ");
+					for (int i = 1; i <= extract_bunch(primeFactors[0], 0); i += 1)
+					{
+						if (i != 1)
+							printf(", ");
+						printi(primeFactors[i]);
+					}
+					printf("\n");
+					
+					//Now, we must create every possible divisor of orderMustDivide 
+					// and sort them.
+					factorPositions = calloc(extract_bunch(primeFactors[0], 0), sizeof(int));
+					for (int numOfFactors = 1; numOfFactors <= extract_bunch(primeFactors[0], 0); numOfFactors += 1)
+					{
+						//Initialise factorPositions to get ready for next round of factors
+						for (int i = 0; i < numOfFactors; i += 1)
+							factorPositions[i] = i;
+						
+						//Create all possible factors using the given number of factors
+						while (factorPositions[0] <= extract_bunch(primeFactors[0], 0) - numOfFactors)
+						{
+							//Create OrderStructs here
+							
+							//Increment factorPositions to next unique factor
+							positionOfInterest = numOfFactors - 1;
+							while (positionOfInterest >= 0)
+							{
+								//Print some stuff out here, showing what's actually going on under the hood
+								/*
+								printf("[");
+								for (int i = 0; i < numOfFactors; i += 1)
+								{
+									if (i != 0)
+										printf(", ");
+									printf("%d", factorPositions[i]);
+								}
+								printf("]\n");
+								getchar();
+								*/
+							
+								factorPositions[positionOfInterest] += 1;
+								
+								//If our positionOfInterest goes too far
+								if (factorPositions[positionOfInterest] > extract_bunch(primeFactors[0], 0) - (numOfFactors - positionOfInterest))
+								{
+									//Push all relevant positions forward
+									for (int i = positionOfInterest + 1; i < numOfFactors; i += 1)
+										factorPositions[i] = factorPositions[positionOfInterest-1] + 2 + (i - positionOfInterest);
+									
+									//Roll over to next positionOfInterest
+									positionOfInterest -= 1;
+								}
+								
+								//If we increment a position to the same prime factor it was pointing to before
+								else if (compare_BigIntT(primeFactors[factorPositions[positionOfInterest]+1],
+								                         primeFactors[factorPositions[positionOfInterest]]) == 0)
+							  {
+									//Increment current position again
+									//Push all relevant positions forward
+									for (int i = positionOfInterest + 1; i < numOfFactors; i += 1)
+										factorPositions[i] = factorPositions[positionOfInterest-1] + 2 + (i - positionOfInterest);
+							  }
+								
+								//If we have a good set of factorPositions that'll give us a new factor
+								//Will it *always* be a new factor, or do we have to check the list?
+								else
+									break;
+							}
+							
+							//2 2 2 3 5... test this to see if factors are repeated or something
+						}
+					}
+					FREE(factorPositions);
+					
+					
 					//Now, we iterate until factorExt becomes 1 again
+					/*
 					tempOrder = 0;
 					do
 					{
@@ -725,6 +834,7 @@ int main(int argc, char* argv[])
 					
 					order = LCM(order, tempOrder);
 					
+					*/
 					oneExt = free_MultiVarExtT(oneExt);
 					tempExt = free_MultiVarExtT(tempExt);
 					factorExt = free_MultiVarExtT(factorExt);
@@ -736,37 +846,18 @@ int main(int argc, char* argv[])
 			printp(P);
 			printf(": %d\n", order);
 			
-			//The old, rudamentary way of finding the order
-			/*
-			//Now, we loop until we find the order of the polynomial
-			for (order = 1; ; order += 1)
-			{
-				divide_BigPolyT(unityPoly, P, quotientPoly, remainderPoly, bigMod);
-				if (compare_BigPolyT(remainderPoly, zeroPoly) == 0)
-				{
-					printp(P);
-					printf(" mod ");
-					printi(bigMod);
-					printf(" has order %d.\n", order);
-					
-					break;
-				}
-				
-				//Create x^{c+1} - 1
-				multiply_BigPolyT(unityPoly, lambdaPoly, tempPoly);
-				add_BigPolyT(tempPoly, negOnePoly, unityPoly);
-				add_BigPolyT(unityPoly, lambdaPoly, tempPoly);
-				mod_BigPolyT(tempPoly, bigMod, unityPoly);
-				
-				if (order % 100 == 0)
-					printf("Current degree of unityPoly: %d\n", order);
-			}
-			*/
-			
 			FREE(lambdaCoeffs);
 			
+			temp = free_BigIntT(temp);
+			temp2 = free_BigIntT(temp2);
 			negOne = free_BigIntT(negOne);
 			bigMod = free_BigIntT(bigMod);
+			orderMustDivide = free_BigIntT(orderMustDivide);
+			
+			for (int i = 1; i <= extract_bunch(primeFactors[0], 0); i += 1)
+				primeFactors[i] = free_BigIntT(primeFactors[i]);
+			primeFactors[0] = free_BigIntT(primeFactors[0]);
+			FREE(primeFactors);
 			
 			P = free_BigPolyT(P);
 			tempPoly = free_BigPolyT(tempPoly);

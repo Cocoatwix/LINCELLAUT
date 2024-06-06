@@ -135,15 +135,25 @@ int multiply_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 		Returns 1 on success, 0 otherwise. */
 int divide_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
+/** Computes the first BigIntT raised to the second BigIntT,
+    stores the result in the third BigIntT. This function
+	assumes all BigIntTs have been initialised. Returns 1 on
+	success, 0 otherwise. */
+int pow_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
+
 /** Computes first BigIntT mod second BigIntT, stores
     result in third BigIntT, which assumes the third
 	BigInt has been initialised.
 	Returns 1 on success, 0 otherwise. */
 int mod_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 
-/** Returns an array pf all the possible factors of the given BigIntTP. 
+/** Returns an array of all the possible factors of the given BigIntTP. 
     The first number tells you how many factors there are. */
 BigIntTP* divisors_of_BigIntT(const BigIntTP);
 
+/** Returns an array containing the prime factorisation of the
+    given BigIntT. The first number in the array says how many
+	factors there are. */
+BigIntTP* prime_factors_of_BigIntT(const BigIntTP);
 
 #endif //BIGINT_H

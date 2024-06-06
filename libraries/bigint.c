@@ -913,6 +913,68 @@ int divide_BigIntT(const BigIntTP toDivide, const BigIntTP divideBy, BigIntTP qu
 }
 
 
+int pow_BigIntT(const BigIntTP b, const BigIntTP e, BigIntTP result)
+/** Uses exponentiation by squaring to compute the power. 
+    Returns 1 on success, 0 otherwise. */
+{
+	int sizeOfResults = 0;
+	BigIntTP* resultsToMultiply = NULL;
+	
+	int numArr[1] = {2};
+	BigIntTP two = new_BigIntT(numArr, 1);
+	
+	BigIntTP temp = empty_BigIntT(1);
+	BigIntTP tempB = empty_BigIntT(1);
+	BigIntTP tempExp = empty_BigIntT(1);
+	
+	copy_BigIntT(b, tempB);
+	copy_BigIntT(e, tempExp);
+	
+	//Get all the b^<power of two>s we need
+	while (!is_zero(tempExp))
+	{
+		//Check to see if this b^<power of two> is needed
+		mod_BigIntT(tempExp, two, temp);
+		if (!is_zero(temp))
+		{
+			//If it is needed, add it to our list
+			sizeOfResults += 1;
+			resultsToMultiply = realloc(resultsToMultiply, sizeOfResults*sizeof(BigIntTP));
+			resultsToMultiply[sizeOfResults-1] = empty_BigIntT(1);
+			copy_BigIntT(tempB, resultsToMultiply[sizeOfResults-1]);
+		}
+		
+		//Check next bit of the exponent
+		divide_BigIntT(tempExp, two, temp);
+		copy_BigIntT(temp, tempExp);
+		
+		//Square tempB for next power of two
+		multiply_BigIntT(tempB, tempB, temp);
+		copy_BigIntT(temp, tempB);
+	}
+	
+	//Now, multiply our results together to get b^e
+	resize_BigIntT(result, 1);
+	set_bunch(result, 0, 1);
+	for (int i = 0; i < sizeOfResults; i += 1)
+	{
+		multiply_BigIntT(result, resultsToMultiply[i], temp);
+		copy_BigIntT(temp, result);
+	}
+	
+	two = free_BigIntT(two);
+	temp = free_BigIntT(temp);
+	tempB = free_BigIntT(tempB);
+	tempExp = free_BigIntT(tempExp);
+	
+	for (int i = 0; i < sizeOfResults; i += 1)
+		resultsToMultiply[i] = free_BigIntT(resultsToMultiply[i]);
+	free(resultsToMultiply);
+	
+	return 1;
+}
+
+
 int mod_BigIntT(const BigIntTP toMod, const BigIntTP modulus, BigIntTP residue)
 /** Calculates toMod % modulus and stores it in residue.
     Returns 1 on success, 0 otherwise. */
@@ -1020,4 +1082,61 @@ BigIntTP* divisors_of_BigIntT(const BigIntTP toFactor)
 	tempFactor = free_BigIntT(tempFactor);
 	
 	return factorList;
+}
+
+
+BigIntTP* prime_factors_of_BigIntT(const BigIntTP toFactor)
+/** Returns an array containing the prime factorisation of
+    toFactor. The first number in the returned array says how many
+	  factors there are. */
+{
+	BigIntTP* factorisation = malloc(sizeof(BigIntTP));
+	factorisation[0] = empty_BigIntT(1);
+	int sizeOfFactorisation = 1;
+	
+	int oneArr[1] = {1};
+	BigIntTP one = new_BigIntT(oneArr, 1);
+	BigIntTP temp = empty_BigIntT(1);
+	BigIntTP tempFactor = new_BigIntT(oneArr, 1);
+	BigIntTP tempToFactor = empty_BigIntT(1);
+	
+	copy_BigIntT(toFactor, tempToFactor);
+	
+	while (compare_BigIntT(tempToFactor, one) != 0)
+	{
+		//Increment the factor we're trying to divide by
+		add_BigIntT(one, tempFactor, temp);
+		copy_BigIntT(temp, tempFactor);
+		
+		//Divide tempToFactor by tempFactor as many times as we can
+		while (TRUE)
+		{
+			mod_BigIntT(tempToFactor, tempFactor, temp);
+			if (is_zero(temp))
+			{
+				//Add found factor into our factorisation
+				sizeOfFactorisation += 1;
+				factorisation = realloc(factorisation, sizeOfFactorisation*sizeof(BigIntTP));
+				
+				add_BigIntT(one, factorisation[0], temp);
+				copy_BigIntT(temp, factorisation[0]);
+				
+				factorisation[sizeOfFactorisation-1] = empty_BigIntT(1);
+				copy_BigIntT(tempFactor, factorisation[sizeOfFactorisation-1]);
+				
+				divide_BigIntT(tempToFactor, tempFactor, temp);
+				copy_BigIntT(temp, tempToFactor);
+			}
+			
+			else
+				break;
+		}
+	}
+	
+	one = free_BigIntT(one);
+	temp = free_BigIntT(temp);
+	tempFactor = free_BigIntT(tempFactor);
+	tempToFactor = free_BigIntT(tempToFactor);
+	
+	return factorisation;
 }
