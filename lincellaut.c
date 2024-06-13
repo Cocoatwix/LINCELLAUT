@@ -590,10 +590,7 @@ int main(int argc, char* argv[])
 		{
 			PROHIBIT_UNIXFLAGS
 			
-			int order = 1;     //Holds the total order of the polynomial
-			int tempOrder = 0; //Holds the order of the polynomial extension
-			
-			BigIntTP bigMod, negOne, temp, temp2;
+			BigIntTP bigMod, negOne, temp, temp2, bigOrder;
 			BigIntTP orderMustDivide; //The number which our extensions' orders must divide
 			BigIntTP* lambdaCoeffs;
 			
@@ -616,12 +613,25 @@ int main(int argc, char* argv[])
 			{
 				BigIntTP possibleOrder;
 				BigIntTP* factors;
-			} *OrderStructTP;
+				int numOfFactors;
+			} OrderStructT, *OrderStructTP;
+			
+			typedef struct linkedlist
+			{
+				OrderStructTP anOrder;
+				void* next;
+			} OrderListT, *OrderListTP;
 			
 			int positionOfInterest;
 			int* factorPositions; //This will help up create divisors of orderMustDivide
 			BigIntTP* primeFactors;
-			OrderStructTP possibleOrders;
+			
+			OrderStructTP temporaryOrder;
+			OrderListTP possibleOrders;
+			
+			//For helping to navigate the linked list
+			OrderListTP prevListPointer;
+			OrderListTP listPointer;
 			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
@@ -642,6 +652,9 @@ int main(int argc, char* argv[])
 				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
+			
+			bigOrder = empty_BigIntT(1);
+			copy_BigIntT(one, bigOrder);
 			
 			//Initialise helper variables
 			temp = empty_BigIntT(1);
@@ -671,9 +684,6 @@ int main(int argc, char* argv[])
 			//So, let's factor the polynomial and get the multiplicative orders.
 			factoredP = factor_BigPolyT(P, bigMod);
 			coprimeFactors = extract_coprime_factors(factoredP);
-			
-			printf("** Hey, you should test this with some different polynomials to make sure \
-it's working as intended **\n");
 
 			printf("P: ");
 			printp(P);
@@ -727,9 +737,11 @@ it's working as intended **\n");
 					pow_BigIntT(bigMod, temp2, temp);
 					subtract_BigIntT(temp, one, orderMustDivide);
 					
-					/* REMOVE THIS ONCE TESTING IS DONE */
+					/*
+					REMOVE THIS ONCE TESTING IS DONE
 					resize_BigIntT(orderMustDivide, 1);
 					set_bunch(orderMustDivide, 0, 360);
+					*/
 					
 					//So, whatever the order of our extension is, it must divide orderMustDivide
 					//Let's go through all the possible divisors and find the one that works
@@ -748,6 +760,8 @@ it's working as intended **\n");
 					}
 					printf("\n");
 					
+					possibleOrders = calloc(1, sizeof(OrderListT));
+					
 					//Now, we must create every possible divisor of orderMustDivide 
 					// and sort them.
 					factorPositions = calloc(extract_bunch(primeFactors[0], 0), sizeof(int));
@@ -760,20 +774,107 @@ it's working as intended **\n");
 						//Create all possible factors using the given number of factors
 						while (factorPositions[0] <= extract_bunch(primeFactors[0], 0) - numOfFactors)
 						{
-							//Create OrderStructs here
+							//Create OrderStructTs here
+							temporaryOrder = malloc(sizeof(OrderStructT));
+							temporaryOrder->numOfFactors = numOfFactors;
+							temporaryOrder->factors = malloc(numOfFactors*sizeof(BigIntTP));
+							temporaryOrder->possibleOrder = empty_BigIntT(1);
 							
 							//Printing out the current factorisation of our factor for testing
+							//Also storing the factorisation within our temporary OrderStructT
+							//ALSO multiplying the facorisation togetehr to get the possibleOrder
+							copy_BigIntT(one, temp);
 							for (int i = 0; i < numOfFactors; i += 1)
 							{
+								/*
 								if (i != 0)
 									printf("*");
 								printi(primeFactors[factorPositions[i]+1]);
+								*/
+								
+								temporaryOrder->factors[i] = primeFactors[factorPositions[i]+1];
+								
+								multiply_BigIntT(temp, primeFactors[factorPositions[i]+1], temp2);
+								copy_BigIntT(temp2, temp);
 							}
-							printf("\n");
+							//printf("\n");
+							
+							copy_BigIntT(temp, temporaryOrder->possibleOrder);
+							
+							//Now, we have to insert temporaryOrder in its correct position
+							// in the sorted list of OrderStructTs.
+							//I'm just using Bubble Sort. Sue me.
+							listPointer = possibleOrders;
+							prevListPointer = NULL;
+							if (possibleOrders->anOrder == NULL) //If we haven't started the list yet
+							{
+								possibleOrders->anOrder = temporaryOrder;
+							}
+								
+							else
+							{
+								while (TRUE)
+								{
+									//Check to see if current order is greater than the one at listPointer
+									if (compare_BigIntT(temporaryOrder->possibleOrder, listPointer->anOrder->possibleOrder) > 0)
+									{
+										//Add temporaryOrder to the end of the list
+										if (listPointer->next == NULL)
+										{
+											listPointer->next = calloc(1, sizeof(OrderListT));
+											((OrderListTP)(listPointer->next))->anOrder = temporaryOrder;
+											break;
+										}
+										
+										//Navigate further through the list
+										else
+										{
+											prevListPointer = listPointer;
+											listPointer = listPointer->next;
+										}
+									}
+									
+									//If our current order is less than the one at listPointer
+									else
+									{
+										//if there is no previous element to place our current order in front of
+										if (prevListPointer == NULL)
+										{
+											prevListPointer = malloc(sizeof(OrderListT));
+											prevListPointer->anOrder = temporaryOrder;
+											prevListPointer->next = listPointer;
+											possibleOrders = prevListPointer;
+										}
+										
+										else
+										{
+											prevListPointer->next = malloc(sizeof(OrderListT));
+											((OrderListTP)(prevListPointer->next))->anOrder = temporaryOrder;
+											((OrderListTP)(prevListPointer->next))->next = listPointer;
+										}
+										
+										break;
+									}
+								}
+							}
+							
+							//Now, for my own sanity, let's print out the linked list each pass to
+							// make sure it's ordering correctly
+							listPointer = possibleOrders;
+							printf("[");
+							while (listPointer != NULL)
+							{
+								printi(listPointer->anOrder->possibleOrder);
+								printf(",");
+								
+								listPointer = listPointer->next;
+							}
+							printf("]\n");
+							
+							//printf("Used: ");
 							
 							//Increment factorPositions to next unique factor
 							positionOfInterest = numOfFactors - 1;
-							//printf("Used: ");
 							while (positionOfInterest >= 0)
 							{
 								//Print some stuff out here, showing what's actually going on under the hood
@@ -817,7 +918,7 @@ it's working as intended **\n");
 							  }
 								
 								//If we have a good set of factorPositions that'll give us a new factor
-								//Will it *always* be a new factor, or do we have to check the list?
+								//It should always be a new factor, so we don't need to check for duplicates
 								else
 									break;
 							}
@@ -826,32 +927,95 @@ it's working as intended **\n");
 					}
 					FREE(factorPositions);
 					
+					//NOW, we need to iterate through our entire list of possible orders
+					// and find the first one where our extension becomes 1 when raised to
+					// that power.
 					
-					//Now, we iterate until factorExt becomes 1 again
-					/*
-					tempOrder = 0;
-					do
+					//Before we check all the prime factors, we should check whether 1
+					// is a valid order for the extension.
+					mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
+					reduce_MultiVarExtT(tempExt);
+					copy_MultiVarExtT(tempExt, factorExt);
+					
+					//If the order is NOT one
+					if (compare_MultiVarExtT(factorExt, oneExt) != 1)
 					{
-						tempOrder += 1;
-						mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
-						reduce_MultiVarExtT(tempExt);
-						copy_MultiVarExtT(tempExt, factorExt);
+						copy_MultiVarExtT(oneExt, factorExt);
+						listPointer = possibleOrders;
+						while (listPointer != NULL)
+						{
+							//Go through all prime factors of our order and iterate
+							// the extension accordingly
+							for (int i = 0; i < listPointer->anOrder->numOfFactors; i += 1)
+							{
+								copy_BigIntT(listPointer->anOrder->factors[i], temp);
+								
+								if (i != 0)
+								{
+									//This makes sure we don't raise our extension to
+									// too high a power.
+									subtract_BigIntT(temp, one, temp2);
+									copy_BigIntT(temp2, temp);
+								}
+								
+								while (! is_zero(temp))
+								{
+									//Do multiplication/iteration
+									
+									//---
+									mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
+									//---
+									
+									reduce_MultiVarExtT(tempExt);
+									copy_MultiVarExtT(tempExt, factorExt);
+									
+									subtract_BigIntT(temp, one, temp2);
+									copy_BigIntT(temp2, temp);
+								}
+								
+								copy_MultiVarExtT(factorExt, iterationExt);
+							}
+							
+							//Check to see if the extension is one.
+							//If it is, we've found the order
+							if (compare_MultiVarExtT(factorExt, oneExt) == 1)
+							{
+								big_lcm(bigOrder, listPointer->anOrder->possibleOrder, temp);
+								copy_BigIntT(temp, bigOrder);
+								break;
+							}
+							
+							else
+							{
+								copy_MultiVarExtT(oneExt, factorExt);
+								clear_MultiVarExtT(iterationExt);
+								set_MultiVarExtT_coefficient(iterationExt, tArray, one);
+								
+								//Try the next order
+								listPointer = listPointer->next;
+							}
+						}
+						
+						//Build up order of the entire polynomial using LCM
+						printf("Order of ");
+						printp(coprimeFactors[f]);
+						printf(" mod ");
+						printi(bigMod);
+						printf(": ");
+						printi(listPointer->anOrder->possibleOrder);
+						printf("\n");
 					}
-					while (compare_MultiVarExtT(factorExt, oneExt) != 1);
-					//Really, it would be nice to have a function that just checks
-					// whether the MultiVarExtT is one or not, but I'm too lazy to
-					// program that right now.
 					
-					//Build up order of the entire polynomial using LCM
-					printf("Order of ");
-					printp(coprimeFactors[f]);
-					printf(" mod ");
-					printi(bigMod);
-					printf(": %d\n", tempOrder);
+					else
+					{
+						//Build up order of the entire polynomial using LCM
+						printf("Order of ");
+						printp(coprimeFactors[f]);
+						printf(" mod ");
+						printi(bigMod);
+						printf(": 1\n");
+					}
 					
-					order = LCM(order, tempOrder);
-					
-					*/
 					oneExt = free_MultiVarExtT(oneExt);
 					tempExt = free_MultiVarExtT(tempExt);
 					factorExt = free_MultiVarExtT(factorExt);
@@ -861,12 +1025,31 @@ it's working as intended **\n");
 						primeFactors[i] = free_BigIntT(primeFactors[i]);
 					primeFactors[0] = free_BigIntT(primeFactors[0]);
 					FREE(primeFactors);
+					
+					//What a pain in the ass
+					prevListPointer = NULL;
+					listPointer = possibleOrders;
+					do
+					{
+						prevListPointer = listPointer;
+						listPointer = listPointer->next;
+						
+						free_BigIntT(prevListPointer->anOrder->possibleOrder);
+						FREE(prevListPointer->anOrder->factors);
+						FREE(prevListPointer->anOrder);
+						FREE(prevListPointer);
+					} 
+					while (listPointer != NULL);
 				}
 			}
 			
 			printf("Order of ");
 			printp(P);
-			printf(": %d\n", order);
+			printf(": ");
+			printi(bigOrder);
+			printf("\n");
+			
+			bigOrder = free_BigIntT(bigOrder);
 			
 			FREE(lambdaCoeffs);
 			
@@ -8311,6 +8494,92 @@ is not zero, then we haven't found a stable lift yet.\n");
 				FREE(cycleLengthMultiples[i]);
 			}
 			FREE(cycleLengthMultiplesLengths);
+		}
+		
+		else if (! strcmp(argv[1], "multidebug"))
+		{
+			//2 + 2λ^2 + 4λ^3 + 1λ^4
+			/*
+			Extension definitions:
+			2 + 2(t)^2 + 4(t)^3 + 1(t)^4 = 0
+			1(t)^3
+			Extension definitions:
+			2 + 2(t)^2 + 4(t)^3 + 1(t)^4 = 0
+			1(t)^3
+			Extension definitions:
+			2 + 2(t)^2 + 4(t)^3 + 1(t)^4 = 0
+			1(t)^3
+			*/
+			
+			/*
+			printf("a : \n");
+			printmve(a);
+			printf("\na's BigIntDirectorT: ");
+			display_BigIntDirectorT(a->coeffs, NULL, 0);
+			printf("\n");
+			exit(0);
+			*/
+			
+			/*					
+					polyCoeffs = extract_coefficients(coprimeFactors[f]);
+					add_extension(oneExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					add_extension(tempExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					add_extension(factorExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					add_extension(iterationExt, polyCoeffs, degree(coprimeFactors[f])+1, "t");
+					
+					for (int i = 0; i < degree(coprimeFactors[f])+1; i += 1)
+						polyCoeffs[i] = free_BigIntT(polyCoeffs[i]);
+					FREE(polyCoeffs);
+					
+					//Setting the values of our extensions to prepare for iteration
+					increment_MultiVarExtT(oneExt);
+					increment_MultiVarExtT(factorExt);
+					set_MultiVarExtT_coefficient(iterationExt, tArray, one);
+			*/
+			
+			BigIntTP bigMod;
+			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
+			
+			BigPolyTP coolPoly = read_BigPolyT("data/test.polynomial");
+			BigFactorsTP coolFactors = factor_BigPolyT(coolPoly, bigMod);
+			BigPolyTP* coolFactorsSequel = extract_factors(coolFactors);
+			
+			BigIntTP** polyCoeffs = malloc(count_factors(coolFactors)*sizeof(BigIntTP*));
+			for (int i = 0; i < count_factors(coolFactors); i += 1)
+				polyCoeffs[i] = extract_coefficients(coolFactorsSequel[i]);
+			
+			char* extNames[3] = {"α", "β", "γ"};
+			
+			MultiVarExtTP a = new_MultiVarExtT(3);
+			set_MultiVarExtT_mod(a, bigMod);
+			
+			for (int i = 0; i < count_factors(coolFactors); i += 1)
+				add_extension(a, polyCoeffs[i], degree(coolFactorsSequel[i])+1, extNames[i]);
+			
+			printf("coolFactors: ");
+			printpf(coolFactors);
+			printf("\na: \n");
+			printmve(a);
+			printf("\n");
+			
+			
+			for (int i = 0; i < count_factors(coolFactors); i += 1)
+			{
+				for (int j = 0; j < degree(coolFactorsSequel[i])+1; j += 1)
+				{
+					polyCoeffs[i][j] = free_BigIntT(polyCoeffs[i][j]);
+				}
+				FREE(polyCoeffs[i]);
+				
+			coolFactorsSequel[i] = free_BigPolyT(coolFactorsSequel[i]);
+			}
+			FREE(polyCoeffs);
+			FREE(coolFactorsSequel);
+			
+			a = free_MultiVarExtT(a);
+			bigMod = free_BigIntT(bigMod);
+			coolPoly = free_BigPolyT(coolPoly);
+			coolFactors = free_BigFactorsT(coolFactors);
 		}
 	}
 

@@ -152,7 +152,8 @@ int mod_BigIntT(const BigIntTP, const BigIntTP, BigIntTP);
 BigIntTP* divisors_of_BigIntT(const BigIntTP);
 
 /** Returns an array containing the prime factorisation of the
-    given BigIntT. The first number in the array says how many
+    given BigIntT. The factors should be in ascending order. 
+	The first number in the array says how many
 	factors there are. */
 BigIntTP* prime_factors_of_BigIntT(const BigIntTP);
 

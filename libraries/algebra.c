@@ -182,6 +182,27 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 }
 
 
+/* private */ void display_BigIntDirectorT(const BigIntDirectorTP d, const int* location, const int locationSize)
+/** For debugging purposes. */
+{
+	//Creating a new location array for the next level down
+	// the chain.
+	int newLocation[locationSize+1];
+	for (int i = 0; i < locationSize; i += 1)
+		newLocation[i] = location[i];
+	newLocation[locationSize] = 0;
+	
+	printf("[");
+	for (int i = 0; i <= locationSize; i += 1)
+	{
+		if (i != 0)
+			printf(", ");
+		printf("%d", newLocation[i]);
+	}
+	printf("]\n");
+}
+
+
 void* free_MultiVarExtT(void* voidExt)
 /** Frees the memory used by a MultiVarExtT. Returns NULL. */
 {
@@ -3446,6 +3467,7 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
     same extensions in the same order, and they all must be fully set.
 		Returns 1 on success, 0 otherwise. */ 
 {
+	printf("------------------------------------------------------\n");
 	MultiVarExtTP a = (MultiVarExtTP)voidA;
 	MultiVarExtTP b = (MultiVarExtTP)voidB;
 	MultiVarExtTP product = (MultiVarExtTP)voidProduct;
@@ -3719,9 +3741,13 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 								
 								//Taking coefficient on entire term, distributing it to new terms created by reduction
 								newCoeffs[i] = empty_BigIntT(1);
+								
+								//---
 								multiply_BigIntT(newCoeffs[L], 
 								                 extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][i-numOfNewCoeffs+1],
 																 temp);
+								//---
+								
 								mod_BigIntT(temp, b->mod, newCoeffs[i]);
 								
 								//Generate new location corresponding to new term

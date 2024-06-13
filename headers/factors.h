@@ -23,6 +23,11 @@ int poly_gcd(const BigPolyTP, const BigPolyTP, BigPolyTP, const BigIntTP, BigPol
 /** Returns the least common multiple of the two arguments. */
 int LCM(int, int);
 
+/** Computes the LCM of the first two BigIntTs, stores the result in 
+    the third one. This function assumes all BigIntTs have been 
+	initialised. Returns 1 on success, 0 otherwise. */
+int big_lcm(const BigIntTP, const BigIntTP, BigIntTP);
+
 /** Returns a pointer of the given int's prime factors.
     The first number in the pointer says how many factors were found.
 		It's guaranteed that the factors will be listed in ascending order.

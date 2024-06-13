@@ -383,6 +383,77 @@ int LCM(int a, int b)
 }
 
 
+int big_lcm(const BigIntTP a, const BigIntTP b, BigIntTP L)
+/** Computes the LCM of the first two BigIntTs, stores the result in 
+    the third one. This function assumes all BigIntTs have been 
+	  initialised. Returns 1 on success, 0 otherwise. */
+{
+	if ((is_zero(a)) || (is_zero(b)))
+		return 0;
+	
+	BigIntTP* primeFactorsOfa = prime_factors_of_BigIntT(a);
+	BigIntTP* primeFactorsOfb = prime_factors_of_BigIntT(b);
+	
+	BigIntTP temp = empty_BigIntT(1);
+
+	clear_BigIntT(L);
+	set_bunch(L, 0, 1);
+
+	int bPos = 1;
+	//Go through both arrays of prime factors,
+	// multiply the factors together as needed to
+	// compute the LCM.
+	for (int aPos = 1; aPos <= extract_bunch(primeFactorsOfa[0], 0); aPos += 1)
+	{
+		multiply_BigIntT(primeFactorsOfa[aPos], L, temp);
+		copy_BigIntT(temp, L);
+		
+		//Make sure we multiply by all prime factors in b that are smaller
+		// than the one we just multipled by in a
+		while ((bPos <= extract_bunch(primeFactorsOfb[0], 0)) && 
+		       (compare_BigIntT(primeFactorsOfa[aPos], primeFactorsOfb[bPos]) > 0))
+		{
+			multiply_BigIntT(primeFactorsOfb[bPos], L, temp);
+			copy_BigIntT(temp, L);
+			
+			primeFactorsOfb[bPos] = free_BigIntT(primeFactorsOfb[bPos]);
+			bPos += 1;
+		}
+		
+		//If there's a duplicate prime factor between a and b, make sure
+		// to only multiply by it once
+		if ((bPos <= extract_bunch(primeFactorsOfb[0], 0)) &&
+		    (compare_BigIntT(primeFactorsOfa[aPos], primeFactorsOfb[bPos]) == 0))
+		{
+			primeFactorsOfb[bPos] = free_BigIntT(primeFactorsOfb[bPos]);
+			bPos += 1;
+		}
+			
+		primeFactorsOfa[aPos] = free_BigIntT(primeFactorsOfa[aPos]);
+	}
+	
+	//Now, multiply by any remaining prime factors in b
+	// that we haven't got yet
+	for (int i = bPos; i <= extract_bunch(primeFactorsOfb[0], 0); i += 1)
+	{
+		multiply_BigIntT(primeFactorsOfb[i], L, temp);
+		copy_BigIntT(temp, L);
+		
+		primeFactorsOfb[i] = free_BigIntT(primeFactorsOfb[i]);
+	}
+	
+	primeFactorsOfa[0] = free_BigIntT(primeFactorsOfa[0]);
+	free(primeFactorsOfa);
+
+	primeFactorsOfb[0] = free_BigIntT(primeFactorsOfb[0]);
+	free(primeFactorsOfb);
+	
+	temp = free_BigIntT(temp);
+	
+	return 1;
+}
+
+
 int* prime_factors(int n)
 /** Returns a pointer of n's prime factors.
     It's the caller's job to free the pointer
