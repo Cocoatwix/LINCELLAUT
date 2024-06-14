@@ -28,6 +28,10 @@ BigFactorsTP free_BigFactorsT(BigFactorsTP);
 /** Frees an array of BigPolyT factors. */
 BigPolyTP* free_BigPolyT_factors(BigPolyTP*);
 
+/** For debugging. Prints out a MultiVarExtT's 
+    BigIntDirectorT. */
+void display_MultiVarExtT_internals(const MultiVarExtTP);
+
 /** Frees the memory used by a MultiVarExtT. Returns NULL. */
 void* free_MultiVarExtT(void*);
 
@@ -220,6 +224,11 @@ void fprintmve(FILE*, const MultiVarExtTP);
     not its extension definitions. */
 void printmve_row(const void*);
 void fprintmve_row(FILE*, const void*);
+
+/** For debugging. Prints ALL values stored within
+    a MultiVarExtT. */
+void printmve_long(const void*);
+void fprintmve_long(FILE* file, const void*);
 
 /** Same as printp, printpf, and old_fprintpf but it prints to a file stream. */
 void fprintp(FILE*, const BigPolyTP);

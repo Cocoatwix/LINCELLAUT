@@ -192,14 +192,47 @@ BigPolyTP* free_BigPolyT_factors(BigPolyTP* factors)
 		newLocation[i] = location[i];
 	newLocation[locationSize] = 0;
 	
-	printf("[");
-	for (int i = 0; i <= locationSize; i += 1)
+	//Are there more layers to search down?
+	if (d->hasNext)
 	{
-		if (i != 0)
-			printf(", ");
-		printf("%d", newLocation[i]);
+		//Iterate through all next BigIntDirectorTs
+		for (int i = 0; i < d->size; i += 1)
+		{
+			display_BigIntDirectorT(d->next[i], newLocation, locationSize+1);
+			newLocation[locationSize] += 1;
+		}
 	}
-	printf("]\n");
+	
+	//If not, display wht we have
+	else
+	{
+		//Print out where we are in the BigIntDirectorT
+		printf("[");
+		for (int i = 0; i < locationSize; i += 1)
+		{
+			if (i != 0)
+				printf(", ");
+			printf("%d", newLocation[i]);
+		}
+		printf("]: ");
+		
+		//Now, print the contents of this location
+		for (int i = 0; i < d->size; i += 1)
+		{
+			if (i != 0)
+				printf(", ");
+			printi(d->coeffs[i]);
+		}
+		printf("\n");
+	}
+}
+
+
+void display_MultiVarExtT_internals(const MultiVarExtTP m)
+/** Just a user-usable function to interface with 
+    display_BigIntDirectorT(). */
+{
+	display_BigIntDirectorT(m->coeffs, NULL, 0);
 }
 
 
@@ -1488,6 +1521,7 @@ void fprintmve(FILE* file, const MultiVarExtTP ext)
 	
 	if (ext->numOfExtensionsSet == ext->numOfExtensions) //If we can actually print the expression
 	{
+		printf("Extension value:\n");
 		for (int i = 0; i < ext->numOfExtensions; i += 1)
 			coeffPos[i] = 0;
 		
@@ -1617,6 +1651,39 @@ void printmve_row(const void* voidExt)
 /** Same as printmve(), but only prints the extression. */
 {
 	fprintmve_row(stdout, voidExt);
+}
+
+
+void fprintmve_long(FILE* file, const void* voidExt)
+/** For debugging. Prints out ALL values contained 
+    within a MultiVarExtT. */
+{	
+	//I don't remember why I made some of the functions
+	// involving MultiVarExtTs use void pointers, but I'm
+	// certainly regretting it now. It just makes dealing
+	// with this stuff so much more difficult.
+	
+	fprintmve(file, (MultiVarExtTP)voidExt);
+	fprintf(file, "\nExtension sizes: [");
+	for (int i = 0; i < ((MultiVarExtTP)voidExt)->numOfExtensions; i += 1)
+	{
+		if (i != 0)
+			fprintf(file, ", ");
+		fprintf(file, "%d", ((MultiVarExtTP)voidExt)->extensionSizes[i]);
+	}
+	fprintf(file, "]\nInternal structure:\n");
+	display_MultiVarExtT_internals((MultiVarExtTP)voidExt);
+	fprintf(file, "Number of extensions set: %d", ((MultiVarExtTP)voidExt)->numOfExtensionsSet);
+	fprintf(file, "\nModulus: ");
+	fprinti(file, ((MultiVarExtTP)voidExt)->mod);
+	fprintf(file, "\n");
+}
+
+
+void printmve_long(const void* voidExt)
+/** Same as fprintmve_long(), but for stdout. */
+{
+	fprintmve_long(stdout, voidExt);
 }
 
 
@@ -3467,10 +3534,27 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
     same extensions in the same order, and they all must be fully set.
 		Returns 1 on success, 0 otherwise. */ 
 {
-	printf("------------------------------------------------------\n");
 	MultiVarExtTP a = (MultiVarExtTP)voidA;
 	MultiVarExtTP b = (MultiVarExtTP)voidB;
 	MultiVarExtTP product = (MultiVarExtTP)voidProduct;
+	
+	#ifdef VERBOSE
+		printf("----------mult_sim_MultiVarExtT(");
+		printmve_row(a);
+		printf(", ");
+		printmve_row(b);
+		printf(", ");
+		printmve_row(product);
+		printf(")----------\n");
+		
+		printf("a:\n");
+		printmve_long(a);
+		printf("\nb:\n");
+		printmve_long(b);
+		printf("\nproduct:\n");
+		printmve_long(product);
+		printf("\n");
+	#endif
 	
 	int oneArr[1] = {1};
 	BigIntTP one;
@@ -3486,7 +3570,8 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 	 //e.g. If the first reduction for x is x^3 = x^2 + 7,
 	 // then its corresponding entry is 3 in this list
 	int* extensionReductionsPowers;
-	int* numOfExtensionReductions; //How many reductions we have saved for each extension 
+	int* numOfExtensionReductions; //How many reductions we have saved for each extension
+	int  numOfNewReductions;       //When we add new reductions, this keeps track of how many we have
 	
 	bool allSearched = FALSE;
 	BigIntDirectorTP ref;
@@ -3519,6 +3604,8 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 		return 0;
 	
 	//At some point, I need to make this check extensions in any order
+	//For now, it assumes the extension definitions were added to each 
+	// MultiVarExtT in the same order.
 	for (int i = 0; i < b->numOfExtensions; i += 1)
 	{
 		if (b->extensionSizes[i] != a->extensionSizes[i])
@@ -3536,6 +3623,10 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 				return 0;
 		}
 	}
+	
+	#ifdef VERBOSE
+		printf("a, b, and product have been deemed compatiable.\n\n");
+	#endif
 	
 	copy_BigIntT(b->mod, product->mod);
 	
@@ -3577,6 +3668,48 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 		}
 	}
 	
+	//:)
+	#ifdef VERBOSE
+		printf("extensionReductionsPowers = [");
+		for (int i = 0; i < b->numOfExtensions; i += 1)
+		{
+			if (i != 0)
+				printf(", ");
+			printf("%d", extensionReductionsPowers[i]);
+		}
+		printf("]\nnumOfExtensionReductions = [");
+		for (int i = 0; i < b->numOfExtensions; i += 1)
+		{
+			if (i != 0)
+				printf(", ");
+			printf("%d", numOfExtensionReductions[i]);
+		}
+		printf("]\nextensionReductions = [[[");
+		for (int i = 0; i < b->numOfExtensions; i += 1)
+		{
+			if (i != 0)
+				printf(",\n [");
+			
+			for (int j = 0; j < 1; j += 1)
+			{
+				if (j != 0)
+					printf(",[");
+				
+				for (int k = 0; k < b->extensionSizes[i]-1; k += 1)
+				{
+					if (k != 0)
+						printf(", ");
+					
+					printi(extensionReductions[i][j][k]);
+				}
+				
+				printf("]");
+			}
+			printf("]");
+		}
+		printf("]\n\n");
+	#endif
+	
 	//Zero out all the entries in product before we start multiplying
 	for (int i = 0; i < b->numOfExtensions; i += 1)
 	{
@@ -3607,6 +3740,13 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 		}
 	}
 	
+	#ifdef VERBOSE
+		printf("product should now be cleared...\n");
+		printf("product:\n");
+		printmve_long(product);
+		printf("\n");
+	#endif
+	
 	//I'm developing a real bad habit of making monstrous macros
 	//God save me :)
 	#define DEBUGPRINT(Z) printf("newLocations: ["); \
@@ -3628,7 +3768,26 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 	//Now, we start the multiplication
 	allSearched = FALSE;
 	while (!allSearched)
-	{
+	{		
+		#ifdef VERBOSE
+			printf("Next locations to multiply together:\n");
+			printf("aLoc = [");
+			for (int i = 0; i < a->numOfExtensions; i += 1)
+			{
+				if (i != 0)
+					printf(", ");
+				printf("%d", aLoc[i]);
+			}
+			printf("]\nbLoc = [");
+			for (int i = 0; i < b->numOfExtensions; i += 1)
+			{
+				if (i != 0)
+					printf(", ");
+				printf("%d", bLoc[i]);
+			}
+			printf("]\n");
+		#endif
+		
 		//Calculate the product
 		aRef = a->coeffs;
 		bRef = b->coeffs;
@@ -3638,9 +3797,37 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 			bRef = bRef->next[bLoc[i]];
 		}
 		
+		#ifdef VERBOSE
+			printf("aRef->coeffs = [");
+			for (int i = 0; i < aRef->size; i += 1)
+			{
+				if (i != 0)
+					printf(", ");
+				printi(aRef->coeffs[i]);
+			}
+			printf("]\nbRef->coeffs = [");
+			for (int i = 0; i < bRef->size; i += 1)
+			{
+				if (i != 0)
+					printf(", ");
+				printi(bRef->coeffs[i]);
+			}
+			printf("]\nProduct to compute: ");
+			printi(aRef->coeffs[aLoc[b->numOfExtensions-1]]);
+			printf(" * ");
+			printi(bRef->coeffs[bLoc[b->numOfExtensions-1]]);
+			printf("\n");
+		#endif
+		
 		multiply_BigIntT(aRef->coeffs[aLoc[b->numOfExtensions-1]], 
 		                 bRef->coeffs[bLoc[b->numOfExtensions-1]],
 										 temp);
+										 
+		#ifdef VERBOSE
+			printf("Result of product (before modular reduction): ");
+			printi(temp);
+			printf("\n");
+		#endif
 
 		//If there's something noteworthy to add to product
 		if (compare_BigIntT(temp, zero) != 0)
@@ -3655,6 +3842,21 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 			
 			newCoeffs[0] = empty_BigIntT(1);
 			mod_BigIntT(temp, b->mod, newCoeffs[0]);
+			
+			#ifdef VERBOSE
+				printf("Multiplication created a nonzero element.\n");
+				printf("numOfNewCoeffs = %d", numOfNewCoeffs);
+				printf("\nnewCoeffs = [");
+				printi(newCoeffs[0]);
+				printf("] (temp modularly reduced)\nnewLocations = [[");
+				for (int i = 0; i < b->numOfExtensions; i += 1)
+				{
+					if (i != 0)
+						printf(", ");
+					printf("%d", newLocations[0][i]);
+				}
+				printf("]]\n");
+			#endif
 			
 			//Now, we iterate through our list of locations repeatedly until they're all
 			// rewritten as locations within bounds
@@ -3674,8 +3876,8 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 							withinBounds = FALSE;
 							
 							#ifdef VERBOSE
-								printf("trouble\n");
-								DEBUGPRINT(numOfNewCoeffs);
+								printf("We need to reduce the term we created\n");
+								//DEBUGPRINT(numOfNewCoeffs);
 							#endif
 							
 							//Now we have to check whether we have the correct reduction to rewrite our term
@@ -3684,30 +3886,39 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 								#ifdef VERBOSE
 									printf("we don't have the right reduction\n");
 								#endif
-								//We need to generate a new extensionReduction
-								//I don't think it's ever possible for newLocations[L][ext] to be 2 above what we have,
-								// so we probably only need to ever generate one extra extension
 								
-								numOfExtensionReductions[ext] += 1;
+								//We need to generate some new extensionReductions so that we can reduce the term
+								// our multiplication generated.
+								numOfNewReductions = (newLocations[L][ext]) - (extensionReductionsPowers[ext] + numOfExtensionReductions[ext] - 1);
+								numOfExtensionReductions[ext] += numOfNewReductions;
 								extensionReductions[ext] = realloc(extensionReductions[ext], numOfExtensionReductions[ext]*sizeof(BigIntTP*));
-								extensionReductions[ext][numOfExtensionReductions[ext]-1] = malloc((b->extensionSizes[ext]-1)*sizeof(BigIntTP));
 								
-								for (int i = 0; i < b->extensionSizes[ext]-1; i += 1)
+								//Create all necessary reductions
+								for (int j = numOfNewReductions; j > 0; j -= 1)
 								{
-									extensionReductions[ext][numOfExtensionReductions[ext]-1][i] = empty_BigIntT(1);
-									
-									multiply_BigIntT(extensionReductions[ext][numOfExtensionReductions[ext]-2][b->extensionSizes[ext]-2], 
-									                 extensionReductions[ext][0][i],
-																	 temp);
-									if (i > 0)
+									extensionReductions[ext][numOfExtensionReductions[ext]-j] = malloc((b->extensionSizes[ext]-1)*sizeof(BigIntTP));
+								
+									for (int i = 0; i < b->extensionSizes[ext]-1; i += 1)
 									{
-										add_BigIntT(temp, 
-										            extensionReductions[ext][numOfExtensionReductions[ext]-2][i-1],
-																extensionReductions[ext][numOfExtensionReductions[ext]-1][i]);
-										copy_BigIntT(extensionReductions[ext][numOfExtensionReductions[ext]-1][i], temp);
+										extensionReductions[ext][numOfExtensionReductions[ext]-j][i] = empty_BigIntT(1);
+										
+										//The -2 on b->extensionSizes[ext]-2 is so that we focus only on terms that have been reduced by
+										// the respective reduction. If our relation is x^3 = x^2 - 1, let's say, then each reduction will house
+										// 3 terms: a x^0, x^1, and x^2 term. The index of the x^2 term, then, will be two less than the degree of
+										// x^3 - x^2 + 1 = 0. Hence, the -2.
+										multiply_BigIntT(extensionReductions[ext][numOfExtensionReductions[ext]-j-1][b->extensionSizes[ext]-2], 
+																		 extensionReductions[ext][0][i],
+																		 temp);
+										if (i > 0)
+										{
+											add_BigIntT(temp, 
+																	extensionReductions[ext][numOfExtensionReductions[ext]-j-1][i-1],
+																	extensionReductions[ext][numOfExtensionReductions[ext]-j][i]);
+											copy_BigIntT(extensionReductions[ext][numOfExtensionReductions[ext]-j][i], temp);
+										}
+										
+										mod_BigIntT(temp, b->mod, extensionReductions[ext][numOfExtensionReductions[ext]-j][i]);
 									}
-									
-									mod_BigIntT(temp, b->mod, extensionReductions[ext][numOfExtensionReductions[ext]-1][i]);
 								}
 							}
 							
@@ -3742,11 +3953,9 @@ int mult_sim_MultiVarExtT(const void* voidA, const void* voidB, void* voidProduc
 								//Taking coefficient on entire term, distributing it to new terms created by reduction
 								newCoeffs[i] = empty_BigIntT(1);
 								
-								//---
 								multiply_BigIntT(newCoeffs[L], 
 								                 extensionReductions[ext][newLocations[L][ext]-extensionReductionsPowers[ext]][i-numOfNewCoeffs+1],
 																 temp);
-								//---
 								
 								mod_BigIntT(temp, b->mod, newCoeffs[i]);
 								

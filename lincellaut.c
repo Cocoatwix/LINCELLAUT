@@ -747,18 +747,20 @@ int main(int argc, char* argv[])
 					//Let's go through all the possible divisors and find the one that works
 					primeFactors = prime_factors_of_BigIntT(orderMustDivide);
 					
-					printi(bigMod);
-					printf("^%d - 1 = ", degree(coprimeFactors[f]));
-					printi(orderMustDivide);
-					
-					printf("\nPrime factors: ");
-					for (int i = 1; i <= extract_bunch(primeFactors[0], 0); i += 1)
-					{
-						if (i != 1)
-							printf(", ");
-						printi(primeFactors[i]);
-					}
-					printf("\n");
+					#ifdef VERBOSE
+						printi(bigMod);
+						printf("^%d - 1 = ", degree(coprimeFactors[f]));
+						printi(orderMustDivide);
+						
+						printf("\nPrime factors: ");
+						for (int i = 1; i <= extract_bunch(primeFactors[0], 0); i += 1)
+						{
+							if (i != 1)
+								printf(", ");
+							printi(primeFactors[i]);
+						}
+						printf("\n");
+					#endif
 					
 					possibleOrders = calloc(1, sizeof(OrderListT));
 					
@@ -797,7 +799,6 @@ int main(int argc, char* argv[])
 								multiply_BigIntT(temp, primeFactors[factorPositions[i]+1], temp2);
 								copy_BigIntT(temp2, temp);
 							}
-							//printf("\n");
 							
 							copy_BigIntT(temp, temporaryOrder->possibleOrder);
 							
@@ -860,42 +861,43 @@ int main(int argc, char* argv[])
 							
 							//Now, for my own sanity, let's print out the linked list each pass to
 							// make sure it's ordering correctly
-							listPointer = possibleOrders;
-							printf("[");
-							while (listPointer != NULL)
-							{
-								printi(listPointer->anOrder->possibleOrder);
-								printf(",");
-								
-								listPointer = listPointer->next;
-							}
-							printf("]\n");
-							
-							//printf("Used: ");
+							#ifdef VERBOSE
+								listPointer = possibleOrders;
+								printf("[");
+								while (listPointer != NULL)
+								{
+									printi(listPointer->anOrder->possibleOrder);
+									printf(",");
+									
+									listPointer = listPointer->next;
+								}
+								printf("]\n");
+							#endif
 							
 							//Increment factorPositions to next unique factor
 							positionOfInterest = numOfFactors - 1;
 							while (positionOfInterest >= 0)
 							{
-								//Print some stuff out here, showing what's actually going on under the hood
-								/*
-								printf("[");
-								for (int i = 0; i < numOfFactors; i += 1)
-								{
-									if (i != 0)
-										printf(", ");
-									printf("%d", factorPositions[i]);
-								}
-								printf("]\n");
-								getchar();
-								*/
+								#ifdef VERBOSE
+									//Print some stuff out here, showing what's actually going on under the hood
+									/*
+									printf("[");
+									for (int i = 0; i < numOfFactors; i += 1)
+									{
+										if (i != 0)
+											printf(", ");
+										printf("%d", factorPositions[i]);
+									}
+									printf("]\n");
+									getchar();
+									*/
+								#endif
 								
 								factorPositions[positionOfInterest] += 1;
 								
 								//If our positionOfInterest goes too far
 								if (factorPositions[positionOfInterest] > extract_bunch(primeFactors[0], 0) - (numOfFactors - positionOfInterest))
 								{
-									//printf("Rollover: ");
 									//Push all relevant positions forward... except if our position of interest is 0.
 									// In that case, we don't need to push anything forward since we're done
 									if (positionOfInterest > 0)
@@ -910,7 +912,6 @@ int main(int argc, char* argv[])
 								else if (compare_BigIntT(primeFactors[factorPositions[positionOfInterest]+1],
 								                         primeFactors[factorPositions[positionOfInterest]]) == 0)
 							  {
-									//printf("Skip similar: ");
 									//Increment current position again
 									//Push all relevant positions forward
 									for (int i = positionOfInterest + 1; i < numOfFactors; i += 1)
@@ -923,7 +924,6 @@ int main(int argc, char* argv[])
 									break;
 							}
 						}
-						//printf("---------\n");
 					}
 					FREE(factorPositions);
 					
@@ -961,10 +961,7 @@ int main(int argc, char* argv[])
 								while (! is_zero(temp))
 								{
 									//Do multiplication/iteration
-									
-									//---
 									mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
-									//---
 									
 									reduce_MultiVarExtT(tempExt);
 									copy_MultiVarExtT(tempExt, factorExt);
@@ -8548,19 +8545,33 @@ is not zero, then we haven't found a stable lift yet.\n");
 			for (int i = 0; i < count_factors(coolFactors); i += 1)
 				polyCoeffs[i] = extract_coefficients(coolFactorsSequel[i]);
 			
+			int coeffsCount = 3;
 			char* extNames[3] = {"α", "β", "γ"};
+			int someCoeffsLocs[3][3] = {{1, 1, 1},  //αβγ
+				                          {0, 2, 3},  //(β^2)(γ^3)
+															    {0, 0, 4}}; //γ^4
 			
+			//Initialising our MultiVarExtT
 			MultiVarExtTP a = new_MultiVarExtT(3);
 			set_MultiVarExtT_mod(a, bigMod);
 			
 			for (int i = 0; i < count_factors(coolFactors); i += 1)
 				add_extension(a, polyCoeffs[i], degree(coolFactorsSequel[i])+1, extNames[i]);
 			
-			printf("coolFactors: ");
+			for (int i = 0; i < coeffsCount; i += 1)
+				set_MultiVarExtT_coefficient(a, someCoeffsLocs[i], one);
+			
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\ncoolPoly: ");
+			printp(coolPoly);
+			printf("\ncoolFactors: ");
 			printpf(coolFactors);
 			printf("\na: \n");
 			printmve(a);
-			printf("\n");
+			
+			printf("\nTesting the display_MultiVarExtT_internals() function...\n");
+			display_MultiVarExtT_internals(a);
 			
 			
 			for (int i = 0; i < count_factors(coolFactors); i += 1)
