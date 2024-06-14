@@ -542,6 +542,39 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If we want to row reduce the update matrix
+		// by the given modulus.
+		else if (!strcmp(argv[1], "rowreduce"))
+		{
+			BigIntTP bigMod;
+			BigIntMatrixTP REF  = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
+			BigIntMatrixTP RREF = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
+			
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
+			}
+			
+			big_row_echelon(UPDATEMATRIX, bigMod, REF, NULL);
+			big_reduced_row_echelon(REF, bigMod, RREF, NULL);
+			
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\nInitial matrix:\n");
+			printbm(UPDATEMATRIX);
+			printf("Row-reduced matrix:\n");
+			printbm(RREF);
+			
+			bigMod = free_BigIntT(bigMod);
+			REF = free_BigIntMatrixT(REF);
+			RREF = free_BigIntMatrixT(RREF);
+		}
+		
+		
 		//Factor the given polynomial from the .config file
 		else if (!strcmp(argv[1], "factor"))
 		{
@@ -8603,6 +8636,7 @@ is not zero, then we haven't found a stable lift yet.\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");

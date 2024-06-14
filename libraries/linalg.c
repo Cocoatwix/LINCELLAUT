@@ -1601,7 +1601,6 @@ int modbm(BigIntMatrixTP M, const BigIntTP modulus)
 	//May rewrite in the future to require a third argument
 	// instead of allocating a new matrix.
 	//Dependency injection !!!
-	
 	BigIntTP temp = empty_BigIntT(1);
 	
 	for (int row = 0; row < M->m; row += 1)
