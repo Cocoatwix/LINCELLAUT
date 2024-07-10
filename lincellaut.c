@@ -1105,6 +1105,99 @@ int main(int argc, char* argv[])
 		}
 		
 		
+		//If the user wants to plug the update matrix into a polynomial expression
+		else if (! strcmp(argv[1], "evalpoly"))
+		{
+			PROHIBIT_UNIXFLAGS
+			
+			bool multiplyByInitial = FALSE;
+			
+			BigIntTP bigMod;
+			BigPolyTP thePoly;
+			
+			BigIntMatrixTP evaluatedMatrix;
+			
+			//For if the user wants to multiply by INITIALMATRIX
+			BigIntMatrixTP resultingMatrix = NULL;
+			
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
+			{
+				fprintf(stderr, "Given update matrix is not square.");
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
+			}
+			
+			if (argc > 2)
+			{
+				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+			}
+			else
+			{
+				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
+			}
+			
+			if (argc > 3)
+			{
+				if (!strcmp(argv[3], "TRUE"))
+				{
+					//Check to make sure the given INITIALMATRIX is of the correct dimensions
+					if (big_rows(INITIALMATRIX) == big_cols(UPDATEMATRIX))
+						multiplyByInitial = TRUE;
+					else
+					{
+						fprintf(stderr, "Given dimensions for initial matrix don't match with the given update matrix.\n");
+						bigMod = free_BigIntT(bigMod);
+						returnvalue = EXIT_SUCCESS;
+						goto FREE_VARIABLES;
+					}
+				}
+			}
+			
+			thePoly = read_BigPolyT(polynomialfilepath);
+			
+			if (thePoly == NULL)
+			{
+				fprintf(stderr, "Unable to read polynomial at %s.\n", polynomialfilepath);
+				bigMod = free_BigIntT(bigMod);
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			evaluatedMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
+			eval_BigPolyT(thePoly, UPDATEMATRIX, evaluatedMatrix, bigMod);
+			
+			printf("m (modulus): ");
+			printi(bigMod);
+			printf("\nf(x) (polynomial): ");
+			printp(thePoly);
+			printf("\nA (matrix):\n");
+			printbm(UPDATEMATRIX);
+			
+			if (multiplyByInitial)
+			{
+				resultingMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(INITIALMATRIX));
+				big_mat_mul(evaluatedMatrix, INITIALMATRIX, resultingMatrix);
+				modbm(resultingMatrix, bigMod);
+				
+				printf("\nB (initial matrix):\n");
+				printbm(INITIALMATRIX);
+				printf("\nf(A)B mod m:\n");
+				printbm(resultingMatrix);
+			}
+			
+			else
+			{
+				printf("\nf(A) mod m:\n");
+				printbm(evaluatedMatrix);				
+			}
+			
+			bigMod = free_BigIntT(bigMod);
+			thePoly = free_BigPolyT(thePoly);
+			evaluatedMatrix = free_BigIntMatrixT(evaluatedMatrix);
+			resultingMatrix = free_BigIntMatrixT(resultingMatrix);
+		}
+		
+		
 		//Find the characteristic equation of the update matrix
 		else if (! strcmp(argv[1], "chara"))
 		{
@@ -3839,65 +3932,54 @@ int main(int argc, char* argv[])
 		{
 			PROHIBIT_UNIXFLAGS
 			
-			bool checkedAllVects = FALSE;
-			BigIntTP bigMod;
-			BigIntTP temp;
-			
-			BigIntTP** currVectElements;
-			BigIntTP*  vectPropElements; //The coeffs for the min poly we're testing on currVect
-			
-			BigIntMatrixTP bigF;   //Holds our update matrix
-			BigIntMatrixTP exprF;  //Holds bigF evaluated in some polynomial
-			BigIntMatrixTP currVect;
-			BigIntMatrixTP tempVect;
-			BigIntMatrixTP zeroVect;
-			
-			BigIntMatrixTP resumeVect = NULL;
-			
-			BigPolyTP annihPoly;
-			
-			char* fileName   = NULL;
-			FILE* outputFile = NULL;
-			
-			if (argc > 2)
+			if (argc <= 3)
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
-			}
-			else
-			{
-				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
-			}
-			
-			bigF = read_BigIntMatrixT(updatefilepath);
-			if (bigF == NULL)
-			{
-				fprintf(stderr, "Unable to read matrix from config file.\n");
-				bigMod = free_BigIntT(bigMod);
-				returnvalue = EXIT_FAILURE;
-				goto FREE_VARIABLES;
-			}
-			
-			if (big_rows(bigF) != big_cols(bigF))
-			{
-				fprintf(stderr, "Given update matrix isn't square.\n");
-				bigMod = free_BigIntT(bigMod);
-				bigF   = free_BigIntMatrixT(bigF);
+				printf(ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "baseMod modPower [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 				returnvalue = EXIT_SUCCESS;
 				goto FREE_VARIABLES;
 			}
 			
+			bool checkedAllVects = FALSE;
 			
-			currVectElements = new_BigIntT_array(big_rows(bigF), 1);
-			vectPropElements = malloc((big_rows(bigF)+1)*sizeof(BigIntTP));
-			for (int i = 0; i < big_rows(bigF)+1; i += 1)
-				vectPropElements[i] = empty_BigIntT(1);
+			int modPower, numOfAnnihPolys;
+			BigIntTP baseMod, bigMod, temp;
 			
+			BigIntTP** currVectElements;
+			
+			BigIntMatrixTP currVect;
+			BigIntMatrixTP resumeVect = NULL;
+			
+			BigPolyTP* generators;
+			
+			char* fileName   = NULL;
+			FILE* outputFile = NULL;
+			
+			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of prime/prime-power modulus from command line.");
+			
+			modPower = (int)strtol(argv[3], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read modulus exponent from command line.\n");
+				baseMod = free_BigIntT(baseMod);
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
+			{
+				fprintf(stderr, "Given update matrix is not square.\n");
+				baseMod = free_BigIntT(baseMod);
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
+			}
+			
+			currVectElements = new_BigIntT_array(big_rows(UPDATEMATRIX), 1);
 			
 			//If the user wants to resume computation from a
 			// particular vector
-			if (argc > 3)
+			if (argc > 4)
 			{
-				if (!strcmp(argv[3], "TRUE"))
+				if (!strcmp(argv[4], "TRUE"))
 				{
 					resumeVect = read_BigIntMatrixT(resumefilepath);
 					if (resumeVect == NULL)
@@ -3906,32 +3988,38 @@ int main(int argc, char* argv[])
 						fprintf(stderr, "Beginning computation from the zero vector instead.\n");
 					}
 					
-					else if ((big_rows(resumeVect) != big_rows(bigF)) || 
+					else if ((big_rows(resumeVect) != big_rows(UPDATEMATRIX)) || 
 					         (big_cols(resumeVect) != 1))
 					{
-						fprintf(stderr, "Resume vector is of incorrect dimensions (must be %d by 1). ", big_rows(bigF));
+						fprintf(stderr, "Resume vector is of incorrect dimensions (must be %d by 1). ", big_rows(UPDATEMATRIX));
 						fprintf(stderr, "Beginning computation from the zero vector instead.\n");
 					}
 					
 					else //Set currVect to resumeVect
-						for (int elem = 0; elem < big_rows(bigF); elem += 1)
+						for (int elem = 0; elem < big_rows(UPDATEMATRIX); elem += 1)
 							copy_BigIntT(big_element(resumeVect, elem, 0), currVectElements[elem][0]);
 						
 					resumeVect = free_BigIntMatrixT(resumeVect);
 				}
 			}
 	
-			annihPoly = new_BigPolyT(vectPropElements, big_rows(bigF)+1);
-			currVect = new_BigIntMatrixT(big_rows(bigF), 1);
-			tempVect = new_BigIntMatrixT(big_rows(bigF), 1);
-			zeroVect = new_BigIntMatrixT(big_rows(bigF), 1);
-			exprF = new_BigIntMatrixT(big_rows(bigF), big_cols(bigF));
+			currVect = new_BigIntMatrixT(big_rows(UPDATEMATRIX), 1);
+			
 			temp = empty_BigIntT(1);
+			bigMod = empty_BigIntT(1);
+			copy_BigIntT(one, bigMod);
+			
+			//Compute bigMod
+			for (int i = 0; i < modPower; i += 1)
+			{
+				multiply_BigIntT(baseMod, bigMod, temp);
+				copy_BigIntT(temp, bigMod);
+			}
 			
 			//If user wants file output
-			if (argc > 4)
+			if (argc > 5)
 			{
-				if (!strcmp(argv[4], "TRUE"))
+				if (!strcmp(argv[5], "TRUE"))
 				{
 					fileName = malloc(MAXSTRLEN*sizeof(char));
 					fileName[0] = '\0';
@@ -3939,9 +4027,9 @@ int main(int argc, char* argv[])
 					ADD_FILE_PREFIX(fileName);
 					
 					strcat(fileName, "vectprops F");
-					for (int x = 0; x < big_rows(bigF); x += 1)
-						for (int y = 0; y < big_cols(bigF); y += 1)
-							append_BigIntT(fileName, big_element(bigF, x, y));
+					for (int x = 0; x < big_rows(UPDATEMATRIX); x += 1)
+						for (int y = 0; y < big_cols(UPDATEMATRIX); y += 1)
+							append_BigIntT(fileName, big_element(UPDATEMATRIX, x, y));
 					strcat(fileName, " ");
 					append_BigIntT(fileName, bigMod);
 					strcat(fileName, ".txt");
@@ -3952,71 +4040,67 @@ int main(int argc, char* argv[])
 				}
 			}
 			
+			//Print out the update matrix for my sanity
+			printf("\nNote that degree 0 annihilating polynomials are not currently calculated.\n\n");
+			printf("Modulus: ");
+			printi(bigMod);
+			printf("\nUpdate matrix: \n");
+			printbm(UPDATEMATRIX);
+			printf("\n");
+			
 			//Iterate through all vectors in the module
 			while (!checkedAllVects)
 			{
 				set_big_matrix(currVect, currVectElements);
 				
-				//Clear all elements in our polynomial coeffs list
-				for (int i = 0; i < big_rows(bigF)+1; i += 1)
-					clear_BigIntT(vectPropElements[i]);
+				//Get the generators for currVect's ideal of annihilating polynomials
+				generators = ann_generators(UPDATEMATRIX, currVect, baseMod, modPower);
+				numOfAnnihPolys = extract_bunch(constant(generators[0]), 0);
 				
-				//Iterate through all possible "minimal" annihilating polynomials for currVect
-				while (TRUE)
+				//Basically, we're ignoring the zero vector
+				if (numOfAnnihPolys > 0)
 				{
-					//Increment polynomial
-					for (int i = 0; i < big_rows(bigF)+1; i += 1)
+					/*
+					printbm_row(currVect);
+					printf("'s \"min\" poly: ");
+					printp(generators[1]);
+					printf("\n");
+					*/
+					
+					printbm_row(currVect);
+					printf("'s annideal generators: ");
+					for (int i = 1; i <= numOfAnnihPolys; i += 1)
 					{
-						add_BigIntT(vectPropElements[i], one, temp);
-						if (compare_BigIntT(temp, bigMod) >= 0)
-						{
-							clear_BigIntT(temp);
-							copy_BigIntT(temp, vectPropElements[i]);
-						}
+						if (i != 1)
+							printf(", ");
+						printp(generators[i]);
+					}
+					printf("\n");
+					
+					if (outputFile != NULL)
+					{
+						fprintbm_row(outputFile, currVect);
+						fprintf(outputFile, " : ");
+						fprintp(outputFile, generators[1]);
+						fprintf(outputFile, "\n");
+						
+						if (fclose(outputFile) == EOF)
+							fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
 						else
 						{
-							copy_BigIntT(temp, vectPropElements[i]);
-							break;
-						}
-					}
-					
-					//Set polynomial, plug bigF into the polynomial
-					set_BigPolyT(annihPoly, vectPropElements);
-					eval_BigPolyT(annihPoly, bigF, exprF, bigMod);
-					
-					big_mat_mul(exprF, currVect, tempVect);
-					modbm(tempVect, bigMod);
-					
-					//If we've found currVect's "minimal" annihilating polynomial
-					if (compare_BigIntMatrixT(tempVect, zeroVect))
-					{
-						printbm_row(currVect);
-						printf("'s \"min\" poly: ");
-						printp(annihPoly);
-						printf("\n");
-						
-						if (outputFile != NULL)
-						{
-							fprintbm_row(outputFile, currVect);
-							fprintf(outputFile, " : ");
-							fprintp(outputFile, annihPoly);
-							fprintf(outputFile, "\n");
-							
-							if (fclose(outputFile) == EOF)
+							outputFile = fopen(fileName, "a");
+							if (outputFile == NULL)
 								fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
-							else
-							{
-								outputFile = fopen(fileName, "a");
-								if (outputFile == NULL)
-									fprintf(stderr, "Unable to save output file. Continuing without saving...\n");
-							}
 						}
-						break;
 					}
 				}
 				
+				for (int i = 0; i <= numOfAnnihPolys; i += 1)
+					generators[i] = free_BigPolyT(generators[i]);
+				FREE(generators);
+				
 				//Increment currVect
-				checkedAllVects = increment_BigIntT_array(currVectElements, big_rows(bigF), 1, one, bigMod);
+				checkedAllVects = increment_BigIntT_array(currVectElements, big_rows(UPDATEMATRIX), 1, one, bigMod);
 			}
 			
 			if (outputFile != NULL)
@@ -4028,84 +4112,37 @@ int main(int argc, char* argv[])
 				FREE(fileName);
 			}
 			
-			currVectElements = free_BigIntT_array(currVectElements, big_rows(bigF), 1);
+			currVectElements = free_BigIntT_array(currVectElements, big_rows(UPDATEMATRIX), 1);
 			
-			for (int i = 0; i < big_rows(bigF)+1; i += 1)
-				vectPropElements[i] = free_BigIntT(vectPropElements[i]);
-			FREE(vectPropElements);
-			
-			temp   = free_BigIntT(temp);
-			bigMod = free_BigIntT(bigMod);
-			
-			bigF     = free_BigIntMatrixT(bigF);
-			exprF    = free_BigIntMatrixT(exprF);
 			currVect = free_BigIntMatrixT(currVect);
-			tempVect = free_BigIntMatrixT(tempVect);
-			zeroVect = free_BigIntMatrixT(zeroVect);
 			
-			annihPoly = free_BigPolyT(annihPoly);
+			temp    = free_BigIntT(temp);
+			bigMod  = free_BigIntT(bigMod);
+			baseMod = free_BigIntT(baseMod);
 		}
 		
 		
-		//If the user wants to calculate every annihilating vector under
+		//If the user wants to calculate every annihilating polynomial of a vector under
 		// an update matrix up to a certain degree
 		else if (!strcmp(argv[1], "vectpolys"))
 		{
 			PROHIBIT_UNIXFLAGS
 			
-			bool foundNonzero;       //For clearing out zero rows in idealMatrix
-			bool addedMaxShift;      //For deciding when to add shifts to idealMatrix
-			bool foundMonic = FALSE; //Once we've found a monic annihilating polynomial, it's over
+			int modPower, numOfAnnihPolys;
+			BigIntTP baseMod;
 			
-			int deg;
-
-			int modPower;
-			BigIntTP baseMod, bigMod, temp, temp2;
+			BigPolyTP* generators;
 			
-			BigIntTP* tempPolyCoeffs        = NULL;
-			BigIntTP* tempPolyRewriteCoeffs = NULL; //Used for rewriting polynomial term expressions using iterateRowValueMat
-			BigPolyTP tempAnnihPoly         = NULL;
-			
-			BigPolyTP  tempPoly  = NULL;
-			BigPolyTP  tempPoly2 = NULL;
-			
-			BigPolyTP lambdaPoly = NULL;
-			BigPolyTP baseModPoly = NULL;
-			BigIntTP  lambdaArr[2]; //For creating lambdaPoly
-			
-			int numOfAnnihPolys = 0;
-			BigPolyTP* annihPolys = NULL;
-			
-			//Holds reduced iterations of our initial vector
-			BigIntMatrixTP iterateMatrix = NULL;
-			BigIntMatrixTP tempIterateMatrix = NULL;
-			BigIntTP*      vectorRow; //For adding new rows of vectors
-			
-			//Holds found annihilating polynomials and their lambda multiples
-			BigIntMatrixTP idealMatrix = NULL;
-			BigIntMatrixTP tempIdealMatrix = NULL;
-			BigIntTP*      idealRow; //For adding new rows to idealMatrix
-			
-			BigIntMatrixTP A, baseModMat, tempBaseModMat, iterateRowValueMat, tempVect, tempVect2, zeroVect, currIter;
-			
-			if (argc <= 4)
+			if (argc <= 3)
 			{
-				printf(ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "degree baseMod modPower [fileoutput]" ANSI_COLOR_RED " (UNFINISHED)" ANSI_COLOR_RESET "\n");
+				printf(ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "baseMod modPower " ANSI_COLOR_RESET "\n");
 				returnvalue = EXIT_SUCCESS;
 				goto FREE_VARIABLES;
 			}
 			
-			deg = (int)strtol(argv[2], &tempStr, 10);
-			if (tempStr[0] != '\0')
-			{
-				fprintf(stderr, "Unable to read degree from command line.\n");
-				returnvalue = EXIT_FAILURE;
-				goto FREE_VARIABLES;
-			}
+			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of modulus from command line.");
 			
-			SET_BIG_NUM(argv[3], baseMod, "Unable to read base of modulus from command line.");
-			
-			modPower = (int)strtol(argv[4], &tempStr, 10);
+			modPower = (int)strtol(argv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read modulus exponent from command line.\n");
@@ -4114,9 +4151,7 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			A = UPDATEMATRIX;
-			
-			if (big_rows(A) != big_cols(A))
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
 			{
 				fprintf(stderr, "Given update matrix is not square.\n");
 				baseMod = free_BigIntT(baseMod);
@@ -4124,7 +4159,7 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			if ((big_rows(INITIALMATRIX) != big_rows(A)) || (big_cols(INITIALMATRIX) != 1))
+			if ((big_rows(INITIALMATRIX) != big_rows(UPDATEMATRIX)) || (big_cols(INITIALMATRIX) != 1))
 			{
 				fprintf(stderr, "Given vector's dimensions are invalid. The number of rows must be equal to the matrix's rows " \
 				"and the number of columns must be 1.\n");
@@ -4133,370 +4168,29 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			temp   = empty_BigIntT(1);
-			temp2  = empty_BigIntT(1);
+			//Let's hope we don't have like a billion generators...
+			generators = ann_generators(UPDATEMATRIX, INITIALMATRIX, baseMod, modPower);
+			numOfAnnihPolys = extract_bunch(constant(generators[0]), 0);
 			
-			lambdaArr[0] = temp;
-			lambdaArr[1] = one;
-			lambdaPoly = new_BigPolyT(lambdaArr, 2);
-			
-			//This matrix keeps track of how our actual iterations of INITIALMATRIX 
-			// get combined when row reducing iterateMatrix
-			iterateRowValueMat = new_BigIntMatrixT(1, deg+1);
-			
-			//Temporarily use idealRow to populate the first row of iterateRowValueMat
-			idealRow = malloc((deg+1)*sizeof(BigIntTP));
-			idealRow[0] = one;
-			for (int i = 1; i < deg+1; i += 1)
-				idealRow[i] = temp;
-			set_big_row(iterateRowValueMat, idealRow, 0);
-			
-			FREE(idealRow);
-			
-			//Create bigMod from baseMod and maxPower
-			bigMod = empty_BigIntT(1);
-			copy_BigIntT(baseMod, bigMod);
-			for (int i = 1; i < modPower; i += 1)
-			{
-				multiply_BigIntT(bigMod, baseMod, temp);
-				copy_BigIntT(temp, bigMod);
-			}
-
-			tempAnnihPoly = empty_BigPolyT();
-			
-			tempPoly  = empty_BigPolyT();
-			tempPoly2 = empty_BigPolyT();
-			
-			//Very roundabout way to create a scale matrix
-			baseModPoly = constant_BigPolyT(baseMod);
-			baseModMat = identity_BigIntMatrixT(big_rows(A));
-			tempBaseModMat = identity_BigIntMatrixT(big_rows(A));
-			eval_BigPolyT(baseModPoly, tempBaseModMat, baseModMat, bigMod);
-			
-			tempVect = new_BigIntMatrixT(big_rows(A), 1);
-			zeroVect = new_BigIntMatrixT(big_rows(A), 1);
-			currIter = new_BigIntMatrixT(big_rows(A), 1);
-			tempVect2 = new_BigIntMatrixT(big_rows(A), 1);
-			
-			idealMatrix     = new_BigIntMatrixT(1, deg+1);
-			tempIdealMatrix = new_BigIntMatrixT(1, deg+1);
-
-			iterateMatrix     = new_BigIntMatrixT(1, big_rows(A));
-			tempIterateMatrix = new_BigIntMatrixT(1, big_rows(A));
-			vectorRow = malloc(big_rows(A)*sizeof(BigIntTP));
-			for (int i = 0; i < big_rows(A); i += 1)
-				vectorRow[i] = empty_BigIntT(1);
-			
-			//Put our initial vector in the matrix
-			copy_BigIntMatrixT(INITIALMATRIX, currIter);
-			for (int elem = 0; elem < big_rows(currIter); elem += 1)
-				copy_BigIntT(big_element(currIter, elem, 0), vectorRow[elem]);
-			set_big_row(iterateMatrix, vectorRow, 0);
-			
-			//Iterate to first iteration
-			big_mat_mul(A, currIter, tempVect);
-			modbm(tempVect, bigMod);
-			copy_BigIntMatrixT(tempVect, currIter);
-			
-			printf("Matrix:\n");
-			printbm(A);
-			printf("Vector: ");
+			printf("\nNote that degree 0 annihilating polynomials are not currently calculated.\n\n");
+			printf("Modulus = ");
+			printi(baseMod);
+			printf("^%d\nA = \n", modPower);
+			printbm(UPDATEMATRIX);
+			printf("\nGenerators for Ann(");
 			printbm_row(INITIALMATRIX);
-			printf("\nModulus: ");
-			printi(bigMod);
-			printf("\nNote that degree 0 annihilating polynomials are not currently calculated.\n");
-			
-			//Check each degree of polynomial possible; see if any of them annihilate currIter
-			for (int degCounter = 1; degCounter <= deg; degCounter += 1)
+			printf(") under A:\n");
+			for (int i = 1; i <= numOfAnnihPolys; i += 1)
 			{
-				//Make room for the vector we're checking in iterateMatrix
-				resize_BigIntMatrixT(iterateMatrix, big_rows(iterateMatrix)+1, big_cols(iterateMatrix));
-				resize_BigIntMatrixT(tempIterateMatrix, big_rows(tempIterateMatrix)+1, big_cols(tempIterateMatrix));
-				resize_BigIntMatrixT(iterateRowValueMat, big_rows(iterateRowValueMat)+1, big_cols(iterateRowValueMat));
-				
-				//Check every prime-power multiple of currIter
-				copy_BigIntMatrixT(currIter, tempVect);
-				for (int power = 0; power < modPower; power += 1)
-				{
-					for (int elem = 0; elem < big_rows(tempVect); elem += 1)
-						copy_BigIntT(big_element(tempVect, elem, 0), vectorRow[elem]);
-					set_big_row(iterateMatrix, vectorRow, big_rows(iterateMatrix)-1);
-					
-					/*
-					printf("iterateMatrix after setting the new bottom row with power = %d:\n", power);
-					printbm(iterateMatrix);
-					*/
-					
-					//Now, see if we can eliminate the bottom row
-					if (big_eliminate_bottom(iterateMatrix, bigMod, tempPoly))
-					{
-						/* Each term in the polynomial returned by big_eliminate_bottom() represents what multiple of 
-						 * each row-echeloned row to add to the bottom row to annihilate it,
-						 * but these row-echeloned rows aren't exactly our original vector iterates, are they?
-						 *
-						 * So, we create an identity matrix, then feed it into the row echelon function every time we add 
-						 * a new iterate to iterateMatrix. This new matrix will keep track of what each row actually is 
-						 * with respect to our original iterates (what polynomial expression they represent). So, whenever 
-						 * we get a new polynomial out of big_eliminate_bottom(), we just need to substitute each x^i with 
-						 * the polynomial representations that are given by the rows of the new matrix. This will give us 
-						 * the actual annihilating polynomial with respect to the original iterates.
-						 */
-						 
-						//We've found an annihilating polynomial
-						if (power == 0)
-							foundMonic = TRUE;
-						
-						//Now, add the appropriate leading term to our polynomial
-						tempPolyCoeffs = extract_coefficients(tempPoly);
-						
-						//Rewrite tempPolyCoeffs in terms of the correct polynomial expressions
-						tempPolyRewriteCoeffs = malloc(degCounter*sizeof(BigIntTP));
-						for (int i = 0; i < degCounter; i += 1)
-							tempPolyRewriteCoeffs[i] = empty_BigIntT(1);
-						
-						/*
-						printf("degCounter = %d\n", degCounter);
-						printf("iterateRowValueMat:\n");
-						printbm(iterateRowValueMat);
-						printf("tempPoly: ");
-						printp(tempPoly);
-						printf("\ndegree(tempPoly) = %d\n", degree(tempPoly));
-						*/
-						
-						//Get correct polynomial expressions from iterateRowValueMat
-						for (int valueRow = 0; 
-						    (valueRow < big_rows(iterateRowValueMat)) && (valueRow <= degree(tempPoly)); 
-								valueRow += 1)
-						{
-							for (int valueCol = 0; valueCol < big_cols(iterateRowValueMat); valueCol += 1)
-							{
-								//printf("(%d, %d)\n", valueRow, valueCol);
-								//Multiply by however many of the expression we need (tempPolyCoeffs[valueRow])
-								// then add
-								multiply_BigIntT(big_element(iterateRowValueMat, valueRow, valueCol), tempPolyCoeffs[valueRow], temp);
-								mod_BigIntT(temp, bigMod, temp2);
-								if (compare_BigIntT(temp2, zero) != 0)
-								{
-									add_BigIntT(temp2, tempPolyRewriteCoeffs[valueCol], temp);
-									mod_BigIntT(temp, bigMod, tempPolyRewriteCoeffs[valueCol]);
-								}
-							}
-						}
-						
-						for (int i = 0; i < degree(tempPoly); i += 1)
-							tempPolyCoeffs[i] = free_BigIntT(tempPolyCoeffs[i]);
-						FREE(tempPolyCoeffs);
-						
-						tempPolyRewriteCoeffs = realloc(tempPolyRewriteCoeffs, big_rows(iterateMatrix)*sizeof(BigIntTP));
-						
-						//Use power counter to create proper leading term
-						tempPolyRewriteCoeffs[big_rows(iterateMatrix)-1] = empty_BigIntT(1);
-						copy_BigIntT(one, tempPolyRewriteCoeffs[big_rows(iterateMatrix)-1]);
-						for (int exp = 0; exp < power; exp += 1)
-						{
-							multiply_BigIntT(tempPolyRewriteCoeffs[big_rows(iterateMatrix)-1], baseMod, temp);
-							copy_BigIntT(temp, tempPolyRewriteCoeffs[big_rows(iterateMatrix)-1]);
-						}
-						
-						//Add proper leading term to polynomial
-						resize_BigPolyT(tempPoly, big_rows(iterateMatrix));
-						set_BigPolyT(tempPoly, tempPolyRewriteCoeffs);
-						
-						//Now, free up tempPolyCoeffs for the next time around
-						for (int i = 0; i < big_rows(iterateMatrix); i += 1)
-							tempPolyRewriteCoeffs[i] = free_BigIntT(tempPolyRewriteCoeffs[i]);
-						FREE(tempPolyCoeffs);
-						
-						//Print out the polynomial for my own sanity
-						/*
-						printf("New polynomial: ");
-						printp(tempPoly);
-						printf("\n...");
-						getchar();
-						*/
-						
-						break;
-					}
-					
-					else
-					{
-						//Multiply by baseMod, try next prime-power leading term multiple
-						big_mat_mul(baseModMat, tempVect, tempVect2);
-						modbm(tempVect2, bigMod);
-						copy_BigIntMatrixT(tempVect2, tempVect);
-					}
-				}
-				
-				//Check tempVect to make sure we've actually gotten an annihilating polynomial
-				//tempVect will be zero if we haven't found an annihilating polynomial
-				if (!compare_BigIntMatrixT(tempVect, zeroVect))
-				{
-					//Whenever we find a new polynomial, we have to see whether it's in our ideal
-					//Add new polynomial to bottom of idealMatrix
-					resize_BigPolyT(tempPoly, deg+1);
-					copy_BigPolyT(tempPoly, tempAnnihPoly); //Saving a copy of tempPoly so we can add it as a generator if needed
-					tempPolyCoeffs = extract_coefficients(tempPoly);
-					set_big_row(idealMatrix, tempPolyCoeffs, big_rows(idealMatrix)-1);
-					
-					//Unfortunate that I have to recreate tempPolyCoeffs, but it needs to have the correct size, so...
-					for (int i = 0; i < deg+1; i += 1)
-						tempPolyCoeffs[i] = free_BigIntT(tempPolyCoeffs[i]);
-					FREE(tempPolyCoeffs);
-					
-					//Check to see whether the newly-added polynomial is in the ideal
-					if (!big_eliminate_bottom(idealMatrix, bigMod, NULL))
-					{						
-						//Now, we properly add this new annihilating polynomial to the ideal,
-						// along with adding all its lambda multiples to the matrix
-						addedMaxShift = FALSE;
-						while (!addedMaxShift)
-						{
-							idealRow = extract_coefficients(tempPoly);
-							
-							set_big_row(idealMatrix, idealRow, big_rows(idealMatrix)-1);
-							resize_BigIntMatrixT(idealMatrix, big_rows(idealMatrix)+1, big_cols(idealMatrix));
-							resize_BigIntMatrixT(tempIdealMatrix, big_rows(tempIdealMatrix)+1, big_cols(tempIdealMatrix));
-							
-							//Once an additional shift will send a term off the side of the matrix,
-							// it's time to break the loop
-							if (!is_zero(idealRow[deg]))
-								addedMaxShift = TRUE;
-							
-							//Free idealRow -_-
-							for (int r = 0; r < deg+1; r += 1)
-								idealRow[r] = free_BigIntT(idealRow[r]);
-							FREE(idealRow);
-							
-							//Shift polynomial
-							multiply_BigPolyT(lambdaPoly, tempPoly, tempPoly2);
-							mod_BigPolyT(tempPoly2, bigMod, tempPoly);
-							resize_BigPolyT(tempPoly, deg+1);
-						}
-						
-						//Now, make sure idealMatrix is row reduced
-						big_row_echelon(idealMatrix, bigMod, tempIdealMatrix, NULL);
-						copy_BigIntMatrixT(tempIdealMatrix, idealMatrix);
-						
-						//Get rid of any extra zero rows that may have appeared
-						for (int row = big_rows(idealMatrix)-1; row >= 0; row -= 1)
-						{
-							foundNonzero = FALSE;
-							for (int col = 0; col < big_cols(idealMatrix); col += 1)
-								if (!is_zero(big_element(idealMatrix, row, col)))
-								{
-									foundNonzero = TRUE;
-									break;
-								}
-								
-							if (foundNonzero)
-								break;
-							
-							//Eliminate zero row
-							else
-							{
-								resize_BigIntMatrixT(idealMatrix, big_rows(idealMatrix)-1, big_cols(idealMatrix));
-								resize_BigIntMatrixT(tempIdealMatrix, big_rows(tempIdealMatrix)-1, big_cols(tempIdealMatrix));
-							}
-						}
-						
-						//Now, add back one extra zero row. 
-						resize_BigIntMatrixT(idealMatrix, big_rows(idealMatrix)+1, big_cols(idealMatrix));
-						resize_BigIntMatrixT(tempIdealMatrix, big_rows(tempIdealMatrix)+1, big_cols(tempIdealMatrix));
-						
-						//Add the actual annihilating polynomial to our list
-						numOfAnnihPolys += 1;
-						annihPolys = realloc(annihPolys, numOfAnnihPolys*sizeof(BigPolyTP));
-						annihPolys[numOfAnnihPolys-1] = empty_BigPolyT();
-						copy_BigPolyT(tempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
-						
-						if (numOfAnnihPolys == 1)
-							printf("Unique annihilating polynomials:\n");
-						printp(annihPolys[numOfAnnihPolys-1]);
-						printf("\n");
-						
-						//Print out idealMatrix for my own sanity
-						/*
-						printf("idealMatrix:\n");
-						printbm(idealMatrix);
-						*/
-					}
-				}
-				
-				
-				//Stuff current iteration of vector in matrix before continuing
-				if (!foundMonic)
-				{
-					for (int elem = 0; elem < big_rows(currIter); elem += 1)
-						copy_BigIntT(big_element(currIter, elem, 0), vectorRow[elem]);
-					set_big_row(iterateMatrix, vectorRow, big_rows(iterateMatrix)-1);
-					
-					//Add values to new row of iterateRowValueMat so that the newly-added vector can be kept track of properly
-					idealRow = malloc((deg+1)*sizeof(BigIntTP));
-					clear_BigIntT(temp);
-					for (int i = 0; i < deg+1; i += 1)
-						idealRow[i] = temp;
-					idealRow[degCounter] = one;
-					
-					set_big_row(iterateRowValueMat, idealRow, degCounter);
-					/*
-					printf("iterateRowValueMat after adding new row:\n");
-					printbm(iterateRowValueMat);
-					*/
-					
-					FREE(idealRow);
-					
-					big_row_echelon(iterateMatrix, bigMod, tempIterateMatrix, iterateRowValueMat);
-					copy_BigIntMatrixT(tempIterateMatrix, iterateMatrix);
-				}
-				else
-					break;
-				
-				//Calculate next iteration of our given vector
-				big_mat_mul(A, currIter, tempVect);
-				modbm(tempVect, bigMod);
-				copy_BigIntMatrixT(tempVect, currIter);
-				
-				/*
-				printf("iterateMatrix:\n");
-				printbm(iterateMatrix);
-				printf("iterateRowValueMat:\n");
-				printbm(iterateRowValueMat);
-				printf("...");
-				getchar();
-				*/
+				printp(generators[i]);
+				printf("\n");
 			}
 			
-			temp   = free_BigIntT(temp);
-			temp2  = free_BigIntT(temp2);
-			bigMod = free_BigIntT(bigMod);
+			for (int i = 0; i <= numOfAnnihPolys; i += 1)
+				generators[i] = free_BigPolyT(generators[i]);
+			FREE(generators);
 			
-			tempPoly         = free_BigPolyT(tempPoly);
-			tempPoly2        = free_BigPolyT(tempPoly2);
-			lambdaPoly       = free_BigPolyT(lambdaPoly);
-			baseModPoly      = free_BigPolyT(baseModPoly);
-			tempAnnihPoly    = free_BigPolyT(tempAnnihPoly);
-			
-			for (int i = 0; i < numOfAnnihPolys; i += 1)
-				annihPolys[i]  = free_BigPolyT(annihPolys[i]);
-			FREE(annihPolys);
-
-			tempVect = free_BigIntMatrixT(tempVect);
-			zeroVect = free_BigIntMatrixT(zeroVect);
-			currIter = free_BigIntMatrixT(currIter);
-			tempVect2 = free_BigIntMatrixT(tempVect2);
-			baseModMat = free_BigIntMatrixT(baseModMat);
-			tempBaseModMat = free_BigIntMatrixT(tempBaseModMat);
-			iterateRowValueMat = free_BigIntMatrixT(iterateRowValueMat);
-			
-			idealMatrix     = free_BigIntMatrixT(idealMatrix);
-			tempIdealMatrix = free_BigIntMatrixT(tempIdealMatrix);
-			
-			iterateMatrix     = free_BigIntMatrixT(iterateMatrix);
-			tempIterateMatrix = free_BigIntMatrixT(tempIterateMatrix);
-			
-			for (int i = 0; i < big_rows(INITIALMATRIX); i += 1)
-				vectorRow[i] = free_BigIntT(vectorRow[i]);
-			FREE(vectorRow);
+			baseMod = free_BigIntT(baseMod);
 		}
 		
 		
@@ -8639,6 +8333,7 @@ is not zero, then we haven't found a stable lift yet.\n");
 		printf(" - " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "evalpoly " ANSI_COLOR_CYAN "[modulus] [multiplyByInitial]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
@@ -8650,8 +8345,8 @@ is not zero, then we haven't found a stable lift yet.\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "[mod] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "degree baseMod modPower [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "baseMod modPower [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");

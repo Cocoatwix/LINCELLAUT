@@ -313,7 +313,7 @@ BigPolyTP chara_poly(const BigIntMatrixTP, const BigIntTP);
 	Otherwise, calculates a vector's minimal polynomial
 	under the given matrix (using the second matrix as the
 	vector) mod some prime modulus. If the BigPolyTP is NULL,
-	the function calculates the relavent characteristic polynomial itself.
+	the function calculates the relevant characteristic polynomial itself.
 	Otherwise, it uses the one supplied by the caller.
 	Returns a BigPolyTP array representing the minimal polynomial 
 	on success, NULL otherwise. 
@@ -322,6 +322,18 @@ BigPolyTP* min_poly(const BigIntMatrixTP,
                     const BigIntMatrixTP, 
 					const BigIntTP, 
 					const BigPolyTP);
+					
+/** Returns a pointer to all the generators for a given
+    vector's ideal of annihilating polynomials. Returns NULL
+	on error.
+	First matrix is the update matrix,
+	second matrix is the vector,
+	BigIntTP is the base of the prime-power modulus,
+	int is the exponent on the modulus. */
+BigPolyTP* ann_generators(const BigIntMatrixTP,
+                          const BigIntMatrixTP,
+						  const BigIntTP,
+						  int);
 
 /** Stores the specified cycle converting matrix for the first one
     in the second one. This function assumes the second matrix

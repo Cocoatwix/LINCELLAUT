@@ -24,6 +24,10 @@ factor [modulus]: This tool allows the user to factor the polynomial specified b
 order [modulus] (UNFINISHED): This tool takes the polynomial specified by the polynomial key in the .config file and computes its order mod the given modulus. The order of a polynomial p(x) is the smallest natural number c such that p(x) divides x^c - 1.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
 
+evalpoly [modulus] [multiplyByInitial]: This tool allows the user to take the update matrix specified in the .config file and evaluate a polynomial expression using the matrix as the variable. The polynomial is also specified by the polynomial key within the .config file.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
+ - The optional argument "multiplyByInitial" specifies whether the initial vector/matrix specified by the .config file should be multiplied by the resulting matrix and returned instead of the matrix itself. This argument expects TRUE or FALSE as its value. Its default value is FALSE.
+
 chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
@@ -72,16 +76,15 @@ ccmzerosearch resume size [mod]: This tool allows the user to search for matrice
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-vectprops [mod] [resume] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what their "minimal" annihilating polynomials are.
- - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
+vectprops baseMod modPower [resume] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what the generators for their ideal of annihilating polynomials are. Note that this tool does not calculate degree 0 generators (though this only affects embedded vectors modulo a prime power).
+ - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
+ - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
  - The optional argument "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-vectpolys (UNFINISHED) degree baseMod modPower [fileoutput]: This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file) up to a certain degree.
- - The argument "degree" specifies the highest degree polynomial to look for. This argument expects a positive integer.
+vectpolys baseMod modPower: This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file).
  - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
  - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
- - The optional argument "fileoutput" specifies whether the tool should create an output file of all the polynomials found. The output file will have the name "vectpolys F<matrix> D<degree> <mod>.txt". The default value for this argument is FALSE. This argument expects TRUE or FALSE as its value.
 
 matprops maxpower [modulus]: This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
  - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
