@@ -268,6 +268,19 @@ int det(const IntMatrixTP);
     Returns NULL otherwise. */
 IntMatrixTP inverse(const IntMatrixTP, int);
 
+/** Attepts to eliminate the bottom row of the BigIntMatrixTP using the
+    other rows. Performs no row swaps. The matrix is assumed to be in 
+	row echelon form (except for the chosen row to eliminate).
+	If the third argument isn't NULL, the row operations will be recorded 
+	as a polynomial, with the higher-indexed rows of the matrix
+	corresponding to higher terms in the polynomial. Essentially, it
+	creates a polynomial representation of the bottom row using the
+	non-bottom rows as terms in a polynomial.
+	Returns 1 upon successfully eliminating the row, zero otherwise. */
+//NOTE: THIS FUNCTION ONLY WORKS FOR PRIME AND PRIME-POWER MODULI
+// BEHAVIOUR FOR OTHER MODULI IS UNDEFINED
+int big_eliminate_bottom(BigIntMatrixTP, const BigIntTP, BigPolyTP);
+
 /** Computes an upper-triangular form of the first matrix mod the given modulus,
     then stores the result in the second matrix. The third matrix will be altered using
 	the same steps that were used to reduce the matrix given. Set the third matrix to NULL
@@ -282,18 +295,11 @@ int big_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP, BigInt
 	0 otherwise. */
 int big_reduced_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP, BigIntMatrixTP);
 
-/** Attepts to eliminate the bottom row of the BigIntMatrixTP using the
-    other rows. Performs no row swaps. The matrix is assumed to be in 
-	row echelon form (except for the chosen row to eliminate).
-	If the third argument isn't NULL, the row operations will be recorded 
-	as a polynomial, with the higher-indexed rows of the matrix
-	corresponding to higher terms in the polynomial. Essentially, it
-	creates a polynomial representation of the bottom row using the
-	non-bottom rows as terms in a polynomial.
-	Returns 1 upon successfully eliminating the row, zero otherwise. */
-//NOTE: THIS FUNCTION ONLY WORKS FOR PRIME AND PRIME-POWER MODULI
-// BEHAVIOUR FOR OTHER MODULI IS UNDEFINED
-int big_eliminate_bottom(BigIntMatrixTP, const BigIntTP, BigPolyTP);
+/** Row reduces the given matrix and stores the result in the
+    second matrix. The function assumes all passed values have
+    been properly initialised and are of the correct sizes. 
+	Behaviour is defined for prime and prime-power moduli only. */
+void big_row_reduce(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP);
 
 /** Same as inverse(), but for BigIntMatrixTs. */
 BigIntMatrixTP big_inverse(const BigIntMatrixTP, const BigIntTP);

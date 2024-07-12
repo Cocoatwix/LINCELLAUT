@@ -546,9 +546,9 @@ int main(int argc, char* argv[])
 		// by the given modulus.
 		else if (!strcmp(argv[1], "rowreduce"))
 		{
+			//./lincellaut rowreduce [modulus]
+			
 			BigIntTP bigMod;
-			BigIntMatrixTP REF  = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
-			BigIntMatrixTP RREF = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
 			
 			if (argc > 2)
 			{
@@ -559,19 +559,19 @@ int main(int argc, char* argv[])
 				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
 			}
 			
-			big_row_echelon(UPDATEMATRIX, bigMod, REF, NULL);
-			big_reduced_row_echelon(REF, bigMod, RREF, NULL);
+			BigIntMatrixTP reducedMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
 			
 			printf("Modulus: ");
 			printi(bigMod);
-			printf("\nInitial matrix:\n");
+			printf("\nMatrix:\n");
 			printbm(UPDATEMATRIX);
-			printf("Row-reduced matrix:\n");
-			printbm(RREF);
+			printf("\nRow-reduced matrix:\n");
+			big_row_reduce(UPDATEMATRIX, bigMod, reducedMatrix);
+			printbm(reducedMatrix);
+			printf("\n");
 			
 			bigMod = free_BigIntT(bigMod);
-			REF = free_BigIntMatrixT(REF);
-			RREF = free_BigIntMatrixT(RREF);
+			reducedMatrix = free_BigIntMatrixT(reducedMatrix);
 		}
 		
 		
@@ -4057,16 +4057,10 @@ int main(int argc, char* argv[])
 				generators = ann_generators(UPDATEMATRIX, currVect, baseMod, modPower);
 				numOfAnnihPolys = extract_bunch(constant(generators[0]), 0);
 				
-				//Basically, we're ignoring the zero vector
+				//Basically, we're ignoring the zero vector, as the zero vector will be the
+				// only one without non-degree 0 generators.
 				if (numOfAnnihPolys > 0)
-				{
-					/*
-					printbm_row(currVect);
-					printf("'s \"min\" poly: ");
-					printp(generators[1]);
-					printf("\n");
-					*/
-					
+				{					
 					printbm_row(currVect);
 					printf("'s annideal generators: ");
 					for (int i = 1; i <= numOfAnnihPolys; i += 1)
@@ -8330,7 +8324,7 @@ is not zero, then we haven't found a stable lift yet.\n");
 		
 		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "evalpoly " ANSI_COLOR_CYAN "[modulus] [multiplyByInitial]" ANSI_COLOR_RESET "\n");

@@ -15,7 +15,7 @@ iterate [iterations]: This tool allows you to take an initial matrix and iterate
 inverse [modulus]: This tool allows the user to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  
-rowreduce [modulus] (UNFINISHED): This tool allows the user to calculate the reduced row echelon form of the update matrix specified in the .config file under the specified modulus.
+rowreduce [modulus]: This tool allows the user to calculate the reduced row echelon form of the update matrix specified in the .config file under the specified modulus.
 - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  
 factor [modulus]: This tool allows the user to factor the polynomial specified by the polynomial key in the .config file under the specified modulus. Note that the modulus given must be a prime number.

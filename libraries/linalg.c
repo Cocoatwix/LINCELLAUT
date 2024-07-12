@@ -2161,6 +2161,214 @@ IntMatrixTP inverse(const IntMatrixTP M, int modulus)
 }
 
 
+int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP annih)
+/** Attempts to eliminate the bottom row of the given matrix.
+    This function assumes the matrix is in row echelon form.
+		If annih != NULL, then whatever row operations annihilate the bottom
+		row will be recorded as a polynomial and stored in annih.
+		Returns 1 upon successfully eliminating the row, 0 otherwise. */
+{
+	if ((A == NULL) || (bigMod == NULL))
+		return 0;
+	
+	int oneArr[1] = {1};
+	BigIntTP zero         = empty_BigIntT(1);
+	BigIntTP one          = new_BigIntT(oneArr, 1);
+	BigIntTP temp         = empty_BigIntT(1);
+	BigIntTP GCDentry     = NULL;
+	BigIntTP GCDbottom    = NULL;
+	BigIntTP tempQuotient = empty_BigIntT(1);
+	BigIntTP tempCounter  = empty_BigIntT(1);
+	
+	BigIntTP previousElem = empty_BigIntT(1);
+	
+	//Holds a previous element's GCD with the modulus.
+	//Useful for finding entries in a row past the leading entry that may be useful
+	// in clearing the bottom row.
+	BigIntTP previousGCD = empty_BigIntT(1);
+	
+	BigIntTP* annihCoeffs; //Holds a poly representation of the row ops we do
+	BigPolyTP annihPoly;
+	
+	if (annih != NULL)
+	{
+		annihCoeffs = malloc((big_rows(A)-1)*sizeof(BigIntTP));
+		for (int i = 0; i < big_rows(A)-1; i += 1)
+			annihCoeffs[i] = empty_BigIntT(1);
+	}
+	
+	//Iterate over each row
+	for (int r = 0; r < A->m-1; r += 1)
+	{
+		copy_BigIntT(bigMod, previousGCD);
+		
+		//Find the leading entry on each row
+		for (int entry = 0; entry < A->n; entry += 1)
+		{
+			if (compare_BigIntT(zero, A->matrix[r][entry]) != 0)
+			{
+				//Now, it's sometimes the case that the leading entry of a row is not an invertible element,
+				// but elements past the leading entry are. In that case, if the leading element isn't useful,
+				// we'll keep looking down the row to see if any elements past it are in fact useful.
+				for (int usefulEntry = entry; usefulEntry < A->n; usefulEntry += 1)
+				{
+					#ifdef VERBOSE
+						printf("matrix:\n");
+						printbm(A);
+						printf("row #: %d, column #: %d\n", r, usefulEntry);
+					#endif
+					
+					//First, let's check to see if there are fewer factors of p on our
+					// current entry that would make it useful.
+					GCDentry = big_gcd(bigMod, A->matrix[r][usefulEntry]);
+					
+					#ifdef VERBOSE
+						printf("GCDentry: ");
+						printi(GCDentry);
+						printf(", previousGCD: ");
+						printi(previousGCD);
+						printf("\n");
+					#endif
+					
+					//If there are fewer factors on our current entry than the last one,
+					// we can continue.
+					if ((compare_BigIntT(GCDentry, previousGCD) < 0) &&
+					    (compare_BigIntT(previousGCD, one) != 0))
+					{
+						#ifdef VERBOSE
+							printf("Checking to see if current entry can eliminate entry below it.\n");
+						#endif
+						
+						divide_BigIntT(bigMod, previousGCD, tempQuotient);
+						
+						copy_BigIntT(GCDentry, previousGCD);
+						
+						GCDbottom = big_gcd(bigMod, A->matrix[A->m-1][usefulEntry]);
+						
+						//Eliminate corresponding entry (if we can)
+						//This only works for prime and prime-power moduli
+						if ((compare_BigIntT(GCDentry, GCDbottom) <= 0) &&
+						    (compare_BigIntT(A->matrix[A->m-1][usefulEntry], zero) != 0) &&
+								(compare_BigIntT(GCDbottom, tempQuotient) >= 0))
+						{
+							copy_BigIntT(A->matrix[A->m-1][usefulEntry], previousElem);
+							
+							#ifdef VERBOSE
+								printf("Entry on bottom row can be eliminated.\n");
+								printf("bigMod/previousGCD = ");
+								printi(tempQuotient);
+								printf("\n");
+							#endif
+							
+							//Loop until either the element is cleared out, or we cycle back to
+							// the same element (at which point we can move on)
+							do
+							{
+								//We have to make sure that, when we're adding rows, any elements
+								// to the left of our current "usefulEntry" don't add anything to
+								// the bottom row
+								copy_BigIntT(zero, tempCounter);
+								while (compare_BigIntT(tempCounter, tempQuotient) != 0)
+								{
+									big_row_add(A, A->m-1, r, bigMod);
+									add_BigIntT(one, tempCounter, temp);
+									copy_BigIntT(temp, tempCounter);
+									
+									//Store row operations as polynomial
+									if (annih != NULL)
+									{
+										add_BigIntT(annihCoeffs[r], one, temp);
+										mod_BigIntT(temp, bigMod, annihCoeffs[r]);
+									}
+								}
+							}
+							while ((compare_BigIntT(zero, A->matrix[A->m-1][usefulEntry]) != 0) &&
+							       (compare_BigIntT(previousElem, A->matrix[A->m-1][usefulEntry]) != 0));
+						}
+						
+						#ifdef VERBOSE
+							printf("Continuing to next element in the row...\n");
+							printf("~~~\n");
+							getchar();
+						#endif
+						GCDentry  = free_BigIntT(GCDentry);
+						GCDbottom = free_BigIntT(GCDbottom);
+					}
+					
+					else if ((compare_BigIntT(GCDentry, previousGCD) == 0) &&
+					         (compare_BigIntT(previousGCD, one) != 0))
+					{
+						#ifdef VERBOSE
+							printf("Skipping to next element in the row...\n");
+							printf("~~~\n");
+							getchar();
+						#endif
+						GCDentry  = free_BigIntT(GCDentry);
+						GCDbottom = free_BigIntT(GCDbottom);
+					}
+					
+					else
+					{
+						#ifdef VERBOSE
+							printf("Bailing to next row...\n");
+							printf("~~~\n");
+							getchar();
+						#endif
+						GCDentry  = free_BigIntT(GCDentry);
+						GCDbottom = free_BigIntT(GCDbottom);
+						break;
+					}
+				}
+				
+				//Goto next row
+				break;
+			}
+		}
+	}
+	
+	previousGCD  = free_BigIntT(previousGCD);
+	tempCounter  = free_BigIntT(tempCounter);
+	previousElem = free_BigIntT(previousElem);
+	tempQuotient = free_BigIntT(tempQuotient);
+	
+	//Now, we check to see if the bottom row has been eliminated
+	for (int c = 0; c < A->n; c += 1)
+	{
+		if (compare_BigIntT(A->matrix[A->m-1][c], zero) != 0)
+		{
+			zero = free_BigIntT(zero);
+			temp = free_BigIntT(temp);
+			one  = free_BigIntT(one);
+			
+			if (annih != NULL)
+			{
+				for (int i = 0; i < big_rows(A)-1; i += 1)
+					annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
+				free(annihCoeffs);
+			}
+			return 0;
+		}
+	}
+	
+	//Now, let's create our polynomial representation of the bottom row
+	if (annih != NULL)
+	{
+		annihPoly = new_BigPolyT(annihCoeffs, big_rows(A)-1);
+		copy_BigPolyT(annihPoly, annih);
+		
+		annihPoly = free_BigPolyT(annihPoly);
+		for (int i = 0; i < big_rows(A)-1; i += 1)
+			annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
+		free(annihCoeffs);
+	}
+	
+	zero = free_BigIntT(zero);
+	temp = free_BigIntT(temp);
+	one  = free_BigIntT(one);
+	return 1;
+}
+
+
 int big_row_echelon(const BigIntMatrixTP M, 
                     const BigIntTP modulus, 
 										BigIntMatrixTP result,
@@ -2532,125 +2740,77 @@ int big_reduced_row_echelon(const BigIntMatrixTP M,
 }
 
 
-int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP annih)
-/** Attempts to eliminate the bottom row of the given matrix.
-    This function assumes the matrix is in row echelon form.
-		If annih != NULL, then whatever row operations annihilate the bottom
-		row will be recorded as a polynomial and stored in annih.
-		Returns 1 upon successfully eliminating the row, 0 otherwise. */
-{
-	if ((A == NULL) || (bigMod == NULL))
-		return 0;
+void big_row_reduce(const BigIntMatrixTP A, BigIntTP bigMod, BigIntMatrixTP reducedA)
+/** Row reduces A. Behaviour is defined for prime
+    and prime-power moduli only. */
+{	
+	BigIntTP* newRow = malloc(big_cols(A)*sizeof(BigIntTP));
 	
-	int oneArr[1] = {1};
-	BigIntTP  zero      = empty_BigIntT(1);
-	BigIntTP  one       = NULL;
-	BigIntTP  temp      = NULL;
-	BigIntTP  GCDentry  = NULL;
-	BigIntTP  GCDbottom = NULL;
+	BigIntMatrixTP rrefA = new_BigIntMatrixT(big_rows(A), big_cols(A));
+	BigIntMatrixTP reducedMatrix = new_BigIntMatrixT(big_rows(A), big_cols(A));
+	BigIntMatrixTP tempMatrix = new_BigIntMatrixT(big_rows(A), big_cols(A));
 	
-	BigIntTP* annihCoeffs; //Holds a poly representation of the row ops we do
-	BigPolyTP annihPoly;
+	//Get a "RREF" form of A to make the below reduction go smoother
+	copy_BigIntMatrixT(A, reducedMatrix);
+	big_row_echelon(reducedMatrix, bigMod, tempMatrix, NULL);
+	big_reduced_row_echelon(tempMatrix, bigMod, rrefA, NULL);
 	
-	if (annih != NULL)
+	for (int row = 0; row < big_rows(A); row += 1)
 	{
-		annihCoeffs = malloc((big_rows(A)-1)*sizeof(BigIntTP));
-		for (int i = 0; i < big_rows(A)-1; i += 1)
-			annihCoeffs[i] = empty_BigIntT(1);
+		resize_BigIntMatrixT(tempMatrix, row+1, big_cols(A));
+		resize_BigIntMatrixT(reducedMatrix, row+1, big_cols(A));
 		
-		one  = new_BigIntT(oneArr, 1);
-		temp = empty_BigIntT(1);
-	}
-	
-	//Iterate over each row
-	for (int r = 0; r < A->m-1; r += 1)
-	{
-		//Find the leading entry on each row
-		for (int entry = 0; entry < A->n; entry += 1)
-		{
-			if (compare_BigIntT(zero, A->matrix[r][entry]) != 0)
-			{
-				//Now, check to see if we can eliminate the corresponding element
-				// in the bottom row
-				GCDbottom = big_gcd(bigMod, A->matrix[A->m-1][entry]);
-				GCDentry  = big_gcd(bigMod, A->matrix[r][entry]);
-				
-				//Eliminate corresponding entry
-				//This only works for prime and prime-power moduli
-				if (compare_BigIntT(GCDentry, GCDbottom) <= 0)
-				{
-					while (compare_BigIntT(zero, A->matrix[A->m-1][entry]) != 0)
-					{
-						big_row_add(A, A->m-1, r, bigMod);
-						
-						//Store row operations as polynomial
-						if (annih != NULL)
-						{
-							add_BigIntT(annihCoeffs[r], one, temp);
-							mod_BigIntT(temp, bigMod, annihCoeffs[r]);
-						}
-					}
-				}
-				
-				else
-				{
-					zero      = free_BigIntT(zero);
-					GCDentry  = free_BigIntT(GCDentry);
-					GCDbottom = free_BigIntT(GCDbottom);
-					temp      = free_BigIntT(temp);
-					one       = free_BigIntT(one);
-					
-					if (annih != NULL)
-					{
-						for (int i = 0; i < big_rows(A)-1; i += 1)
-							annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
-						free(annihCoeffs);
-					}
-					return 0;
-				}
-				
-				GCDentry  = free_BigIntT(GCDentry);
-				GCDbottom = free_BigIntT(GCDbottom);
-				break;
-			}
-		}
-	}
-	
-	//Now, we check to see if the bottom row has been eliminated
-	for (int c = 0; c < A->n; c += 1)
-	{
-		if (compare_BigIntT(A->matrix[A->m-1][c], zero) != 0)
-		{
-			zero = free_BigIntT(zero);
-			temp = free_BigIntT(temp);
-			one  = free_BigIntT(one);
-			
-			if (annih != NULL)
-			{
-				for (int i = 0; i < big_rows(A)-1; i += 1)
-					annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
-				free(annihCoeffs);
-			}
-			return 0;
-		}
-	}
-	
-	//Now, let's create our polynomial representation of the bottom row
-	if (annih != NULL)
-	{
-		annihPoly = new_BigPolyT(annihCoeffs, big_rows(A)-1);
-		copy_BigPolyT(annihPoly, annih);
+		for (int elem = 0; elem < big_cols(rrefA); elem += 1)
+			newRow[elem] = big_element(rrefA, row, elem);
 		
-		annihPoly = free_BigPolyT(annihPoly);
-		for (int i = 0; i < big_rows(A)-1; i += 1)
-			annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
-		free(annihCoeffs);
+		//Adding the next row of A to reducedMatrix
+		set_big_row(reducedMatrix, newRow, row);
+		
+		#ifdef VERBOSE
+			printf("Current matrix:\n");
+			printbm(reducedMatrix);
+			printf("\n");
+		#endif
+		
+		//Now, we attempt to reduce the matrix as much as possible
+		big_eliminate_bottom(reducedMatrix, bigMod, NULL);
+		
+		#ifdef VERBOSE
+			printf("Bottom-eliminated matrix:\n");
+			printbm(reducedMatrix);
+			printf("\n");
+		#endif
+		
+		big_row_echelon(reducedMatrix, bigMod, tempMatrix, NULL);
+		big_reduced_row_echelon(tempMatrix, bigMod, reducedMatrix, NULL);
+		
+		#ifdef VERBOSE
+			printf("RREF matrix:\n");
+			printbm(reducedMatrix);
+			getchar();
+		#endif
 	}
 	
-	zero = free_BigIntT(zero);
-	temp = free_BigIntT(temp);
-	one  = free_BigIntT(one);
-	return 1;
+	/*
+	//Now, just run one more pass to be sure the matrix really is reduced
+	// as much as possible...
+	big_eliminate_bottom(reducedMatrix, bigMod, NULL);
+	big_row_echelon(reducedMatrix, bigMod, tempMatrix, NULL);
+	big_reduced_row_echelon(tempMatrix, bigMod, reducedMatrix, NULL);
+	
+	#ifdef VERBOSE
+		printf("Final matrix:\n");
+		printbm(reducedMatrix);
+		getchar();
+	#endif
+	*/
+	
+	free(newRow);
+	
+	copy_BigIntMatrixT(reducedMatrix, reducedA);
+	rrefA = free_BigIntMatrixT(rrefA);
+	tempMatrix = free_BigIntMatrixT(tempMatrix);
+	reducedMatrix = free_BigIntMatrixT(reducedMatrix);
 }
 
 
@@ -3353,14 +3513,17 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 				copy_BigIntT(big_element(tempVect, elem, 0), vectorRow[elem]);
 			set_big_row(iterateMatrix, vectorRow, big_rows(iterateMatrix)-1);
 			
-			/*
-			printf("iterateMatrix after setting the new bottom row with power = %d:\n", power);
-			printbm(iterateMatrix);
-			*/
+			#ifdef VERBOSE
+				printf("iterateMatrix after setting the new bottom row with power = %d:\n", power);
+				printbm(iterateMatrix);
+			#endif
 			
 			//Now, see if we can eliminate the bottom row
 			if (big_eliminate_bottom(iterateMatrix, bigMod, tempPoly))
 			{
+				#ifdef VERBOSE
+					printf("Able to annihilate bottom row\n");
+				#endif
 				/* Each term in the polynomial returned by big_eliminate_bottom() represents what multiple of 
 				 * each row-echeloned row to add to the bottom row to annihilate it,
 				 * but these row-echeloned rows aren't exactly our original vector iterates, are they?
@@ -3385,14 +3548,14 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 				for (int i = 0; i < degCounter; i += 1)
 					tempPolyRewriteCoeffs[i] = empty_BigIntT(1);
 				
-				/*
-				printf("degCounter = %d\n", degCounter);
-				printf("iterateRowValueMat:\n");
-				printbm(iterateRowValueMat);
-				printf("tempPoly: ");
-				printp(tempPoly);
-				printf("\ndegree(tempPoly) = %d\n", degree(tempPoly));
-				*/
+				#ifdef VERBOSE
+					printf("degCounter = %d\n", degCounter);
+					printf("iterateRowValueMat:\n");
+					printbm(iterateRowValueMat);
+					printf("tempPoly: ");
+					printp(tempPoly);
+					printf("\ndegree(tempPoly) = %d\n", degree(tempPoly));
+				#endif
 				
 				//Get correct polynomial expressions from iterateRowValueMat
 				for (int valueRow = 0; 
@@ -3401,7 +3564,10 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 				{
 					for (int valueCol = 0; valueCol < big_cols(iterateRowValueMat); valueCol += 1)
 					{
-						//printf("(%d, %d)\n", valueRow, valueCol);
+						#ifdef VERBOSE
+							//printf("(%d, %d)\n", valueRow, valueCol);
+						#endif
+						
 						//Multiply by however many of the expression we need (tempPolyCoeffs[valueRow])
 						// then add
 						multiply_BigIntT(big_element(iterateRowValueMat, valueRow, valueCol), tempPolyCoeffs[valueRow], temp);
@@ -3414,7 +3580,7 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 					}
 				}
 				
-				for (int i = 0; i < degree(tempPoly); i += 1)
+				for (int i = 0; i <= degree(tempPoly); i += 1)
 					tempPolyCoeffs[i] = free_BigIntT(tempPolyCoeffs[i]);
 				free(tempPolyCoeffs);
 				tempPolyCoeffs = NULL;
@@ -3437,16 +3603,16 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 				//Now, free up tempPolyCoeffs for the next time around
 				for (int i = 0; i < big_rows(iterateMatrix); i += 1)
 					tempPolyRewriteCoeffs[i] = free_BigIntT(tempPolyRewriteCoeffs[i]);
-				free(tempPolyCoeffs);
-				tempPolyCoeffs = NULL;
+				free(tempPolyRewriteCoeffs);
+				tempPolyRewriteCoeffs = NULL;
 				
 				//Print out the polynomial for my own sanity
-				/*
-				printf("New polynomial: ");
-				printp(tempPoly);
-				printf("\n...");
-				getchar();
-				*/
+				#ifdef VERBOSE
+					printf("New polynomial: ");
+					printp(tempPoly);
+					printf("\n...");
+					getchar();
+				#endif
 				
 				break;
 			}
@@ -3545,10 +3711,10 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 				copy_BigPolyT(tempAnnihPoly, annihPolys[numOfAnnihPolys-1]);
 				
 				//Print out idealMatrix for my own sanity
-				/*
-				printf("idealMatrix:\n");
-				printbm(idealMatrix);
-				*/
+				#ifdef VERBOSE
+					printf("idealMatrix:\n");
+					printbm(idealMatrix);
+				#endif
 			}
 		}
 		
@@ -3568,10 +3734,11 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 			idealRow[degCounter] = one;
 			
 			set_big_row(iterateRowValueMat, idealRow, degCounter);
-			/*
-			printf("iterateRowValueMat after adding new row:\n");
-			printbm(iterateRowValueMat);
-			*/
+			
+			#ifdef VERBOSE
+				printf("iterateRowValueMat after adding new row:\n");
+				printbm(iterateRowValueMat);
+			#endif
 			
 			free(idealRow);
 			idealRow = NULL;
@@ -3587,14 +3754,14 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 		modbm(tempVect, bigMod);
 		copy_BigIntMatrixT(tempVect, currIter);
 		
-		/*
-		printf("iterateMatrix:\n");
-		printbm(iterateMatrix);
-		printf("iterateRowValueMat:\n");
-		printbm(iterateRowValueMat);
-		printf("...");
-		getchar();
-		*/
+		#ifdef VERBOSE
+			printf("iterateMatrix:\n");
+			printbm(iterateMatrix);
+			printf("iterateRowValueMat:\n");
+			printbm(iterateRowValueMat);
+			printf("...");
+			getchar();
+		#endif
 	}
 	
 	one    = free_BigIntT(one);
@@ -3608,6 +3775,8 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 	baseModPoly   = free_BigPolyT(baseModPoly);
 	tempAnnihPoly = free_BigPolyT(tempAnnihPoly);
 	
+	//Don't need to free this anymore since we're
+	// returning it.
 	/*
 	for (int i = 0; i < numOfAnnihPolys; i += 1)
 		annihPolys[i]  = free_BigPolyT(annihPolys[i]);
