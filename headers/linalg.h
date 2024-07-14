@@ -268,6 +268,12 @@ int det(const IntMatrixTP);
     Returns NULL otherwise. */
 IntMatrixTP inverse(const IntMatrixTP, int);
 
+
+
+/* The following row-reduction functions are defined only for prime and
+    prime-power moduli. While they can be used with composite moduli,
+	they make give unexpected results or possible crash the program. */
+
 /** Attepts to eliminate the bottom row of the BigIntMatrixTP using the
     other rows. Performs no row swaps. The matrix is assumed to be in 
 	row echelon form (except for the chosen row to eliminate).
@@ -277,8 +283,6 @@ IntMatrixTP inverse(const IntMatrixTP, int);
 	creates a polynomial representation of the bottom row using the
 	non-bottom rows as terms in a polynomial.
 	Returns 1 upon successfully eliminating the row, zero otherwise. */
-//NOTE: THIS FUNCTION ONLY WORKS FOR PRIME AND PRIME-POWER MODULI
-// BEHAVIOUR FOR OTHER MODULI IS UNDEFINED
 int big_eliminate_bottom(BigIntMatrixTP, const BigIntTP, BigPolyTP);
 
 /** Computes an upper-triangular form of the first matrix mod the given modulus,
@@ -297,9 +301,10 @@ int big_reduced_row_echelon(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP
 
 /** Row reduces the given matrix and stores the result in the
     second matrix. The function assumes all passed values have
-    been properly initialised and are of the correct sizes. 
-	Behaviour is defined for prime and prime-power moduli only. */
+    been properly initialised and are of the correct sizes. */
 void big_row_reduce(const BigIntMatrixTP, const BigIntTP, BigIntMatrixTP);
+
+
 
 /** Same as inverse(), but for BigIntMatrixTs. */
 BigIntMatrixTP big_inverse(const BigIntMatrixTP, const BigIntTP);

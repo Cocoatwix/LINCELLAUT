@@ -132,7 +132,7 @@ BigIntTP constant(const BigPolyTP);
 	This can be done by calling reduce_BigPolyT(). */
 BigIntTP leading_term(const BigPolyTP);
 
-/** Returns an array of the given BigPolyT's coefficients,
+/** Returns an array of the given BigPolyT's coefficients by value,
     sorted in ascending order of the terms' exponents.
 	Returns NULL on error. */
 BigIntTP* extract_coefficients(const BigPolyTP);

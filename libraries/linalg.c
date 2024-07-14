@@ -2161,9 +2161,9 @@ IntMatrixTP inverse(const IntMatrixTP M, int modulus)
 }
 
 
-int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP annih)
+int old_big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP annih)
 /** Attempts to eliminate the bottom row of the given matrix.
-    This function assumes the matrix is in row echelon form.
+    This function assumes the matrix is in row-echelon form.
 		If annih != NULL, then whatever row operations annihilate the bottom
 		row will be recorded as a polynomial and stored in annih.
 		Returns 1 upon successfully eliminating the row, 0 otherwise. */
@@ -2369,270 +2369,421 @@ int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP anni
 }
 
 
-int big_row_echelon(const BigIntMatrixTP M, 
-                    const BigIntTP modulus, 
-										BigIntMatrixTP result,
-										BigIntMatrixTP aux)
-/** Finds an upper triangular form of M, if it exists, and
-    stores it in result. result must be the same dimensions as M.
-		The matrix aux has the same operations done to it as M.
-		Returns 1 upon finding an upper triangular form,
-		0 otherwise. */
+int big_eliminate_bottom(BigIntMatrixTP A, const BigIntTP bigMod, BigPolyTP annih)
+/** Attempts to eliminate the bottom row of the given matrix.
+    This function assumes the matrix is in upper-triangular form.
+		If annih != NULL, then whatever row operations annihilate the bottom
+		row will be recorded as a polynomial and stored in annih.
+		Returns 1 upon successfully eliminating the row, 0 otherwise. */
 {
-	bool hasLeadEntry;
-	bool focusHasInverse;
+	bool canAnnihilate = FALSE;
+	bool hasAnnihilated = FALSE;
 	
-	//For when columns of zeros appear, place pivot on correct row
-	int pivotColOffset = 0;
-	
-	//Row with least non-invertible element when reducing rows with non-invertible elements
-	int leastNonInvIndex = 0;
-	
-	//For keeping track of how non invertible elements are
-	BigIntTP leastNonInvCount;
-	BigIntTP leastNonInvTempCount;
+	BigIntTP* annihCoeffs; //Holds a poly representation of the row ops we do
+	BigPolyTP annihPoly;
 	
 	int numArr[1] = {1};
-	BigIntTP zero, one, bigMult, temp, temp2, tempInverse;
+	BigIntTP zero = empty_BigIntT(1);
+	BigIntTP one = new_BigIntT(numArr, 1);
+	BigIntTP temp = empty_BigIntT(1);
+
+	BigIntTP entryGCD = NULL;
+	BigIntTP bottomGCD = NULL;
+	
 	BigIntTP tempGCD = NULL;
+	BigIntTP runningLCM = empty_BigIntT(1);
+	BigIntTP tempQuotient = empty_BigIntT(1);
 	
-	//Making sure our matrices are of the correct shape
-	if ((result->m != M->m) || (result->n != M->n))
-		return 0;
-	
-	if (aux != NULL)
-		if ((aux->m != M->m))
-			return 0;
-	
-	copy_BigIntMatrixT(M, result);
-	modbm(result, modulus); //Making sure no wacky entries throw our algorithm off
-	
-	zero = empty_BigIntT(1);
-	one  = new_BigIntT(numArr, 1);
-	
-	temp        = empty_BigIntT(1);
-	temp2       = empty_BigIntT(1);
-	bigMult     = empty_BigIntT(1);
-	tempInverse = empty_BigIntT(1);
-	
-	//For determining which numbers are least non invertible 
-	// when reducing rows with non-invertible elements
-	leastNonInvTempCount = empty_BigIntT(1);
-	leastNonInvCount     = empty_BigIntT(1);
-	
-	for (int focusRow = 0; focusRow < M->m; focusRow += 1)
+	if (annih != NULL)
 	{
-		if (focusRow+pivotColOffset >= M->n)
-			break;
-		
+		annihCoeffs = malloc(((A->m)-1)*sizeof(BigIntTP));
+		for (int i = 0; i < (A->m)-1; i += 1)
+			annihCoeffs[i] = empty_BigIntT(1);
+	}
+	
+	//Iterate over the COLUMNS of A to try and annihilate the bottom row
+	for (int colToKill = 0; colToKill < A->n; colToKill += 1)
+	{
 		#ifdef VERBOSE
-		printf("focusRow = %d, pivotColOffset = %d\n", focusRow, pivotColOffset);
+			printf("Matrix:\n");
+			printbm(A);
+			printf("\nAttempting to eliminate column %d...\n", colToKill);
 		#endif
 		
-		//Make sure each row has to find an invertible leading entry
-		hasLeadEntry = FALSE;
-		
-		//Find a row with a non-zero first entry
-		for (int nonzero = focusRow; nonzero < M->m; nonzero += 1)
+		//First, let's make sure there's actually something to annihilate
+		if (compare_BigIntT(A->matrix[(A->m)-1][colToKill], zero) == 0)
 		{
-			//Checking to see whether the leading entry is one
-			//OR
-			//Checking to see whether the leading entry is nonzero and has an inverse
-			tempGCD = big_gcd(result->matrix[nonzero][focusRow+pivotColOffset], modulus);
+			#ifdef VERBOSE
+				printf("Column %d is zero. Continuing to next column.\n* * *\n", colToKill);
+				getchar();
+			#endif
+			continue;
+		}
+		
+		hasAnnihilated = FALSE;
+		
+		//Look through all rows to find one that may annihilate column #colToKill of the bottom row
+		for (int rowToConsider = 0; rowToConsider < (A->m)-1; rowToConsider += 1)
+		{
+			#ifdef VERBOSE
+				printf("Considering row %d...\n", rowToConsider);
+			#endif
 			
-			if (compare_BigIntT(tempGCD, one) == 0)
+			canAnnihilate = TRUE;
+			
+			copy_BigIntT(one, runningLCM);
+			
+			//Firstly, go through our row and make sure all the elements leading up to
+			// the element in column colToKill can be annihilated so as not to screw
+			// up the bottom row we're annihilating.
+			for (int elem = 0; elem < colToKill; elem += 1)
 			{
-				hasLeadEntry = TRUE;
+				tempGCD = big_gcd(bigMod, A->matrix[rowToConsider][elem]);
+				divide_BigIntT(bigMod, tempGCD, tempQuotient);
+				big_lcm(runningLCM, tempQuotient, temp);
+				copy_BigIntT(temp, runningLCM);
 				
-				//Don't need to swap if the row is already in place
-				if (nonzero == focusRow)
+				tempGCD = free_BigIntT(tempGCD);
+				
+				if (compare_BigIntT(runningLCM, bigMod) == 0)
 				{
+					canAnnihilate = FALSE;
+					break;
+				}
+			}
+			
+			#ifdef VERBOSE
+				printf("Minimum multiple required to keep elements to the left of column %d zero: ", colToKill);
+				printi(runningLCM);
+				printf("\n");
+			#endif
+			
+			//Now, runningLCM tells us the minimum factor we need to multiply
+			// our row by to keep the elements to the next of colToKill intact.
+			//If it's zero, we bail to the next row.
+			if (canAnnihilate)
+			{
+				//Now, we see if M->matrix[rowToConsider][colToKill]*runningLCM
+				// can annihilate colToKill on the bottom row.
+				bottomGCD = big_gcd(A->matrix[A->m-1][colToKill], bigMod);
+				
+				multiply_BigIntT(A->matrix[rowToConsider][colToKill], runningLCM, temp);
+				entryGCD = big_gcd(temp, bigMod);
+				
+				canAnnihilate = FALSE;
+				if (compare_BigIntT(entryGCD, one) == 0)
+				{
+					canAnnihilate = TRUE;
+				}
+				else
+				{
+					mod_BigIntT(bottomGCD, entryGCD, temp);
+					if (compare_BigIntT(temp, zero) == 0)
+						canAnnihilate = TRUE;
+				}
+				
+				#ifdef VERBOSE
+					printf("We see bottomGCD = ");
+					printi(bottomGCD);
+					printf(" and entryGCD = ");
+					printi(entryGCD);
+					printf("\n");
+				#endif
+				
+				entryGCD = free_BigIntT(entryGCD);
+				bottomGCD = free_BigIntT(bottomGCD);
+				
+				if (canAnnihilate)
+				{
+					//Here, we're adding an extra row to the matrix to speed up
+					// the annihilating process.
+					resize_BigIntMatrixT(A, (A->m)+1, A->n);
+					big_row_add(A, (A->m)-1, rowToConsider, bigMod);
+					big_row_multiply(A, (A->m)-1, runningLCM, bigMod);
+					
+					//Annihilate colToKill
+					while (compare_BigIntT(A->matrix[(A->m)-2][colToKill], zero) != 0)
+					{
+						big_row_add(A, (A->m)-2, (A->m)-1, bigMod);
+						
+						//Store row operations as polynomial
+						if (annih != NULL)
+						{
+							add_BigIntT(annihCoeffs[rowToConsider], runningLCM, temp);
+							mod_BigIntT(temp, bigMod, annihCoeffs[rowToConsider]);
+						}
+					}
+					
+					resize_BigIntMatrixT(A, (A->m)-1, A->n);
+					
 					#ifdef VERBOSE
-					printf("Nonzero leading entry is already in place; no swap necessary.\n");
+						printf("Column %d of bottom row successfully annihilated. Continuing to next column.\n* * *\n", colToKill);
+						getchar();
 					#endif
+					
+					hasAnnihilated = TRUE;
 					break;
 				}
 				
-				big_row_swap(result, focusRow, nonzero);
-				big_row_swap(aux, focusRow, nonzero);
-				
 				#ifdef VERBOSE
-				printf("Swapped row %d and %d.\n", focusRow, nonzero);
-				printbm(result);
-				#endif
-
-				break;
-			}
-			tempGCD = free_BigIntT(tempGCD);
-		}
-		tempGCD = free_BigIntT(tempGCD);
-		
-		//If we couldn't find a nonzero entry for our pivot column
-		if (!hasLeadEntry)
-		{
-			#ifdef VERBOSE
-			printf("No nonzero, invertible leading entry could be found.\n");
-			#endif
-		}
-		
-		//If we couldn't find a suitable row to create an invertible element
-		if (!hasLeadEntry)
-		{
-			#ifdef VERBOSE
-			printf("Settling for the \"least\" non-invertible element.\n");
-			#endif
-			
-			//Finding an element that can eliminate all elements below it
-			//THIS ONLY WORKS WITH PRIME-POWER MODULI
-			leastNonInvIndex = 0;
-			copy_BigIntT(modulus, leastNonInvCount);
-			hasLeadEntry = FALSE; //Have we found a nonzero element?
-			for (int leastNonInv = focusRow; leastNonInv < M->m; leastNonInv += 1)
-			{
-				if (compare_BigIntT(result->matrix[leastNonInv][focusRow+pivotColOffset], zero) != 0)
-				{
-					hasLeadEntry = TRUE;
-					free_BigIntT(leastNonInvTempCount);
-					
-					leastNonInvTempCount = big_gcd(result->matrix[leastNonInv][focusRow+pivotColOffset], modulus);
-					
-					//leastNonInvTempCount now holds the largest power of basePrime in result->matrix[leastNonInv][focusRow+pivotColOffset]
-					if (compare_BigIntT(leastNonInvTempCount, leastNonInvCount) < 0)
+					else
 					{
-						copy_BigIntT(leastNonInvTempCount, leastNonInvCount);
-						leastNonInvIndex = leastNonInv;
+						printf("Row %d cannot annihilate column %d of bottom row. Bailing to next row...\n* * *\n", rowToConsider, colToKill);
+						getchar();
 					}
-				}
-			}
-			
-			if (!hasLeadEntry) //If all elements were zero, shift our focus column over
-			{
-				focusRow -= 1;
-				pivotColOffset += 1;
-				
-				#ifdef VERBOSE
-				printf("Current pivot column is completely zero. Offsetting column by 1.\n");
 				#endif
-				
-				continue;
 			}
 			
-			//Swap our found row to the focus row
-			else
-			{
-				//Get the simplest leading non-invertible element possible
-				divide_BigIntT(result->matrix[leastNonInvIndex][focusRow+pivotColOffset], leastNonInvCount, temp);
-				divide_BigIntT(modulus, leastNonInvCount, temp2);
-				big_num_inverse(temp, temp2, tempInverse);
-				
-				//Using embedded dynamics to find "inverse"
-				//multiply_BigIntT(tempInverse, leastNonInvCount, temp);
-				if (compare_BigIntT(temp, one) != 0)
+			#ifdef VERBOSE
+				else
 				{
-					big_row_multiply(result, leastNonInvIndex, tempInverse, modulus);
-					big_row_multiply(aux, leastNonInvIndex, tempInverse, modulus);
-					
-					#ifdef VERBOSE
-					printf("Multiplied row %d by ", leastNonInvIndex);
-					printi(temp);
-					printf(".\n");
-					printbm(result);
-					#endif
+					printf("Multiple required is zero. Bailing to next row...\n* * *\n");
+					getchar();
 				}
-				
-				if (focusRow != leastNonInvIndex)
-				{
-					big_row_swap(result, focusRow, leastNonInvIndex);
-					big_row_swap(aux, focusRow, leastNonInvIndex);
-					
-					#ifdef VERBOSE
-					printf("Swapped row %d with %d.\n", focusRow, leastNonInvIndex);
-					printbm(result);
-					#endif
-				}
-				
-				//Tell next conditional we don't need to do any work
-				focusHasInverse = FALSE;
-			}
+			#endif
 		}
 		
-		else //If we're dealing with the normal case where the focus element has an inverse
-			focusHasInverse = TRUE;
+		//No sense going on if there's a column we can't annihilate
+		if (!hasAnnihilated)
+			break;
+	}
+	
+	runningLCM = free_BigIntT(runningLCM);
+	
+	#ifdef VERBOSE
+		printf("Final matrix:\n");
+		printbm(A);
+		getchar();
+	#endif
+	
+	//Now, let's create our polynomial representation of the bottom row
+	if (annih != NULL)
+	{
+		annihPoly = new_BigPolyT(annihCoeffs, (A->m)-1);
+		copy_BigPolyT(annihPoly, annih);
+		
+		annihPoly = free_BigPolyT(annihPoly);
+		for (int i = 0; i < (A->m)-1; i += 1)
+			annihCoeffs[i] = free_BigIntT(annihCoeffs[i]);
+		free(annihCoeffs);
+	}
+	
+	one = free_BigIntT(one);
+	zero = free_BigIntT(zero);
+	temp = free_BigIntT(temp);
+	
+	if (hasAnnihilated)
+		return 1;
+	else
+		return 0;
+}
 
-		//If the leading entry is a 1 or is non invertible, we don't need to find an inverse
-		if ((compare_BigIntT(result->matrix[focusRow][focusRow+pivotColOffset], one) != 0) &&
-		    (focusHasInverse))
-		{
-			big_num_inverse(result->matrix[focusRow][focusRow+pivotColOffset], modulus, tempInverse);
-			if (compare_BigIntT(tempInverse, one) != 0)
-			{
-				big_row_multiply(result, focusRow, tempInverse, modulus);
-				big_row_multiply(aux, focusRow, tempInverse, modulus);
-				
-				#ifdef VERBOSE
-				printf("Multiplied row %d by ", focusRow);
-				printi(tempInverse);
-				printf(".\n");
-				printbm(result);
-				#endif
-			}
-		}
+
+int big_row_echelon(const BigIntMatrixTP M, 
+                    const BigIntTP bigMod, 
+										BigIntMatrixTP result,
+										BigIntMatrixTP aux)
+/** Attempts to find a row-echelon form for M, stores the
+    result in result. The same row operations applied to M
+		will be applied to aux if aux is not NULL. Returns 1
+		upon finding a row-echelon form, 0 otherwise. */
+//This function assumes the modulus is prime or a prime-power.
+//It won't crash if it's not, but the result may or may not
+// actually be in row-echelon form.
+{
+	#ifdef VERBOSE
+		printf("\n\n\n ~~~ big_row_echelon() ~~~ \n\n\n");
+	#endif
+	
+	if ((bigMod == NULL) || (M == NULL) || (result == NULL))
+		return 0;
+	
+	if ((result->m != M->m) || (result->n != M->n))
+		return 0;
+	
+	if ((aux != NULL) && (aux->m != M->m))
+		return 0;
 		
-		//Now, we clear out all nonzero entries in our current pivot column
-		for (int i = focusRow+1; i < M->m; i += 1)
+	#ifdef VERBOSE
+		printf(":)\n");
+		printf("M:\n");
+		printbm(M);
+		printf("\n");
+	#endif
+	
+	//Holds the ever-growing matrix that'll hold row-reduced rows of M
+	BigIntMatrixTP constructionMatrix = new_BigIntMatrixT(1, M->n);
+	BigIntTP tempRow[M->n];
+	BigIntTP tempGCDs[3];
+	
+	//For making sure the aux matrix
+	BigPolyTP annihOps = empty_BigPolyT();
+	BigIntTP* annihOpsCoeffs;
+	
+	int numArr[1] = {1};
+	BigIntTP one = new_BigIntT(numArr, 1);
+	BigIntTP zero = empty_BigIntT(1);
+	
+	BigIntTP temp = empty_BigIntT(1);
+	BigIntTP tempCounter = empty_BigIntT(1);
+	
+	int leadingEntryCol;
+	
+	for (int i = 0; i < M->n; i += 1)
+		tempRow[i] = M->matrix[0][i];	
+	set_big_row(constructionMatrix, tempRow, 0);
+	
+	//Make the leading term of first row as invertible as possible
+	for (int col = 0; col < M->n; col += 1)
+	{
+		if (compare_BigIntT(constructionMatrix->matrix[0][col], zero) != 0)
 		{
-			subtract_BigIntT(modulus, result->matrix[i][focusRow+pivotColOffset], temp);
-			mod_BigIntT(temp, modulus, temp2); //temp2 is acting as "numTimesToAdd" here
-			
-			//Added so that non invertible elements don't need to add more times than necessary
-			if (!focusHasInverse)
+			tempGCDs[0] = big_gcd(bigMod, constructionMatrix->matrix[0][col]);
+			while (compare_BigIntT(tempGCDs[0], constructionMatrix->matrix[0][col]) != 0)
 			{
-				divide_BigIntT(temp2, leastNonInvCount, temp);
-				copy_BigIntT(temp, temp2);
+				big_row_add(constructionMatrix, 0, 0, bigMod);
+				big_row_add(aux, 0, 0, bigMod);
 			}
 			
-			if (compare_BigIntT(temp2, zero) != 0)
-			{
-				#ifdef VERBOSE
-					printf("Added row %d to row %d a total of ", focusRow, i);
-					printi(temp2);
-					compare_BigIntT(one, temp2) == 0 ? printf(" time.\n") : printf(" times.\n");
-				#endif
-				
-				while (compare_BigIntT(temp2, zero) != 0)
-				{
-					big_row_add(result, i, focusRow, modulus);
-					big_row_add(aux, i, focusRow, modulus);
-					
-					//Decrement temp2
-					subtract_BigIntT(temp2, one, temp);
-					copy_BigIntT(temp, temp2);
-				}
-				
-				#ifdef VERBOSE
-				printbm(result);
-				#endif
-			}
+			tempGCDs[0] = free_BigIntT(tempGCDs[0]);
+			break;
 		}
 	}
 	
+	//Now, we begin the reduction, adding one new row at a time
+	for (int constructionRow = 1; constructionRow < M->m; constructionRow += 1)
+	{
+		//Add new row
+		for (int i = 0; i < M->n; i += 1)
+			tempRow[i] = M->matrix[constructionRow][i];
+		resize_BigIntMatrixT(constructionMatrix, (constructionMatrix->m)+1, M->n);
+		set_big_row(constructionMatrix, tempRow, constructionRow);
+		
+		#ifdef VERBOSE
+			printf("constructionRow = %d\n", constructionRow);
+			printf("constructionMatrix:\n");
+			printbm(constructionMatrix);
+			printf("\n");
+		#endif
+		
+		for (int row = 0; row < constructionRow; row += 1)
+		{
+			leadingEntryCol = -1;
+			for (int col = row; col < M->n; col += 1)
+			{
+				//Finding our leading entry
+				if (compare_BigIntT(zero, constructionMatrix->matrix[row][col]) != 0)
+					leadingEntryCol = col;
+				
+				tempGCDs[0] = big_gcd(bigMod, constructionMatrix->matrix[row][col]);
+				tempGCDs[1] = big_gcd(bigMod, constructionMatrix->matrix[constructionRow][col]);
+				
+				//If our new row has a better leading term 
+				if (compare_BigIntT(tempGCDs[1], tempGCDs[0]) < 0)
+				{
+					big_row_swap(constructionMatrix, row, constructionRow);
+					big_row_swap(aux, row, constructionRow);
+					
+					//Now, get the leading entry to have as few factors of p as possible
+					tempGCDs[2] = big_gcd(bigMod, constructionMatrix->matrix[row][col]);
+					while (compare_BigIntT(tempGCDs[2], constructionMatrix->matrix[row][col]) != 0)
+					{
+						big_row_add(constructionMatrix, row, row, bigMod);
+						big_row_add(aux, row, row, bigMod);
+					}
+					
+					tempGCDs[0] = free_BigIntT(tempGCDs[0]);
+					tempGCDs[1] = free_BigIntT(tempGCDs[1]);
+					tempGCDs[2] = free_BigIntT(tempGCDs[2]);
+					
+					row -= 1; //With the new row in the place of the old, run through the computation again
+					break;
+				}
+				
+				tempGCDs[0] = free_BigIntT(tempGCDs[0]);
+				tempGCDs[1] = free_BigIntT(tempGCDs[1]);
+				
+				if (leadingEntryCol != -1)
+				{					
+					//Annihilate the bottom row's element below our current leading term
+					while (compare_BigIntT(constructionMatrix->matrix[constructionRow][leadingEntryCol], zero) != 0)
+					{
+						big_row_add(constructionMatrix, constructionRow, row, bigMod);
+						big_row_add(aux, constructionRow, row, bigMod);
+					}
+					
+					//Find the new leading entry of the bottom row
+					for (int newLeadingTerm = leadingEntryCol; newLeadingTerm < M->n; newLeadingTerm += 1)
+					{
+						if (compare_BigIntT(zero, constructionMatrix->matrix[constructionRow][newLeadingTerm]) != 0)
+						{
+							//Make sure the leading entry in as invertible as possible
+							tempGCDs[2] = big_gcd(bigMod, constructionMatrix->matrix[constructionRow][newLeadingTerm]);
+							while (compare_BigIntT(tempGCDs[2], constructionMatrix->matrix[constructionRow][newLeadingTerm]) != 0)
+							{
+								big_row_add(constructionMatrix, constructionRow, constructionRow, bigMod);
+								big_row_add(aux, constructionRow, constructionRow, bigMod);
+							}
+							
+							tempGCDs[2] = free_BigIntT(tempGCDs[2]);
+							break;
+						}
+					}
+					
+					break;
+				}
+			}
+			
+			#ifdef VERBOSE
+				printf("constructionMatrix after trying to annihilating bottom row element using row %d:\n", row);
+				printbm(constructionMatrix);
+				printf("\n");
+			#endif
+		}
+		
+		//For good measure, we'll also try and annihilate the bottom row after each new row we add
+		big_eliminate_bottom(constructionMatrix, bigMod, annihOps);
+		
+		#ifdef VERBOSE
+			printf("constructionMatrix after calling big_eliminate_bottom():\n");
+			printbm(constructionMatrix);
+			getchar();
+		#endif
+		
+		//Use annihOps to replicate the operations performed on constructionMatrix onto aux
+		reduce_BigPolyT(annihOps); //Doing this just to be safe
+		annihOpsCoeffs = extract_coefficients(annihOps);
+		for (int i = 0; i < degree(annihOps); i += 1)
+		{
+			copy_BigIntT(zero, tempCounter);
+			while (compare_BigIntT(tempCounter, annihOpsCoeffs[i]) != 0)
+			{
+				big_row_add(aux, constructionRow, i, bigMod);
+				add_BigIntT(tempCounter, one, temp);
+				copy_BigIntT(temp, tempCounter);
+			}
+			
+			annihOpsCoeffs[i] = free_BigIntT(annihOpsCoeffs[i]);
+		}
+		free(annihOpsCoeffs);
+	}
+	
+	annihOpsCoeffs = NULL;
+	one = free_BigIntT(one);
 	zero = free_BigIntT(zero);
-	one  = free_BigIntT(one);
+	temp = free_BigIntT(temp);
+	tempCounter = free_BigIntT(tempCounter);
+	annihOps = free_BigPolyT(annihOps);
 	
-	temp        = free_BigIntT(temp);
-	temp2       = free_BigIntT(temp2);
-	bigMult     = free_BigIntT(bigMult);
-	tempInverse = free_BigIntT(tempInverse);
-	
-	leastNonInvCount     = free_BigIntT(leastNonInvCount);
-	leastNonInvTempCount = free_BigIntT(leastNonInvTempCount);
+	copy_BigIntMatrixT(constructionMatrix, result);
+	constructionMatrix = free_BigIntMatrixT(constructionMatrix);
 	
 	return 1;
 }
 
 
 int big_reduced_row_echelon(const BigIntMatrixTP M, 
-                            const BigIntTP modulus, 
+                            const BigIntTP bigMod, 
 														BigIntMatrixTP result, 
 														BigIntMatrixTP aux)
 /** Takes M, in row echelon form, and tries to reduce it to 
@@ -2642,101 +2793,69 @@ int big_reduced_row_echelon(const BigIntMatrixTP M,
 		Returns 1 upon reducing M to the identity (or some slice of it), 
 		0 otherwise. */
 {
-	int perfectReducedRowEchelon = 1;
-	int leadingEntryCol = 0;
-	BigIntTP temp, temp2, zero, one;
+	if ((bigMod == NULL) || (M == NULL) || (result == NULL))
+		return 0;
 	
-	if ((M->m != result->m) ||
-	    (M->n != result->n))
+	if ((result->m != M->m) || (result->n != M->n))
+		return 0;
+	
+	if ((aux != NULL) && 
+	    ((aux->m != M->m) || (aux->n != M->n)))
 		return 0;
 		
-	if (aux != NULL)
-		if ((M->m != aux->m) ||
-	      (M->n != aux->n))
-			return 0;
-
-	copy_BigIntMatrixT(M, result);
-	
 	int numArr[1] = {1};
-	temp  = empty_BigIntT(1);
-	temp2 = empty_BigIntT(1);
-	zero  = empty_BigIntT(1);
-	one   = new_BigIntT(numArr, 1);
+	BigIntTP one = new_BigIntT(numArr, 1);
+	BigIntTP zero = empty_BigIntT(1);
+	BigIntTP tempGCDs[2];
+	
+	int isSliceOfIdentity = 1;
+	
+	copy_BigIntMatrixT(M, result);
 
-	for (int i = M->m-1; i >= 0; i -= 1)
+	for (int row = 1; row < M->m; row += 1)
 	{
-		//We can't assume the leading entry is on the diagonal
-		//Let's find it!
-		leadingEntryCol = -1;
-		for (int j = 0; j < M->n; j += 1)
-			if (compare_BigIntT(result->matrix[i][j], zero) != 0)
-			{
-				leadingEntryCol = j;
-				break;
-			}
-		
-		//Each element above our leading entry
-		if (leadingEntryCol != -1)
+		for (int col = row; col < M->n; col += 1)
 		{
-			for (int element = i-1; element >= 0; element -= 1)
+			//Find the leading entry on each row below the first one
+			if (compare_BigIntT(zero, result->matrix[row][col]) != 0)
 			{
-				subtract_BigIntT(modulus, result->matrix[element][leadingEntryCol], temp);
-				mod_BigIntT(temp, modulus, temp2); //temp2 is acting as "numTimesToAdd" here
+				if (row != col)
+					isSliceOfIdentity = 0;
 				
-				//Adjusting for non-one leading terms
-				//This allows terms to get as small as possible
-				divide_BigIntT(temp2, result->matrix[i][leadingEntryCol], temp);
+				tempGCDs[0] = big_gcd(bigMod, result->matrix[row][col]);
+				if (compare_BigIntT(tempGCDs[0], one) != 0)
+					isSliceOfIdentity = 0;
 				
-				//Some manual adjustment for style
-				if ((compare_BigIntT(temp2, zero) != 0) && (compare_BigIntT(temp, zero) == 0))
-					copy_BigIntT(one, temp2);
-				else
-					mod_BigIntT(temp, modulus, temp2);
-				
-				if ((perfectReducedRowEchelon == 1) && 
-				    (compare_BigIntT(result->matrix[i][leadingEntryCol], one) != 0))
-					perfectReducedRowEchelon = 0;
-				
-				if (compare_BigIntT(temp2, zero) != 0)
+				for (int rowToAnnihilate = row-1; rowToAnnihilate >= 0; rowToAnnihilate -= 1)
 				{
-					#ifdef VERBOSE
-						printf("Added row %d to row %d a total of ", i, element);
-						printi(temp2);
-						compare_BigIntT(temp2, one) == 0 ? printf(" time.\n") : printf(" times.\n");
-					#endif
-
-					//Why did I do it this way
-					while (compare_BigIntT(temp2, zero) != 0)
+					tempGCDs[1] = big_gcd(bigMod, result->matrix[rowToAnnihilate][col]);
+					
+					//If our current row's leading term can annihilate an entry above it
+					if (compare_BigIntT(tempGCDs[1], tempGCDs[0]) >= 0)
 					{
-						big_row_add(result, element, i, modulus);
-						big_row_add(aux, element, i, modulus);
-						
-						//Decrement temp2
-						subtract_BigIntT(temp2, one, temp);
-						copy_BigIntT(temp, temp2);
+						while (compare_BigIntT(result->matrix[rowToAnnihilate][col], zero) != 0)
+						{
+							big_row_add(result, rowToAnnihilate, row, bigMod);
+							big_row_add(aux, rowToAnnihilate, row, bigMod);
+						}
 					}
 					
-					#ifdef VERBOSE
-					printbm(result);
-					#endif
+					tempGCDs[1] = free_BigIntT(tempGCDs[1]);
 				}
+				
+				tempGCDs[0] = free_BigIntT(tempGCDs[0]);
+				break;
 			}
+			
+			if ((row < M->n) && (col == (M->n)-1))
+				isSliceOfIdentity = 0;
 		}
-		
-		else
-			perfectReducedRowEchelon = 0;
 	}
 	
-	#ifdef VERBOSE
-	printf("The matrix is now as reduced as possible.\n");
-	#endif
-	
-	one   = free_BigIntT(one);
-	temp  = free_BigIntT(temp);
-	zero  = free_BigIntT(zero);
-	temp2 = free_BigIntT(temp2);
-	
-	return perfectReducedRowEchelon;
+	one = free_BigIntT(one);
+	zero = free_BigIntT(zero);
+
+	return isSliceOfIdentity;
 }
 
 
@@ -2744,73 +2863,20 @@ void big_row_reduce(const BigIntMatrixTP A, BigIntTP bigMod, BigIntMatrixTP redu
 /** Row reduces A. Behaviour is defined for prime
     and prime-power moduli only. */
 {	
-	BigIntTP* newRow = malloc(big_cols(A)*sizeof(BigIntTP));
+	if ((A == NULL) || (bigMod == NULL) || (reducedA == NULL))
+		return;
 	
-	BigIntMatrixTP rrefA = new_BigIntMatrixT(big_rows(A), big_cols(A));
-	BigIntMatrixTP reducedMatrix = new_BigIntMatrixT(big_rows(A), big_cols(A));
-	BigIntMatrixTP tempMatrix = new_BigIntMatrixT(big_rows(A), big_cols(A));
+	if ((A->m != reducedA->m) || (A->n != reducedA->n))
+		return;
+
+	BigIntMatrixTP refA = new_BigIntMatrixT(big_rows(A), big_cols(A));
 	
 	//Get a "RREF" form of A to make the below reduction go smoother
-	copy_BigIntMatrixT(A, reducedMatrix);
-	big_row_echelon(reducedMatrix, bigMod, tempMatrix, NULL);
-	big_reduced_row_echelon(tempMatrix, bigMod, rrefA, NULL);
+	copy_BigIntMatrixT(A, reducedA);
+	big_row_echelon(reducedA, bigMod, refA, NULL);
+	big_reduced_row_echelon(refA, bigMod, reducedA, NULL);
 	
-	for (int row = 0; row < big_rows(A); row += 1)
-	{
-		resize_BigIntMatrixT(tempMatrix, row+1, big_cols(A));
-		resize_BigIntMatrixT(reducedMatrix, row+1, big_cols(A));
-		
-		for (int elem = 0; elem < big_cols(rrefA); elem += 1)
-			newRow[elem] = big_element(rrefA, row, elem);
-		
-		//Adding the next row of A to reducedMatrix
-		set_big_row(reducedMatrix, newRow, row);
-		
-		#ifdef VERBOSE
-			printf("Current matrix:\n");
-			printbm(reducedMatrix);
-			printf("\n");
-		#endif
-		
-		//Now, we attempt to reduce the matrix as much as possible
-		big_eliminate_bottom(reducedMatrix, bigMod, NULL);
-		
-		#ifdef VERBOSE
-			printf("Bottom-eliminated matrix:\n");
-			printbm(reducedMatrix);
-			printf("\n");
-		#endif
-		
-		big_row_echelon(reducedMatrix, bigMod, tempMatrix, NULL);
-		big_reduced_row_echelon(tempMatrix, bigMod, reducedMatrix, NULL);
-		
-		#ifdef VERBOSE
-			printf("RREF matrix:\n");
-			printbm(reducedMatrix);
-			getchar();
-		#endif
-	}
-	
-	/*
-	//Now, just run one more pass to be sure the matrix really is reduced
-	// as much as possible...
-	big_eliminate_bottom(reducedMatrix, bigMod, NULL);
-	big_row_echelon(reducedMatrix, bigMod, tempMatrix, NULL);
-	big_reduced_row_echelon(tempMatrix, bigMod, reducedMatrix, NULL);
-	
-	#ifdef VERBOSE
-		printf("Final matrix:\n");
-		printbm(reducedMatrix);
-		getchar();
-	#endif
-	*/
-	
-	free(newRow);
-	
-	copy_BigIntMatrixT(reducedMatrix, reducedA);
-	rrefA = free_BigIntMatrixT(rrefA);
-	tempMatrix = free_BigIntMatrixT(tempMatrix);
-	reducedMatrix = free_BigIntMatrixT(reducedMatrix);
+	refA = free_BigIntMatrixT(refA);
 }
 
 
@@ -3743,6 +3809,18 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 			free(idealRow);
 			idealRow = NULL;
 			
+			/*
+			printf("iterateMatrix before calling big_row_echelon():\n");
+			printbm(iterateMatrix);
+			printf("\ntempIterateMatrix before calling big_row_echelon():\n");
+			printbm(tempIterateMatrix);
+			printf("\nbigMod before calling big_row_echelon(): ");
+			printi(bigMod);
+			printf("\niterateRowValueMat before calling big_row_echelon():\n");
+			printbm(iterateRowValueMat);
+			printf("\n");
+			*/
+			
 			big_row_echelon(iterateMatrix, bigMod, tempIterateMatrix, iterateRowValueMat);
 			copy_BigIntMatrixT(tempIterateMatrix, iterateMatrix);
 		}
@@ -3774,14 +3852,6 @@ BigPolyTP* ann_generators(const BigIntMatrixTP A,
 	lambdaPoly    = free_BigPolyT(lambdaPoly);
 	baseModPoly   = free_BigPolyT(baseModPoly);
 	tempAnnihPoly = free_BigPolyT(tempAnnihPoly);
-	
-	//Don't need to free this anymore since we're
-	// returning it.
-	/*
-	for (int i = 0; i < numOfAnnihPolys; i += 1)
-		annihPolys[i]  = free_BigPolyT(annihPolys[i]);
-	free(annihPolys);
-	*/
 
 	tempVect = free_BigIntMatrixT(tempVect);
 	zeroVect = free_BigIntMatrixT(zeroVect);

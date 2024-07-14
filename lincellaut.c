@@ -561,12 +561,14 @@ int main(int argc, char* argv[])
 			
 			BigIntMatrixTP reducedMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_cols(UPDATEMATRIX));
 			
+			printf("Note that this tool is meant to be used only with prime and prime-power moduli. Results for general composite moduli are undefined.\n");
+			
+			big_row_reduce(UPDATEMATRIX, bigMod, reducedMatrix);
 			printf("Modulus: ");
 			printi(bigMod);
 			printf("\nMatrix:\n");
 			printbm(UPDATEMATRIX);
 			printf("\nRow-reduced matrix:\n");
-			big_row_reduce(UPDATEMATRIX, bigMod, reducedMatrix);
 			printbm(reducedMatrix);
 			printf("\n");
 			
