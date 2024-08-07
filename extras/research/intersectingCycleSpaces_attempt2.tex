@@ -1,0 +1,300 @@
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+\usepackage[T1]{fontenc}
+
+\usepackage[parfill]{parskip}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{natbib}
+
+\usepackage{dsfont}
+\usepackage{amssymb}
+
+\usepackage{verbatim}
+
+\newtheorem{prop}{Proposition}
+\newtheorem{coro}{Corollary}
+
+\DeclareMathOperator{\Span}{span}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand\divides{\ | \ }
+\newcommand\Mat[2][]{\mathbf{#1}^{\!#2}}
+\newcommand\smallmat[1]{\left[\begin{smallmatrix}#1\end{smallmatrix}\right]}
+\newcommand{\cycsp}[1]{\mathcal{S}_{#1}}
+
+\newcommand{\dq}[1]{``#1''}
+
+\renewcommand{\qedsymbol}{\textbf{QED}}
+
+%Allowing propositions to be clicked on
+%This needs to be the last package imported
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup
+{
+    colorlinks=false,
+	pdfborder={0 0 0},
+    pdftitle={Intersecting Cycle Spaces},
+    pdfpagemode=FullScreen,
+	pdfauthor={Zach Strong},
+}
+
+\begin{document}
+	An object of interest to us is the span of a vector's set of iterates under a given update matrix. We call this space the \emph{cycle space} of a vector.
+	
+	\begin{defn}
+		The \emph{cycle space} of a vector $\vec{v} \in \Z_p^L$ under a matrix $\Mat[A]{} \in \Z_p^{L \times L}$ for some prime $p$, denoted as $\cycsp{\vec{v}}$, is 
+		defined to be the subspace spanned by the iterates of $\vec{v}$ under iteration by $\Mat[A]{}$. Symbolically,
+		\[
+			\cycsp{\vec{v}} = \Span\!\left(\bigcup_{i\,=\,0}^{\infty} \{\Mat[A]{i}\vec{v}\}\right) \mod{p}.
+		\]
+		The vector $\vec{v}$ is said to be the \emph{generating vector} for $\cycsp{\vec{v}}$.
+	\end{defn}
+	
+	For primes $p$, because $\Z_p^L$ is a finite vector space, cycle spaces, which are subspaces of $\Z_p^L$, are also finite, despite our definition including an infinite
+	union. In fact, for the definition of the cycle space, it would be sufficient to take the union from $0 \leq i \leq \omega+\tau-1$, where $\omega$ is the cycle length of 
+	the generating vector, and $\tau$ is the transient length. This is because all the iterates for a vector after the $\omega+\tau-1$-th iterate will have been iterated to 
+	before by definition of the cycle length and transient length.
+	
+	Cycle spaces are of interest to us as they represent the finest decomposition of an LCA's configuration space into invariant\footnote{As a reminder, a subspace is 
+	\emph{invariant} under a matrix $\Mat[A]{}$ if, for all vectors $\vec{v}$ in the subspace, $\Mat[A]{}\vec{v}$ is also in the subspace.} subspaces under multiplication by 
+	the update matrix. It isn't too difficult to see why. Say we wanted the smallest possible invariant subspace under a matrix $\Mat[A]{}$ that contained the vector 
+	$\vec{v}$. For the space to be invariant under $\Mat[A]{}$, it better be the case that $\Mat[A]()\vec{v}$, $\Mat[A]{2}\vec{v}$, etc., are in the subspace. In order for us 
+	to have a subspace, it must also be the case that any linear combination of $\vec{v}$, $\Mat[A]{}\vec{v}$, $\Mat[A]{2}\vec{v}$, etc., is also in the subspace. The 
+	definition of cycle spaces satisfies these criteria without introducing any additional vectors which don't need to be in the subspace, and so cycle spaces are indeed the
+	smallest possible invariant subspaces that contain a given vector.
+	
+	There are many reasons to care about invariant subspaces. In a more general context, one may want to consider the eigenspaces of a linear transformation in order to
+	characterise the transformation. Eigenspaces are, by definition, invariant subspaces. For our purposes, we wish to better understand the dynamics of the vectors in an
+	LCA's configuration space, and one way to do that is by understanding the action of the LCA's update matrix on a vector's iterates. The cycle space of a vector provides
+	the smallest subspace in which the iterates of a vector are contained, and so it is in some sense the simplest space to consider for this purpose. In both cases, having a
+	better understanding of how cycle spaces behave could prove useful, and so we'll dedicate this section of the thesis to proving some results regarding these spaces.
+	
+	A property we can deduce about a vector's cycle space right away is its dimension---the number of linearly-independent vectors needed to span it.
+	
+	\begin{prop}
+		\label{prop:cycSpaceDim}
+		Given a vector $\vec{v} \in \Z_p^L$, $p$ prime, with minimal annihilating polynomial $m(x) \in \Z_p[X]$ under $\Mat[A]{} \in \Z_p^{L \times L}$, the dimension of 
+		the cycle space of $\vec{v}$ is equal to the degree of $m(x)$. Symbolically, $\dim(\cycsp{\vec{v}}) = \deg(m(x))$.\footnote{Note that proofs of this fact have appeared
+		previously. An example is Theorem 2 on page 69 of \citet{Jacobson1953}.}
+	\end{prop}
+	\begin{proof}
+		The minimal annihilating polynomial is the smallest polynomial $m(x)$ such that $m(\Mat[A]{})\vec{v} \equiv \vec{0}$. By rearranging this relation, we find that 
+		$\Mat[A]{\deg(m(x))}\vec{v}$ is the first iterate of $\vec{v}$ that can be written as a linear combination of its previous iterates (i.e. $\vec{v}$ to 
+		$\Mat[A]{\deg(m(x))-1}\vec{v}$). So, $\cycsp{\vec{v}}$ requires $\deg(m(x))$ basis vectors ($\vec{v}$ to $\Mat[A]{\deg(m(x))-1}$), and so 
+		$\dim(\cycsp{\vec{v}}) = \deg(m(x))$.
+	\end{proof}
+	
+	We can also show that, given a subspace whose minimal annihilating polynomial is a particular degree, these must exist a cycle space within that subspace whose dimension
+	equals the degree of the polynomial.
+	
+	\begin{prop}
+		\label{prop:cycSpaceMandatoryCycSpace}
+		Given an invariant subspace $V \subseteq \Z_p^L$ under $\Mat[A]{} \in \Z_p^{L \times L}$, $p$ prime, with minimal annihilating polynomial $m(x) \in \Z_p[X]$, there 
+		exists a vector $\vec{v} \in V$ such that $\dim(\cycsp{\vec{v}}) = \deg(m(x))$. Thus, the dimension of $V$ is at least $\deg(m(x))$.
+	\end{prop}
+	\begin{proof}
+		Let $m(x) = (f_1(x))^{n_1}\times(f_2(x))^{n_2}\times\cdots\times(f_k(x))^{n_k}$ for irreducible, monic, relatively-prime polynomials $f_i(x) \in \Z_p[X]$ and positive 
+		integers $n_i$. The Primary Decomposition Theorem says that
+		\[
+			V = \bigoplus_{i\,=\,1}^k \ker((f_i(\Mat[A]{}))^{n_i})
+		\]
+		where each $\ker((f_i(\Mat[A]{}))^{n_i}) \neq \{\vec{0}\}$. Thus, for each $\ker((f_i(\Mat[A]{}))^{n_i})$, there must exist at least one vector $\vec{v}_i$ such that
+		$(f_i(x))^{n_i}$ is the minimal annihilating polynomial of $\vec{v}_i$. If this wasn't the case, then there would exist some $\eta_i < n_i$ where 
+		$\ker((f_i(\Mat[A]{}))^{\eta_i}) = \ker((f_i(\Mat[A]{}))^{n_i})$ and so 
+		\[
+			(f_1(x))^{n_1}\times\cdots\times(f_{i-1}(x))^{n_{i-1}}\times(f_i(x))^{\eta_i}\times(f_{i+1}(x))^{n_{i+1}}\times\cdots\times(f_k(x))^{n_k}
+		\]
+		would be an annihilating polynomial for $V$. However, this polynomial has a smaller degree than $m(x)$, which contradicts the fact that $m(x)$ is the minimal 
+		annihilating polynomial for $V$, and so this cannot happen.
+		
+		Because each $\ker((f_i(\Mat[A]{}))^{n_i})$ shares only the zero vector with all the other kernels, the sum $\vec{v} \equiv \vec{v}_1 + \vec{v}_2 + \cdots + \vec{v}_k$
+		has minimal annihilating polynomial 
+		\[
+			(f_1(x))^{n_1}\times(f_2(x))^{n_2}\times\cdots\times(f_k(x))^{n_k} \equiv m(x).
+		\]
+		By proposition \ref{prop:cycSpaceDim}, then, $\cycsp{\vec{v}}$ has dimension $\deg(m(x))$. As well, because $V$ is invariant under $\Mat[A]{}$, 
+		$\cycsp{\vec{v}} \subseteq V$, so $\dim(V) \geq \dim(\cycsp{\vec{v}}) = \deg(m(x))$.
+	\end{proof}
+	
+	Propositions \ref{prop:cycSpaceDim} and \ref{prop:cycSpaceMandatoryCycSpace} show that vectors' cycle spaces are directly related to minimal annihilating polynomials. 
+	It's natural, then, to wonder if cycle spaces could prove to be as useful in analysing LCAs as the subspaces given by the Primary Decomposition Theorem. After all, both 
+	types of subspaces are directly linked to minimal annihilating polynomials, and both share similar properties (such as being invariant under multiplication by the LCA's 
+	update matrix). However, as cycle spaces provide a more granular decomposition of an LCA's configuration space, it's possible they could reveal somehow \dq{finer} details 
+	about an LCA's behaviour.\footnote{Our cycle spaces are a special case of a more general space: a \emph{cyclic subspace}. Cyclic subspaces can be used to show lots of 
+	interesting results in areas of linear algebra (such as proving the Cayley-Hamilton Theorem; see pages 280 to 285 of \citet{Friedberg1989}), so it makes sense to wonder 
+	whether they can be used for our purposes, too.}
+	
+	Though cycle spaces share many traits with the subspaces given by the Primary Decomposition Theorem, we quickly notice that they don't behave the same. One immediate 
+	difference we notice is that the intersections of cycle spaces need not contain only the zero vector, as is the case with the Primary Decomposition Theorem's subspaces. 
+	As an example, take the LCA $\left(\Z_5, \Z_5^2, \smallmat{1 & 1 \\ 1 & 0}\right)$ and consider the two vectors $\vec{v} = \smallmat{1 \\ 2}$ and 
+	$\vec{w} = \smallmat{1 \\ 0}$. We see that
+	\[
+		\mathcal{S}_{\vec{v}} = \Span\!\left(\left\{\begin{bmatrix}1 \\ 2\end{bmatrix}\right\}\right) \mod{5}
+	\]
+	and
+	\[
+		\mathcal{S}_{\vec{w}} = \Span\!\left(\left\{\begin{bmatrix}1 \\ 0\end{bmatrix}\!\!,\ \begin{bmatrix}0 \\ 1\end{bmatrix}\right\}\right) \mod{5},
+	\]
+	and so
+	\[
+		\mathcal{S}_{\vec{v}} \cap \mathcal{S}_{\vec{w}} = \mathcal{S}_{\vec{v}}.
+	\]
+	This example shows that the intersections of cycle spaces are not as predictable as the intersections of the subspaces provided by the Primary Decomposition Theorem. 
+	However, our example also displays a potential pattern: is the intersection of two cycle spaces always another cycle space? In this case, the result is trivial since one
+	of the cycle spaces is the entirety of our LCA's configuration space, and so the intersection comes out as the other cycle space. If we were to try other examples, though,
+	we'd see the same behaviour: intersections of cycle spaces seem to yield other cycle spaces. Thus, it may be worthwhile to think about this question. What can we deduce 
+	about the intersection of cycle spaces?
+	
+	Because cycle spaces are invariant subspaces under multiplication by an update matrix, anything we prove about general invariant subspaces will also apply to cycle spaces.
+	The following proposition is an example.
+	
+	\begin{prop}
+		\label{prop:cycSpaceIntersectSubspace}
+		Let $V$ and $W$ be invariant subspaces of $\Z_p^L$ under $\Mat[A]{} \in \Z_p^{L \times L}$, $p$ prime. Then $V \cap W$ is a subspace of $\Z_p^L$ which is invariant 
+		under $\Mat[A]{}$.
+	\end{prop}
+	\begin{proof}
+		Let $\vec{x}, \vec{y} \in V \cap W$. This means $\vec{x}$ and $\vec{y}$ are in both $V$ and $W$. We can then say $\vec{x} + \vec{y}$ is in both $V$ and $W$ since 
+		subspaces are closed under addition. Thus, $\vec{x} + \vec{y} \in V \cap W$.
+		
+		Furthermore, we can say $t\vec{x}$ is in both $V$ and $W$ for $t \in \Z_p$ since subspaces are closed under taking scalar multiples. Thus, $t\vec{x} \in V \cap W$ for 
+		$t \in \Z_p$.
+		
+		Finally, because $V \cap W \subseteq \Z_p^L$ by virtue of both $V$ and $W$ being within $\Z_p^L$, we have enough to show that $V \cap W$ is a subspace of $\Z_p^L$.
+		
+		To show $V \cap W$ is invariant under $\Mat[A]{}$, note that $\Mat[A]{}\vec{x}$ is in both $V$ and $W$ since both subspaces are invariant under $\Mat[A]{}$ by 
+		assumption. Thus, $\Mat[A]{}\vec{x} \in V \cap W$, and so any arbitrary vector in the intersection stays within the intersection under multiplication by $\Mat[A]{}$. 
+		In other words, $V \cap W$ is invariant under $\Mat[A]{}$.
+	\end{proof}
+
+	Our current conjecture is that the intersection of cycle spaces is itself a cycle space. Proposition \ref{prop:cycSpaceIntersectSubspace} may have us wondering whether
+	something more general is true. Perhaps \emph{any} combination of two cycle spaces that results in an invariant subspace will be a cycle space. One such combination we
+	could try is the sum of two cycle spaces.
+	
+	Note that, when we when we refer to the sum of two subspaces, say $V + W$ for subspaces $V$ and $W$, we mean the set of vectors 
+	$\{\vec{v} + \vec{w} : \vec{v} \in V, \vec{w} \in W\}$. This is slightly different from the \emph{direct} sum of subspaces $V$ and $W$ which requires that for every
+	$\vec{x} \in V + W$ there exists a \emph{unique} pair of vectors $\vec{v} \in V$ and $\vec{w} \in W$ such that $\vec{x} = \vec{v} + \vec{w}$. For this thesis, $\oplus$ will
+	be used to denote the direct sum, while $+$ will be used for this looser sum.
+	
+	\begin{prop}
+		\label{prop:cycSpaceSumSubspace}
+		Let $V$ and $W$ be invariant subspaces of $\Z_p^L$ under $\Mat[A]{} \in \Z_p^{L \times L}$, $p$ prime. Then $V + W$ is a subspace of $\Z_p^L$ which is invariant under 
+		$\Mat[A]{}$.
+	\end{prop}
+	\begin{proof}
+		Let $\vec{x}, \vec{y} \in V + W$. This means both $\vec{x}$ and $\vec{y}$ can be written as a sum of two vectors: one from $V$ and one from $W$. Therefore, 
+		$\vec{x} + \vec{y}$ can also be written in this form simply by adding the respective vectors from each subspace (which can be done since subspaces are closed under 
+		addition). So, $\vec{x} + \vec{y} \in V + W$.
+		
+		Furthermore, a scalar multiple of a sum of two vectors, one from each subspace, will result in another sum of two vectors, one from each subspace, since subspaces are
+		closed under scalar multiplication. Thus, $t\vec{x} \in V + W$ for $t \in \Z_p$.
+		
+		By virtue of $V$ and $W$ being subsets of $\Z_p^L$, $V + W$ must also be a subset of $\Z_p^L$ due to $\Z_p^L$ being a subspace (which is closed under addition). This, 
+		combined with what was shown above, is enough to show that $V + W$ is a subspace of $\Z_p^L$.
+		
+		As with scalar multiples, a sum of two vectors, one from each subspace, multiplied by $\Mat[A]{}$, must also give a sum of two vectors, one from each subspace, since
+		both $W$ and $V$ are invariant under $\Mat[A]{}$. Therefore, $\Mat[A]{}\vec{x} \in V + W$, meaning $V + W$ is invariant under $\Mat[A]{}$.
+	\end{proof}
+	
+	Proposition \ref{prop:cycSpaceSumSubspace} proves that the sum of two cycle spaces is indeed an invariant subspace. Unfortunately, examples of sums of cycle spaces exist
+	where the resulting sum is not a cycle space. For instance, take the LCA $\left(\Z_3, \Z_3^3, \smallmat{2 & 0 & 0\\0 & 0 & 1\\0 & 1 & 0}\right)$ and add the two cycle 
+	spaces generated by the vectors $\smallmat{1\\0\\0}$ and $\smallmat{0\\1\\0}$. The resulting space, $\Z_3^3$, cannot be spanned by a single vector under iteration by the 
+	given update matrix as the minimal polynomial for $\smallmat{2 & 0 & 0\\0 & 0 & 1\\0 & 1 & 0}$ modulo 3 is a degree 2 polynomial, meaning every vector in $\Z_3^3$ under 
+	this matrix will have a minimal annihilating polynomial of degree 2 or less, and by proposition \ref{prop:cycSpaceDim}, this means every vector's cycle space will be of 
+	dimension 2 or less.
+	
+	So, it isn't the case that all \dq{combinations} of cycle spaces that result in invariant subspaces give cycle spaces. Thus, if there is some unique property that 
+	intersections of cycle spaces possess so that they themselves are cycle spaces, it goes beyond the fact that they're invariant subspaces. The following proposition will 
+	give us some insight into what that unique property may be.
+	
+	\begin{prop}
+		\label{prop:cycSpaceInteriorRestrictions}
+		Let $\vec{v} \in \Z_p^L$ be a vector, $p$ prime, with cycle space $\cycsp{\vec{v}}$ under $\Mat[A]{} \in \Z_p^{L \times L}$. If $S$ is an invariant subspace such that 
+		$S \subseteq \cycsp{\vec{v}}$, then
+		\[
+			\dim(S) = \deg(m(x)),
+		\]
+		where $m(x) \in \Z_p[X]$ is the minimal annihilating polynomial of $S$.
+	\end{prop}
+	\begin{proof}
+		Let $D = \dim(\cycsp{\vec{v}})$. To show what we want to show, there are two cases we need to consider.
+		
+		\textbf{Case 1: $S = \cycsp{\vec{v}}$.} Since $S = \cycsp{\vec{v}}$, the minimal annihilating polynomial for $S$ will be equal to the minimal 
+		annihilating polynomial for $\cycsp{\vec{v}}$. By proposition \ref{prop:cycSpaceDim}, the degree of the minimal annihilating polynomial for
+		$\cycsp{\vec{v}}$ is $D$, which is the dimension of $\cycsp{\vec{v}}$ and therefore the dimension of $S$.
+		
+		\textbf{Case 2: $S \subset \cycsp{\vec{v}}$.} Assume the opposite of our proposition. Then, we have that $S \subset \cycsp{\vec{v}}$, but $\dim(S) > \deg(m(x))$. Note 
+		that it isn't possible for the dimension of an invariant subspace to be less than the degree of its minimal annihilating polynomial by proposition 
+		\ref{prop:cycSpaceMandatoryCycSpace}, and $S$ is certainly an invariant subspace by assumption. So, if $\dim(S) \neq \deg(m(x))$, then it must be the case that the 
+		dimension is greater, not less.
+		
+		To ease with notation, let $n = \deg(m(x))$ and $d = \dim(S)$.
+		
+		Now, let $B = \{\vec{b}_1, \vec{b}_2, \cdots, \vec{b}_d, \vec{b}_{d+1}, \cdots, \vec{b}_D\}$ be a basis for $\cycsp{\vec{v}}$ where 
+		$\{\vec{b}_1, \vec{b}_2, \cdots, \vec{b}_d\}$ is a basis for $S$. As well, let $\tilde{B} = \{\vec{b}_{d+1}, \vec{b}_{d+2}, \cdots, \vec{b}_D\}$. 
+		Then, we can write $\Mat[A]{i}\vec{v}$ as
+		\[
+			\Mat[A]{i}\vec{v} \equiv \vec{t}_i + \vec{g}_i \mod{p},
+		\]
+		where $\vec{t}_i \in S$ and $\vec{g}_i \in \Span(\tilde{B})$.
+		
+		Because $|\tilde{B}| = D-d$ (and because $\tilde{B}$ is a basis for $\Span(\tilde{B})$), the maximum number of vectors in a subset of $\Span(\tilde{B})$ that can be 
+		linearly independent is $D-d$. Thus, it must be the case that the set $\{\vec{g}_0, \vec{g}_1, \cdots, \vec{g}_{D-d}\}$ is linearly dependent, meaning there are
+		constants $a_0$ to $a_{D-d}$ in $\Z_p$ such that
+		\[
+			a_0\vec{g}_0 + a_1\vec{g}_1 + \cdots + a_{D-d}\vec{g}_{D-d} \equiv \vec{0} \mod{p}.
+		\]
+		Let $r(x) = a_0 + a_1x + a_2x^2 + \cdots + a_{D-d}x^{D-d}$. Note that $r(x)$ is a degree $D-d$ polynomial. We have that
+		\begin{align*}
+			       & \ r(\Mat[A]{})\vec{v} \\
+			\equiv & \ a_0\vec{v} + a_1\Mat[A]{}\vec{v} + a_2\Mat[A]{2}\vec{v} + \cdots + a_{D-d}\Mat[A]{D-d}\vec{v} \\
+			\equiv & \ a_0(\vec{t}_0 + \vec{g}_0) + a_1(\vec{t}_1 + \vec{g}_1) + \cdots + a_{D-d}(\vec{t}_{D-d} + \vec{g}_{D-d}) \\
+			\equiv & \ a_0\vec{t}_0 + a_1\vec{t}_1 + \cdots + a_{D-d}\vec{t}_{D-d} + a_0\vec{g}_0 + a_1\vec{g}_1 + \cdots + a_{D-d}\vec{g}_{D-d} \\
+			\equiv & \ a_0\vec{t}_0 + a_1\vec{t}_1 + \cdots + a_{D-d}\vec{t}_{D-d} + \vec{0} \\
+			\in    & \ S.
+		\end{align*}
+		Because $m(x)$ is the minimal annihilating polynomial of $S$, this means
+		\[
+			m(\Mat[A]{})r(\Mat[A]{})\vec{v} \equiv \vec{0} \mod{p}.
+		\]
+		This implies that an annihilating polynomial of degree $n + D - d$ exists for $\vec{v}$, and so by proposition \ref{prop:cycSpaceDim}, 
+		$\dim(\cycsp{\vec{v}}) \leq n + D - d < D$ since $d > n$. This is a contradiction since $\dim(\cycsp{\vec{v}}) = D$. Thus, our assumption that 
+		$\dim(S) > \deg(m(x))$ must be false.
+	\end{proof}
+	
+	Proposition \ref{prop:cycSpaceInteriorRestrictions} massively restricts what sorts of cycle space behaviour are possible within another cycle space. For example, say we had
+	a cycle space $\cycsp{\vec{v}}$ with minimal annihilating polynomial $(f(x))^3$ for some irreducible $f(x)$, and within $\cycsp{\vec{v}}$ we had two cycle spaces 
+	$\cycsp{1}$ and $\cycsp{2}$ with minimal annihilating polynomials $f(x)$ and $(f(x))^2$, respectively. By proposition \ref{prop:cycSpaceInteriorRestrictions}, it must be 
+	the case that $\cycsp{1} \subset \cycsp{2}$. Otherwise, $\cycsp{1} + \cycsp{2}$ (an invariant subspace by proposition \ref{prop:cycSpaceSumSubspace}) would have a 
+	dimension greater than $2\deg(f(x))$, while the minimal annihilating polynomial would have a degree of exactly $2\deg(f(x))$, and proposition 
+	\ref{prop:cycSpaceInteriorRestrictions} guarantees that this isn't possible.
+	
+	Reading proposition \ref{prop:cycSpaceInteriorRestrictions}, we see what sets apart the intersection of two cycle spaces from other \dq{combinations} of cycle spaces (such 
+	as a sum): the intersection is necessarily contained within another cycle space. Thus, the proposition applies, and we find that our initial conjecture is correct; the
+	intersection of two cycle spaces must also be a cycle space.
+	
+	\begin{coro}
+		Let $\vec{v}, \vec{w} \in \Z_p^L$, $p$ prime. Then for some vector $\vec{x} \in \Z_p^L$,
+		\[
+			\cycsp{\vec{v}} \cap \cycsp{\vec{w}} = \cycsp{\vec{x}}
+		\]
+		under some matrix $\Mat[A]{} \in \Z_p^{L \times L}$.
+	\end{coro}
+	\begin{proof}
+		Let $S = \cycsp{\vec{v}} \cap \cycsp{\vec{w}}$. By proposition \ref{prop:cycSpaceIntersectSubspace}, $S$ is an invariant subspace under $\Mat[A]{}$. As well, by 
+		definition of intersections, we have that $S \subseteq \cycsp{\vec{v}}$. Thus, proposition \ref{prop:cycSpaceInteriorRestrictions} tells us that the dimension of $S$
+		is equal to the degree of its minimal annihilating polynomial, which we'll label as $d$. By proposition \ref{prop:cycSpaceMandatoryCycSpace}, there must exist some 
+		vector $\vec{x} \in S$ whose cycle space has dimension $d$. Because $\cycsp{\vec{x}} \subseteq S$, we have that $\cycsp{\vec{x}} = S$ since their dimensions are the
+		same.
+	\end{proof}
+	
+	<<is there anything I can add here? something to close off the section with a bit of wisdom?>>
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+\end{document}

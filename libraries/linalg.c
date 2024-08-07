@@ -2638,13 +2638,27 @@ int big_row_echelon(const BigIntMatrixTP M,
 	{
 		if (compare_BigIntT(constructionMatrix->matrix[0][col], zero) != 0)
 		{
+			copy_BigIntT(constructionMatrix->matrix[0][col], temp);
+			copy_BigIntT(one, tempCounter);
+			tempRow[0] = empty_BigIntT(1);
+			
 			tempGCDs[0] = big_gcd(bigMod, constructionMatrix->matrix[0][col]);
-			while (compare_BigIntT(tempGCDs[0], constructionMatrix->matrix[0][col]) != 0)
+			
+			//Finding the "inverse" of the leading term
+			while (compare_BigIntT(tempGCDs[0], temp) != 0)
 			{
-				big_row_add(constructionMatrix, 0, 0, bigMod);
-				big_row_add(aux, 0, 0, bigMod);
+				//I'm just using tempRow[0] as a temp variable because I can
+				add_BigIntT(one, tempCounter, tempRow[0]);
+				copy_BigIntT(tempRow[0], tempCounter);
+				
+				multiply_BigIntT(constructionMatrix->matrix[0][col], tempCounter, tempRow[0]);
+				mod_BigIntT(tempRow[0], bigMod, temp);
 			}
 			
+			big_row_multiply(constructionMatrix, 0, tempCounter, bigMod);
+			big_row_multiply(aux, 0, tempCounter, bigMod);
+			
+			tempRow[0] = free_BigIntT(tempRow[0]);
 			tempGCDs[0] = free_BigIntT(tempGCDs[0]);
 			break;
 		}
@@ -2685,13 +2699,24 @@ int big_row_echelon(const BigIntMatrixTP M,
 					big_row_swap(aux, row, constructionRow);
 					
 					//Now, get the leading entry to have as few factors of p as possible
+					copy_BigIntT(constructionMatrix->matrix[row][col], temp);
+					copy_BigIntT(one, tempCounter);
+					tempRow[0] = empty_BigIntT(1);
+					
 					tempGCDs[2] = big_gcd(bigMod, constructionMatrix->matrix[row][col]);
-					while (compare_BigIntT(tempGCDs[2], constructionMatrix->matrix[row][col]) != 0)
+					while (compare_BigIntT(tempGCDs[2], temp) != 0)
 					{
-						big_row_add(constructionMatrix, row, row, bigMod);
-						big_row_add(aux, row, row, bigMod);
+						add_BigIntT(one, tempCounter, tempRow[0]);
+						copy_BigIntT(tempRow[0], tempCounter);
+						
+						multiply_BigIntT(constructionMatrix->matrix[row][col], tempCounter, tempRow[0]);
+						mod_BigIntT(tempRow[0], bigMod, temp);
 					}
 					
+					big_row_multiply(constructionMatrix, row, tempCounter, bigMod);
+					big_row_multiply(aux, row, tempCounter, bigMod);
+					
+					tempRow[0] = free_BigIntT(tempRow[0]);
 					tempGCDs[0] = free_BigIntT(tempGCDs[0]);
 					tempGCDs[1] = free_BigIntT(tempGCDs[1]);
 					tempGCDs[2] = free_BigIntT(tempGCDs[2]);
@@ -2718,13 +2743,24 @@ int big_row_echelon(const BigIntMatrixTP M,
 						if (compare_BigIntT(zero, constructionMatrix->matrix[constructionRow][newLeadingTerm]) != 0)
 						{
 							//Make sure the leading entry in as invertible as possible
+							copy_BigIntT(constructionMatrix->matrix[constructionRow][newLeadingTerm], temp);
+							copy_BigIntT(one, tempCounter);
+							tempRow[0] = empty_BigIntT(1);
+							
 							tempGCDs[2] = big_gcd(bigMod, constructionMatrix->matrix[constructionRow][newLeadingTerm]);
-							while (compare_BigIntT(tempGCDs[2], constructionMatrix->matrix[constructionRow][newLeadingTerm]) != 0)
+							while (compare_BigIntT(tempGCDs[2], temp) != 0)
 							{
-								big_row_add(constructionMatrix, constructionRow, constructionRow, bigMod);
-								big_row_add(aux, constructionRow, constructionRow, bigMod);
+								add_BigIntT(one, tempCounter, tempRow[0]);
+								copy_BigIntT(tempRow[0], tempCounter);
+								
+								multiply_BigIntT(constructionMatrix->matrix[constructionRow][newLeadingTerm], tempCounter, tempRow[0]);
+								mod_BigIntT(tempRow[0], bigMod, temp);
 							}
 							
+							big_row_multiply(constructionMatrix, constructionRow, tempCounter, bigMod);
+							big_row_multiply(aux, constructionRow, tempCounter, bigMod);
+							
+							tempRow[0] = free_BigIntT(tempRow[0]);
 							tempGCDs[2] = free_BigIntT(tempGCDs[2]);
 							break;
 						}
@@ -2889,6 +2925,7 @@ BigIntMatrixTP big_inverse(const BigIntMatrixTP M, const BigIntTP modulus)
 		
 		This function is the same as inverse(), but for BigIntMatrixTs. */
 {
+
 	//If we're given a non-square matrix
 	if ((M->m != M->n))
 		return NULL;

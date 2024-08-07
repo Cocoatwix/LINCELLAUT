@@ -45,6 +45,7 @@ CycleInfoTP floyd(const IntMatrixTP, const IntMatrixTP, int);
 
 /** Same as floyd(), except with BigIntMatrixT structs.
     Returns 1 on success, 0 otherwise. */
+//First matrix is the update matrix, second is the initial matrix
 int big_floyd(const BigIntMatrixTP, 
               const BigIntMatrixTP, 
 			  const BigIntTP,

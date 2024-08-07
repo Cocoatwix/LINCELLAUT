@@ -508,6 +508,7 @@ int main(int argc, char* argv[])
 			printf("Update matrix:\n");
 			printbm(F);
 			
+			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
 			{
@@ -7821,6 +7822,408 @@ is not zero, then we haven't found a stable lift yet.\n");
 			deltaRowsToReduceTemp = free_BigIntMatrixT(deltaRowsToReduceTemp);
 			
 			deltaCombo = free_BigPolyT(deltaCombo);
+		}
+		
+		
+		//Half-test tool to find all stable lifts of a given matrix under the given modulus
+		//This is by no means coded to be optimised. In fact, this tool will likely be
+		// horrendously slow.
+		else if (!strcmp(argv[1], "allstablelifts"))
+		{
+			//allstablelifts baseMod modPower
+			//baseMod^modPower is the modulus of the thing we want to lift,
+			// not the lift modulus itself (which is baseMod^{modPower+1}).
+			
+			PROHIBIT_UNIXFLAGS
+			
+			if (argc < 4)
+			{
+				printf("allstablelifts baseMod modPower\n");
+				goto FREE_VARIABLES;
+			}
+			
+			BigIntTP baseMod, liftMultiple, bigMod;
+			BigIntTP temp;
+			int modPower;
+			
+			CycleInfoTP OGcycle = NULL;
+			CycleInfoTP liftCycle = NULL;
+			
+			BigIntMatrixTP I;
+			
+			int numOfStableLifts = 0;
+			BigIntTP** tempStableLiftElements;
+			BigIntMatrixTP tempStableLift, tempMatrix;
+			BigIntMatrixTP* listOfStableLifts = NULL;
+			
+			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
+			{
+				fprintf(stderr, "Given update matrix isn't square.\n");
+				returnvalue = EXIT_SUCCESS;
+				goto FREE_VARIABLES;
+			}
+			
+			SET_BIG_NUM(argv[2], baseMod, "Unable to read base mod from command line.");
+			
+			modPower = (int)strtol(argv[3], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read modPower from command line.\n");
+				baseMod = free_BigIntT(baseMod);
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			temp = empty_BigIntT(1);
+			bigMod = empty_BigIntT(1);
+			liftMultiple = empty_BigIntT(1);
+			copy_BigIntT(one, liftMultiple);
+			
+			//Calculate our powers of p we need
+			for (int i = 0; i < modPower; i += 1)
+			{
+				multiply_BigIntT(liftMultiple, baseMod, temp);
+				copy_BigIntT(temp, liftMultiple);
+			}
+			copy_BigIntT(liftMultiple, bigMod);
+			multiply_BigIntT(bigMod, baseMod, temp);
+			copy_BigIntT(temp, bigMod);
+			
+			//Now, get our cycle info for the thing we're lifting
+			I = identity_BigIntMatrixT(big_rows(UPDATEMATRIX));
+			big_floyd(UPDATEMATRIX, I, liftMultiple, &OGcycle);
+			
+			tempStableLiftElements = malloc(big_rows(UPDATEMATRIX)*sizeof(BigIntTP*));
+			for (int r = 0; r < big_rows(UPDATEMATRIX); r += 1)
+			{
+				tempStableLiftElements[r] = malloc(big_rows(UPDATEMATRIX)*sizeof(BigIntTP));
+				for (int c = 0; c < big_rows(UPDATEMATRIX); c += 1)
+					tempStableLiftElements[r][c] = empty_BigIntT(1);
+			}
+				
+			tempStableLift = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			tempMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+			
+			printf("Update =\n");
+			printbm(UPDATEMATRIX);
+			printf("\nStable lifts of Update modulo ");
+			printi(bigMod);
+			printf(":\n");
+			
+			//Loop over all possible lifts of UPDATEMATRIX
+			do
+			{
+				//Make lift
+				set_big_matrix(tempMatrix, tempStableLiftElements);
+				big_mat_add(tempMatrix, UPDATEMATRIX, tempStableLift);
+				
+				//Check if cycle length equals omega(OGcycle)
+				big_floyd(tempStableLift, I, bigMod, &liftCycle);
+				if (omega(liftCycle) == omega(OGcycle))
+				{
+					//Add lift to list
+					numOfStableLifts += 1;
+					listOfStableLifts = realloc(listOfStableLifts, numOfStableLifts*sizeof(BigIntMatrixTP));
+					listOfStableLifts[numOfStableLifts-1] = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
+					copy_BigIntMatrixT(tempStableLift, listOfStableLifts[numOfStableLifts-1]);
+					
+					printbm(tempStableLift);
+					printf("\n");
+				}
+			}
+			while (!step_BigIntT_array(tempStableLiftElements, 
+			                           big_rows(UPDATEMATRIX), 
+																 big_rows(UPDATEMATRIX), 
+																 liftMultiple, 
+																 bigMod));
+
+			for (int i = 0; i < numOfStableLifts; i += 1)
+				listOfStableLifts[i] = free_BigIntMatrixT(listOfStableLifts[i]);
+			FREE(listOfStableLifts);
+			
+			for (int r = 0; r < big_rows(UPDATEMATRIX); r += 1)
+			{
+				for (int c = 0; c < big_rows(UPDATEMATRIX); c += 1)
+					tempStableLiftElements[r][c] = free_BigIntT(tempStableLiftElements[r][c]);
+				FREE(tempStableLiftElements[r]);
+			}
+			FREE(tempStableLiftElements);
+			
+			temp = free_BigIntT(temp);
+			bigMod = free_BigIntT(bigMod);
+			baseMod = free_BigIntT(baseMod);
+			liftMultiple = free_BigIntT(liftMultiple);
+			
+			OGcycle = free_CycleInfoT(OGcycle);
+			liftCycle = free_CycleInfoT(liftCycle);
+			
+			I = free_BigIntMatrixT(I);
+			tempMatrix = free_BigIntMatrixT(tempMatrix);
+			tempStableLift = free_BigIntMatrixT(tempStableLift);
+		}
+		
+		
+		//Half-test tool to go through ALL matrices under a given modulus and 
+		// count how many stable lifts each one has.
+		else if (!strcmp(argv[1], "allstablelifts2"))
+		{
+			//allstablelifts2 size baseMod modPower isPrime
+			//baseMod^modPower is the modulus of the thing we want to lift,
+			// not the lift modulus itself (which is baseMod^{modPower+1}).
+			
+			PROHIBIT_UNIXFLAGS
+			
+			if (argc < 5)
+			{
+				printf("allstablelifts2 size baseMod modPower\n");
+				goto FREE_VARIABLES;
+			}
+			
+			//If the user entered a prime modulus, compute minimal
+			// polynomials for each matrix we check.
+			bool isPrime = FALSE;
+			BigPolyTP* minPoly;
+			char* typeOfMinPoly;
+			int numOfLambdas;
+			
+			//This keeps track of how many stable lifts a matrix should have,
+			// given its minimal polynomial.
+			typedef struct mpti
+			{
+				char* type;
+				int count;
+			}
+			MinPolyTypeIndexT;
+			
+			int numOfMinPolyTypes = 7;
+			int numOfOutliers = 0; //How many matrices don't follow the established patterns.
+			MinPolyTypeIndexT stableLiftCounts[numOfMinPolyTypes];
+			stableLiftCounts[0].type = "Irreducible Quadratic";
+			stableLiftCounts[1].type = "Single Linear";
+			stableLiftCounts[2].type = "Single Nilpotent";
+			stableLiftCounts[3].type = "Multiple Nilpotent";
+			stableLiftCounts[4].type = "Single Linear, Single Lambda";
+			stableLiftCounts[5].type = "Multiple Root";
+			stableLiftCounts[6].type = "Distinct Roots";
+			for (int i = 0; i < numOfMinPolyTypes; i += 1)
+				stableLiftCounts[i].count = -1;
+			
+			BigIntTP baseMod, liftMultiple, bigMod;
+			BigIntTP temp, temp2;
+			int modPower, size;
+			
+			CycleInfoTP OGcycle = NULL;
+			CycleInfoTP liftCycle = NULL;
+			
+			BigIntMatrixTP I;
+			
+			BigIntMatrixTP currentMatrix;
+			BigIntTP** currentMatrixElements;
+			
+			int numOfStableLifts = 0;
+			BigIntTP** tempStableLiftElements;
+			BigIntMatrixTP tempStableLift, tempMatrix;
+			BigIntMatrixTP* listOfStableLifts = NULL;
+			
+			size = (int)strtol(argv[2], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read matrix size from command line.\n");
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			SET_BIG_NUM(argv[3], baseMod, "Unable to read base mod from command line.");
+			
+			modPower = (int)strtol(argv[4], &tempStr, 10);
+			if (tempStr[0] != '\0')
+			{
+				fprintf(stderr, "Unable to read modPower from command line.\n");
+				baseMod = free_BigIntT(baseMod);
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
+			
+			if (argc > 5)
+				if (!strcmp(argv[5], "TRUE"))
+					isPrime = TRUE;
+			
+			temp = empty_BigIntT(1);
+			temp2 = empty_BigIntT(1);
+			bigMod = empty_BigIntT(1);
+			liftMultiple = empty_BigIntT(1);
+			copy_BigIntT(one, liftMultiple);
+			
+			//Calculate our powers of p we need
+			for (int i = 0; i < modPower; i += 1)
+			{
+				multiply_BigIntT(liftMultiple, baseMod, temp);
+				copy_BigIntT(temp, liftMultiple);
+			}
+			copy_BigIntT(liftMultiple, bigMod);
+			multiply_BigIntT(bigMod, baseMod, temp);
+			copy_BigIntT(temp, bigMod);
+			
+			//Now, get our cycle info for the thing we're lifting
+			I = identity_BigIntMatrixT(size);
+			
+			tempStableLiftElements = malloc(size*sizeof(BigIntTP*));
+			currentMatrixElements = malloc(size*sizeof(BigIntTP*));
+			for (int r = 0; r < size; r += 1)
+			{
+				tempStableLiftElements[r] = malloc(size*sizeof(BigIntTP));
+				currentMatrixElements[r] = malloc(size*sizeof(BigIntTP));
+				for (int c = 0; c < size; c += 1)
+				{
+					tempStableLiftElements[r][c] = empty_BigIntT(1);
+					currentMatrixElements[r][c] = empty_BigIntT(1);
+				}
+			}
+				
+			currentMatrix = new_BigIntMatrixT(size, size);
+			tempStableLift = new_BigIntMatrixT(size, size);
+			tempMatrix = new_BigIntMatrixT(size, size);
+			
+			//Loop over all matrices in our matrix space
+			do
+			{
+				set_big_matrix(currentMatrix, currentMatrixElements);
+				big_floyd(currentMatrix, I, liftMultiple, &OGcycle);
+				
+				//Loop over all possible lifts of currentMatrix
+				do
+				{
+					//Make lift
+					set_big_matrix(tempMatrix, tempStableLiftElements);
+					big_mat_add(tempMatrix, currentMatrix, tempStableLift);
+					
+					//Check if cycle length equals omega(OGcycle)
+					big_floyd(tempStableLift, I, bigMod, &liftCycle);
+					if (omega(liftCycle) == omega(OGcycle))
+					{
+						//Add lift to list
+						numOfStableLifts += 1;
+						listOfStableLifts = realloc(listOfStableLifts, numOfStableLifts*sizeof(BigIntMatrixTP));
+						listOfStableLifts[numOfStableLifts-1] = new_BigIntMatrixT(size, size);
+						copy_BigIntMatrixT(tempStableLift, listOfStableLifts[numOfStableLifts-1]);
+					}
+				}
+				while (!step_BigIntT_array(tempStableLiftElements, size, size, liftMultiple, bigMod));
+
+				//printbm(currentMatrix);
+				if (isPrime) //Compute minimal polynomial
+				{
+					minPoly = min_poly(currentMatrix, NULL, liftMultiple, NULL);
+					//printf("with minimal polynomial ");
+					//old_printpf(minPoly);
+					//printf(" ");
+					
+					//Now, let's try and classify the minimal polynomial (for 2x2 matrices).
+					if (compare_BigIntT(constant(minPoly[0]), one) == 0)
+					{
+						if (degree(minPoly[1]) == 2)
+							typeOfMinPoly = "Irreducible Quadratic";
+						else if (compare_BigIntT(constant(minPoly[1]), zero) != 0)
+							typeOfMinPoly = "Single Linear";
+						else
+							typeOfMinPoly = "Single Nilpotent";
+					}
+					
+					else
+					{
+						clear_BigIntT(temp);
+						numOfLambdas = 0;
+						for (int i = 1; compare_BigIntT(temp, constant(minPoly[0])) < 0; i += 1)
+						{
+							if (compare_BigIntT(constant(minPoly[i]), zero) == 0)
+								numOfLambdas += 1;
+							
+							add_BigIntT(temp, one, temp2);
+							copy_BigIntT(temp2, temp);
+						}
+						
+						if (numOfLambdas == 2)
+							typeOfMinPoly = "Multiple Nilpotent";
+						else if (numOfLambdas == 1)
+							typeOfMinPoly = "Single Linear, Single Lambda";
+						else
+						{
+							if (compare_BigIntT(constant(minPoly[1]), constant(minPoly[2])) == 0)
+								typeOfMinPoly = "Multiple Root";
+							else
+								typeOfMinPoly = "Distinct Roots";
+						}
+					}
+					
+					//With the minimal polynomial type determined, let's check and see
+					// if its number of stable lifts matches with its type of minimal
+					// polynomial.
+					for (int i = 0; i < numOfMinPolyTypes; i += 1)
+						if (!strcmp(typeOfMinPoly, stableLiftCounts[i].type))
+						{
+							if (stableLiftCounts[i].count == -1)
+								stableLiftCounts[i].count = numOfStableLifts;
+							else if (stableLiftCounts[i].count != numOfStableLifts)
+							{
+								numOfOutliers += 1;
+								//printf("does not follow the established pattern for its minimal polynomial. It ");
+							}
+							
+							break;
+						}
+				}
+				/*
+				if (numOfStableLifts != 1)
+					printf("has %d stable lifts modulo ", numOfStableLifts);
+				else
+					printf("has %d stable lift modulo ", numOfStableLifts);
+				printi(bigMod);
+				printf(".\n\n");
+				*/
+
+				//Reset stable lift counts for next matrix
+				for (int i = 0; i < numOfStableLifts; i += 1)
+					listOfStableLifts[i] = free_BigIntMatrixT(listOfStableLifts[i]);
+				FREE(listOfStableLifts);
+				numOfStableLifts = 0;
+			}
+			while (!increment_BigIntT_array(currentMatrixElements, size, size, one, liftMultiple));
+			
+			if (isPrime)
+			{
+				printf("Minimal polynomial type counts:\n");
+				for (int i = 0; i < numOfMinPolyTypes; i += 1)
+					printf("%s : %d\n", stableLiftCounts[i].type, stableLiftCounts[i].count);
+				
+				printf("\nNumber of matrix outliers: %d\n", numOfOutliers);
+			}
+			
+			for (int r = 0; r < size; r += 1)
+			{
+				for (int c = 0; c < size; c += 1)
+				{
+					currentMatrixElements[r][c] = free_BigIntT(currentMatrixElements[r][c]);
+					tempStableLiftElements[r][c] = free_BigIntT(tempStableLiftElements[r][c]);
+				}
+				FREE(tempStableLiftElements[r]);
+				FREE(currentMatrixElements[r]);
+			}
+			FREE(tempStableLiftElements);
+			FREE(currentMatrixElements);
+			
+			temp = free_BigIntT(temp);
+			temp2 = free_BigIntT(temp2);
+			bigMod = free_BigIntT(bigMod);
+			baseMod = free_BigIntT(baseMod);
+			liftMultiple = free_BigIntT(liftMultiple);
+			
+			OGcycle = free_CycleInfoT(OGcycle);
+			liftCycle = free_CycleInfoT(liftCycle);
+			
+			I = free_BigIntMatrixT(I);
+			tempMatrix = free_BigIntMatrixT(tempMatrix);
+			currentMatrix = free_BigIntMatrixT(currentMatrix);
+			tempStableLift = free_BigIntMatrixT(tempStableLift);
 		}
 		
 		
