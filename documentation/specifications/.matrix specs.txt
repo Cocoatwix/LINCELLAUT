@@ -13,6 +13,24 @@ A shortcut exists for specifying an identity matrix--simply type a capital I whe
 4 3
 I
 
+Direct sums of the same matrix can be specified without writing the entire matrix in full. For example, to represent the matrix
+1 1 1 0 0 0
+1 1 0 0 0 0
+0 0 1 0 0 0
+0 0 0 1 1 1
+0 0 0 1 1 0
+0 0 0 0 0 1
+the following .matrix file would be valid:
+
+3 3
+1 1 1
+1 1 0
+0 0 1
+diag 2
+
+The first two numbers represent the size of the block matrix used in the direct sum (row, column), while the number after the word "diag" says how many times to add the block matrix in the direct sum.
+
+
 lincellaut.c makes no attempt at filling in missing elements or interpreting wrongly-formatted files. It's the user's responsibility to make sure the .matrix file is formatted correctly.
 
 Note that changing the dimension numbers at the top of the file but not removing unwanted elements from the matrix below will not necessarily behave as one would expect. It's best to always ensure the number of elements in the matrix provided matches with what the dimension numbers specify.

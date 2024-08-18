@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include <string.h> //For strcmp()
+
 #include "../headers/helper.h"
 
 #include "../headers/factors.h"
@@ -829,8 +831,10 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
     Returns a pointer to the new matrix on success, NULL
 		otherwise. */
 {
-	BigIntMatrixTP M, I;
+	BigIntMatrixTP M, I, D;
 	char* tempStr;
+	
+	int specifierNumber;
 	
 	FILE* matFile = fopen(matFilePath, "r");
 	
@@ -886,6 +890,55 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
 			
 			//Actually store our value in the matrix
 			strtoBIT(tempStr, &(M->matrix[row][col]));
+		}
+	}
+	
+	//Now, check if the user has specified any additional properties of the matrix
+	if (fscanf(matFile, "%100s %d", tempStr, &specifierNumber) != 2)
+	{
+		free(tempStr);
+		fclose(matFile);
+		free_BigIntMatrixT(M);
+		return NULL;
+	}
+	
+	else
+	{
+		//If the user wants to create a matrix using a direct sum of the given matrix
+		if (!strcmp(tempStr, "diag"))
+		{
+			if (specifierNumber <= 0)
+			{
+				D = NULL;
+			}
+			
+			else
+			{
+				D = malloc(sizeof(BigIntMatrixT));
+				D->m = (M->m)*specifierNumber;
+				D->n = (M->n)*specifierNumber;
+				D->matrix = malloc((M->m)*specifierNumber*sizeof(BigIntTP*));
+				
+				//Create direct sum
+				for (int block = 0; block < specifierNumber; block += 1)
+				{
+					for (int row = 0; row < M->m; row += 1)
+					{
+						D->matrix[row + block*(M->m)] = malloc((M->n)*specifierNumber*sizeof(BigIntTP));
+						
+						for (int col = 0; col < (M->n)*specifierNumber; col += 1)
+						{
+							D->matrix[row + block*(M->m)][col] = empty_BigIntT(1);
+							
+							if ((col - block*(M->n) >= 0) && (col - block*(M->n) < M->n))
+								copy_BigIntT(M->matrix[row % M->m][col % M->n], D->matrix[row + block*(M->m)][col]);
+						}
+					}
+				}
+			}
+			
+			free_BigIntMatrixT(M);
+			M = D;
 		}
 	}
 	

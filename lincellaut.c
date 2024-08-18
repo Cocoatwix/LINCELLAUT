@@ -493,9 +493,8 @@ int main(int argc, char* argv[])
 		{
 			PROHIBIT_UNIXFLAGS
 			
-			BigIntMatrixTP F = read_BigIntMatrixT(updatefilepath);
+			BigIntMatrixTP F = UPDATEMATRIX;
 			BigIntMatrixTP Finv;
-			
 			BigIntTP bigMod;
 			
 			if (F == NULL)
@@ -507,7 +506,6 @@ int main(int argc, char* argv[])
 			
 			printf("Update matrix:\n");
 			printbm(F);
-			
 			
 			//If the user specified a modulus at the command line
 			if (argc > 2)
@@ -536,9 +534,7 @@ int main(int argc, char* argv[])
 				printbm(Finv);
 			}
 			
-			F    = free_BigIntMatrixT(F);
 			Finv = free_BigIntMatrixT(Finv);
-			
 			bigMod = free_BigIntT(bigMod);
 		}
 		
