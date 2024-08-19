@@ -6,10 +6,168 @@ August 3, 2022
 */
 
 #include <stdlib.h>
-
 #include <stdio.h>
-
 #include <string.h>
+
+/* Should've made this long ago. */
+//At some point, it may be worthwhile to rewrite this
+// as a hashmap instead of an ordered pair.
+typedef enum dicttype {STR, STRARR, INT} DictionaryTypeT;
+
+typedef union dictval
+{
+	char* str;
+	char** strArr;
+	int intNum;
+}
+DictionaryValueT, *DictionaryValueTP;
+
+typedef struct dict
+{
+	//Says what kind of data this dictionary holds
+	DictionaryTypeT type;
+	
+	char* key;
+	DictionaryValueTP value;
+	DictionaryValueTP auxValue;
+}
+DictionaryT, *DictionaryTP;
+
+
+DictionaryTP free_DictionaryT(DictionaryTP d)
+{
+	free(d->key);
+	
+	switch (d->type)
+	{
+		case (STR):
+		{
+			free(d->value->str);
+			break;
+		}
+		
+		case (STRARR):
+		{
+			/*
+			for (int i = 0; i < d->auxValue->intNum; i += 1)
+				free(d->value->strArr[i]);
+			free(d->value->strArr);
+			*/
+			//In this case, we're assuming the user will handle freeing the array
+			break;
+		}
+		
+		default:
+		{
+			fprintf(stderr, "Freeing dictionary of type %d is not yet implemented.\n", d->type);
+		}
+	}
+	
+	free(d->value);
+	free(d->auxValue);
+	
+	d->key = NULL;
+	d->value = NULL;
+	d->auxValue = NULL;
+	
+	return NULL;
+}
+
+
+DictionaryTP new_DictionaryT(const char* key, const void* value, const char* type)
+/** Creates a new DictionaryT object, returns a pointer to it. */
+{
+	DictionaryTP d = malloc(sizeof(DictionaryT));
+	d->key = malloc((strlen(key)+1)*sizeof(char));
+	d->value = malloc(sizeof(DictionaryValueT));
+	
+	strcpy(d->key, key);
+	
+	if (!strcmp(type, "STR"))
+	{
+		d->type = STR;
+		d->value->str = malloc((strlen((char*)value)+1)*sizeof(char));
+		strcpy(d->value->str, (char*)value);
+	}
+	
+	else if (!strcmp(type, "STRARR"))
+	{
+		d->type = STRARR;
+		d->value->strArr = (char**)value;
+	}
+	
+	else if (!strcmp(type, "INT"))
+	{
+		d->type = INT;
+		d->value->intNum = *((int*)value);
+	}
+	
+	return d;
+}
+
+
+DictionaryTP search_DictionaryT_array(const DictionaryTP* arr, int arrLen, const char* key)
+/** Sifts through a DictionaryTP array to find the first instance
+    of a dictionary with the given key. Returns found DictionaryT 
+		on success, NULL otherwise. */
+{
+	if (arr == NULL)
+		return NULL;
+	
+	//Yippee! Linear time complexity!
+	for (int i = 0; i < arrLen; i += 1)
+		if (!strcmp(arr[i]->key, key))
+			return arr[i];
+		
+	return NULL;
+}
+
+
+void* value_of_DictionaryT(const DictionaryTP d)
+/** Returns the value held in the dictionary. */
+{
+	switch (d->type)
+	{
+		case (INT):
+		{
+			return &(d->value->intNum);
+		}
+		
+		case (STR):
+		{
+			return d->value->str;
+		}
+		
+		case (STRARR):
+		{
+			return d->value->strArr;
+		}
+		
+		default:
+		{
+			return NULL;
+		}
+	}
+}
+
+
+void* aux_of_DictionaryT(const DictionaryTP d)
+/** Returns the auxillary value of a dictionary. */
+{
+	switch (d->type)
+	{
+		case (STRARR):
+		{
+			return &(d->auxValue->intNum);
+		}
+		
+		default:
+		{
+			return NULL;
+		}
+	}
+}
+
 
 int num_digits(int num)
 /** Calculuates how many digits an integer has and returns

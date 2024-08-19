@@ -80,14 +80,6 @@ int main(int argc, char* argv[])
 	//Used to tell the program what to return when jumping to FREE_VARIABLES
 	int returnvalue = EXIT_SUCCESS;
 	
-	//Will hold key-value pairs if user prefers unix flags
-	//Size of unixflags will be argc/2
-	//Each key-value pair contains two strings
-	char*** unixflags = NULL;
-	char** oargv = NULL; //Ordered CLI arguments
-	char** kvpair; //Points to a key-value pair; basically a temp variable
-	int maxargc = 0; //Max number of CLI arguments our selected tool uses
-	
 	//The maximum length for a string in the .config file
 	const int MAXSTRLEN = 101;
 	
@@ -316,9 +308,41 @@ int main(int argc, char* argv[])
 		goto FREE_VARIABLES;
 	}
 	
+	/* $$$ */
+	
+	//This holds the names of all the UNIX-type-compatiable CLI tools
+	const int UNIXTYPECOUNT = 6;
+	
+	const char* CLINAMES[] = {"iterate", "inverse", "rowreduce", "factor", "order",
+	                          "orbitmaps2"};
+
+	//Lists of argument names for the CLI tools above
+	//The empty strings are so that I don't have to allocate memory for
+	// an irregular array shape.
+	const char* ARGNAMES[][5] = {{"iterations", "", "", "", ""}, //iterate
+		                           {"modulus", "", "", "", ""},    //inverse
+															 {"modulus", "", "", "", ""},    //rowreduce
+															 {"modulus", "", "", "", ""},    //factor
+															 {"modulus", "", "", "", ""},    //order
+		                           {"maxpower", "modulus", "fileoutput", "belowBound", "aboveBound"}}; //orbitmaps2
+
+	//The maximum number of command line arguments each tool takes, +1
+	const int MAXARGC[] = {2, 2, 2, 2, 2, 6};
+
+	//Will hold key-value pairs if user prefers unix flags
+	//Size of unixflags will be argc/2
+	//Each key-value pair contains two strings
+	char*** unixflags = NULL;
+	char** oargv = NULL; //Ordered CLI arguments
+	char** kvpair; //Points to a key-value pair; basically a temp variable
+	int maxargc = 0; //Max number of CLI arguments our selected tool uses
+	int toolindex = -1; //Where in the UNIX-type data our tool's data is stored
+	
 	//If we have command line arguments
 	if (argc > 1)
 	{
+		/* Preparing UNIX-type arguments, if possible. */
+		
 		//First, create an array of any unix-type flags that were passed via the CLI
 		unixflags = malloc((argc/2)*sizeof(char**));
 		int unixflagsCount = 0;
@@ -336,6 +360,15 @@ int main(int argc, char* argv[])
 		{
 			if (argv[i][0] == '-') //Found a unix flag
 			{
+				//First, check to make sure that the next argument is even valid...
+				// or if we even have another argument...
+				if ((i+1 >= argc) || (argv[i+1][0] == '-'))
+				{
+					fprintf(stderr, "Argument flag '%s' has no given value.\n", argv[i]+1);
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
+				}
+				
 				strcpy(unixflags[unixflagsCount][0], argv[i]+1);
 				i += 1;
 				strcpy(unixflags[unixflagsCount][1], argv[i]);
@@ -354,12 +387,81 @@ int main(int argc, char* argv[])
 		printf("\n");
 		*/
 		
+		//Get the index of our tool's UNIX-type data
+		for (int i = 0; i < UNIXTYPECOUNT; i += 1)
+		{
+			//If we find a tool with the given name that has UNIX-type arguments
+			if (!strcmp(argv[1], CLINAMES[i]))
+			{
+				toolindex = i;
+				
+				oargv = malloc((MAXARGC[toolindex]+1)*sizeof(char*)); //Ordered arguments
+				for (int i = 0; i <= MAXARGC[toolindex]; i += 1)
+				{
+					oargv[i] = malloc(MAXSTRLEN*sizeof(char));
+					oargv[i][0] = '\0';
+				}
+				
+				//The duplicates
+				strcpy(oargv[0], "./lincellaut");
+				strcpy(oargv[1], argv[1]);
+				
+				//Prep oargv for use below
+				if (unixflagsCount > 0)
+				{
+					for (int key = 0; key < unixflagsCount; key += 1)
+					{
+						kvpair = unixflags[key]; //Our current key-value pair
+						
+						//Compare our key to the arguments our tool takes
+						for (int toolArg = 0; toolArg < MAXARGC[toolindex]-1; toolArg += 1)
+							if (! strcmp(kvpair[0], ARGNAMES[toolindex][toolArg]))
+							{
+								strcpy(oargv[toolArg+2], kvpair[1]);
+								break;
+							}
+					}
+				}
+				
+				//Positional arguments
+				else
+					for (int val = 2; val < argc; val += 1)
+						strcpy(oargv[val], argv[val]);
+				
+				break;
+			}
+		}
+		
+		//If we didn't find a UNIX-type argument tool, or there were no
+		// UNIX-type arguments passed
+		if (toolindex == -1)
+		{
+			oargv = malloc(argc*sizeof(char*)); //Ordered arguments
+			for (int i = 0; i < argc; i += 1)
+			{
+				oargv[i] = malloc(MAXSTRLEN*sizeof(char));
+				oargv[i][0] = '\0';
+			}
+			
+			//The duplicates
+			strcpy(oargv[0], "./lincellaut");
+			strcpy(oargv[1], argv[1]);
+			
+			//Defaulting to regular positional arguments
+			for (int i = 2; i < argc; i += 1)
+				strcpy(oargv[i], argv[i]);
+		}
+		
+		/*
+		for (int t = 0; t <= MAXARGC[toolindex]; t += 1)
+			printf("%s\n", oargv[t]);
+		*/
+		
+		/* -- COMMAND LINE TOOLS -- */
+		
 		//If we want to iterate the given update matrix
-		// This is written with IntMatrices because I don't yet have a "big_inverse()"
 		if (! strcmp(argv[1], "iterate"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntMatrixTP F;
 			BigIntMatrixTP F_2;
 			BigIntMatrixTP F_result = NULL;
@@ -372,9 +474,9 @@ int main(int argc, char* argv[])
 			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 		
 			//If the user provided a custom number of iterations
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				iterations = (int)strtol(argv[2], &tempStr, 10);
+				iterations = (int)strtol(oargv[2], &tempStr, 10);
 				
 				//If we didn't read any digits for iterations
 				if (tempStr[0] != '\0')
@@ -491,8 +593,6 @@ int main(int argc, char* argv[])
 		//Find the inverse of the update matrix
 		else if (!strcmp(argv[1], "inverse"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntMatrixTP F = UPDATEMATRIX;
 			BigIntMatrixTP Finv;
 			BigIntTP bigMod;
@@ -508,9 +608,9 @@ int main(int argc, char* argv[])
 			printbm(F);
 			
 			//If the user specified a modulus at the command line
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -541,15 +641,14 @@ int main(int argc, char* argv[])
 		
 		//If we want to row reduce the update matrix
 		// by the given modulus.
+		//./lincellaut rowreduce [modulus]
 		else if (!strcmp(argv[1], "rowreduce"))
 		{
-			//./lincellaut rowreduce [modulus]
-			
 			BigIntTP bigMod;
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -577,14 +676,12 @@ int main(int argc, char* argv[])
 		//Factor the given polynomial from the .config file
 		else if (!strcmp(argv[1], "factor"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntTP bigMod;
 			
 			//If the user specified a modulus at the command line
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -620,7 +717,8 @@ int main(int argc, char* argv[])
 		//Find the order of the given polynomial
 		else if (!strcmp(argv[1], "order"))
 		{
-			PROHIBIT_UNIXFLAGS
+			bool foundTheOrder;
+			BigIntTP tempPrimeScale = NULL;
 			
 			BigIntTP bigMod, negOne, temp, temp2, bigOrder;
 			BigIntTP orderMustDivide; //The number which our extensions' orders must divide
@@ -666,9 +764,9 @@ int main(int argc, char* argv[])
 			OrderListTP listPointer;
 			
 			//If the user specified a modulus at the command line
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -778,6 +876,7 @@ int main(int argc, char* argv[])
 					//So, whatever the order of our extension is, it must divide orderMustDivide
 					//Let's go through all the possible divisors and find the one that works
 					primeFactors = prime_factors_of_BigIntT(orderMustDivide);
+					
 					
 					#ifdef VERBOSE
 						printi(bigMod);
@@ -972,58 +1071,97 @@ int main(int argc, char* argv[])
 					//If the order is NOT one
 					if (compare_MultiVarExtT(factorExt, oneExt) != 1)
 					{
+						foundTheOrder = FALSE;
+						tempPrimeScale = empty_BigIntT(1);
+						copy_BigIntT(one, tempPrimeScale);
+						
 						copy_MultiVarExtT(oneExt, factorExt);
 						listPointer = possibleOrders;
-						while (listPointer != NULL)
+						
+						while (!foundTheOrder)
 						{
-							//Go through all prime factors of our order and iterate
-							// the extension accordingly
-							for (int i = 0; i < listPointer->anOrder->numOfFactors; i += 1)
+							while (listPointer != NULL)
 							{
-								copy_BigIntT(listPointer->anOrder->factors[i], temp);
-								
-								if (i != 0)
+								//Go through all prime factors of our order and iterate
+								// the extension accordingly
+								for (int i = 0; i < listPointer->anOrder->numOfFactors; i += 1)
 								{
-									//This makes sure we don't raise our extension to
-									// too high a power.
-									subtract_BigIntT(temp, one, temp2);
-									copy_BigIntT(temp2, temp);
+									//Add the factor of p we need to check "embedded orders"
+									if (i == 0)
+										multiply_BigIntT(listPointer->anOrder->factors[i], tempPrimeScale, temp);
+									else
+										copy_BigIntT(listPointer->anOrder->factors[i], temp);
+									
+									if (i != 0)
+									{
+										//This makes sure we don't raise our extension to
+										// too high a power.
+										subtract_BigIntT(temp, one, temp2);
+										copy_BigIntT(temp2, temp);
+									}
+									
+									while (! is_zero(temp))
+									{
+										//Do multiplication/iteration
+										mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
+										
+										reduce_MultiVarExtT(tempExt);
+										copy_MultiVarExtT(tempExt, factorExt);
+										
+										subtract_BigIntT(temp, one, temp2);
+										copy_BigIntT(temp2, temp);
+									}
+									
+									copy_MultiVarExtT(factorExt, iterationExt);
 								}
 								
-								while (! is_zero(temp))
+								/*
+								printf("extension iterated to power ");
+								printi(listPointer->anOrder->possibleOrder);
+								printf(" * ");
+								printi(tempPrimeScale);
+								printf(": ");
+								printmve_row(factorExt);
+								printf("\n");
+								*/
+								
+								//Check to see if the extension is one.
+								//If it is, we've found the order
+								if (compare_MultiVarExtT(factorExt, oneExt) == 1)
 								{
-									//Do multiplication/iteration
-									mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
+									multiply_BigIntT(listPointer->anOrder->possibleOrder, tempPrimeScale, temp2);
+									big_lcm(bigOrder, temp2, temp);
+									copy_BigIntT(temp, bigOrder);
 									
-									reduce_MultiVarExtT(tempExt);
-									copy_MultiVarExtT(tempExt, factorExt);
-									
-									subtract_BigIntT(temp, one, temp2);
-									copy_BigIntT(temp2, temp);
+									foundTheOrder = TRUE;
+									break;
 								}
 								
-								copy_MultiVarExtT(factorExt, iterationExt);
+								else
+								{
+									copy_MultiVarExtT(oneExt, factorExt);
+									clear_MultiVarExtT(iterationExt);
+									set_MultiVarExtT_coefficient(iterationExt, tArray, one);
+									
+									//Try the next order
+									listPointer = listPointer->next;
+								}
 							}
 							
-							//Check to see if the extension is one.
-							//If it is, we've found the order
-							if (compare_MultiVarExtT(factorExt, oneExt) == 1)
+							//If we get here, it means (I think) that the order is an
+							// embedded order of sorts: its the order of a smaller power 
+							// polynomial multiplied by p
+							if (!foundTheOrder)
 							{
-								big_lcm(bigOrder, listPointer->anOrder->possibleOrder, temp);
-								copy_BigIntT(temp, bigOrder);
-								break;
-							}
-							
-							else
-							{
-								copy_MultiVarExtT(oneExt, factorExt);
-								clear_MultiVarExtT(iterationExt);
-								set_MultiVarExtT_coefficient(iterationExt, tArray, one);
+								multiply_BigIntT(tempPrimeScale, bigMod, temp);
+								copy_BigIntT(temp, tempPrimeScale);
 								
-								//Try the next order
-								listPointer = listPointer->next;
+								//Try all possible orders again, this time just multiplied by a factor of p
+								listPointer = possibleOrders;
 							}
 						}
+						
+						tempPrimeScale = free_BigIntT(tempPrimeScale);
 						
 						//Build up order of the entire polynomial using LCM
 						printf("Order of ");
@@ -1031,7 +1169,12 @@ int main(int argc, char* argv[])
 						printf(" mod ");
 						printi(bigMod);
 						printf(": ");
-						printi(listPointer->anOrder->possibleOrder);
+						
+						//temp2 = listPointer->anOrder->possibleOrder * tempPrimeScale,
+						// so temp2 is some factor of p^d - 1, multiplied by some number of
+						// factors of p.
+						printi(temp2);
+						
 						printf("\n");
 					}
 					
@@ -5931,47 +6074,6 @@ int main(int argc, char* argv[])
 		//If the user wants to calculate the orbit maps for ALL lifts of a particular matrix
 		else if (! strcmp(argv[1], "orbitmaps2"))
 		{
-			//Eventually, this set up should be done before we call any tool's code
-			// Reference some table that specifies how many arguments each tool takes and
-			// malloc the list that way
-			maxargc = 6; //Total number of CLI arguments this tool takes
-			const char* ARGNAMES[] = {"maxpower", "modulus", "fileoutput", "belowBound", "aboveBound"};
-			oargv = malloc(maxargc*sizeof(char*)); //Ordered arguments
-			
-			for (int i = 0; i <= maxargc; i += 1)
-			{
-				oargv[i] = malloc(MAXSTRLEN*sizeof(char));
-				oargv[i][0] = '\0';
-			}
-			
-			//The duplicates
-			strcpy(oargv[0], "./lincellaut");
-			strcpy(oargv[1], "orbitmaps2");
-			
-			//Prep oargv for use below
-			if (unixflagsCount > 0)
-			{
-				for (int key = 0; key < unixflagsCount; key += 1)
-				{
-					kvpair = unixflags[key]; //Our current key-value pair
-					
-					//Compare our key to the arguments our tool takes
-					for (int toolArg = 0; toolArg < maxargc-1; toolArg += 1)
-						if (! strcmp(kvpair[0], ARGNAMES[toolArg]))
-						{
-							strcpy(oargv[toolArg+2], kvpair[1]);
-							break;
-						}
-				}
-			}
-			
-			else //Regular positional arguments
-			{
-				for (int i = 2; i < argc; i += 1)
-					strcpy(oargv[i], argv[i]);
-				printf("modulus: %s\n", oargv[3]);
-			}
-			
 			bool isNewVector;
 			bool isAInvertible;
 			bool useTreeSpaces = FALSE; //Says whether we should use spaces or numbers for tree indentation
@@ -6045,11 +6147,12 @@ int main(int argc, char* argv[])
 			
 			//For determining if different tree structures are actually equal
 			bool foundMatchingNode;
-			OMN* nodeTracker = NULL; 
+			OMN* nodeTracker = NULL;
 			
 			if (oargv[2][0] == '\0') //If the user hasn't given the mandatory argument
 			{
-				printf(ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
+				fprintf(stderr, "The argument 'maxpower' must be specified.\n");
+				printf("Usage: " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 				returnvalue = EXIT_SUCCESS;
 				goto FREE_VARIABLES;
 			}
@@ -6083,6 +6186,7 @@ int main(int argc, char* argv[])
 			if (oargv[3][0] != '\0')
 			{
 				SET_BIG_NUM(oargv[3], baseMod, "Unable to read modulus from command line.");
+				printf("modulus: %s\n", oargv[3]);
 			}
 			else
 			{
@@ -7963,7 +8067,7 @@ is not zero, then we haven't found a stable lift yet.\n");
 		// count how many stable lifts each one has.
 		else if (!strcmp(argv[1], "allstablelifts2"))
 		{
-			//allstablelifts2 size baseMod modPower isPrime
+			//allstablelifts2 size baseMod modPower [isPrime]
 			//baseMod^modPower is the modulus of the thing we want to lift,
 			// not the lift modulus itself (which is baseMod^{modPower+1}).
 			
@@ -8313,307 +8417,6 @@ is not zero, then we haven't found a stable lift yet.\n");
 			coolPoly = free_BigPolyT(coolPoly);
 		}
 		
-		//If we want to look through all the CCMs of a particular matrix
-		// of the form C_{ab -> a} to see if all vectors that get scaled
-		// by a factor of b have a cycle length that divides a
-		else if (!strcmp(argv[1], "2024"))
-		{
-			PROHIBIT_UNIXFLAGS
-			
-			//Allows us to take some computational shortcuts if specified as TRUE
-			bool primeModulusUsed = FALSE;
-			
-			//For formatting cycle lengths below
-			bool dividesSomething = FALSE;
-			
-			//Disabling this tool for now
-			/*
-			if (argc > 2)
-				if (!strcmp(argv[2], "TRUE"))
-					primeModulusUsed = TRUE;
-			*/
-			
-			if (big_rows(UPDATEMATRIX) != big_cols(UPDATEMATRIX))
-			{
-				fprintf(stderr, "Given update matrix isn't square.\n");
-				returnvalue = EXIT_SUCCESS;
-				goto FREE_VARIABLES;
-			}
-			
-			BigIntTP bigMod;
-			SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
-			
-			//For making CCMs
-			BigIntTP bigFrom = empty_BigIntT(1);
-			BigIntTP bigTo   = empty_BigIntT(1);
-			
-			//Used when primeModulusUsed and we want to check
-			// multiples of a particular vector
-			BigIntTP tempNum   = empty_BigIntT(1);
-			BigIntTP tempCount = empty_BigIntT(1);
-			
-			//Used for holding all the cycle lengths we find
-			int  cycleLengthsLength = 0;
-			int* cycleLengths = NULL;
-			bool newCycleLength = FALSE;
-			
-			//These are for storing the cycle lengths of each vector
-			// as we collect all the possible cycle lengths. These
-			// prevent us from having to recompute it on-the-fly
-			// when we start playing around with the CCMs
-			//Note: this probably makes this particular program
-			// impossible to scale to larger LCAs. It also won't
-			// work when primeModulusUsed.
-			int  currentVector = 0;
-			int  howManyVectors = pow(modulus, big_rows(UPDATEMATRIX));
-			int* cycleLengthsForVectors = malloc(howManyVectors*sizeof(int));
-			
-			//Used for holding all cycle lengths which are
-			// multiples of the corresponding cycle lengths at the
-			// index of the subarray
-			//
-			//...there's some interesting stuff going on with
-			// this particular part of the program. This
-			// sometimes speeds up the program drastically,
-			// while other times it grinds it to a halt.
-			// What's the difference between these cases?
-			int*  cycleLengthMultiplesLengths = NULL;
-			int** cycleLengthMultiples        = NULL;
-			
-			BigIntMatrixTP A        = UPDATEMATRIX; //Just a pointer to make my life easier
-			CycleInfoTP    theCycle = new_CycleInfoT();
-			
-			//Vector used for finding cycle lengths of the matrix
-			BigIntMatrixTP newVect      = new_BigIntMatrixT(big_rows(A), 1);
-			BigIntTP**     newVectArr   = new_BigIntT_array(big_rows(A), 1);
-			BigIntMatrixTP tempVect     = new_BigIntMatrixT(big_rows(A), 1);
-			BigIntMatrixTP tempVect2    = new_BigIntMatrixT(big_rows(A), 1);
-			BigIntMatrixTP tempVectMult = new_BigIntMatrixT(big_rows(A), 1); //Used for checking multiples of knownVects
-			
-			BigIntMatrixTP newCCM = new_BigIntMatrixT(big_rows(A), big_cols(A));
-			int beta = 0; // from/to
-			
-			//We'll store a list of vectors here that we've already found the cycle
-			// lengths of. If the newVect we're considering is a multiple of one
-			// of the vectors in this list, we don't need to run Floyd's Cycle
-			// Detection Algorithm on it since we know the cycle length will be
-			// the same as the multiple we've already found. This is only true
-			// if the modulus is prime, hence the flag.
-			int knownVectsLength = 0;
-			BigIntMatrixTP* knownVects = NULL;
-			
-			//Let's find all the vectors' cycle lengths for this matrix
-			do
-			{
-				set_big_matrix(newVect, newVectArr);
-				newCycleLength = TRUE;
-				
-				//First, let's make sure we haven't already found the cycle length
-				// to a multiple of newVect
-				if (primeModulusUsed)
-				{
-					for (int i = 0; i < knownVectsLength; i += 1)
-					{
-						//Check every multiple of knownVects[i], from tempCount = 1 to tempCount = bigMod - 1
-						copy_BigIntT(one, tempCount);
-						clear_BigIntMatrixT(tempVectMult);
-						
-						while (compare_BigIntT(tempCount, bigMod) < 0)
-						{
-							//Get next multiple of knownVects[i]
-							big_mat_add(tempVectMult, knownVects[i], tempVect);
-							modbm(tempVect, bigMod);
-							copy_BigIntMatrixT(tempVect, tempVectMult);
-							
-							//If newVect is a multiple of a vector we've already searched
-							if (compare_BigIntMatrixT(tempVectMult, newVect))
-							{
-								newCycleLength = FALSE;
-								break;
-							}
-							
-							add_BigIntT(tempCount, one, tempNum);
-							copy_BigIntT(tempNum, tempCount);
-						}
-						
-						if (!newCycleLength)
-							break;
-					}
-				}
-				
-				//If we get here, we should run Floyd's Cycle Detecting Algorithm
-				// like normal to see if we've found a vector with a new cycle length
-				if (newCycleLength)
-				{
-					if (primeModulusUsed)
-					{
-						//Add new vector to knownVects
-						knownVectsLength += 1;
-						knownVects = realloc(knownVects, knownVectsLength*sizeof(BigIntMatrixTP));
-						knownVects[knownVectsLength-1] = new_BigIntMatrixT(big_rows(A), 1);
-						copy_BigIntMatrixT(newVect, knownVects[knownVectsLength-1]);
-					}
-					
-					big_floyd(A, newVect, bigMod, &theCycle);
-					cycleLengthsForVectors[currentVector] = omega(theCycle);
-					currentVector += 1;
-					
-					//Check to see if we already have the found cycle length
-					if ((cycleLengthsLength != 0))
-					{
-						for (int i = 0; i < cycleLengthsLength; i += 1)
-							if (cycleLengths[i] == omega(theCycle))
-							{
-								newCycleLength = FALSE;
-								break;
-							}
-					}
-				}
-				
-				//If we get here, it means we've actually found a new cycle length
-				if (newCycleLength)
-				{
-					//Add new cycle length to our list
-					cycleLengthsLength += 1;
-					cycleLengths = realloc(cycleLengths, cycleLengthsLength*sizeof(int));
-					cycleLengths[cycleLengthsLength-1] = omega(theCycle);
-				}
-			}
-			while (!increment_BigIntT_array(newVectArr, big_rows(A), 1, one, bigMod));
-			
-			//We've now found all the cycle lengths for the given LCA.
-			//Let's prepare to create the CCMs of the form we care about.
-			cycleLengthMultiples        = calloc(cycleLengthsLength, sizeof(int*));
-			cycleLengthMultiplesLengths = calloc(cycleLengthsLength, sizeof(int));
-			
-			//Let's print out all the cycle lengths we found
-			//As well, we need to compute which CCMs fit the form C_{ab -> a}.
-			// We do this by checking which cycle lengths are multiples of
-			// each other.
-			printf("Found cycle lengths:\n");
-			for (int i = 0; i < cycleLengthsLength; i += 1)
-			{
-				dividesSomething = FALSE;
-				printf("%d ", cycleLengths[i]);
-				
-				//Now, let's see which numbers in the list are such that
-				// the gcm of them and cycleLengths[i] > 1.
-				for (int j = 0; j < cycleLengthsLength; j += 1)
-				{
-					if ((i != j) && (cycleLengths[j] % cycleLengths[i] == 0))
-					{
-						//Record which number cycleLengths[i] divides
-						cycleLengthMultiplesLengths[i] += 1;
-						cycleLengthMultiples[i] = realloc(cycleLengthMultiples[i], 
-						                                  cycleLengthMultiplesLengths[i]*sizeof(int));
-						cycleLengthMultiples[i][cycleLengthMultiplesLengths[i]-1] = cycleLengths[j];
-						
-						//Command line formatting
-						if (!dividesSomething)
-							printf("| ");
-						else
-							printf(", ");
-						
-						dividesSomething = TRUE;
-						printf("%d", cycleLengths[j]);
-					}
-				}
-				printf("\n");
-			}
-			
-			if (primeModulusUsed)
-				printf("\nNumber of vectors in knownVects: %d\n", knownVectsLength);
-			
-			printf("\nCCMs:\n\n");
-			
-			//Now, we have everything we need to start making the CCMs
-			for (int to = 0; to < cycleLengthsLength; to += 1)
-			{
-				for (int from = 0; from < cycleLengthMultiplesLengths[to]; from += 1)
-				{
-					clear_BigIntMatrixT(newCCM);
-					
-					//FIX THIS IF I EVER WANT TO DEAL WITH REALLY BIG CYCLE LENGTHS
-					set_bunch(bigTo, 0, cycleLengths[to]);
-					set_bunch(bigFrom, 0, cycleLengthMultiples[to][from]);
-					ccm(A, newCCM, bigFrom, bigTo, bigMod);
-					
-					beta = (cycleLengthMultiples[to][from] / cycleLengths[to]) % modulus;
-					currentVector = 0;
-					
-					printf("\nC_{%d -> %d}\n", cycleLengthMultiples[to][from], cycleLengths[to]);
-					printbm(newCCM);
-					printf("Beta = %d\n\n", beta);
-					
-					//Now comes the fun part!
-					//For every vector in our module, check whether the CCM
-					// scales the vector by the factor difference between
-					// from and to. If it does, we then want to check whether 
-					// that vector originally had a cycle length that
-					// divided to.
-					
-					/* ~~ CURRENTLY, I'M IGNORING THE CASE WHERE BETA = 0 ~~ */
-					if (beta != 0)
-					{
-						do
-						{
-							set_big_matrix(newVect, newVectArr);
-							big_mat_mul(newCCM, newVect, tempVect);
-							modbm(tempVect, bigMod);
-							
-							//Check to see if tempVect = beta*newVect
-							clear_BigIntMatrixT(tempVectMult);
-							for (int i = 0; i < beta; i += 1)
-							{
-								big_mat_add(tempVectMult, newVect, tempVect2);
-								copy_BigIntMatrixT(tempVect2, tempVectMult);
-							}
-							modbm(tempVectMult, bigMod);
-							
-							if (compare_BigIntMatrixT(tempVectMult, tempVect))
-							{
-								printf("Vector ");
-								printbm_row(newVect);
-								printf(" gets scaled by %d by the CCM and has a cycle length of %d.\n", 
-								beta, cycleLengthsForVectors[currentVector]);
-							}
-							
-							currentVector += 1;
-						}
-						while(!increment_BigIntT_array(newVectArr, big_rows(A), 1, one, bigMod));
-					}
-				}
-			}
-			
-			//Freeing memory
-			FREE(cycleLengths);
-			
-			bigTo     = free_BigIntT(bigTo);
-			bigMod    = free_BigIntT(bigMod);  
-			bigFrom   = free_BigIntT(bigFrom);
-			tempNum   = free_BigIntT(tempNum);
-			tempCount = free_BigIntT(tempCount);
-			
-			newVect      = free_BigIntMatrixT(newVect);
-			tempVect     = free_BigIntMatrixT(tempVect);
-			tempVect2    = free_BigIntMatrixT(tempVect2);
-			theCycle     = free_CycleInfoT(theCycle);
-			tempVectMult = free_BigIntMatrixT(tempVectMult);
-			
-			newCCM = free_BigIntMatrixT(newCCM);
-			
-			newVectArr = free_BigIntT_array(newVectArr, big_rows(A), 1);
-			
-			for (int i = 0; i < knownVectsLength; i += 1)
-				knownVects[i] = free_BigIntMatrixT(knownVects[i]);
-			FREE(knownVects);
-			
-			for (int i = 0; i < cycleLengthsLength; i += 1)
-			{
-				FREE(cycleLengthMultiples[i]);
-			}
-			FREE(cycleLengthMultiplesLengths);
-		}
 		
 		else if (! strcmp(argv[1], "multidebug"))
 		{
@@ -8723,11 +8526,11 @@ is not zero, then we haven't found a stable lift yet.\n");
 		printf("Usage: lincellaut <tool> [options]\n\n");
 		printf("Tools:\n");
 		
-		printf(" - " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "iterate " ANSI_COLOR_CYAN "[iterations]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "inverse " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "evalpoly " ANSI_COLOR_CYAN "[modulus] [multiplyByInitial]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
@@ -8748,15 +8551,13 @@ is not zero, then we haven't found a stable lift yet.\n");
 		printf(" * " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+		printf(" - " ANSI_COLOR_YELLOW "allstablelifts " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
 		
 		printf("Tools marked with a \"*\" in the list can use \"UNIX-like\" arguments.\n");
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \
 		"refer to documentation/'LINCELLAUT CLI Usage.txt'.\n");
 	}
 	
-	//Freeing memory
-	//Maybe I should try and put all these variables in
-	// an array so I can free them with a for loop?
 	FREE_VARIABLES:
 	FREE(updatefilepath);
 	FREE(initialfilepath);
@@ -8785,6 +8586,25 @@ is not zero, then we haven't found a stable lift yet.\n");
 			FREE(unixflags[r]);
 		}
 		FREE(unixflags);
+	}
+	
+	if (oargv != NULL)
+	{
+		if (toolindex == -1)
+		{
+			for (int i = 0; i < argc; i += 1)
+			{
+				FREE(oargv[i]);
+			}
+		}
+		else
+		{
+			for (int i = 0; i <= MAXARGC[toolindex]; i += 1)
+			{
+				FREE(oargv[i]);
+			}
+		}
+		FREE(oargv);
 	}
 	
 	return returnvalue;

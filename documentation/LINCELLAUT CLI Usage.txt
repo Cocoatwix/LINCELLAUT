@@ -9,19 +9,19 @@ lincellaut orbitmaps2 -modulus 5 -fileoutput TRUE -maxpower 3
 If the user attempts to use "unix-like" arguments with tools that don't support it, LINCELLAUT will notify the user and exit.
 
 
-iterate [iterations]: This tool allows you to take an initial matrix and iterate it by an update matrix multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
+*iterate [iterations]: This tool allows you to take an initial matrix and iterate it by an update matrix multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
  - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. Using a negative integer will get LINCELLAUT to compute the inverse of the update matrix and iterate that the specified number of times (e.g. an iteration count of -3 will iterate the inverse matrix 3 times, if it exists).
 
-inverse [modulus]: This tool allows the user to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
+*inverse [modulus]: This tool allows the user to find the inverse of the matrix specified as the update matrix in the .config file under the specified modulus.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  
-rowreduce [modulus]: This tool allows the user to calculate the reduced row echelon form of the update matrix specified in the .config file under the specified modulus.
+*rowreduce [modulus]: This tool allows the user to calculate the reduced row echelon form of the update matrix specified in the .config file under the specified modulus.
 - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  
-factor [modulus]: This tool allows the user to factor the polynomial specified by the polynomial key in the .config file under the specified modulus. Note that the modulus given must be a prime number.
+*factor [modulus]: This tool allows the user to factor the polynomial specified by the polynomial key in the .config file under the specified modulus. Note that the modulus given must be a prime number.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  
-order [modulus] (UNFINISHED): This tool takes the polynomial specified by the polynomial key in the .config file and computes its order mod the given modulus. The order of a polynomial p(x) is the smallest natural number c such that p(x) divides x^c - 1.
+*order [modulus] (UNFINISHED): This tool takes the polynomial specified by the polynomial key in the .config file and computes its order mod the given modulus. The order of a polynomial p(x) is the smallest natural number c such that p(x) divides x^c - 1.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
 
 evalpoly [modulus] [multiplyByInitial]: This tool allows the user to take the update matrix specified in the .config file and evaluate a polynomial expression using the matrix as the variable. The polynomial is also specified by the polynomial key within the .config file.
@@ -124,7 +124,7 @@ the second will be
 1 0, 
 etc.
 
-3. Once all lifts at the highest level have been exhaused, the next lowest lift is incremented. For the example above, after all highest level lifts are checked, the next matrix to be considered will be
+3. Once all lifts at the highest level have been exhausted, the next lowest lift is incremented. For the example above, after all highest level lifts are checked, the next matrix to be considered will be
 3 1
 1 0.
 
@@ -154,7 +154,8 @@ stablelift baseMod modPower: This tool allows the user to find a lift of a given
  - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
  - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
  
+allstablelifts baseMod modPower: This tool allows the user to find all stable lifts of the update matrix given in the .config file. The value baseMod^modPower is the modulus of the original matrix, while baseMod^{modPower+1} is the modulus which the matrix will be lifted into.
+ - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
+ - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
+ 
 2023 (TEMPORARY): This tool takes the initial matrix specified in the .config file and calculates a matrix representation of its cyclespace under the given update matrix (also specified in the .config file). This tool will most likely be merged with "vectpolys" in the future.
-
-2024 [prime] (TEMPORARY): This tool looks at all CCMs of the form C_{ab -> a} for a given matrix and checks whether all vectors that are eigenvectors for the CMM with eigenvalue b have cycle lengths that divide a.
- - The optional argument "prime" specifies whether the modulus used is prime or not. If it is, then some computational shortcuts can be used to speed up the tool. Currently, it's unknown whether these shortcuts actually speed up the program or not. This argument expects TRUE or FALSE. The default value is FALSE.
