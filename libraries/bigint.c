@@ -114,15 +114,18 @@ BigIntTP** new_BigIntT_array(int rows, int cols)
 BigIntTP** free_BigIntT_array(BigIntTP** arr, int rows, int cols)
 /** Frees an array of BigIntTs. Returns NULL. */
 {
-	for (int i = 0; i < rows; i += 1)
+	if (arr != NULL)
 	{
-		for (int j = 0; j < cols; j += 1)
-			arr[i][j] = free_BigIntT(arr[i][j]);
-		
-		free(arr[i]);
-		arr[i] = NULL;
+		for (int i = 0; i < rows; i += 1)
+		{
+			for (int j = 0; j < cols; j += 1)
+				arr[i][j] = free_BigIntT(arr[i][j]);
+			
+			free(arr[i]);
+			arr[i] = NULL;
+		}
+		free(arr);
 	}
-	free(arr);
 	return NULL;
 }
 

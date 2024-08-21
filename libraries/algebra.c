@@ -1193,6 +1193,14 @@ int count_unique_factors(const BigFactorsTP f)
 }
 
 
+int* multiplicities(const BigFactorsTP f)
+/** Returns the multiplicities of all the
+    coprime factors in f. */
+{
+	return f->exponents;
+}
+
+
 int collect_factors(BigFactorsTP f)
 /** Fixes any duplicate factors within f->factors.
     Returns 1 on success, 0 otherwise. */

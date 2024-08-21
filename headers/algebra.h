@@ -176,6 +176,12 @@ int count_factors(const BigFactorsTP);
 	array. */
 int count_unique_factors(const BigFactorsTP);
 
+/** Returns an array with each coprime factors' 
+    multiplicity in the given BigFactorsT object. */
+//The returned array is by reference, so the entries within the
+// array shouldn't be changed.
+int* multiplicities(const BigFactorsTP);
+
 /** If any repeated factors are treated as different factors
     within the BigFactorsTP factors array, this function will
 	collect them into a single factor. Returns 1 on success, 

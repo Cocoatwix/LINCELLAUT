@@ -894,15 +894,7 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
 	}
 	
 	//Now, check if the user has specified any additional properties of the matrix
-	if (fscanf(matFile, "%100s %d", tempStr, &specifierNumber) != 2)
-	{
-		free(tempStr);
-		fclose(matFile);
-		free_BigIntMatrixT(M);
-		return NULL;
-	}
-	
-	else
+	if (fscanf(matFile, "%100s %d", tempStr, &specifierNumber) == 2)
 	{
 		//If the user wants to create a matrix using a direct sum of the given matrix
 		if (!strcmp(tempStr, "diag"))
@@ -2645,7 +2637,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 // actually be in row-echelon form.
 {
 	#ifdef VERBOSE
-		printf("\n\n\n ~~~ big_row_echelon() ~~~ \n\n\n");
+		printf("\n\n\n --- big_row_echelon() --- \n\n\n");
 	#endif
 	
 	if ((bigMod == NULL) || (M == NULL) || (result == NULL))
@@ -2658,7 +2650,6 @@ int big_row_echelon(const BigIntMatrixTP M,
 		return 0;
 		
 	#ifdef VERBOSE
-		printf(":)\n");
 		printf("M:\n");
 		printbm(M);
 		printf("\n");
@@ -2716,6 +2707,7 @@ int big_row_echelon(const BigIntMatrixTP M,
 			break;
 		}
 	}
+	
 	
 	//Now, we begin the reduction, adding one new row at a time
 	for (int constructionRow = 1; constructionRow < M->m; constructionRow += 1)

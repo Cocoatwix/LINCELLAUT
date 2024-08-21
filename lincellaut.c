@@ -311,23 +311,48 @@ int main(int argc, char* argv[])
 	/* $$$ */
 	
 	//This holds the names of all the UNIX-type-compatiable CLI tools
-	const int UNIXTYPECOUNT = 6;
+	const int UNIXTYPECOUNT = 24;
 	
-	const char* CLINAMES[] = {"iterate", "inverse", "rowreduce", "factor", "order",
-	                          "orbitmaps2"};
+	const char* CLINAMES[] = {"iterate",    "inverse",          "rowreduce", "factor",        "order",
+	                          "evalpoly",   "chara",            "orbits",    "splitorbits",   "orbitreps",
+														"branchreps", "orbitspaces",      "floyd",     "cycconvmat",    "ccmzerosearch",
+														"vectprops",  "vectpolys",        "matprops",  "fibmultsearch", "dynamics",
+														"orbitmaps2", "oddminpolysearch", "stablelift", "allstablelifts"};
 
 	//Lists of argument names for the CLI tools above
 	//The empty strings are so that I don't have to allocate memory for
 	// an irregular array shape.
-	const char* ARGNAMES[][5] = {{"iterations", "", "", "", ""}, //iterate
-		                           {"modulus", "", "", "", ""},    //inverse
-															 {"modulus", "", "", "", ""},    //rowreduce
-															 {"modulus", "", "", "", ""},    //factor
-															 {"modulus", "", "", "", ""},    //order
-		                           {"maxpower", "modulus", "fileoutput", "belowBound", "aboveBound"}}; //orbitmaps2
+	const char* ARGNAMES[][6] = {{"iterations", "", "", "", "", ""}, //iterate
+		                           {"modulus", "", "", "", "", ""},    //inverse
+															 {"modulus", "", "", "", "", ""},    //rowreduce
+															 {"modulus", "", "", "", "", ""},    //factor
+															 {"modulus", "", "", "", "", ""},    //order
+															 {"modulus", "multiplyByInitial", "", "", "", ""},  //evalpoly
+															 {"modulus", "", "", "", "", ""},                   //chara
+															 {"modulus", "fileoutput", "", "", "", ""},         //orbits
+															 {"modulus", "fileoutput", "", "", "", ""},         //splitorbits
+															 {"modulus", "fileoutput", "", "", "", ""},         //orbitreps
+															 {"modulus", "", "", "", "", ""},                   //branchreps
+															 {"modulus", "minpolys", "fileoutput", "", "", ""}, //orbitspaces
+															 {"modulus", "", "", "", "", ""},                   //floyd
+															 {"from", "to", "mod", "", "", ""},                 //cycconvmat
+															 {"resume", "size", "mod", "", "", ""},             //ccmzerosearch
+															 {"baseMod", "modPower", "resume", "fileoutput", "", ""},     //vectprops
+															 {"baseMod", "modPower", "", "", "", ""},                     //vectpolys
+															 {"maxpower", "modulus", "", "", "", ""},                     //matprops
+															 {"bound", "", "", "", "", ""},                               //fibmultsearch
+															 {"maxPower", "modulus", "allConfigs", "fileoutput", "", ""}, //dynamics
+		                           {"maxpower", "modulus", "fileoutput", "belowBound", "aboveBound", ""}, //orbitmaps2
+															 {"maxpower", "size", "polysize", "modulus", "resume", "fileoutput"},   //oddminpolysearch 
+															 {"baseMod", "modPower", "", "", "", ""},                               //stablelift
+															 {"baseMod", "modPower", "", "", "", ""}};                              //allstablelifts
 
 	//The maximum number of command line arguments each tool takes, +1
-	const int MAXARGC[] = {2, 2, 2, 2, 2, 6};
+	const int MAXARGC[] = {2, 2, 2, 2, 2, 
+	                       3, 2, 3, 3, 3,
+												 2, 4, 2, 4, 4,
+												 5, 3, 3, 2, 5,
+												 6, 7, 3, 3};
 
 	//Will hold key-value pairs if user prefers unix flags
 	//Size of unixflags will be argc/2
@@ -453,6 +478,7 @@ int main(int argc, char* argv[])
 		}
 		
 		/*
+		printf("oargv:\n");
 		for (int t = 0; t <= MAXARGC[toolindex]; t += 1)
 			printf("%s\n", oargv[t]);
 		*/
@@ -717,9 +743,6 @@ int main(int argc, char* argv[])
 		//Find the order of the given polynomial
 		else if (!strcmp(argv[1], "order"))
 		{
-			bool foundTheOrder;
-			BigIntTP tempPrimeScale = NULL;
-			
 			BigIntTP bigMod, negOne, temp, temp2, bigOrder;
 			BigIntTP orderMustDivide; //The number which our extensions' orders must divide
 			BigIntTP* lambdaCoeffs;
@@ -729,6 +752,10 @@ int main(int argc, char* argv[])
 			
 			BigFactorsTP factoredP;
 			BigPolyTP* coprimeFactors;
+			int* mults; //Holds the multiplicities of the factors in coprimeFactors
+			
+			//For making sure we check the correct possible order for multiple roots
+			BigIntTP* primePowersForOrder;
 			
 			int tArray[1] = {1};        //For initialising value of iterationExt
 			BigIntTP* polyCoeffs;       //Holds the coeffs for a MultiVarExtT's min poly
@@ -813,7 +840,10 @@ int main(int argc, char* argv[])
 			// of the algebraic objects defined by its factors... I think.
 			//So, let's factor the polynomial and get the multiplicative orders.
 			factoredP = factor_BigPolyT(P, bigMod);
+			mults = multiplicities(factoredP);
 			coprimeFactors = extract_coprime_factors(factoredP);
+			
+			primePowersForOrder = malloc(count_unique_factors(factoredP)*sizeof(BigIntTP));
 
 			printf("P: ");
 			printp(P);
@@ -825,6 +855,22 @@ int main(int argc, char* argv[])
 				if (i != 0)
 					printf(", ");
 				printp(coprimeFactors[i]);
+				
+				//Initialising each element to one
+				primePowersForOrder[i] = new_BigIntT(tArray, 1);
+				
+				//THIS WILL NOT WORK FOR VERY LARGE POLYNOMIALS
+				clear_BigIntT(temp);
+				set_bunch(temp, 0, mults[i]);
+				
+				//Find the first power of p that's greater than the
+				// multiplicity of this particular factor
+				while (compare_BigIntT(temp, primePowersForOrder[i]) > 0)
+				{
+					multiply_BigIntT(primePowersForOrder[i], bigMod, temp2);
+					copy_BigIntT(temp2, primePowersForOrder[i]);
+				}
+				
 			}
 			printf("\n");
 			
@@ -1071,97 +1117,75 @@ int main(int argc, char* argv[])
 					//If the order is NOT one
 					if (compare_MultiVarExtT(factorExt, oneExt) != 1)
 					{
-						foundTheOrder = FALSE;
-						tempPrimeScale = empty_BigIntT(1);
-						copy_BigIntT(one, tempPrimeScale);
-						
 						copy_MultiVarExtT(oneExt, factorExt);
 						listPointer = possibleOrders;
 						
-						while (!foundTheOrder)
+						while (listPointer != NULL)
 						{
-							while (listPointer != NULL)
+							//Go through all prime factors of our order and iterate
+							// the extension accordingly
+							for (int i = 0; i < listPointer->anOrder->numOfFactors; i += 1)
 							{
-								//Go through all prime factors of our order and iterate
-								// the extension accordingly
-								for (int i = 0; i < listPointer->anOrder->numOfFactors; i += 1)
-								{
-									//Add the factor of p we need to check "embedded orders"
-									if (i == 0)
-										multiply_BigIntT(listPointer->anOrder->factors[i], tempPrimeScale, temp);
-									else
-										copy_BigIntT(listPointer->anOrder->factors[i], temp);
-									
-									if (i != 0)
-									{
-										//This makes sure we don't raise our extension to
-										// too high a power.
-										subtract_BigIntT(temp, one, temp2);
-										copy_BigIntT(temp2, temp);
-									}
-									
-									while (! is_zero(temp))
-									{
-										//Do multiplication/iteration
-										mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
-										
-										reduce_MultiVarExtT(tempExt);
-										copy_MultiVarExtT(tempExt, factorExt);
-										
-										subtract_BigIntT(temp, one, temp2);
-										copy_BigIntT(temp2, temp);
-									}
-									
-									copy_MultiVarExtT(factorExt, iterationExt);
-								}
-								
-								/*
-								printf("extension iterated to power ");
-								printi(listPointer->anOrder->possibleOrder);
-								printf(" * ");
-								printi(tempPrimeScale);
-								printf(": ");
-								printmve_row(factorExt);
-								printf("\n");
-								*/
-								
-								//Check to see if the extension is one.
-								//If it is, we've found the order
-								if (compare_MultiVarExtT(factorExt, oneExt) == 1)
-								{
-									multiply_BigIntT(listPointer->anOrder->possibleOrder, tempPrimeScale, temp2);
-									big_lcm(bigOrder, temp2, temp);
-									copy_BigIntT(temp, bigOrder);
-									
-									foundTheOrder = TRUE;
-									break;
-								}
-								
+								//Add the factor of p we need to check "embedded orders"
+								if (i == 0)
+									multiply_BigIntT(listPointer->anOrder->factors[i], primePowersForOrder[f], temp);
 								else
+									copy_BigIntT(listPointer->anOrder->factors[i], temp);
+								
+								if (i != 0)
 								{
-									copy_MultiVarExtT(oneExt, factorExt);
-									clear_MultiVarExtT(iterationExt);
-									set_MultiVarExtT_coefficient(iterationExt, tArray, one);
-									
-									//Try the next order
-									listPointer = listPointer->next;
+									//This makes sure we don't raise our extension to
+									// too high a power.
+									subtract_BigIntT(temp, one, temp2);
+									copy_BigIntT(temp2, temp);
 								}
+								
+								while (! is_zero(temp))
+								{
+									//Do multiplication/iteration
+									mult_sim_MultiVarExtT(factorExt, iterationExt, tempExt);
+									
+									reduce_MultiVarExtT(tempExt);
+									copy_MultiVarExtT(tempExt, factorExt);
+									
+									subtract_BigIntT(temp, one, temp2);
+									copy_BigIntT(temp2, temp);
+								}
+								
+								copy_MultiVarExtT(factorExt, iterationExt);
 							}
 							
-							//If we get here, it means (I think) that the order is an
-							// embedded order of sorts: its the order of a smaller power 
-							// polynomial multiplied by p
-							if (!foundTheOrder)
+							/*
+							printf("extension iterated to power ");
+							printi(listPointer->anOrder->possibleOrder);
+							printf(" * ");
+							printi(primePowersForOrder[f]);
+							printf(": ");
+							printmve_row(factorExt);
+							printf("\n");
+							*/
+							
+							//Check to see if the extension is one.
+							//If it is, we've found the order
+							if (compare_MultiVarExtT(factorExt, oneExt) == 1)
 							{
-								multiply_BigIntT(tempPrimeScale, bigMod, temp);
-								copy_BigIntT(temp, tempPrimeScale);
+								multiply_BigIntT(listPointer->anOrder->possibleOrder, primePowersForOrder[f], temp2);
+								big_lcm(bigOrder, temp2, temp);
+								copy_BigIntT(temp, bigOrder);
 								
-								//Try all possible orders again, this time just multiplied by a factor of p
-								listPointer = possibleOrders;
+								break;
+							}
+							
+							else
+							{
+								copy_MultiVarExtT(oneExt, factorExt);
+								clear_MultiVarExtT(iterationExt);
+								set_MultiVarExtT_coefficient(iterationExt, tArray, one);
+								
+								//Try the next order
+								listPointer = listPointer->next;
 							}
 						}
-						
-						tempPrimeScale = free_BigIntT(tempPrimeScale);
 						
 						//Build up order of the entire polynomial using LCM
 						printf("Order of ");
@@ -1170,7 +1194,7 @@ int main(int argc, char* argv[])
 						printi(bigMod);
 						printf(": ");
 						
-						//temp2 = listPointer->anOrder->possibleOrder * tempPrimeScale,
+						//temp2 = listPointer->anOrder->possibleOrder * primePowersForOrder[f],
 						// so temp2 is some factor of p^d - 1, multiplied by some number of
 						// factors of p.
 						printi(temp2);
@@ -1241,8 +1265,12 @@ int main(int argc, char* argv[])
 			remainderPoly = free_BigPolyT(remainderPoly);
 			
 			for (int i = 0; i < count_unique_factors(factoredP); i += 1)
+			{
 				coprimeFactors[i] = free_BigPolyT(coprimeFactors[i]);
+				primePowersForOrder[i] = free_BigIntT(primePowersForOrder[i]);
+			}
 			FREE(coprimeFactors);
+			FREE(primePowersForOrder);
 			factoredP = free_BigFactorsT(factoredP);
 		}
 		
@@ -1250,8 +1278,6 @@ int main(int argc, char* argv[])
 		//If the user wants to plug the update matrix into a polynomial expression
 		else if (! strcmp(argv[1], "evalpoly"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			bool multiplyByInitial = FALSE;
 			
 			BigIntTP bigMod;
@@ -1269,18 +1295,18 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
 				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from .config file.");
 			}
 			
-			if (argc > 3)
+			if (oargv[3][0] != '\0')
 			{
-				if (!strcmp(argv[3], "TRUE"))
+				if (!strcmp(oargv[3], "TRUE"))
 				{
 					//Check to make sure the given INITIALMATRIX is of the correct dimensions
 					if (big_rows(INITIALMATRIX) == big_cols(UPDATEMATRIX))
@@ -1343,8 +1369,6 @@ int main(int argc, char* argv[])
 		//Find the characteristic equation of the update matrix
 		else if (! strcmp(argv[1], "chara"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntTP bigMod = NULL;
 			
 			BigIntMatrixTP bigMatrix;
@@ -1354,9 +1378,9 @@ int main(int argc, char* argv[])
 			BigPolyTP* minEqn = NULL;
 			
 			//If the user provided a custom modulus
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			
 			//Extract the modulus in the .config file otherwise
@@ -1405,6 +1429,10 @@ int main(int argc, char* argv[])
 		//If the user wants to find all matrices with a particular characteristic polynomial
 		else if (! strcmp(argv[1], "allcharas"))
 		{
+			//This should be rewritten to use .polynomial files to
+			// define the characteristic polynomial, not command line
+			// arguments. This would allow UNIX-type arguments to
+			// be used.
 			PROHIBIT_UNIXFLAGS
 			
 			BigIntTP bigMod;
@@ -1573,8 +1601,6 @@ int main(int argc, char* argv[])
 		// matrix's orbits
 		else if (! strcmp(argv[1], "orbits"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntTP bigMod;
 			BigIntTP overflowCheck;
 			int smallMod;
@@ -1609,10 +1635,10 @@ int main(int argc, char* argv[])
 			FILE* graphFile = NULL;
 			char* graphFileName = NULL;
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Invalid modulus passed on command line.");
-				smallMod = (int)strtol(argv[2], &tempStr, 10);
+				SET_BIG_NUM(oargv[2], bigMod, "Invalid modulus passed on command line.");
+				smallMod = (int)strtol(oargv[2], &tempStr, 10);
 			}
 			else
 			{
@@ -1620,8 +1646,8 @@ int main(int argc, char* argv[])
 				smallMod = (int)strtol(bigintmodstring, &tempStr, 10);
 			}
 			
-			if (argc > 3)
-				if (! strcmp(argv[3], "TRUE"))
+			if (oargv[3][0] != '\0')
+				if (! strcmp(oargv[3], "TRUE"))
 					fileoutput = TRUE;
 				
 			A = read_BigIntMatrixT(updatefilepath);
@@ -1895,10 +1921,9 @@ int main(int argc, char* argv[])
 		// the given update matrix's minimal polynomial
 		else if (! strcmp(argv[1], "splitorbits"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			//Let's just hope we don't have more extensions than this
 			char* extensionNames[5] = {"α", "β", "δ", "ε", "θ"};
+			int uniqueExtensionCombos = 1; //For helping determine how many vectors are possible
 			
 			BigIntTP bigMod;
 			BigIntMatrixTP bigF;
@@ -1929,24 +1954,24 @@ int main(int argc, char* argv[])
 			int foundCycleIndex; //Used for holding a position in the arrays below
 			
 			int     numOfCycleLengthsFound = 0;
-			int*    numOfCyclesFound;  //Holds how many cycles of each length we've found
-			int*    foundCycleLengths; //Holds all the cycle lengths we've come across so far
-			void*** foundReps;         //Holds representatives for all the cycles we've found thus far
+			int*    numOfCyclesFound = NULL;  //Holds how many cycles of each length we've found
+			int*    foundCycleLengths = NULL; //Holds all the cycle lengths we've come across so far
+			void*** foundReps;                //Holds representatives for all the cycles we've found thus far
 			
 			bool moreVectors = TRUE;
 			
-			BigIntTP temp;
-			BigIntTP temp2;
+			BigIntTP temp, temp2;
 			
 			int cycleCounter = 0; //How many cycles have we found?
-			BigIntTP vectorCounter = empty_BigIntT(1);
+			BigIntTP vectorCounter = NULL;
+			BigIntTP totalVectors = NULL;
 			
 			char* fileOutputName = NULL;
 			FILE* fileOutput = NULL;
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -1971,8 +1996,8 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			if (argc > 3)
-				if (!strcmp(argv[3], "TRUE"))
+			if (oargv[3][0] != '\0')
+				if (!strcmp(oargv[3], "TRUE"))
 				{
 					fileOutputName = malloc(MAXSTRLEN*sizeof(char));
 					fileOutputName[0] = '\0';
@@ -1995,6 +2020,7 @@ int main(int argc, char* argv[])
 						fprintf(stderr, "Unable to create output file. Continuing without saving...\n");
 				}
 				
+			vectorCounter = empty_BigIntT(1);
 			temp  = empty_BigIntT(1);
 			temp2 = empty_BigIntT(1);
 			
@@ -2036,6 +2062,7 @@ int main(int argc, char* argv[])
 					if (!isSameDefn)
 					{
 						numOfExtensionsNeeded += 1;
+						uniqueExtensionCombos *= degree(minPolyFactors[i]);
 						
 						extDefns = realloc(extDefns, numOfExtensionsNeeded*sizeof(BigPolyTP));
 						extDefns[numOfExtensionsNeeded-1] = empty_BigPolyT();
@@ -2055,6 +2082,15 @@ int main(int argc, char* argv[])
 			
 			else
 			{
+				//First, count how many vectors are in our space
+				totalVectors = empty_BigIntT(1);
+				copy_BigIntT(one, totalVectors);
+				for (int i = 0; i < uniqueExtensionCombos*big_rows(bigF); i += 1)
+				{
+					multiply_BigIntT(bigMod, totalVectors, temp);
+					copy_BigIntT(temp, totalVectors);
+				}
+				
 				//We have the number of extensions we need, now create a 
 				// representative MultiVarExtT that has all the extensions
 				// we need.
@@ -2264,13 +2300,16 @@ int main(int argc, char* argv[])
 					
 					//Iterate our vector
 					moreVectors = FALSE;
-					for (int component = 0; component < big_rows(bigF); component += 1)
+					if (compare_BigIntT(vectorCounter, totalVectors) != 0)
 					{
-						if (! increment_MultiVarExtT(currVectElements[component][0]))
+						for (int component = 0; component < big_rows(bigF); component += 1)
 						{
-							moreVectors = TRUE;
-							set_GenericMatrixT(currVect, currVectElements);
-							break;
+							if (! increment_MultiVarExtT(currVectElements[component][0]))
+							{
+								moreVectors = TRUE;
+								set_GenericMatrixT(currVect, currVectElements);
+								break;
+							}
 						}
 					}
 				}
@@ -2351,6 +2390,7 @@ int main(int argc, char* argv[])
 			temp2  = free_BigIntT(temp2);
 			bigMod = free_BigIntT(bigMod);
 			
+			totalVectors = free_BigIntT(totalVectors);
 			vectorCounter = free_BigIntT(vectorCounter);
 		}
 		
@@ -2358,8 +2398,6 @@ int main(int argc, char* argv[])
 		//If we want to find a representative from each of the update matrix's orbits
 		else if (! strcmp(argv[1], "orbitreps"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntTP bigMod;
 			
 			BigIntMatrixTP A;
@@ -2385,9 +2423,9 @@ int main(int argc, char* argv[])
 			FILE* outputFile;
 			
 			//If user provided modulus at command line
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -2395,8 +2433,8 @@ int main(int argc, char* argv[])
 			}
 			
 			//If the user wanted to change the default file output behaviour
-			if (argc > 3)
-				if (!strcmp(argv[3], "TRUE"))
+			if (oargv[3][0] != '\0')
+				if (!strcmp(oargv[3], "TRUE"))
 					fileoutput = TRUE;
 			
 			A = UPDATEMATRIX;
@@ -2427,15 +2465,8 @@ int main(int argc, char* argv[])
 			//If we have a default path to put output files into
 			ADD_FILE_PREFIX(outputfilename);
 			
-			strcat(outputfilename, argv[1]); //orbitreps
-			strcat(outputfilename, " ");
-			
-			//Modulus
-			if (argc > 2)
-				strcat(outputfilename, argv[2]);
-			else
-				strcat(outputfilename, bigintmodstring);
-			
+			strcat(outputfilename, "orbitreps ");
+			append_BigIntT(outputfilename, bigMod);
 			strcat(outputfilename, " F");
 			
 			//Matrix
@@ -2606,8 +2637,6 @@ int main(int argc, char* argv[])
 		//If we want to generate transient length representatives
 		else if (!strcmp(argv[1], "branchreps"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntMatrixTP A;
 			BigIntMatrixTP I;
 			BigIntMatrixTP currVect  = NULL;
@@ -2643,9 +2672,9 @@ int main(int argc, char* argv[])
 			char* fileName = NULL;
 			FILE* outputFile = NULL;
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -3002,8 +3031,6 @@ int main(int argc, char* argv[])
 		// within a given LCA system
 		else if (! strcmp(argv[1], "orbitspaces"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			bool calcMinPoly = FALSE; //Do we calculate min polys for each cyclespace?
 			bool newCyclespace;
 			
@@ -3025,9 +3052,9 @@ int main(int argc, char* argv[])
 			BigPolyTP   charaPoly   = NULL;
 			BigPolyTP** minpolys    = NULL;
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -3035,8 +3062,8 @@ int main(int argc, char* argv[])
 			}
 			
 			//If the user wants to turn on minimal polynomial calculation
-			if (argc > 3)
-				if (! strcmp(argv[3], "TRUE"))
+			if (oargv[3][0] != '\0')
+				if (! strcmp(oargv[3], "TRUE"))
 					calcMinPoly = TRUE;
 			
 			A = read_BigIntMatrixT(updatefilepath);
@@ -3175,17 +3202,15 @@ int main(int argc, char* argv[])
 		//If the user wants to use Floyd's Cycle Detection Algorithm
 		else if (! strcmp(argv[1], "floyd"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			BigIntTP bigModulus;
 			BigIntMatrixTP initial;
 			BigIntMatrixTP update;
 			CycleInfoTP coolCycle = NULL;
 			
 			//If the user specified a custom modulus
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], bigModulus, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[2], bigModulus, "Unable to read modulus from command line.");
 			}
 			
 			//Use the modulus provided in the .config file
@@ -3225,7 +3250,6 @@ int main(int argc, char* argv[])
 				if ((vectorType == row) && (big_rows(initial) != big_cols(initial)))
 					printf("\n");
 			}
-			
 			
 			bigModulus = free_BigIntT(bigModulus);
 			initial    = free_BigIntMatrixT(initial);
@@ -3669,19 +3693,21 @@ int main(int argc, char* argv[])
 		//If we want to compute some "cycle converting matrices"
 		else if (!strcmp(argv[1], "cycconvmat"))
 		{
-			PROHIBIT_UNIXFLAGS
+			BigIntTP bigMod, from, to;
+			BigIntMatrixTP sumMat, A;
 			
-			BigIntTP bigMod;
-			BigIntTP from;
-			BigIntTP to;
-
-			BigIntMatrixTP sumMat;
-			BigIntMatrixTP A;
+			//If the user didn't supply the required arguments "from" and "to"
+			if ((oargv[2][0] == '\0') || (oargv[3][0] == '\0'))
+			{
+				printf("Usage: " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
 			
 			//Check to see if user provided a custom modulus
-			if (argc > 4)
+			if (oargv[4][0] != '\0')
 			{
-				SET_BIG_NUM(argv[4], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[4], bigMod, "Unable to read modulus from command line.");
 			}
 			
 			else
@@ -3689,13 +3715,14 @@ int main(int argc, char* argv[])
 				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
-			SET_BIG_NUM(argv[2], from, "Unable to read starting cycle length from command line.");
-			SET_BIG_NUM(argv[3], to, "Unable to read conversion cycle length from command line.");
+			SET_BIG_NUM(oargv[2], from, "Unable to read starting cycle length from command line.");
+			SET_BIG_NUM(oargv[3], to, "Unable to read conversion cycle length from command line.");
 			
 			A = read_BigIntMatrixT(updatefilepath);
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix provided in config file.\n");
+				bigMod = free_BigIntT(bigMod);
 				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
@@ -3715,7 +3742,6 @@ int main(int argc, char* argv[])
 			printf(":\n");
 			printbm(sumMat);
 			
-			
 			from   = free_BigIntT(from);
 			to     = free_BigIntT(to);
 			bigMod = free_BigIntT(bigMod);
@@ -3728,22 +3754,22 @@ int main(int argc, char* argv[])
 		//If we want to look for matrices that have CCMs equal to zero
 		else if (! strcmp(argv[1], "ccmzerosearch"))
 		{
-			PROHIBIT_UNIXFLAGS
+			//Checking to see if the user provided all the required arguments
+			if (oargv[3][0] == '\0')
+			{
+				printf("Usage: " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
+				returnvalue = EXIT_FAILURE;
+				goto FREE_VARIABLES;
+			}
 			
-			BigIntTP   bigMod;
-			BigIntTP   temp;
-			BigIntTP   temp2;
+			BigIntTP   bigMod, temp, temp2;
 			BigIntTP   prevLastElement; //Holds the last element in the matrix; for debugging
 			BigIntTP*  cycleLengthFactors;
 			BigIntTP** currMatElements;
 			BigIntTP** currVectElements;
 			
-			BigIntMatrixTP currMat;
-			BigIntMatrixTP tempCCM;
-			BigIntMatrixTP zeroMat;
+			BigIntMatrixTP currMat, currVect, tempCCM, zeroMat;
 			BigIntMatrixTP resumeMat = NULL; //The matrix to resume at if specified
-			
-			BigIntMatrixTP currVect;
 			
 			CycleInfoTP theCycle = NULL;
 			
@@ -3752,8 +3778,7 @@ int main(int argc, char* argv[])
 			
 			//Holds the cycle length of each matrix and vector we check
 			int cycleLengthArray[1] = {0};
-			BigIntTP bigOmega;
-			BigIntTP bigVectOmega;
+			BigIntTP bigOmega, bigVectOmega;
 			
 			//Holds the number of vectors with each possible cycle length
 			int* cycleLengthCounts;
@@ -3773,9 +3798,9 @@ int main(int argc, char* argv[])
 			BigPolyTP* charaPolyFactors = NULL;
 			
 			//Checking to see if the user provided a modulus on the command line
-			if (argc > 4)
+			if (oargv[4][0] != '\0')
 			{
-				SET_BIG_NUM(argv[4], bigMod, "Unable to read modulus on command line.");
+				SET_BIG_NUM(oargv[4], bigMod, "Unable to read modulus on command line.");
 			}
 			
 			else
@@ -3783,16 +3808,17 @@ int main(int argc, char* argv[])
 				SET_BIG_NUM(bigintmodstring, bigMod, "Unable to read modulus from config file.");
 			}
 			
-			matSize = (int)strtol(argv[3], &tempStr, 10);
+			matSize = (int)strtol(oargv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Invalid matrix size provided on command line.\n");
+				bigMod = free_BigIntT(bigMod);
 				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
 			
 			//If the user wants to use the resume matrix
-			if (! strcmp(argv[2], "TRUE"))
+			if (!strcmp(oargv[2], "TRUE"))
 			{
 				resumeMat = read_BigIntMatrixT(resumefilepath);
 				if (resumeMat == NULL)
@@ -3809,16 +3835,10 @@ int main(int argc, char* argv[])
 			//Maybe I should make this into a macro
 			ADD_FILE_PREFIX(outputfilename);
 			
-			strcat(outputfilename, argv[1]); //ccmzerosearch
+			strcat(outputfilename, "ccmzerosearch "); //ccmzerosearch
+			strcat(outputfilename, oargv[3]); //matrix size
 			strcat(outputfilename, " ");
-			strcat(outputfilename, argv[3]); //matrix size
-			strcat(outputfilename, " ");
-			
-			//modulus
-			if (argc > 4)
-				strcat(outputfilename, argv[4]);
-			else
-				strcat(outputfilename, bigintmodstring);
+			append_BigIntT(outputfilename, bigMod);
 			
 			strcat(outputfilename, ".txt");
 			outputFile = fopen(outputfilename, "w");
@@ -3855,8 +3875,8 @@ int main(int argc, char* argv[])
 				{
 					if (compare_BigIntT(currMatElements[matSize-1][matSize-2], prevLastElement) != 0)
 					{
-							printf("Current matrix:\n");
-							printbm(currMat);
+						printf("Current matrix:\n");
+						printbm(currMat);
 					}
 				}
 				
@@ -4072,12 +4092,10 @@ int main(int argc, char* argv[])
 		// "minimal" annihilating polynomial.
 		else if (!strcmp(argv[1], "vectprops"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
-			if (argc <= 3)
+			if ((oargv[2][0] == '\0') || (oargv[3][0] == '\0'))
 			{
-				printf(ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "baseMod modPower [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
-				returnvalue = EXIT_SUCCESS;
+				printf("Usage: " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "baseMod modPower [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
 			
@@ -4096,9 +4114,9 @@ int main(int argc, char* argv[])
 			char* fileName   = NULL;
 			FILE* outputFile = NULL;
 			
-			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of prime/prime-power modulus from command line.");
+			SET_BIG_NUM(oargv[2], baseMod, "Unable to read base of prime/prime-power modulus from command line.");
 			
-			modPower = (int)strtol(argv[3], &tempStr, 10);
+			modPower = (int)strtol(oargv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read modulus exponent from command line.\n");
@@ -4119,30 +4137,27 @@ int main(int argc, char* argv[])
 			
 			//If the user wants to resume computation from a
 			// particular vector
-			if (argc > 4)
+			if (!strcmp(oargv[4], "TRUE"))
 			{
-				if (!strcmp(argv[4], "TRUE"))
+				resumeVect = read_BigIntMatrixT(resumefilepath);
+				if (resumeVect == NULL)
 				{
-					resumeVect = read_BigIntMatrixT(resumefilepath);
-					if (resumeVect == NULL)
-					{
-						fprintf(stderr, "Unable to read resume vector from .config file. ");
-						fprintf(stderr, "Beginning computation from the zero vector instead.\n");
-					}
-					
-					else if ((big_rows(resumeVect) != big_rows(UPDATEMATRIX)) || 
-					         (big_cols(resumeVect) != 1))
-					{
-						fprintf(stderr, "Resume vector is of incorrect dimensions (must be %d by 1). ", big_rows(UPDATEMATRIX));
-						fprintf(stderr, "Beginning computation from the zero vector instead.\n");
-					}
-					
-					else //Set currVect to resumeVect
-						for (int elem = 0; elem < big_rows(UPDATEMATRIX); elem += 1)
-							copy_BigIntT(big_element(resumeVect, elem, 0), currVectElements[elem][0]);
-						
-					resumeVect = free_BigIntMatrixT(resumeVect);
+					fprintf(stderr, "Unable to read resume vector from .config file. ");
+					fprintf(stderr, "Beginning computation from the zero vector instead.\n");
 				}
+				
+				else if ((big_rows(resumeVect) != big_rows(UPDATEMATRIX)) || 
+								 (big_cols(resumeVect) != 1))
+				{
+					fprintf(stderr, "Resume vector is of incorrect dimensions (must be %d by 1). ", big_rows(UPDATEMATRIX));
+					fprintf(stderr, "Beginning computation from the zero vector instead.\n");
+				}
+				
+				else //Set currVect to resumeVect
+					for (int elem = 0; elem < big_rows(UPDATEMATRIX); elem += 1)
+						copy_BigIntT(big_element(resumeVect, elem, 0), currVectElements[elem][0]);
+					
+				resumeVect = free_BigIntMatrixT(resumeVect);
 			}
 	
 			currVect = new_BigIntMatrixT(big_rows(UPDATEMATRIX), 1);
@@ -4159,27 +4174,24 @@ int main(int argc, char* argv[])
 			}
 			
 			//If user wants file output
-			if (argc > 5)
+			if (!strcmp(oargv[5], "TRUE"))
 			{
-				if (!strcmp(argv[5], "TRUE"))
-				{
-					fileName = malloc(MAXSTRLEN*sizeof(char));
-					fileName[0] = '\0';
-					
-					ADD_FILE_PREFIX(fileName);
-					
-					strcat(fileName, "vectprops F");
-					for (int x = 0; x < big_rows(UPDATEMATRIX); x += 1)
-						for (int y = 0; y < big_cols(UPDATEMATRIX); y += 1)
-							append_BigIntT(fileName, big_element(UPDATEMATRIX, x, y));
-					strcat(fileName, " ");
-					append_BigIntT(fileName, bigMod);
-					strcat(fileName, ".txt");
-					
-					outputFile = fopen(fileName, "a");
-					if (outputFile == NULL)
-						fprintf(stderr, "Unable to open file for saving output. Continuing without saving...\n");
-				}
+				fileName = malloc(MAXSTRLEN*sizeof(char));
+				fileName[0] = '\0';
+				
+				ADD_FILE_PREFIX(fileName);
+				
+				strcat(fileName, "vectprops F");
+				for (int x = 0; x < big_rows(UPDATEMATRIX); x += 1)
+					for (int y = 0; y < big_cols(UPDATEMATRIX); y += 1)
+						append_BigIntT(fileName, big_element(UPDATEMATRIX, x, y));
+				strcat(fileName, " ");
+				append_BigIntT(fileName, bigMod);
+				strcat(fileName, ".txt");
+				
+				outputFile = fopen(fileName, "a");
+				if (outputFile == NULL)
+					fprintf(stderr, "Unable to open file for saving output. Continuing without saving...\n");
 			}
 			
 			//Print out the update matrix for my sanity
@@ -4262,23 +4274,21 @@ int main(int argc, char* argv[])
 		// an update matrix up to a certain degree
 		else if (!strcmp(argv[1], "vectpolys"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			int modPower, numOfAnnihPolys;
 			BigIntTP baseMod;
 			
 			BigPolyTP* generators;
 			
-			if (argc <= 3)
+			if ((oargv[2][0] == '\0') || (oargv[3][0] == '\0'))
 			{
-				printf(ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "baseMod modPower " ANSI_COLOR_RESET "\n");
-				returnvalue = EXIT_SUCCESS;
+				printf("Usage: " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "baseMod modPower " ANSI_COLOR_RESET "\n");
+				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
 			
-			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of modulus from command line.");
+			SET_BIG_NUM(oargv[2], baseMod, "Unable to read base of modulus from command line.");
 			
-			modPower = (int)strtol(argv[3], &tempStr, 10);
+			modPower = (int)strtol(oargv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read modulus exponent from command line.\n");
@@ -4330,12 +4340,10 @@ int main(int argc, char* argv[])
 		}
 		
 		
-		//If the user wants to calculate some useful properties of a given matrix
+		//If the user wants to calculate the algebraic relations a given matrix satisfies
 		// (simplify higher powers)
 		else if (! strcmp(argv[1], "matprops"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			int maxpower;
 			
 			BigIntTP bigMod;
@@ -4348,9 +4356,9 @@ int main(int argc, char* argv[])
 			BigIntTP* OGcoeffs = NULL; //Holds the coefficients of charaPoly
 			BigIntTP* newcoeffs = NULL; //Holds the coefficients for higher powers of A
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				maxpower = (int)strtol(argv[2], &tempStr, 10);
+				maxpower = (int)strtol(oargv[2], &tempStr, 10);
 				
 				if (tempStr[0] != '\0')
 				{
@@ -4362,19 +4370,19 @@ int main(int argc, char* argv[])
 			
 			else
 			{
-				printf(ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET ": Calculates" \
-				" some useful matrix properties.\n");
+				printf("Usage: " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET \
+				": Calculates some useful matrix properties.\n");
 				printf(" - " ANSI_COLOR_CYAN "maxpower" ANSI_COLOR_RESET \
 				": The highest power of the update matrix to calculate an equivalent expression for.\n");
 				printf(" - " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET \
 				": Overrides the modulus specified in the config file.\n");
-				returnvalue = EXIT_SUCCESS;
+				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
 			
-			if (argc > 3)
+			if (oargv[3][0] != '\0')
 			{
-				SET_BIG_NUM(argv[3], bigMod, "Invalid modulus passed on command line.");
+				SET_BIG_NUM(oargv[3], bigMod, "Invalid modulus passed on command line.");
 			}
 			
 			else
@@ -4386,18 +4394,21 @@ int main(int argc, char* argv[])
 			if (A == NULL)
 			{
 				fprintf(stderr, "Unable to read update matrix from config file.\n");
+				bigMod = free_BigIntT(bigMod);
 				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
 			
 			charaPoly = chara_poly(A, bigMod);
+			printf("Matrix's characteristic polynomial modulo ");
+			printi(bigMod);
+			printf(": ");
 			printp(charaPoly);
 			printf("\n");
 			
 			//Check to make sure there's actually some computation to do
 			if (degree(charaPoly) <= maxpower)
 			{
-				printf(":)\n");
 				temp  = empty_BigIntT(1);
 				temp2 = empty_BigIntT(1);
 				temp3 = empty_BigIntT(1);
@@ -4747,11 +4758,10 @@ int main(int argc, char* argv[])
 		// appear before multiples of powers of those numbers
 		else if (! strcmp(argv[1], "fibmultsearch"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			int hundred[] = {100};
 			int oneArr[]  = {001};
 			int start[]   = {001}; //Where the program starts counting
+			
 			//int debugCounter = 0; //For debugging
 			BigIntTP upperbound;
 			BigIntTP currNum = new_BigIntT(start, 1);
@@ -4761,9 +4771,9 @@ int main(int argc, char* argv[])
 			BigIntTP fibB    = empty_BigIntT(1);
 			BigIntTP fibTemp = empty_BigIntT(1);
 			
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				SET_BIG_NUM(argv[2], upperbound, "Invalid upper bound passed.");
+				SET_BIG_NUM(oargv[2], upperbound, "Invalid upper bound passed.");
 			}
 			else
 				upperbound = new_BigIntT(hundred, 1);
@@ -4830,8 +4840,6 @@ int main(int argc, char* argv[])
 		// and transient lengths, then repeat for higher-powered moduli.
 		else if (! strcmp(argv[1], "dynamics"))
 		{
-			PROHIBIT_UNIXFLAGS
-			
 			int highpower = 2;
 			int highmod;   //Holds the modulus raised to the correct power
 			int maxmod;    //Holds the highest mod we obtain; used for iterating through matrix lifts
@@ -4885,9 +4893,9 @@ int main(int argc, char* argv[])
 			bool isUniqueConfig = TRUE; //Used to determine whether we've found a new configuration once we've computed a new one
 			
 			//User-provided upper bound for moduli power
-			if (argc > 2)
+			if (oargv[2][0] != '\0')
 			{
-				highpower = (int)strtol(argv[2], &tempStr, 10);
+				highpower = (int)strtol(oargv[2], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read upper bound from command line.\n");
@@ -4897,9 +4905,9 @@ int main(int argc, char* argv[])
 			}
 			
 			//If user provided a modulus for us
-			if (argc > 3)
+			if (oargv[3][0] != '\0')
 			{
-				modulus = (int)strtol(argv[3], &tempStr, 10);
+				modulus = (int)strtol(oargv[3], &tempStr, 10);
 				if (tempStr[0] != '\0')
 				{
 					fprintf(stderr, "Unable to read modulus from command line.\n");
@@ -4909,14 +4917,12 @@ int main(int argc, char* argv[])
 			}
 			
 			//If user wants to find all possible dynamic configurations
-			if (argc > 4)
-				if (!strcmp(argv[4], "TRUE"))
-					findAllConfigs = TRUE;
+			if (!strcmp(oargv[4], "TRUE"))
+				findAllConfigs = TRUE;
 				
 			//If user wants to store an output file
-			if (argc > 5)
-				if (!strcmp(argv[5], "TRUE"))
-					fileoutput = TRUE;
+			if (!strcmp(oargv[5], "TRUE"))
+				fileoutput = TRUE;
 			
 			originalA = read_IntMatrixT(updatefilepath);
 			if (originalA == NULL)
@@ -4947,9 +4953,8 @@ int main(int argc, char* argv[])
 				
 				ADD_FILE_PREFIX(outputfilename);
 				
-				strcat(outputfilename, argv[1]); //dynamics
-				strcat(outputfilename, " ");
-				strcat(outputfilename, argv[2]); //maxPower
+				strcat(outputfilename, "dynamics "); //dynamics
+				strcat(outputfilename, oargv[2]); //maxPower
 				strcat(outputfilename, " ");
 				
 				//Add modulus
@@ -7031,19 +7036,23 @@ int main(int argc, char* argv[])
 		// isn't a multiple of the minimal polynomial
 		else if (! strcmp(argv[1], "oddminpolysearch"))
 		{
-			PROHIBIT_UNIXFLAGS
+			//Checking to make sure user entered all required arguments
+			for (int i = 2; i <= 4; i += 1)
+				if (oargv[i][0] == '\0')
+				{
+					printf("Usage: " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN \
+					"maxpower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+					returnvalue = EXIT_FAILURE;
+					goto FREE_VARIABLES;
+				}
 			
-			int matSize;
-			int maxPower;
-			int currPower;
-			int polySize;
+			int matSize, maxPower, currPower, polySize;
 			BigIntTP bigMod = NULL;
 			BigIntTP currMod = NULL;
 			BigIntTP** currMatElements = NULL;
 			BigIntMatrixTP currMat = NULL;
 			
-			bool foundMin;
-			bool foundMonic;
+			bool foundMin, foundMonic;
 			BigIntTP* minPolyCoeffs   = NULL;
 			BigPolyTP minPoly         = NULL;
 			BigPolyTP minMonicPoly    = NULL; //Non-monic annihilating polys can be smaller than minPoly
@@ -7053,8 +7062,7 @@ int main(int argc, char* argv[])
 			BigPolyTP remainderPoly = NULL;
 			BigPolyTP zeroPoly      = NULL;
 			
-			BigIntTP temp;
-			BigIntTP coeffCompare;
+			BigIntTP temp, coeffCompare;
 			
 			BigIntMatrixTP zeroMat = NULL;
 			BigIntMatrixTP tempMat = NULL;
@@ -7062,7 +7070,7 @@ int main(int argc, char* argv[])
 			char* outputFileName = NULL;
 			FILE* outputFile = NULL;
 			
-			maxPower = (int)strtol(argv[2], &tempStr, 10);
+			maxPower = (int)strtol(oargv[2], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read maxPower from command line.\n");
@@ -7070,7 +7078,7 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			matSize = (int)strtol(argv[3], &tempStr, 10);
+			matSize = (int)strtol(oargv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read matrix size from command line.\n");
@@ -7078,7 +7086,7 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			polySize = (int)strtol(argv[4], &tempStr, 10);
+			polySize = (int)strtol(oargv[4], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read polynomial size from command line.\n");
@@ -7086,9 +7094,9 @@ int main(int argc, char* argv[])
 				goto FREE_VARIABLES;
 			}
 			
-			if (argc > 5)
+			if (oargv[5][0] != '\0')
 			{
-				SET_BIG_NUM(argv[5], bigMod, "Unable to read modulus from command line.");
+				SET_BIG_NUM(oargv[5], bigMod, "Unable to read modulus from command line.");
 			}
 			else
 			{
@@ -7096,7 +7104,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//Check to see if the user wants to resume computation
-			if ((argc > 6) && (! strcmp(argv[6], "TRUE")))
+			if (!strcmp(oargv[6], "TRUE"))
 			{
 				currMat = read_BigIntMatrixT(resumefilepath);
 				if (currMat == NULL)
@@ -7142,7 +7150,7 @@ int main(int argc, char* argv[])
 			}
 			
 			//If the user wants a file output
-			if ((argc > 7) && (!strcmp(argv[7], "TRUE")))
+			if (!strcmp(oargv[7], "TRUE"))
 			{
 				outputFileName = malloc(MAXSTRLEN*sizeof(char));
 				outputFileName[0] = '\0';
@@ -7151,11 +7159,11 @@ int main(int argc, char* argv[])
 				
 				//Let's hope there's enough space in the string for all this!
 				strcat(outputFileName, "oddminpolysearch ");
-				strcat(outputFileName, argv[2]);
+				strcat(outputFileName, oargv[2]);
 				strcat(outputFileName, " ");
-				strcat(outputFileName, argv[3]);
+				strcat(outputFileName, oargv[3]);
 				strcat(outputFileName, " ");
-				strcat(outputFileName, argv[4]);
+				strcat(outputFileName, oargv[4]);
 				strcat(outputFileName, " ");
 				append_BigIntT(outputFileName, bigMod);
 				strcat(outputFileName, ".txt");	
@@ -7163,7 +7171,6 @@ int main(int argc, char* argv[])
 				outputFile = fopen(outputFileName, "w");
 				if (outputFile == NULL)
 					fprintf(stderr, "Unable to create file %s. Continuing without saving...\n", outputFileName);
-				
 			}
 			
 			temp = empty_BigIntT(1);
@@ -7460,7 +7467,6 @@ int main(int argc, char* argv[])
 		//If we want to find a lift of a matrix where the cycle length stays the same
 		else if (!strcmp(argv[1], "stablelift"))
 		{
-			PROHIBIT_UNIXFLAGS
 			bool debugMode = FALSE;
 			
 			/* This CLI tool might be able to be used to find Wall-Sun-Sun primes.
@@ -7469,10 +7475,10 @@ int main(int argc, char* argv[])
 			 * matrix...
 			 *
 			 */
-			if (argc < 4)
+			if ((oargv[2][0] == '\0') || (oargv[3][0] == '\0'))
 			{
-				printf(ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
-				returnvalue = EXIT_SUCCESS;
+				printf("Usage: " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+				returnvalue = EXIT_FAILURE;
 				goto FREE_VARIABLES;
 			}
 			
@@ -7488,48 +7494,53 @@ int main(int argc, char* argv[])
 			
 			int numArr[1] = {1};
 			int modPower;
-			BigIntTP baseMod, bigMod, biggerMod;
+			BigIntTP baseMod = NULL;
+			BigIntTP bigMod = NULL;
+			BigIntTP biggerMod = NULL;
 			
 			int cycLen;
 			CycleInfoTP theCycle = NULL;
 			BigIntMatrixTP I;
 			
-			BigIntTP** matrixElements;
-			BigIntTP** matrixDeltaRows; //Holds the changes to the matrix in row form for row reduction
+			BigIntTP** matrixElements = NULL;
+			BigIntTP** matrixDeltaRows = NULL; //Holds the changes to the matrix in row form for row reduction
 			int deltaRowCounter = 0;
 			int deltaColCounter = 0;
 			
 			BigIntTP bigCycLen;
 			BigIntMatrixTP basePDigitMatrix; //UPDATE^cycLen mod baseMod^(modPower + 1)
-			BigIntMatrixTP tempMat, tempMat2;
-			BigIntMatrixTP tempPDigitMatrix; //<modified UPDATE>^cycLen mod baseMod^(modPower + 1)
+			BigIntMatrixTP tempMat = NULL;
+			BigIntMatrixTP tempMat2 = NULL;
+			BigIntMatrixTP tempPDigitMatrix = NULL; //<modified UPDATE>^cycLen mod baseMod^(modPower + 1)
 			
 			BigIntTP* baseDeltaRow; //The row we're trying to eliminate
 			
 			//Keeps track of what shifts we need to perform on UPDATEMATRIX to get a stable lift
 			BigIntMatrixTP matrixShiftWatcher = NULL; 
-			BigIntTP* matrixShiftWatcherRow;
+			BigIntTP* matrixShiftWatcherRow = NULL;
 			
-			BigIntMatrixTP deltaRowsToReduce, deltaRowsToReduceTemp;
+			BigIntMatrixTP deltaRowsToReduce = NULL;
+			BigIntMatrixTP deltaRowsToReduceTemp = NULL;
 			
 			//Holds the combination of matrix terms additions we need to get a stable lift
-			BigPolyTP deltaCombo;
+			BigPolyTP deltaCombo = NULL;
 			BigIntTP* deltaComboCoeffs;
 			int matrixIndexCounter = 0; //Helps to index matrices as 1D arrays
 			
-			BigIntTP temp, temp2, temp3, temp4, negOne;
+			BigIntTP temp, temp2, temp3, temp4; //Insanity
+			BigIntTP negOne = NULL;
 			
 			//Tells the algorithm how many levels deep UPDATEMATRIX is as a 
 			// stable lift (is it the product of a previous stable lift computation?)
 			int stableLiftLevel = -1;
-			BigIntTP deltaMod;
-			BigIntTP liftCompMod;
+			BigIntTP deltaMod = NULL;
+			BigIntTP liftCompMod = NULL;
 			//My usage of deltaMod and liftCompMod may be completely wrong
 			// We're gonna find out
 			
-			SET_BIG_NUM(argv[2], baseMod, "Unable to read base of modulus from command line.");
+			SET_BIG_NUM(oargv[2], baseMod, "Unable to read base of modulus from command line.");
 			
-			modPower = (int)strtol(argv[3], &tempStr, 10);
+			modPower = (int)strtol(oargv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read modulus power from command line.\n");
@@ -7564,6 +7575,17 @@ int main(int argc, char* argv[])
 				big_floyd(UPDATEMATRIX, I, temp, &theCycle);
 			}
 			while ((omega(theCycle) == cycLen) && (stableLiftLevel < modPower));
+			
+			//I think if stableLiftLevel == modPower, then the matrix we're dealing with
+			// is already a stable lift.
+			if (stableLiftLevel == modPower)
+			{
+				printbm(UPDATEMATRIX);
+				printf("is already a stable lift modulo ");
+				printi(baseMod);
+				printf("^%d. No computation needed.\n", modPower+1);
+				goto FOUNDSTABLELIFT;
+			}
 			
 			//Now, stableLiftLevel should hold the correct level
 			if (debugMode)
@@ -7754,6 +7776,19 @@ matrix changes UPDATEMATRIX^%d mod p^{k+1}.\n", cycLen);
 					}
 					
 					//Prepare matrixShiftWatcher and deltaRowsToReduce for new rows
+					if (debugMode)
+					{
+						printf("\n--BEFORE big_row_echelon()--\n");
+						printf("deltaRowsToReduce = \n");
+						printbm(deltaRowsToReduce);
+						printf("\nliftCompMod = ");
+						printi(liftCompMod);
+						printf("\ndeltaRowsToReduceTemp = \n");
+						printbm(deltaRowsToReduceTemp);
+						printf("\nmatrixShiftWatcher = \n");
+						printbm(matrixShiftWatcher);
+					}
+					
 					big_row_echelon(deltaRowsToReduce, liftCompMod, deltaRowsToReduceTemp, matrixShiftWatcher);
 					copy_BigIntMatrixT(deltaRowsToReduceTemp, deltaRowsToReduce);
 					
@@ -7910,13 +7945,16 @@ is not zero, then we haven't found a stable lift yet.\n");
 			tempMat            = free_BigIntMatrixT(tempMat);
 			tempMat2           = free_BigIntMatrixT(tempMat2);
 			matrixShiftWatcher = free_BigIntMatrixT(matrixShiftWatcher);
-			for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
+			if (matrixShiftWatcherRow != NULL)
 			{
-				matrixShiftWatcherRow[i] = free_BigIntT(matrixShiftWatcherRow[i]);
-				baseDeltaRow[i]          = free_BigIntT(baseDeltaRow[i]);
+				for (int i = 0; i < big_rows(UPDATEMATRIX)*big_rows(UPDATEMATRIX); i += 1)
+				{
+					matrixShiftWatcherRow[i] = free_BigIntT(matrixShiftWatcherRow[i]);
+					baseDeltaRow[i]          = free_BigIntT(baseDeltaRow[i]);
+				}
+				FREE(matrixShiftWatcherRow);
+				FREE(baseDeltaRow);
 			}
-			FREE(matrixShiftWatcherRow);
-			FREE(baseDeltaRow);
 			
 			deltaRowsToReduce     = free_BigIntMatrixT(deltaRowsToReduce);
 			deltaRowsToReduceTemp = free_BigIntMatrixT(deltaRowsToReduceTemp);
@@ -7933,17 +7971,13 @@ is not zero, then we haven't found a stable lift yet.\n");
 			//allstablelifts baseMod modPower
 			//baseMod^modPower is the modulus of the thing we want to lift,
 			// not the lift modulus itself (which is baseMod^{modPower+1}).
-			
-			PROHIBIT_UNIXFLAGS
-			
-			if (argc < 4)
+			if ((oargv[2][0] == '\0') || (oargv[3][0] == '\0'))
 			{
-				printf("allstablelifts baseMod modPower\n");
+				printf("Usage: " ANSI_COLOR_YELLOW "allstablelifts " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
 				goto FREE_VARIABLES;
 			}
 			
-			BigIntTP baseMod, liftMultiple, bigMod;
-			BigIntTP temp;
+			BigIntTP baseMod, liftMultiple, bigMod, temp;
 			int modPower;
 			
 			CycleInfoTP OGcycle = NULL;
@@ -7963,9 +7997,9 @@ is not zero, then we haven't found a stable lift yet.\n");
 				goto FREE_VARIABLES;
 			}
 			
-			SET_BIG_NUM(argv[2], baseMod, "Unable to read base mod from command line.");
+			SET_BIG_NUM(oargv[2], baseMod, "Unable to read base mod from command line.");
 			
-			modPower = (int)strtol(argv[3], &tempStr, 10);
+			modPower = (int)strtol(oargv[3], &tempStr, 10);
 			if (tempStr[0] != '\0')
 			{
 				fprintf(stderr, "Unable to read modPower from command line.\n");
@@ -8000,7 +8034,7 @@ is not zero, then we haven't found a stable lift yet.\n");
 				for (int c = 0; c < big_rows(UPDATEMATRIX); c += 1)
 					tempStableLiftElements[r][c] = empty_BigIntT(1);
 			}
-				
+		
 			tempStableLift = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
 			tempMatrix = new_BigIntMatrixT(big_rows(UPDATEMATRIX), big_rows(UPDATEMATRIX));
 			
@@ -8531,27 +8565,27 @@ is not zero, then we haven't found a stable lift yet.\n");
 		printf(" * " ANSI_COLOR_YELLOW "rowreduce " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" * " ANSI_COLOR_YELLOW "factor " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" * " ANSI_COLOR_YELLOW "order " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "evalpoly " ANSI_COLOR_CYAN "[modulus] [multiplyByInitial]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "evalpoly " ANSI_COLOR_CYAN "[modulus] [multiplyByInitial]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "chara " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "allcharas " ANSI_COLOR_CYAN "coeffs..." ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "orbitspaces " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus] [minpolys] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "orbits " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "splitorbits " ANSI_COLOR_CYAN "[modulus] [fileoutput] " ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "orbitreps " ANSI_COLOR_CYAN "[modulus] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "branchreps " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "orbitspaces " ANSI_COLOR_RED "(UNFINISHED) " ANSI_COLOR_CYAN "[modulus] [minpolys] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "floyd " ANSI_COLOR_CYAN "[modulus]" ANSI_COLOR_RESET "\n");
 		printf(" - " ANSI_COLOR_YELLOW "cycmatsearch " ANSI_COLOR_CYAN "resume size maxmod cycles..." ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "baseMod modPower [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "cycconvmat " ANSI_COLOR_CYAN "from to [mod]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "ccmzerosearch " ANSI_COLOR_CYAN "resume size [mod]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "vectprops " ANSI_COLOR_CYAN "baseMod modPower [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "vectpolys " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "matprops " ANSI_COLOR_CYAN "maxpower [modulus]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "fibmultsearch " ANSI_COLOR_CYAN "[bound]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "dynamics " ANSI_COLOR_CYAN "[maxPower] [modulus] [allConfigs] [fileoutput]" ANSI_COLOR_RESET "\n");
 		printf(" * " ANSI_COLOR_YELLOW "orbitmaps2 " ANSI_COLOR_CYAN "maxpower [modulus] [fileoutput] [belowBound] [aboveBound]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxPower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
-		printf(" - " ANSI_COLOR_YELLOW "allstablelifts " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "oddminpolysearch " ANSI_COLOR_CYAN "maxpower size polysize [modulus] [resume] [fileoutput]" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "stablelift " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
+		printf(" * " ANSI_COLOR_YELLOW "allstablelifts " ANSI_COLOR_CYAN "baseMod modPower" ANSI_COLOR_RESET "\n");
 		
 		printf("Tools marked with a \"*\" in the list can use \"UNIX-like\" arguments.\n");
 		printf("\nFor a more complete description of LINCELLAUT's usage, " \

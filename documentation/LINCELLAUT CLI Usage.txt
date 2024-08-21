@@ -8,6 +8,8 @@ lincellaut orbitmaps2 -modulus 5 -fileoutput TRUE -maxpower 3
 
 If the user attempts to use "unix-like" arguments with tools that don't support it, LINCELLAUT will notify the user and exit.
 
+Note that unix-type arguments are case-sensitive. For example, the key "fileoutput" is treated as different from "fileOutput".
+
 
 *iterate [iterations]: This tool allows you to take an initial matrix and iterate it by an update matrix multiple times. If no other arguments are passed, lincellaut defaults to using the "iterations" value present in the program's .config file. 
  - The optional argument "iterations" can be provided to override the value of iterations provided in the .config file. This argument expects an integer. Using a negative integer will get LINCELLAUT to compute the inverse of the update matrix and iterate that the specified number of times (e.g. an iteration count of -3 will iterate the inverse matrix 3 times, if it exists).
@@ -21,40 +23,40 @@ If the user attempts to use "unix-like" arguments with tools that don't support 
 *factor [modulus]: This tool allows the user to factor the polynomial specified by the polynomial key in the .config file under the specified modulus. Note that the modulus given must be a prime number.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  
-*order [modulus] (UNFINISHED): This tool takes the polynomial specified by the polynomial key in the .config file and computes its order mod the given modulus. The order of a polynomial p(x) is the smallest natural number c such that p(x) divides x^c - 1.
- - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
+*order [modulus] (UNFINISHED): This tool takes the polynomial specified by the polynomial key in the .config file and computes its order mod the given prime modulus. The order of a polynomial p(x) is the smallest natural number c such that p(x) divides x^c - 1.
+ - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a prime number.
 
-evalpoly [modulus] [multiplyByInitial]: This tool allows the user to take the update matrix specified in the .config file and evaluate a polynomial expression using the matrix as the variable. The polynomial is also specified by the polynomial key within the .config file.
+*evalpoly [modulus] [multiplyByInitial]: This tool allows the user to take the update matrix specified in the .config file and evaluate a polynomial expression using the matrix as the variable. The polynomial is also specified by the polynomial key within the .config file.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "multiplyByInitial" specifies whether the initial vector/matrix specified by the .config file should be multiplied by the resulting matrix and returned instead of the matrix itself. This argument expects TRUE or FALSE as its value. Its default value is FALSE.
 
-chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 
+*chara [modulus]: This tool allows the user to find the characteristic equation of the update matrix under some modulus. 
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 allcharas coeffs...: This tool allows the user to find all matrices with a particular characteristic polynomial defined as command line arguments. The size of the matrices is determined by the number of coefficients added, so adding zeros is required to pad the polynomial to the correct length. 
  - The argument(s) "coeffs" specify the coefficents to use for the characteristic polynomial, entered from the constant term to the coefficient on the highest power term. For example, the characteristic polynomial 5 + x^2 + 2x^3 would be entered as "5 0 1 2".
 
-orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a particular matrix and print them to the console. This tool can also create an output file containing the orbits. The filename will be "orbits <modulus> F<matrix>.txt"
+*orbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a particular matrix and print them to the console. This tool can also create an output file containing the orbits. The filename will be "orbits <modulus> F<matrix>.txt"
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "fileoutput" says whether the tool should create an output file. This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-splitorbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a given matrix and modulus over the splitting field of the matrix's minimal polynomial. 
+*splitorbits [modulus] [fileoutput]: This tool allows the user to calculate the orbits of a given matrix and modulus over the splitting field of the matrix's minimal polynomial. 
  - The optional argument "modulus" overrides the modulus used in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "fileoutput" specifies whether the program should output a text file with the orbits. The file will be created under the name "splitorbits F<matrix> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE.
 
-orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths. This tool assumes the modulus used is a prime number.
+*orbitreps [modulus] [fileoutput]: This tool takes the given update matrix and finds a representative from all its orbits, along with their respective cycle lengths. The tool also creates a text file with the name "orbitreps [modulus] F[matrix].txt" which saves the found vectors and their cycle lengths. This tool assumes the modulus used is a prime number.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "fileoutput" says whether to output a text file with the found representative vectors. This argument expects a TRUE or FALSE. By default, this option is set to FALSE.
 
-branchreps [modulus]: This tool takes the given update matrix and finds a representative from all its transient branches. The tool also creates a text file with the name "branchreps [modulus] F[matrix].txt" which saves the found vectors.
+*branchreps [modulus]: This tool takes the given update matrix and finds a representative from all its transient branches. The tool also creates a text file with the name "branchreps [modulus] F[matrix].txt" which saves the found vectors.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
-orbitspaces (UNFINISHED) [modulus] [minpolys] [fileoutput]: This tool allows users to calculate all unique orbit spaces within a given LCA, i.e. all submodules of the form span({v, Av, (A^2)v, ...}) where v is a vector and A is the update matrix.
+*orbitspaces (UNFINISHED) [modulus] [minpolys] [fileoutput]: This tool allows users to calculate all unique orbit spaces within a given LCA, i.e. all submodules of the form span({v, Av, (A^2)v, ...}) where v is a vector and A is the update matrix.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
  - The optional argument "minpolys" specifies whether to calculate the relevant minimal polynomial attached to each cyclespace. Currently, this only works with prime moduli. This argument expects TRUE or FALSE as its value. The default value is FALSE.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "orbitspaces F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-floyd [modulus]: This tool allows the user to calculate specific info about an LCA system, such as the matrix's cycle length and the transient length, using Floyd's Cycle Detection Algorithm. The tool makes use of the initial and update matrices specified in the .config file as its parameters.
+*floyd [modulus]: This tool allows the user to calculate specific info about an LCA system, such as the matrix's cycle length and the transient length, using Floyd's Cycle Detection Algorithm. The tool makes use of the initial and update matrices specified in the .config file as its parameters.
  - The optional argument "modulus" allows you to override the modulus specified in the .config file. This argument expects a positive integer.
 
 cycmatsearch resume size maxmod cycles...: This tool allows the user to search for a matrix of a given size where the column vectors all have specified cycle lengths. The found matrices and their modulus are then output into a text file in the working directory following the naming convention "cycmatsearch <size> <maxmod> <cycles...>.txt". 
@@ -63,7 +65,7 @@ cycmatsearch resume size maxmod cycles...: This tool allows the user to search f
  - "maxmod" specifies the upper bound for the moduli to search. Searching will always begin at mod 2. This argument expects a positive integer.
  - "cycles..." is a list of cycle lengths for the first column vector, the second, and so on. These arguments expect positive integers.
 
-cycconvmat from to [mod]: This tool allows the user to create a "cycle converting matrix" for the given update matrix. If A is the update matrix, this tool outputs the matrix:
+*cycconvmat from to [mod]: This tool allows the user to create a "cycle converting matrix" for the given update matrix. If A is the update matrix, this tool outputs the matrix:
 
 I + A^(to) + A^(2*to) + A^(3*to) + ... + A^(from-to)
 
@@ -71,22 +73,22 @@ I + A^(to) + A^(2*to) + A^(3*to) + ... + A^(from-to)
  - "to" specifies what cycle length to "convert" vectors to with the matrix. It guarantees that any vector multiplied by the resulting matrix will have a cycle length that divides this number when iterated by the update matrix. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-ccmzerosearch resume size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix, even if nonzero vectors dividing the corresponding cycle length exist. This tool also outputs a text file with the name format "ccmzerosearch [size] [mod].txt" which saved all found matrices.
+*ccmzerosearch resume size [mod]: This tool allows the user to search for matrices of a specific size that have cycle converting matrices (CCMs) equalling the zero matrix, even if nonzero vectors dividing the corresponding cycle length exist. This tool also outputs a text file with the name format "ccmzerosearch [size] [mod].txt" which saved all found matrices.
  - "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - "size" tells the tool what size matrices to look at. This argument expects a positive integer.
  - The optional argument "mod" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
-vectprops baseMod modPower [resume] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what the generators for their ideal of annihilating polynomials are. Note that this tool does not calculate degree 0 generators (though this only affects embedded vectors modulo a prime power).
+*vectprops baseMod modPower [resume] [fileoutput]: This tool allows the user to iterate through all possible vectors in a given LCA and calculate what the generators for their ideal of annihilating polynomials are. Note that this tool does not calculate degree 0 generators (though this only affects embedded vectors modulo a prime power).
  - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
  - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
  - The optional argument "resume" tells the tool whether to start computation at the resume matrix provided in the .config file. This argument expects TRUE or FALSE as its value.
  - The optional argument "fileoutput" specifies whether to record the tool's output to a text file. The file will be created with the name "vectprops F<matrix> <mod>.txt". This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-vectpolys baseMod modPower: This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file).
+*vectpolys baseMod modPower: This tool allows the user to calculate the generators for the initial vector's ideal of annihilating polynomials under a particular update matrix (the update matrix listed in the .config file).
  - The argument "baseMod" specifies the base for the modulus to use. This argument expects a prime number.
  - The argument "modPower" specifies the exponent for the modulus to use. This argument expects an integer greater than 0.
 
-matprops maxpower [modulus]: This tool allows the user to calculate some useful properties of a given matrix (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
+*matprops maxpower [modulus]: This tool allows the user to calculate some algebraic relations a given matrix satisfies (the update matrix specified in the .config file). Currently, it calculates equivalent expressions for matrix powers in terms of lower powers using the characteristic polynomial of the matrix.
  - The argument "maxpower" specifies the highest power to rewrite. If this value is less than the first power able to be simplified, nothing will be output. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus provided in the .config file. This argument expects a positive integer greater than 1.
 
@@ -94,10 +96,10 @@ charawalk (DEPRECATED) step [mod]: This tool steps around a matrix space (each e
  - "step" specifies the step size to take. This argument expects a positive integer.
  - The optional argument "mod" overrides the modulus provided in the .config file. This argument expects a positive integer.
 
-fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.
+*fibmultsearch [bound]: This tool allows the user to search the Fibonacci numbers to see if each number in a range of numbers has their first multiple in the Fibonacci sequence (not including zero) also be their first multiple of their square that appears.
  - The optional argument "bound" allows the user to set a custom upper bound on the numbers to check. By default, the upper bound is set to 100. This argument expects a positive integer (can be arbitrarily big).
 
-dynamics [maxPower] [modulus] [allConfigs] [fileoutput]: This tool allows the user to iterate every vector in a space to get their cycle lengths. It then recomputes those numbers for higher-powered moduli. The tool also outputs a text file under the name "dynamics [maxPower] [modulus] F[matrix].txt" containing all the vectors in each cycle length group (when allConfigs is FALSE).
+*dynamics [maxPower] [modulus] [allConfigs] [fileoutput]: This tool allows the user to iterate every vector in a space to get their cycle lengths. It then recomputes those numbers for higher-powered moduli. The tool also outputs a text file under the name "dynamics [maxPower] [modulus] F[matrix].txt" containing all the vectors in each cycle length group (when allConfigs is FALSE).
  - The argument "maxPower" defines the highest exponent to use for the powered modulus. The default value is 2. This argument expects a positive integer.
  - The optional argument "modulus" allows the user to override the modulus specified in the .config file. This argument expects a positive integer greater than 1.
  - The optional argument "allConfigs" specifies whether the program should find all possible configurations for the dynamics of the given matrix and all its lifts. When set to TRUE, an output file will not be created. This argument expects the value TRUE or FALSE. The default value is FALSE.
@@ -142,7 +144,7 @@ etc.
  - The optional argument "belowBound" specifies whether the program should resume computation at a particular matrix given by the resume matrix in the config file. This argument expects TRUE or FALSE as its value. The default value is FALSE.
  - The optional argument "aboveBound" specifies whether computation should stop at a particular matrix given by the sentinel matrix in the config file. It's the user's responsibility to ensure that the sentinel matrix is computed after the resume matrix. Otherwise, the program will run until all matrices have been computed. This argument expects TRUE or FALSE as its value. The default value is FALSE.
 
-oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This tool allows the user to sift through all annihilating polynomials of all matrices under a given modulus to check if any of them ARE NOT multiples of the minimal annihilating polynomial of the same matrix.
+*oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This tool allows the user to sift through all annihilating polynomials of all matrices under a given modulus to check if any of them ARE NOT multiples of the minimal annihilating polynomial of the same matrix.
  - The argument "maxpower" specifies the highest power of the modulus to check. This argument expects a positive integer.
  - The argument "size" says what size matrix we want to use. This argument expects a positive integer greater than 1.
  - The argument "polysize" specifies the maximum size of polynomials to check for annihilating polynomials. For instance, if this number is 3, the program will check up to quadratic polynomials. This argument expects a positive integer.
@@ -150,11 +152,11 @@ oddminpolysearch maxpower size polysize [modulus] [resume] [fileoutput]: This to
  - The optional argument "resume" specifies whether to resume computation at a particular matrix (given by resume.matrix) and a particular modulus (specified in the .config file). This argument expects TRUE or FALSE.
  - The optional argument "fileoutput" specifies whether the tool should create a file output of the results it finds. The name of the file will follow the format "oddminpolysearch <maxpower> <size> <polysize> <modulus>.txt". The default value of this argument is FALSE. This argument expects TRUE or FALSE as it value.
  
-stablelift baseMod modPower: This tool allows the user to find a lift of a given matrix modulo baseMod^(modPower + 1) whose cycle length stays the same in the higher modulus. For this tool to work, the cycle length of the matrix must have been the same for all previous moduli.
+*stablelift baseMod modPower: This tool allows the user to find a lift of a given matrix modulo baseMod^(modPower + 1) whose cycle length stays the same in the higher modulus. For this tool to work, the cycle length of the matrix must have been the same for all previous moduli.
  - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
  - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
  
-allstablelifts baseMod modPower: This tool allows the user to find all stable lifts of the update matrix given in the .config file. The value baseMod^modPower is the modulus of the original matrix, while baseMod^{modPower+1} is the modulus which the matrix will be lifted into.
+*allstablelifts baseMod modPower: This tool allows the user to find all stable lifts of the update matrix given in the .config file. The value baseMod^modPower is the modulus of the original matrix, while baseMod^{modPower+1} is the modulus which the matrix will be lifted into.
  - The argument "baseMod" specifies the base of the modulus to use. This argument expects a prime number greater than 1.
  - The argument "modPower" specifies the exponent of the modulus to use. This argument expects a positive integer.
  
