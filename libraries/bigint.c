@@ -9,7 +9,11 @@ May 24, 2022
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <string.h> //For strtoBIT()
+
+//These are for strtoBIT()
+#include <string.h>
+#include <ctype.h> //isdigit()
+
 #include <math.h>
 
 #include "../headers/linalg.h" //num_digits()
@@ -154,6 +158,12 @@ int strtoBIT(const char* numStr, BigIntTP* theBig)
 		
 		Returns 1 on success, 0 otherwise. */
 {
+	//Before we do anything, we should check whether
+	// numStr actually represents a number...
+	for (int i = 0; numStr[i] != '\0'; i += 1)
+		if (!isdigit(numStr[i]))
+			return 0;
+	
 	const int bunchLength = num_digits(MAXBUNCH) - 1;
 	
 	int substrstart;      //Holds the start of the substring in the for-loop below

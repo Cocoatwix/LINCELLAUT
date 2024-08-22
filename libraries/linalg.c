@@ -889,7 +889,15 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
 			}
 			
 			//Actually store our value in the matrix
-			strtoBIT(tempStr, &(M->matrix[row][col]));
+			if (strtoBIT(tempStr, &(M->matrix[row][col])) == 0)
+			{
+				//If something goes wrong converting the input to
+				// a number, just quit while we're ahead
+				free(tempStr);
+				fclose(matFile);
+				free_BigIntMatrixT(M);
+				return NULL;
+			}
 		}
 	}
 	
@@ -942,6 +950,7 @@ BigIntMatrixTP read_BigIntMatrixT(const char* matFilePath)
 	}
 	
 	free(tempStr);
+	
 	return M;
 }
 
