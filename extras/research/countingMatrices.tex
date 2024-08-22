@@ -1,0 +1,313 @@
+
+\documentclass[a4paper, 12pt, reqno]{amsart}
+%\usepackage[T1]{fontenc}
+\usepackage{fontspec}
+
+\usepackage[parfill]{parskip}
+
+\usepackage[margin=3cm]{geometry}
+
+\usepackage{setspace}
+\setstretch{1.25}
+
+\usepackage{natbib}
+
+\usepackage{dsfont}
+\usepackage{amssymb}
+
+\usepackage{verbatim}
+
+\newtheorem{prop}{Proposition}
+\newtheorem{coro}{Corollary}
+
+\DeclareMathOperator{\Span}{span}
+\newcommand{\Z}{\mathbb{Z}}
+\newcommand\divides{\ | \ }
+\newcommand\Mat[2][]{\mathbf{#1}^{\!#2}}
+\newcommand\smallmat[1]{\left[\begin{smallmatrix}#1\end{smallmatrix}\right]}
+\newcommand{\cycsp}[1]{\mathcal{S}_{#1}}
+
+\newcommand{\dq}[1]{``#1''}
+
+\renewcommand{\qedsymbol}{\textbf{QED}}
+
+%Allowing propositions to be clicked on
+%This needs to be the last package imported
+\usepackage{hyperref}
+\usepackage{xcolor}
+\hypersetup
+{
+    colorlinks=false,
+	pdfborder={0 0 0},
+    pdftitle={Counting 2 by 2 Matrices Modulo a Prime with Factorable Characteristic Polynomials},
+    pdfpagemode=FullScreen,
+	pdfauthor={Zach Strong},
+}
+
+\begin{document}
+	Consider some vector space $\Z_p^2$ and a vector $\vec{v} \in \Z_p^2$ whose components satisfy some linear congruence. For example, if our vector is represented as 
+	$\smallmat{x\\y}$, then one possible linear relation it could satisfy is $x + y \equiv 0 \bmod{p}$. Another could be $2x + 3y \equiv 0 \bmod{p}$. In general, we'll 
+	consider vectors whose components satisfy equations of the form $ax + by = 0 \bmod{p}$ for constants $a, b \in \Z_p$, where one of $a$ or $b$ is nonzero.
+	
+	Let's say our vector space is $\Z_7^2$ and our vector $\vec{v} \in \Z_7^2$ satisfies $x + y \equiv 0 \bmod{7}$. Then, the following must be true:
+	\begin{center}
+		\begin{tabular}{l}
+			$2x + 3(x + y) \equiv 2x \mod{7}$,\quad and \\
+			$2y + 4(x + y) \equiv 2y \mod{7}$.
+		\end{tabular}
+	\end{center}
+	Combining the left-hand side of the congruences, we get that
+	\begin{center}
+		\begin{tabular}{l}
+			$5x + 3y \equiv 2x \mod{7}$,\quad and \\
+			$4x + 6y \equiv 2y \mod{7}$.
+		\end{tabular}
+	\end{center}
+	Rewriting these congruences using matrices and vectors, we see that
+	\[
+		\begin{bmatrix}5 & 3 \\ 4 & 6\end{bmatrix}
+		\begin{bmatrix}x \\ y\end{bmatrix}
+		\equiv
+		2\!\begin{bmatrix}x \\ y\end{bmatrix}
+		\mod{7}.
+	\]
+	Thus, any vector in $\Z_7^2$ that satisfies $x + y \equiv 0 \bmod{7}$ will be an eigenvector for the matrix $\smallmat{5&3\\4&6}$ modulo 7 with its eigenvalue being 2. As
+	an example, the vector $\smallmat{4\\3}$ satisfies $x + y \equiv 0 \bmod{7}$, and
+	\[
+		\begin{bmatrix}5 & 3 \\ 4 & 6\end{bmatrix}
+		\begin{bmatrix}4 \\ 3\end{bmatrix}
+		\equiv
+		\begin{bmatrix}1 \\ 6\end{bmatrix}
+		\equiv
+		2\!\begin{bmatrix}4 \\ 3\end{bmatrix}
+		\mod{7}.
+	\]
+	
+	This example suggests a general way to construct 2 by 2 matrices with a specific set of vectors being eigenvectors. If we want all vectors that satisfy 
+	$ax + by \equiv 0 \bmod{p}$ to be eigenvectors with eigenvalue $\lambda$, then we create the matrix
+	\begin{equation}
+		\label{mat:desiredForm}
+		\begin{bmatrix}
+			(ra + \lambda) & rb \\
+			sa & (sb + \lambda)
+		\end{bmatrix} \mod{p},
+	\end{equation}
+	where $r$ and $s$ are arbitrary constants in $\Z_p$.
+	
+	In fact, we can show that \emph{any} 2 by 2 matrix with eigenvectors of eigenvalue $\lambda$ can be created this way. Let $\smallmat{h&i\\j&k}$ be a matrix modulo $p$ that
+	has eigenvectors with eigenvalue $\lambda$. There are two cases we need to consider.
+	
+	\textbf{Case 1: For our eigenvectors $\smallmat{x\\y}$, one of $x$ or $y$ is zero.} Without loss of generality, we'll assume that $y \equiv 0 \bmod{p}$. The 
+	$x \equiv 0 \bmod{p}$ case is handled in a similar way. In this case, our eigenvectors will satisfy \emph{any} relation of the form $0x + by \equiv 0 \bmod{p}$. As well, 
+	for vectors of the form $\smallmat{x\\0}$ to be eigenvectors, it must be the case that the component $j$ in our given matrix is zero, and the component $h$ must be 
+	$\lambda$. Thus, our matrix will look like
+	\[
+		\begin{bmatrix}
+			\lambda & i \\
+			0       & k
+		\end{bmatrix} \mod{p}.
+	\]
+	With the correct choice of constants $r$, $s$, and $b$, we see that this matrix indeed matches the desired form of matrix \ref{mat:desiredForm}.
+	
+	\textbf{Case 2: None of the components of our eigenvectors are zero.} Note that, in this case, the congruence $ax + by \equiv 0 \bmod{p}$ that the eigenvectors satisfy 
+	must have both $a$ and $b$ being nonzero. Otherwise, if only one of $a$ or $b$ was nonzero, the congruence would be impossible to satisfy with our given eigenvectors.
+
+	Now, for any of these eigenvectors $\vec{v} \equiv \smallmat{x\\y}$, we have that
+	\[
+		\begin{bmatrix}h-\lambda & i \\ j & k-\lambda\end{bmatrix}
+		\begin{bmatrix}x \\ y\end{bmatrix}
+		\equiv
+		\begin{bmatrix}0 \\ 0\end{bmatrix}
+		\mod{p}
+	\]
+	just from the defining equation of the eigenvectors. Rewriting this matrix equation gives us two congruences the eigenvector must satisfy:
+	\begin{center}
+		\begin{tabular}{rl}
+			$(h - \lambda)x + iy  \equiv 0 \mod{p}$, & \quad and \\
+			$jx + (k - \lambda)y \equiv 0 \mod{p}$. &
+		\end{tabular}
+	\end{center}
+	These two congruences, though appearing different, are actually just scalar multiples of each other. To see why, note that if a vector satisfies the congruence 
+	$ax + by \equiv 0 \bmod{p}$, the only way it can also satisfy $rax + cy \equiv 0 \bmod{p}$ for some constants $r, c \in \Z_p$, $r \not\equiv 0$ is if 
+	$c \equiv rb \bmod{p}$.\footnote{Since $\Z_p$ is a field, we can take $rax + cy \equiv 0 \bmod{p}$ and multiply both sides by $r^{-1}$ to give 
+	$ax + r^{-1}cy \equiv 0 \bmod{p}$. If we subtract our known relation from this and rearrange, we get that $r^{-1}cy \equiv by \implies c \equiv rb \bmod{p}$.} Thus, 
+	because $ra$ can be any element of $\Z_p^*$ (by virtue of $\Z_p$ being a field), once a vector satisfies some relation $ax + by \equiv 0 \bmod{p}$, the only other 
+	relations of the same form it can satisfy are scalar multiples of it.
+	
+	Because the two congruences are scalar multiples of each other, we have that
+	\begin{equation}
+		\label{eqn:eigenEqnScalarMult}
+		jx + (k - \lambda)y \equiv r(h - \lambda)x + riy \mod{p}
+	\end{equation}
+	for some constant $r \in \Z_p$. Then, using the congruences given by our defining eigenvector equation and congruence \ref{eqn:eigenEqnScalarMult}, we can rewrite our
+	original matrix as
+	\[
+		\begin{bmatrix}
+			(1(h - \lambda) + \lambda) & 1i \\
+			1j & (1(k - \lambda) + \lambda)
+		\end{bmatrix} 
+		\equiv
+		\begin{bmatrix}
+			(1(h - \lambda) + \lambda) & 1i \\
+			r(h - \lambda) & (ri + \lambda)
+		\end{bmatrix}
+		\mod{p}.
+	\]
+	This is the desired form of matrix \ref{mat:desiredForm}. 
+	
+	From these two cases, we can conclude that our method for constructing 2 by 2 matrices with a particular set of eigenvectors and a given eigenvalue can construct 
+	\emph{all} possible 2 by 2 matrices with eigenvectors.
+	
+	One question we may ask about this method: can we use it to count the number of 2 by 2 matrices with eigenvectors? Put another way, can we use our particular construction 
+	to count the number of 2 by 2 matrices modulo $p$ with factorable characteristic polynomials?
+	
+	To do this, we have to count the number of unique matrices we can obtain using our method. One way we can do this is by counting all the possible pairs of polynomials
+	we can construct for the top and bottom row of our matrices. What do we mean by this? Recall the example system of congruences we used earlier:
+	\begin{center}
+		\begin{tabular}{l}
+			$5x + 3y \equiv 2x \mod{7}$,\quad and \\
+			$4x + 6y \equiv 2y \mod{7}$.
+		\end{tabular}
+	\end{center}
+	This system corresponds to the matrix $\smallmat{5&3\\4&6} \bmod{7}$, which is one of the matrices modulo 7 with a factorable characteristic polynomial (due to it having 
+	at least one eigenvalue in $\Z_7$, meaning its characteristic polynomial can necessarily be factored into two linear factors). The pair of polynomials associated with the
+	matrix $\smallmat{5&3\\4&6} \bmod{7}$ can be written as $(5x+3y, 4x+6y)$. We see that every matrix will have a unique ordered pair of polynomials associated with it.
+	Therefore, if we can count the number of unique ordered pairs of polynomials associated with the matrices our method creates, we will have counted the number of matrices 
+	modulo $p$ with factorable characteristic polynomials.
+	
+	In general, for a given eigenvalue $\lambda$, a polynomial pair of the form 
+	\[
+		(r(ax + by) + \lambda x, s(ax + by) + \lambda y)
+	\]
+	for arbitrary constants $a,b,r,s \in \Z_p$ (where at least one of $a$ or $b$ is nonzero) will give us a valid pair associated to a matrix with eigenvectors of eigenvalue 
+	$\lambda$. Trying to enumerate all of these pairs is a fairly arduous task. Using a particularly-arranged table, though, the task becomes somewhat doable:
+	
+	{\tiny
+		\begin{center}
+			\begin{tabular}{*{5}{c|}c}
+				$\lambda x$        & $\lambda x$            & $\lambda x$             & $\cdots$ & $\lambda x$                 & $\lambda x$        \\
+				$x+\lambda x$      & $x+y+\lambda x$        & $x+2y+\lambda x$        & $\cdots$ & $x+(p-1)y+\lambda x$        & $y+\lambda x$      \\
+				$2x+\lambda x$     & $2(x+y)+\lambda x$     & $2(x+2y)+\lambda x$     & $\cdots$ & $2(x+(p-1))y+\lambda x$     & $2y+\lambda x$     \\
+				$3x+\lambda x$     & $3(x+y)+\lambda x$     & $3(x+2y)+\lambda x$     & $\cdots$ & $3(x+(p-1))y+\lambda x$     & $3y+\lambda x$     \\
+				$\vdots$           & $\vdots$               & $\vdots$                & $\vdots$ & $\vdots$                    & $\vdots$           \\
+				$(p-1)x+\lambda x$ & $(p-1)(x+y)+\lambda x$ & $(p-1)(x+2y)+\lambda x$ & $\cdots$ & $(p-1)(x+(p-1))y+\lambda x$ & $(p-1)y+\lambda x$ \\
+				\hline 
+				$\lambda y$        & $\lambda y$            & $\lambda y$             & $\cdots$ & $\lambda y$                 & $\lambda y$        \\
+				$x+\lambda y$      & $x+y+\lambda y$        & $x+2y+\lambda y$        & $\cdots$ & $x+(p-1)y+\lambda y$        & $y+\lambda y$      \\
+				$2x+\lambda y$     & $2(x+y)+\lambda y$     & $2(x+2y)+\lambda y$     & $\cdots$ & $2(x+(p-1)y)+\lambda y$     & $2y+\lambda y$     \\
+				$3x+\lambda y$     & $3(x+y)+\lambda y$     & $3(x+2y)+\lambda y$     & $\cdots$ & $3(x+(p-1)y)+\lambda y$     & $3y+\lambda y$     \\
+				$\vdots$           & $\vdots$               & $\vdots$                & $\vdots$ & $\vdots$                    & $\vdots$           \\
+				$(p-1)x+\lambda y$ & $(p-1)(x+y)+\lambda y$ & $(p-1)(x+2y)+\lambda y$ & $\cdots$ & $(p-1)(x+(p-1)y)+\lambda y$ & $(p-1)y+\lambda y$ 
+				
+			\end{tabular}
+		\end{center}
+	}
+	
+	The table is divided into two sections. The top section (above the horizontal dividing line) represents the first polynomial in the pair, while the bottom section (below 
+	the horizontal line) represents the second polynomial in the pair. Each column of the table represents a different polynomial relation that a span of eigenvectors could 
+	satisfy (e.g. $x+2y\equiv0\bmod{p}$ for the third row from the left). Each row represents a scalar multiple of this relation.
+	
+	To create a valid polynomial pair, we choose a column of the table, then select a polynomial from the top and bottom sections within that column. For example, using the
+	table, the pairs $(2x+\lambda x, 3x+\lambda y)$, $(3(x+2y)+\lambda x, \lambda y)$, and $(\lambda x, \lambda y)$ are all valid pairs corresponding to matrices with 
+	factorable characteristic polynomials.
+	
+	Enumerating the pairs in this way is still difficult, however, so we'll further simplify the problem by slightly changing the way we write our points. Label the first
+	column of the table from the left as column $c=0$. The next column to the right will be column $c=1$, the next $c=2$, and so on. The last (rightmost) column, however, 
+	will be handled separately, and so it won't be given a number.
+	
+	Using this notation, all our polynomial pairs will take the form
+	\[
+		((m_1+\lambda)x + m_1cy, (m_2+\lambda)x+(m_2c+c\lambda+\lambda)y) \mod{p}
+	\]
+	for columns with a number, and
+	\[
+		(\lambda x + m_1y, m_2y) \mod{p}
+	\]
+	for the rightmost column, where $m_1$ and $m_2$ are constants we choose from $\Z_p$.
+	
+	To further ease with explanation, we'll let $E \equiv m_1 + \lambda$, $F \equiv m_1c$, and $H \equiv m_2 + \lambda$. Some algebraic manipulations give us that 
+	$\lambda \equiv E - m_1$, and so
+	\begin{align*}
+		m_2c + c\lambda + \lambda &\equiv Hc + \lambda \\
+		                          &\equiv Hc + E - m_1 \mod{p}.
+	\end{align*}
+	If $c^{-1}$ exists, then we can also say $m_1 \equiv Fc^{-1}$, meaning
+	\[
+		Hc + E - m_1 \equiv Hc + E - Fc^{-1} \mod{p}.
+	\]
+	So, if $c^{-1}$ exists, we can write our polynomial pairs (for numbered columns) as
+	\[
+		(Ex + Fy, Hx + (Hc + E - Fc^{-1})y) \mod{p}.
+	\]
+	With all the necessary notation established, we can now start counting how many unique polynomial pairs we can construct using our method.
+	
+	\textbf{Case 1: Numbered column, $F \equiv 0$.} In this case, either $c \equiv 0$ or $m_1 \equiv 0$. We have control over what values we set our variables to (since 
+	setting the values of variables here is equivalent to moving around on the table above), so let's choose $c \equiv 0$. In this case, our polynomial pairs simplify to
+	\[
+		(Ex, Hx + \lambda y) \mod{p}.
+	\]
+	By choosing appropriate values for $m_1$, $m_2$, and $\lambda$, we can create any possible polynomial pairing in our given form where $F \equiv 0$. Thus, this case accounts
+	for $p^3$ unique polynomial pairs (since there are $p$ possible values for $E$, $p$ for $H$, and $p$ for $\lambda$).
+	
+	\textbf{Case 2: Numbered column, $F \not\equiv 0$, $H \equiv 0$.} In this case, our polynomial pairs simplify to
+	\[
+		(Ex + Fy, \lambda y) \mod{p}.
+	\]
+	Notice that, because $F \not\equiv 0$, neither $m_1$ nor $c$ can be zero. This limits the number of polynomial pairs we can construct. The value of $\lambda$ is ours to 
+	choose, so there are $p$ possible values it can take on. Likewise, we can set $m_1$ to be whatever nonzero value we want, so this gives $p-1$ possible values for $E$. 
+	Finally, we can set $c$ to be whatever nonzero value we'd like, so there are again $p-1$ possible values for $F$. In total, then, this case gives us $p(p-1)^2$ 
+	unique polynomial pairs.
+	
+	\textbf{Case 3: Numbered column, $F \not\equiv 0$, $H \not\equiv 0$.} In this case, there are no simplifications we can make to our polynomial pairs. The number of unique
+	pairs we can make comes down to how many different values $Hc + E - Fc^{-1}$ can take on for different values of $E$, $F$, and $H$.
+	
+	By choosing appropriate values for $m_1$ and $\lambda$, $E$ can take on any value, so there are $p$ possibilities for $E$. Now, let's analyse the modified expression 
+	$Hc - Fc^{-1}$ from our polynomial pairing. We can safely ignore the $+E$ from the original expression since it doesn't affect how many unique values $Hc + E - Fc^{-1}$ 
+	can take on. Let $Hc - Fc^{-1} \equiv X$. Multiplying by $c$, this becomes a quadratic in c:
+	\begin{center}
+		\begin{tabular}{rrl}
+					   & $(Hc - Fc^{-1})c\ \equiv$ & $Xc$ \\
+			$\implies$ & $Hc^2 - F       \ \equiv$ & $Xc$ \\
+			$\implies$ & $Hc^2 - Xc - F  \ \equiv$ & $0 \mod{p}.$
+		\end{tabular}
+	\end{center}
+	Both $H$ and $F$ are nonzero, so we're guaranteed to be working with a quadratic (not a linear polynomial) that doesn't have zero as a root.
+	
+	Now, by choosing an appropriate value for $m_2$, we can also assign $H$ to be whatever nonzero value we want, so there are $p-1$ possibilities for $H$. Also, because $H$ is
+	nonzero, we can multiply by its inverse:
+	\begin{center}
+		\begin{tabular}{rrl}
+			           & $(Hc^2 - Xc - F)H^{-1}\ \equiv$    & $0H^{-1}$ \\
+			$\implies$ & $c^2 - XH^{-1}c - FH^{-1}\ \equiv$ & $0$       \\
+			$\implies$ & $c^2 - Yc - Z\ \equiv$             & $0 \mod{p}$,
+		\end{tabular}
+	\end{center}
+	where $Y$ and $Z$ are arbitrary constants, $Z \not\equiv 0$. If we can count how many of these quadratics have solutions solely in $\Z_p^*$, we can complete our count of 
+	all the polynomial pairs in this case.
+	
+	Thankfully, it's straightforward to count how many have solutions in $\Z_p^*$---it's the same number of quadratics that can be written as $(c-r)(c-s)$ for nonzero 
+	constants $r$ and $s$ in $\Z_p^*$. It turns out that there are $\frac{1}{2}p(p-1)$ such quadratics (just by counting how many factorisations we can write). Thus, there 
+	are $\frac{1}{2}p(p-1)$ possibilities for our quadratic, meaning there are $(p)(p-1)(\frac{1}{2}p(p-1)) = \frac{1}{2}p^2(p-1)^2$ unique polynomial pairs given by this case.
+	
+	\textbf{Case 4: Non-numbered column.} In this case, the polynomial pairs we're considering take the form
+	\[
+		(\lambda x + m_1y, m_2y) \mod{p}.
+	\]
+	This is the same form as the pairs in case 2, except now there are no restrictions for the coefficients on $x$ and $y$. The restrictions in case 2 prevented us from having 
+	pairs where $E \equiv \lambda$, so this case adds these $p(p-1)$ skipped polynomial pairs (where $F \not\equiv 0$, hence the factor of $p-1$).
+	
+	These are the only possible cases. Thus, adding the pair counts from each case will give us the total number of polynomial pairs our method can construct, which is 
+	equivalent to the total number of 2 by 2 matrices modulo $p$ that have factorable characteristic polynomials. Our count comes out to be
+	\begin{align*}
+		       &\ p^3 + p(p-1)^2 + \frac{1}{2}p^2(p-1)^2 + p(p-1)                \\
+		\equiv &\ p^3 + p(p^2 - 2p + 1) + \frac{1}{2}p^2(p^2 - 2p + 1) + p^2 - p \\
+		\equiv &\ p^3 + p^3 - 2p^2 + p + \frac{1}{2}(p^4 - 2p^3 + p^2) + p^2 - p \\
+		\equiv &\ \frac{1}{2}p^4 + p^3 - \frac{1}{2}p^2                          \\
+		\equiv &\ \frac{1}{2}p^2(p^2 + 2p - 1).
+	\end{align*}
+	
+	This formula agrees with the result of \citet{Olsavsky2003}.
+	
+	\bibliographystyle{plainnat}
+	\bibliography{refs.bib}
+\end{document}
